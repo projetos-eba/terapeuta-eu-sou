@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -77,5 +83,38 @@ describe("SupportTicketPage", () => {
       "accept",
       "application/pdf,image/jpeg,image/png,image/webp",
     );
+  });
+
+  it("keeps every valid file selected for one support reply", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ ticket: { ...ticket, status: "open" } }),
+        ),
+    );
+
+    render(<SupportTicketPage actorRole="therapist" ticketId={ticket.id} />);
+
+    const input = await waitFor(() => {
+      const node = document.querySelector('input[type="file"]');
+      expect(node).toBeInstanceOf(HTMLInputElement);
+      return node as HTMLInputElement;
+    });
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(["pdf"], "primeiro.pdf", { type: "application/pdf" }),
+          new File(["image"], "segundo.png", { type: "image/png" }),
+        ],
+      },
+    });
+
+    expect(await screen.findByText("primeiro.pdf")).toBeInTheDocument();
+    expect(screen.getByText("segundo.png")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Enviar resposta" }),
+    ).toBeEnabled();
   });
 });

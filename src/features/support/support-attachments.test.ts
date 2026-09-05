@@ -20,6 +20,29 @@ describe("support attachments", () => {
     expect(result.files[0]?.name).toBe("evidencia.png");
   });
 
+  it("keeps all five valid attachments from one message", () => {
+    const formData = new FormData();
+    for (let index = 1; index <= 5; index += 1) {
+      formData.append(
+        "attachments",
+        new File([`pdf-${index}`], `comprovante-${index}.pdf`, {
+          type: "application/pdf",
+        }),
+      );
+    }
+
+    const result = readSupportAttachmentFiles(formData);
+
+    expect(result.error).toBeNull();
+    expect(result.files.map((file) => file.name)).toEqual([
+      "comprovante-1.pdf",
+      "comprovante-2.pdf",
+      "comprovante-3.pdf",
+      "comprovante-4.pdf",
+      "comprovante-5.pdf",
+    ]);
+  });
+
   it("rejects unsupported formats", () => {
     const formData = new FormData();
     formData.append(

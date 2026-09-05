@@ -89,6 +89,9 @@ especificos antes de um erro generico de slot.
 - bookings compostos pelo read model de Sessoes;
 - pagamento derivado de `session_payments`;
 - holds, bloqueios, atencoes e demanda agregada;
+- `attentionItems` e `summary.pendingAttention` representam exclusivamente
+  pedidos de reagendamento pendentes; pagamento pendente e impacto de bloqueio
+  continuam em seus fluxos próprios e não entram no trilho operacional;
 - cores obtidas da terapia, nunca gravadas como classe CSS;
 - sem credenciais Zoom, payload de host ou dados privados do Match.
 
@@ -108,6 +111,12 @@ Desktop usa calendario e trilho contextual. Tablet move o trilho para baixo.
 Mobile preserva navegacao por scroll horizontal, areas de toque e drawer do
 shell. O layout final de A7 foi parcialmente antecipado; filtros avancados e
 uma lista cronologica mobile dedicada permanecem para o refinamento A7.
+
+No trilho contextual, “Sessões de hoje” é derivado de reservas do dia local com
+`bookings.status = confirmed` e `session_payments.financial_status = paid`.
+Essa síntese não acompanha os filtros locais da grade. Reservas pendentes de
+pagamento permanecem na grade e no filtro de estado porque continuam ocupando
+o horário, mas não são uma sessão confirmada nem uma pendência de agenda.
 
 ## Cores
 

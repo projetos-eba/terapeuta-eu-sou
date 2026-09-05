@@ -34,6 +34,7 @@ import {
 } from "@/features/public-therapist-search";
 import { PublicSearchMetricsTracker } from "@/features/public-metrics";
 import { FavoriteTherapistButton } from "@/features/therapist-profile/components/favorite-therapist-button";
+import { AutoSubmitSelect } from "@/features/public-therapist-search/components/auto-submit-select";
 import { TherapyBadgeList } from "@/features/public-therapist-search/components/therapy-badge-list";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
@@ -75,7 +76,7 @@ function SelectField({
   return (
     <label className="relative flex h-[52px] w-full shrink-0 items-center rounded-[16px] border border-border bg-white text-[16px] font-medium text-tesText-muted focus-within:ring-4 focus-within:ring-ring/20 sm:min-w-[158px] sm:w-auto">
       <span className="sr-only">{label}</span>
-      <select
+      <AutoSubmitSelect
         name={name}
         defaultValue={value ?? ""}
         className="h-full w-full appearance-none rounded-[16px] bg-transparent px-4 pr-12 text-[16px] font-medium leading-[22px] outline-none"
@@ -86,7 +87,7 @@ function SelectField({
             {option.label}
           </option>
         ))}
-      </select>
+      </AutoSubmitSelect>
       <ChevronDown className="pointer-events-none absolute right-4 size-6 text-brand-primary" />
     </label>
   );
@@ -226,7 +227,7 @@ function ResultsHeader({
             ) : null}
             <label className="relative inline-flex min-h-11 w-full max-w-[310px] items-center rounded-full border border-brand-lavender bg-white text-sm font-bold text-tesText-secondary shadow-card sm:w-[270px]">
               <span className="sr-only">Ordenar terapeutas</span>
-              <select
+              <AutoSubmitSelect
                 name="sort"
                 defaultValue={filters.sort}
                 className="h-full w-full appearance-none truncate rounded-full bg-transparent px-[15px] pr-10 text-sm font-bold outline-none"
@@ -236,7 +237,7 @@ function ResultsHeader({
                     Ordenar por: {option.label}
                   </option>
                 ))}
-              </select>
+              </AutoSubmitSelect>
               <ChevronDown className="pointer-events-none absolute right-4 size-4 text-brand-primary" />
             </label>
             <button className="sr-only">Ordenar</button>
@@ -342,12 +343,14 @@ function TherapistResultCard({
             />
           </div>
 
-          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-            {therapist.description}
-          </p>
-          <p className="text-xs font-semibold leading-5 text-tesText-muted">
-            {therapist.reviewsLabel}
-          </p>
+          <div>
+            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+              {therapist.description}
+            </p>
+            <p className="mt-4 text-xs font-semibold leading-5 text-tesText-muted">
+              {therapist.reviewsLabel}
+            </p>
+          </div>
 
           <div className="mt-auto grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>

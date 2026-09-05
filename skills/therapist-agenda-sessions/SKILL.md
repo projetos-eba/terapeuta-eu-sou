@@ -200,6 +200,12 @@ the related demand tip is not rendered without `agenda_insights`.
 - Copy operacional canônica: “Sessões de hoje”, “Pendências da agenda”,
   “Acompanhe sua agenda”, “Dica do TES” e “Clique em um horário para ver
   ou editar o agendamento.”
+- No trilho contextual do Calendário (Figma `13366:5342`), “Sessões de hoje”
+  usa somente reservas do dia local com `booking.status = confirmed` e
+  `session_payments.financial_status = paid`, sem seguir filtros locais.
+  “Pendências da agenda” e `summary.pendingAttention` mostram exclusivamente
+  solicitações de reagendamento em `pending`. Pagamentos pendentes continuam
+  visíveis na grade e nos filtros, pois ainda ocupam o horário.
 - O fechamento A6/A7 fica em
   `docs/architecture/agenda-a6-a7-closure.md`.
 - O fechamento A8/A10 fica em
