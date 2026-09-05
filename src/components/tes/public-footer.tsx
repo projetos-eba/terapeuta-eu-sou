@@ -1,6 +1,11 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { Building2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
+import {
+  Building2,
+  ShieldCheck,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 import { getPublicSocialLinks } from "@/config/public-social-links";
 import {
@@ -17,7 +22,9 @@ type FooterGroup = {
   title: string;
 };
 
-export function PublicFooter({ variant = "default" }: { variant?: "default" | "profile" } = {}) {
+export function PublicFooter({
+  variant = "default",
+}: { variant?: "default" | "profile" } = {}) {
   const socialLinks = getPublicSocialLinks();
   const groups = getFooterGroups();
   const isProfile = variant === "profile";
@@ -26,15 +33,38 @@ export function PublicFooter({ variant = "default" }: { variant?: "default" | "p
     <footer
       className={
         isProfile
-          ? "mx-5 grid max-w-[1680px] gap-10 rounded-[22px] border border-brand-lavender bg-white/90 px-6 py-8 shadow-card sm:mx-8 sm:p-10 lg:mx-auto lg:w-auto lg:grid-cols-[360px_1fr] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-12 lg:py-10 lg:shadow-none"
-          : "mx-auto grid max-w-[1680px] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[360px_1fr] lg:px-12"
+          ? "mx-5 grid max-w-[1680px] gap-10 rounded-[22px] border border-brand-lavender bg-white/90 px-6 py-8 shadow-card sm:mx-8 sm:p-10 lg:mx-auto lg:w-full lg:max-w-[1360px] lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-x-[72px] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-10 lg:shadow-none"
+          : "mx-auto grid w-full max-w-[1360px] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-x-[72px] lg:px-0"
       }
     >
-      <div>
-        <PublicLogo />
-        <p className="mt-4 max-w-sm text-sm font-semibold leading-6 text-tesText-secondary">
-          Onde terapeutas encontram espaço e pessoas encontram caminhos.
-        </p>
+      <div className="sm:mx-auto sm:w-fit lg:mx-0 lg:w-auto">
+        <PublicLogo footer />
+        <div className="mt-3 flex items-center gap-3">
+          <p className="min-w-0 max-w-[340px] flex-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            Onde terapeutas encontram espaço e pessoas encontram caminhos.
+          </p>
+          {socialLinks.length ? (
+            <ul className="flex shrink-0 gap-3">
+              {socialLinks.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.label}>
+                    <a
+                      href={item.href}
+                      aria-label={item.label}
+                      className="grid size-11 place-items-center rounded-full border border-brand-lavender/60 bg-white text-brand-primary shadow-[0_8px_24px_rgba(108,61,145,0.08)] transition hover:-translate-y-0.5 hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <Icon className="size-5" aria-hidden="true" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
         <p
           className={
             isProfile
@@ -48,8 +78,8 @@ export function PublicFooter({ variant = "default" }: { variant?: "default" | "p
       <div
         className={
           isProfile
-            ? "grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-4 lg:gap-8"
-            : "grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+            ? "grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-3 lg:gap-x-16"
+            : "grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-16"
         }
       >
         {groups.map((group) => (
@@ -78,32 +108,6 @@ export function PublicFooter({ variant = "default" }: { variant?: "default" | "p
             </ul>
           </div>
         ))}
-        {socialLinks.length ? (
-          <div>
-            <h3 className="text-base font-extrabold text-brand-deep">
-              Redes sociais
-            </h3>
-            <ul className="mt-4 flex flex-wrap gap-3">
-              {socialLinks.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <li key={item.label}>
-                    <a
-                      href={item.href}
-                      aria-label={item.label}
-                      className="grid size-11 place-items-center rounded-full border border-brand-lavender/60 bg-white text-brand-primary shadow-[0_8px_24px_rgba(108,61,145,0.08)] transition hover:-translate-y-0.5 hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <Icon className="size-5" aria-hidden="true" />
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
       </div>
       {isProfile ? (
         <p className="text-center text-sm font-bold leading-6 text-tesText-muted lg:hidden">

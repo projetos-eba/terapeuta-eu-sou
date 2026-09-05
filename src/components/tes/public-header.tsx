@@ -23,14 +23,22 @@ import {
 } from "./public-auth-menu";
 import { TESButton } from "./tes-button";
 
-function Logo({ header = false }: { header?: boolean }) {
+function Logo({
+  header = false,
+  footer = false,
+}: {
+  header?: boolean;
+  footer?: boolean;
+}) {
   return (
     <Link
       href={routes.public.home as Route}
       className={
         header
           ? "relative block h-14 w-36 shrink-0 sm:h-16 sm:w-[168px]"
-          : "relative block h-12 w-[122px] shrink-0 sm:h-[56px] sm:w-[142px]"
+          : footer
+            ? "relative block h-[128px] w-[240px] shrink-0 sm:h-[128px] sm:w-[240px] lg:h-[139px] lg:w-[260px]"
+            : "relative block h-12 w-[122px] shrink-0 sm:h-[56px] sm:w-[142px]"
       }
       aria-label="Terapeuta Eu Sou"
     >
@@ -38,7 +46,13 @@ function Logo({ header = false }: { header?: boolean }) {
         src="/logo-oficial-terapeuta-eu-sou.png"
         alt="Terapeuta Eu Sou"
         fill
-        sizes={header ? "(min-width: 640px) 168px, 144px" : "142px"}
+        sizes={
+          header
+            ? "(min-width: 640px) 168px, 144px"
+            : footer
+              ? "(min-width: 640px) 240px, 240px"
+              : "142px"
+        }
         className="object-contain"
         priority
       />

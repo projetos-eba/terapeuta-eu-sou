@@ -22,6 +22,7 @@ import {
 
 import { PublicLogo, TESButton, TESCard, TESDialog } from "@/components/tes";
 import { ShellHelpCard } from "@/components/authenticated-shell/shell-help-card";
+import { getPublicInstagramLink } from "@/config/public-social-links";
 import {
   PromotionCodeField,
   type PromotionCheckoutAmounts,
@@ -1363,15 +1364,29 @@ function PolicyCard() {
 }
 
 function ReservationFooter() {
+  const instagramLink = getPublicInstagramLink();
+  const InstagramIcon = instagramLink.icon;
+
   return (
     <footer className="border-t border-border bg-surface-muted">
       <div className="mx-auto flex max-w-[1680px] flex-col gap-4 px-5 py-7 text-sm font-bold text-tesText-muted sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12">
         <p>© 2026 Terapeuta Eu Sou. Todos os direitos reservados.</p>
-        <div className="flex flex-wrap gap-5">
-          <Link href={routes.public.privacy as Route}>
-            Política de privacidade
-          </Link>
-          <Link href={routes.public.terms as Route}>Termos de uso</Link>
+        <div className="flex flex-wrap items-center gap-5">
+          <a
+            href={instagramLink.href}
+            aria-label={instagramLink.label}
+            className="grid size-11 place-items-center rounded-full border border-brand-lavender/60 bg-white text-brand-primary shadow-[0_8px_24px_rgba(108,61,145,0.08)] transition hover:-translate-y-0.5 hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <InstagramIcon className="size-5" aria-hidden="true" />
+          </a>
+          <div className="flex flex-wrap gap-5">
+            <Link href={routes.public.privacy as Route}>
+              Política de privacidade
+            </Link>
+            <Link href={routes.public.terms as Route}>Termos de uso</Link>
+          </div>
         </div>
       </div>
     </footer>
