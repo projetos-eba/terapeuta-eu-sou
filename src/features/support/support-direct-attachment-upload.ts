@@ -35,31 +35,29 @@ export async function prepareAndUploadSupportAttachments(input: {
   if (
     !response.ok ||
     !payload?.uploads ||
-    payload.uploads.length !== input.files.length
+    !uploadPlansMatchFiles(payload.uploads, input.files)
   ) {
     throw new SupportAttachmentUploadError(
       payload?.error?.message ?? "Não foi possível preparar os anexos agora.",
     );
   }
 
+  const uploadedAttachments: SupportTicketAttachmentDescriptor[] = [];
   try {
-    await Promise.all(
-      payload.uploads.map((upload, index) =>
-        uploadToSignedUrl(input.files[index]!, upload.signedUrl),
-      ),
-    );
-    return payload.uploads.map(
-      ({ signedUrl: _signedUrl, ...attachment }) => attachment,
-    );
+    for (const [index, upload] of payload.uploads.entries()) {
+      await uploadToSignedUrl(input.files[index]!, upload.signedUrl);
+      uploadedAttachments.push(toAttachmentDescriptor(upload));
+    }
+    return uploadedAttachments;
   } catch {
-    await cleanupSupportAttachments({
-      actorRole: input.actorRole,
-      attachments: payload.uploads.map(
-        ({ signedUrl: _signedUrl, ...attachment }) => attachment,
-      ),
-      requestId: input.requestId,
-      ticketId: input.ticketId,
-    });
+    if (uploadedAttachments.length > 0) {
+      await cleanupSupportAttachments({
+        actorRole: input.actorRole,
+        attachments: uploadedAttachments,
+        requestId: input.requestId,
+        ticketId: input.ticketId,
+      });
+    }
     throw new SupportAttachmentUploadError(
       "Não foi possível enviar todos os anexos agora. Tente novamente.",
     );
@@ -106,6 +104,30 @@ export async function cleanupSupportAttachments(input: {
 }
 
 export class SupportAttachmentUploadError extends Error {}
+
+function uploadPlansMatchFiles(uploads: UploadPlan[], files: File[]) {
+  if (uploads.length !== files.length) return false;
+
+  const storageObjectPaths = new Set<string>();
+  return uploads.every((upload, index) => {
+    const file = files[index];
+    if (!file || !upload.signedUrl || !upload.storageObjectPath) return false;
+    if (storageObjectPaths.has(upload.storageObjectPath)) return false;
+    storageObjectPaths.add(upload.storageObjectPath);
+    return (
+      upload.mimeType === file.type &&
+      upload.originalName === sanitizeSupportAttachmentName(file.name) &&
+      upload.sizeBytes === file.size
+    );
+  });
+}
+
+function toAttachmentDescriptor({
+  signedUrl: _signedUrl,
+  ...attachment
+}: UploadPlan) {
+  return attachment;
+}
 
 async function uploadToSignedUrl(file: File, signedUrl: string) {
   const formData = new FormData();

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const headerMocks = vi.hoisted(() => ({
   cookieGet: vi.fn(),
@@ -18,6 +18,10 @@ const requestId = "20000000-0000-4000-8000-000000000001";
 const context = { params: Promise.resolve({ ticketId }) };
 
 describe("support ticket direct attachment authorization", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     vi.unstubAllGlobals();
     headerMocks.cookieGet.mockReturnValue({ value: "therapist-token" });
@@ -73,6 +77,74 @@ describe("support ticket direct attachment authorization", () => {
     expect(payload.uploads[0].signedUrl).toBe(
       "https://tes.supabase.test/storage/v1/object/upload/sign/support-ticket-attachments/file-1?token=signed-1",
     );
+    expect(signCount).toBe(2);
+  });
+
+  it("authorizes each signed upload in selection order", async () => {
+    let beginFirstSigning!: () => void;
+    const firstSigningStarted = new Promise<void>((resolve) => {
+      beginFirstSigning = resolve;
+    });
+    let finishFirstSigning!: (response: Response) => void;
+    const firstSigning = new Promise<Response>((resolve) => {
+      finishFirstSigning = resolve;
+    });
+    let signCount = 0;
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) {
+        return Promise.resolve(
+          Response.json({ id: "10000000-0000-4000-8000-000000000001" }),
+        );
+      }
+      if (url.includes("/rest/v1/profiles")) {
+        return Promise.resolve(Response.json([{ role: "therapist" }]));
+      }
+      if (url.includes("/rest/v1/support_tickets")) {
+        return Promise.resolve(Response.json([{ id: ticketId }]));
+      }
+      if (url.includes("/storage/v1/object/upload/sign/")) {
+        signCount += 1;
+        if (signCount === 1) {
+          beginFirstSigning();
+          return firstSigning;
+        }
+        return Promise.resolve(
+          Response.json({
+            url: "/object/upload/sign/support-ticket-attachments/file-2?token=signed-2",
+          }),
+        );
+      }
+      return Promise.resolve(new Response(null, { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pendingResponse = POST(
+      request({
+        action: "prepare",
+        attachments: [
+          {
+            mimeType: "application/pdf",
+            originalName: "primeiro.pdf",
+            sizeBytes: 3,
+          },
+          { mimeType: "image/png", originalName: "segundo.png", sizeBytes: 3 },
+        ],
+      }),
+      context,
+    );
+
+    await firstSigningStarted;
+    expect(signCount).toBe(1);
+
+    finishFirstSigning(
+      Response.json({
+        url: "/object/upload/sign/support-ticket-attachments/file-1?token=signed-1",
+      }),
+    );
+    const response = await pendingResponse;
+
+    expect(response.status).toBe(200);
     expect(signCount).toBe(2);
   });
 
