@@ -63,21 +63,22 @@ export async function POST(request: Request, { params }: Params) {
     if (!attachments) return failure(attachmentContractMessage, 422);
 
     try {
-      const uploads = await Promise.all(
-        attachments.map(async (attachment, index) => {
-          const storageObjectPath = [
-            ticketId,
-            requestId,
-            `${String(index + 1).padStart(2, "0")}-${crypto.randomUUID()}-${attachment.originalName}`,
-          ].join("/");
-          const signedUrl = await createSignedUploadUrl(
-            context.config,
-            context.accessToken,
-            storageObjectPath,
-          );
-          return { ...attachment, signedUrl, storageObjectPath };
-        }),
-      );
+      const uploads: Array<
+        SupportTicketAttachmentDescriptor & { signedUrl: string }
+      > = [];
+      for (const [index, attachment] of attachments.entries()) {
+        const storageObjectPath = [
+          ticketId,
+          requestId,
+          `${String(index + 1).padStart(2, "0")}-${crypto.randomUUID()}-${attachment.originalName}`,
+        ].join("/");
+        const signedUrl = await createSignedUploadUrl(
+          context.config,
+          context.accessToken,
+          storageObjectPath,
+        );
+        uploads.push({ ...attachment, signedUrl, storageObjectPath });
+      }
       return NextResponse.json(
         { ok: true, uploads },
         { headers: noStoreHeaders },

@@ -127,7 +127,9 @@ Contratos de thread vigentes, todos fora da API de participante:
 - `POST /api/support/tickets/:ticketId/attachments`: etapa autenticada interna
   de preparar, concluir ou limpar uploads diretos privados; aceita somente
   metadados limitados e paths temporários gerados para o mesmo ticket e
-  `requestId`, nunca o binário;
+  `requestId`, nunca o binário. Em uma seleção múltipla, a autorização e o
+  upload ocorrem na ordem escolhida, um arquivo por vez; se algum falhar, a
+  limpeza remove apenas os arquivos já enviados antes de informar a falha;
 - `GET /api/admin/support/tickets/:ticketId/thread`: thread completa somente
   para Admin com `admin.support.read`, incluindo notas internas;
 - `POST /api/admin/support/tickets/:ticketId/reply`: resposta pública sob
