@@ -1,5 +1,7 @@
 import { Bell } from "lucide-react";
 
+import { BookingStatus } from "@/domain/tes";
+
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 
 export function ReminderCard({
@@ -8,6 +10,8 @@ export function ReminderCard({
   booking: PatientSessionDetailPageData["booking"];
 }) {
   const minutes = booking.minutesUntilStart;
+
+  if (isTerminalBookingStatus(booking.status)) return null;
 
   return (
     <section className="w-full min-w-0 rounded-card border border-border bg-white p-5 shadow-card sm:p-6">
@@ -48,5 +52,17 @@ export function ReminderCard({
         conexão com mais calma.
       </p>
     </section>
+  );
+}
+
+function isTerminalBookingStatus(status: string) {
+  return (
+    status === BookingStatus.Completed ||
+    status === BookingStatus.CancelledByPatient ||
+    status === BookingStatus.CancelledByTherapist ||
+    status === BookingStatus.NoShowPatient ||
+    status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.CancelledByPayment ||
+    status === BookingStatus.Refunded
   );
 }

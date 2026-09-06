@@ -19,6 +19,7 @@ import {
   validateCancellationCommand,
   type CancellationCommandBody,
 } from "./cancellation-command.ts";
+import { finalizeAutomaticRefund } from "./automatic-refund-finalization.ts";
 
 type CalculatedCancellationDecision = {
   booking_id: string;
@@ -223,21 +224,27 @@ runtime.serve(async (request) => {
       },
       "resolution=merge-duplicates,return=minimal",
     );
-    await client.patch(
-      `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
+    const cancelledAt = new Date().toISOString();
+    await finalizeAutomaticRefund(
       {
-        financial_status:
-          record.refund_amount_cents >= payment.gross_amount_cents
-            ? "refunded"
-            : "partially_refunded",
-        refund_pending: true,
-        transfer_blocked_reason: "refund",
-        transfer_status: "blocked",
+        bookingId: record.booking_id,
+        cancelledAt,
+        decisionId: record.id,
+        grossAmountCents: payment.gross_amount_cents,
+        internalReason: record.reason,
+        paymentId: payment.id,
+        refundAmountCents: record.refund_amount_cents,
       },
-      "return=minimal",
+      {
+        markBookingCancellation: (input) =>
+          markBookingCancellationMetadata(client, input),
+        markDecisionProcessed: (decisionId) =>
+          markCancellationDecisionProcessed(client, decisionId),
+        transitionBookingCancellation: () =>
+          transitionBookingCancellation(client, record),
+        updatePayment: (input) => updateRefundedPayment(client, input),
+      },
     );
-    await transitionBookingCancellation(client, record);
-    await markCancellationDecisionProcessed(client, record.id);
 
     return success({
       decision: record.decision,
@@ -298,21 +305,41 @@ async function blockTransferForReview(
   );
 }
 
-async function markBookingCanceled(
+async function markBookingCancellationMetadata(
   client: SupabaseRestClient,
-  bookingId: string,
-  role: "admin" | "patient" | "therapist",
-  reason: string,
+  input: {
+    bookingId: string;
+    cancelledAt: string;
+    internalReason: string;
+  },
 ) {
   await client.patch(
-    `/rest/v1/bookings?id=eq.${encodeURIComponent(bookingId)}`,
+    `/rest/v1/bookings?id=eq.${encodeURIComponent(input.bookingId)}`,
     {
-      cancellation_reason: reason,
-      cancelled_at: new Date().toISOString(),
-      status:
-        role === "therapist"
-          ? "cancelled_by_therapist"
-          : "cancelled_by_patient",
+      cancellation_reason: input.internalReason,
+      cancelled_at: input.cancelledAt,
+    },
+    "return=minimal",
+  );
+}
+
+async function updateRefundedPayment(
+  client: SupabaseRestClient,
+  input: {
+    cancelledAt: string;
+    financialStatus: "partially_refunded" | "refunded";
+    paymentId: string;
+  },
+) {
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(input.paymentId)}`,
+    {
+      canceled_at: input.cancelledAt,
+      financial_status: input.financialStatus,
+      refund_pending: true,
+      service_status: "canceled",
+      transfer_blocked_reason: "refund",
+      transfer_status: "blocked",
     },
     "return=minimal",
   );

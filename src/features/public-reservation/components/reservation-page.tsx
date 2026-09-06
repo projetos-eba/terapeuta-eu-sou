@@ -1312,6 +1312,19 @@ function ReservationSummary({
             Aceite os Termos de Uso e a Política de Privacidade para continuar.
           </p>
         ) : null}
+        {context.step === "preparar" &&
+        context.selectedSlot &&
+        context.isPatientAuthenticated &&
+        !context.canPrepareEncounter &&
+        !context.selectedSlotHasPatientConflict ? (
+          <p
+            role="alert"
+            className="rounded-2xl border border-status-danger/30 bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
+          >
+            Este horário não está mais disponível. Volte para a agenda e escolha
+            outro horário.
+          </p>
+        ) : null}
       </div>
     </TESCard>
   );
