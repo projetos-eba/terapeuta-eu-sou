@@ -147,6 +147,20 @@ function getPaymentState({
   nowMs: number;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
+  if (
+    financialStatus === SessionFinancialStatus.Paid &&
+    isCancelledBookingStatus(bookingStatus)
+  ) {
+    return {
+      kind: "cancelled",
+      message:
+        "Este encontro foi cancelado e a sala não será liberada. Consulte o histórico para acompanhar a situação financeira.",
+      retryAllowed: false,
+      slotState: "released",
+      title: "Encontro cancelado",
+    };
+  }
+
   if (financialStatus === SessionFinancialStatus.Paid) {
     return {
       kind: "confirmed",
@@ -492,6 +506,14 @@ function isTerminalBookingStatus(status: string) {
     status === BookingStatus.NoShowTherapist ||
     status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
+  );
+}
+
+function isCancelledBookingStatus(status: string) {
+  return (
+    status === BookingStatus.CancelledByPatient ||
+    status === BookingStatus.CancelledByTherapist ||
+    status === BookingStatus.CancelledByPayment
   );
 }
 
