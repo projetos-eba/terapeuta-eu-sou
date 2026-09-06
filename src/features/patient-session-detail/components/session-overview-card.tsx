@@ -3,9 +3,11 @@ import Image from "next/image";
 import type { Route } from "next";
 import { BookingStatus } from "@/domain/tes";
 import {
+  CalendarClock,
   CalendarDays,
   ChevronRight,
   Clock3,
+  CreditCard,
   Star,
   Video,
 } from "lucide-react";
@@ -20,6 +22,7 @@ type PrimaryAction =
   | {
       disabled?: false;
       href: string;
+      kind?: "choose_time" | "join" | "retry_payment" | "support";
       label: string;
       variant?: "gradient" | "primary" | "secondary";
     }
@@ -117,11 +120,7 @@ export function SessionOverviewCard({
               {guidance}
             </p>
             <div className="hidden xl:block">
-              <HeroAction
-                action={primaryAction}
-                data={data}
-                showFeedback
-              />
+              <HeroAction action={primaryAction} data={data} showFeedback />
             </div>
           </div>
         </div>
@@ -234,6 +233,9 @@ function HeroAction({
     !action.disabled &&
     (action.label === "Entrar no encontro" ||
       action.label === "Abrir videochamada");
+  const isPaymentRetryAction =
+    !action.disabled && action.kind === "retry_payment";
+  const isChooseTimeAction = !action.disabled && action.kind === "choose_time";
 
   return (
     <div className="grid gap-3">
@@ -247,6 +249,27 @@ function HeroAction({
           <Video aria-hidden="true" size={22} />
           Entrar no encontro
         </TESButton>
+      ) : isPaymentRetryAction || isChooseTimeAction ? (
+        <>
+          <TESButton
+            className="min-h-14 w-full text-base sm:text-lg"
+            href={action.href}
+            size="lg"
+            variant={action.variant ?? "primary"}
+          >
+            {isPaymentRetryAction ? (
+              <CreditCard aria-hidden="true" size={21} />
+            ) : (
+              <CalendarClock aria-hidden="true" size={21} />
+            )}
+            {action.label}
+          </TESButton>
+          <p className="text-center text-sm font-semibold leading-6 text-tesText-secondary">
+            {isPaymentRetryAction
+              ? "O horário será confirmado somente após a autorização do pagamento."
+              : "Este horário não pode mais ser retomado. Escolha uma nova opção na agenda do terapeuta."}
+          </p>
+        </>
       ) : (
         <button
           className="inline-flex min-h-14 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-surface-soft px-6 text-base font-extrabold text-tesText-secondary"
@@ -295,20 +318,41 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
 function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   const supportHref =
     `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+  const isPaymentRecovery =
+    data.booking.status === BookingStatus.CancelledByPayment &&
+    (data.encounterState.payment.kind === "failed" ||
+      data.encounterState.payment.kind === "cancelled");
+
+  if (isPaymentRecovery && data.encounterState.payment.retryAllowed) {
+    return {
+      href: `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>,
+      kind: "retry_payment",
+      label: "Tentar pagamento novamente",
+      variant: "primary",
+    };
+  }
+
+  if (isPaymentRecovery) {
+    return {
+      href: data.therapist.profileHref,
+      kind: "choose_time",
+      label: "Escolher outro horário",
+      variant: "secondary",
+    };
+  }
 
   if (data.onlineSession.provider === "zoom") {
     const canOpenWaitingRoom =
       data.booking.canJoin &&
       data.encounterState.payment.kind === "confirmed" &&
-      [
-        "entry_available",
-        "therapist_present",
-        "waiting_therapist",
-      ].includes(data.encounterState.waitingRoom.kind);
+      ["entry_available", "therapist_present", "waiting_therapist"].includes(
+        data.encounterState.waitingRoom.kind,
+      );
 
     if (canOpenWaitingRoom) {
       return {
         href: routes.patient.encounterVideo(data.booking.id) as Route<string>,
+        kind: "join",
         label: "Entrar no encontro",
         variant: "gradient",
       };
@@ -321,6 +365,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     ) {
       return {
         href: routes.patient.encounterVideo(data.booking.id) as Route<string>,
+        kind: "join",
         label: "Entrar no encontro",
         variant: "gradient",
       };
@@ -332,6 +377,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     ) {
       return {
         href: supportHref,
+        kind: "support",
         label: "Pedir ajuda com pagamento",
         variant: "secondary",
       };
@@ -343,6 +389,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     ) {
       return {
         href: supportHref,
+        kind: "support",
         label: "Falar com suporte",
         variant: "secondary",
       };
@@ -358,6 +405,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   if (data.booking.canJoin && data.onlineSession.meetingUrl) {
     return {
       href: data.onlineSession.meetingUrl,
+      kind: "join",
       label: "Abrir videochamada",
       variant: "gradient",
     };
@@ -365,6 +413,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
 
   return {
     href: supportHref,
+    kind: "support",
     label: "Falar com suporte",
     variant: "secondary",
   };
