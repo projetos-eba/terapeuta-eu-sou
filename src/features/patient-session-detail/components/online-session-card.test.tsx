@@ -11,6 +11,7 @@ import type { PatientSessionDetailPageData } from "../patient-session-detail.typ
 import { OnlineSessionCard } from "./online-session-card";
 import { PreparationCard } from "./preparation-card";
 import { SessionOverviewCard } from "./session-overview-card";
+import { SessionStatusStrip } from "./session-status-strip";
 
 describe("OnlineSessionCard", () => {
   afterEach(cleanup);
@@ -170,13 +171,16 @@ describe("OnlineSessionCard", () => {
   });
 
   it("replaces room entry with the safe payment retry for a future interrupted payment", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Canceled,
+      status: BookingStatus.CancelledByPayment,
+    });
+
     render(
-      <SessionOverviewCard
-        data={makeData({
-          financialStatus: SessionFinancialStatus.Canceled,
-          status: BookingStatus.CancelledByPayment,
-        })}
-      />,
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
     );
 
     expect(
@@ -193,6 +197,11 @@ describe("OnlineSessionCard", () => {
         "O horário será confirmado somente após a autorização do pagamento.",
       ),
     ).toHaveLength(2);
+    expect(
+      screen.queryByText(
+        "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será confirmado após a autorização.",
+      ),
+    ).toBeNull();
     expect(
       screen.queryByRole("link", { name: "Entrar no encontro" }),
     ).toBeNull();

@@ -23,6 +23,30 @@ describe("ZoomWaitingRoom", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses the correct audience article in the protected waiting room", () => {
+    const { rerender } = render(<ZoomWaitingRoom {...baseProps} />);
+
+    expect(
+      screen.getByRole("region", { name: "Sala de espera do encontro" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "A sala estará pronta no horário do encontro",
+      }),
+    ).toBeVisible();
+
+    rerender(<ZoomWaitingRoom {...baseProps} actorRole="therapist" />);
+
+    expect(
+      screen.getByRole("region", { name: "Sala de espera da sessão" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "A sala estará pronta no horário da sessão",
+      }),
+    ).toBeVisible();
+  });
+
   it("opens a local camera preview without asking for microphone access", async () => {
     const track = { stop: vi.fn() };
     const stream = { getTracks: () => [track] } as unknown as MediaStream;
