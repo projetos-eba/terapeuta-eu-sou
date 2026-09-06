@@ -20,6 +20,9 @@ import {
   type CancellationCommandBody,
 } from "./cancellation-command.ts";
 import { finalizeAutomaticRefund } from "./automatic-refund-finalization.ts";
+import {
+  finalizeRetainedCancellation,
+} from "./retained-cancellation-finalization.ts";
 
 type CalculatedCancellationDecision = {
   booking_id: string;
@@ -162,7 +165,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    if (record.requires_manual_review || record.refund_amount_cents <= 0) {
+    if (record.requires_manual_review) {
       await blockTransferForReview(client, payment.id);
       await transitionBookingCancellation(client, record);
       await markCancellationDecisionProcessed(client, record.id);
@@ -172,6 +175,38 @@ runtime.serve(async (request) => {
         decisionId: record.id,
         refundAmountCents: record.refund_amount_cents,
         requiresManualReview: record.requires_manual_review,
+      });
+    }
+
+    if (record.refund_amount_cents <= 0) {
+      const cancelledAt = new Date().toISOString();
+      await finalizeRetainedCancellation(
+        {
+          bookingId: record.booking_id,
+          cancelledAt,
+          decisionId: record.id,
+          internalReason: record.reason,
+          paymentId: payment.id,
+        },
+        {
+          markBookingCancellation: (input) =>
+            markBookingCancellationMetadata(client, input),
+          markDecisionProcessed: (decisionId) =>
+            markCancellationDecisionProcessed(client, decisionId),
+          refreshTransferEligibility: (paymentId) =>
+            refreshTransferEligibility(client, paymentId),
+          transitionBookingCancellation: () =>
+            transitionBookingCancellation(client, record),
+          updatePayment: (input) =>
+            updateRetainedCancellationPayment(client, input),
+        },
+      );
+
+      return success({
+        decision: record.decision,
+        decisionId: record.id,
+        refundAmountCents: 0,
+        requiresManualReview: false,
       });
     }
 
@@ -303,6 +338,36 @@ async function blockTransferForReview(
     },
     "return=minimal",
   );
+}
+
+async function updateRetainedCancellationPayment(
+  client: SupabaseRestClient,
+  input: { cancelledAt: string; paymentId: string },
+) {
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(input.paymentId)}`,
+    {
+      canceled_at: input.cancelledAt,
+      eligible_at: null,
+      refund_pending: false,
+      service_confirmation_source: null,
+      service_confirmed_at: input.cancelledAt,
+      service_status: "canceled",
+      transfer_blocked_reason: "retained_cancellation_pending_eligibility",
+      transfer_status: "blocked",
+    },
+    "return=minimal",
+  );
+}
+
+async function refreshTransferEligibility(
+  client: SupabaseRestClient,
+  sessionPaymentId: string,
+) {
+  await client.rpc("refresh_session_transfer_eligibility", {
+    p_now: new Date().toISOString(),
+    p_session_payment_id: sessionPaymentId,
+  });
 }
 
 async function markBookingCancellationMetadata(

@@ -85,9 +85,8 @@ homologação estão em `docs/payments/promotion-codes.md`.
 
 As regras ficam em `financial_policy_versions`. As versões financeiras são
 preservadas no snapshot de cada pagamento. A versão operacional vigente para
-novos pagamentos é `tes-payments-v8-commission-15-percent`; as versões
-anteriores, inclusive a v7 com 20%, continuam disponíveis para interpretar
-pagamentos já criados:
+novos pagamentos é `tes-payments-v9-settlement-only`; as versões anteriores
+continuam disponíveis para interpretar pagamentos já criados:
 
 - cancelamento gratuito ate 24h antes da sessao;
 - cancelamento com menos de 24h: não há obrigação de reembolso; situações
@@ -95,6 +94,13 @@ pagamentos já criados:
 - não comparecimento: não há obrigação de reembolso, ressalvadas situações
   excepcionais analisadas pelo TES;
 - reembolsos antes de lote/transferencia podem ser automaticos; casos ja loteados, transferidos, disputados ou contestados entram em revisao manual;
+- cancelamento com retenção integral e decisão processada não abre um falso
+  reembolso pendente. O atendimento permanece `canceled`, e o repasse só pode
+  avançar quando a decisão sem revisão manual reconciliar exatamente valor
+  bruto, parcela do terapeuta e comissão da plataforma; todos os demais casos
+  continuam fechados para revisão ou reembolso. A reconciliação histórica é
+  idempotente e só corrige o estado legado exato, sem tocar repasses loteados,
+  transferidos, disputados ou contestados;
 - confirmação automática da resposta ausente do paciente após 7 dias;
 - confirmação automática da resposta ausente do terapeuta após 30 dias;
 - sem espera fixa adicional após a segunda confirmação válida; a liquidação
