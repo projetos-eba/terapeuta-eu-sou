@@ -116,9 +116,11 @@ export function SessionOverviewCard({
                 </StatusPill>
               </div>
             </div>
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              {guidance}
-            </p>
+            {guidance ? (
+              <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+                {guidance}
+              </p>
+            ) : null}
             <div className="hidden xl:block">
               <HeroAction action={primaryAction} data={data} showFeedback />
             </div>
@@ -308,6 +310,16 @@ function getRoomLabel(data: PatientSessionDetailPageData) {
 }
 
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
+  const isRetryableInterruptedPayment =
+    data.booking.status === BookingStatus.CancelledByPayment &&
+    data.encounterState.payment.retryAllowed &&
+    (data.encounterState.payment.kind === "failed" ||
+      data.encounterState.payment.kind === "cancelled");
+
+  if (isRetryableInterruptedPayment) {
+    return undefined;
+  }
+
   if (data.encounterState.payment.kind !== "confirmed") {
     return data.encounterState.payment.message;
   }
