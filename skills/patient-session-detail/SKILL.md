@@ -129,6 +129,14 @@ anotação.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados, as
   ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
   mostram o motivo em texto acessível.
+- Quando um booking futuro estiver `cancelled_by_payment` com pagamento
+  `failed` ou `canceled`, o hero substitui a entrada desabilitada por
+  `Tentar pagamento novamente` e usa somente
+  `/reserva?booking=<uuid>&etapa=pagamento`. O status permanece informativo e
+  não vira link. A retomada não libera a sala, não cria hold e só confirma o
+  horário após a autorização e a revalidação autoritativa. Depois do início,
+  o detalhe oferece `Escolher outro horário` no perfil do terapeuta em vez de
+  tentar reutilizar o booking encerrado.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados

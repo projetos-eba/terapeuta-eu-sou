@@ -119,9 +119,7 @@ describe("OnlineSessionCard", () => {
     expect(
       screen.queryByRole("link", { name: /avaliar encontro/i }),
     ).toBeNull();
-    expect(
-      screen.getByText(/a sala não será liberada/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/a sala não será liberada/i)).toBeInTheDocument();
     expect(screen.queryByText("Seu encontro online")).toBeNull();
     expect(screen.queryByText("Antes do encontro")).toBeNull();
   });
@@ -170,18 +168,72 @@ describe("OnlineSessionCard", () => {
         ),
     ).toBe(true);
   });
+
+  it("replaces room entry with the safe payment retry for a future interrupted payment", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          financialStatus: SessionFinancialStatus.Canceled,
+          status: BookingStatus.CancelledByPayment,
+        })}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Tentar pagamento novamente" })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/reserva?booking=f2000000-0000-4000-8000-000000000001&etapa=pagamento",
+        ),
+    ).toBe(true);
+    expect(
+      screen.getAllByText(
+        "O horário será confirmado somente após a autorização do pagamento.",
+      ),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("link", { name: "Entrar no encontro" }),
+    ).toBeNull();
+  });
+
+  it("offers a new time instead of retrying an elapsed interrupted payment", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          financialStatus: SessionFinancialStatus.Canceled,
+          now: new Date("2026-08-01T14:00:00.000Z"),
+          status: BookingStatus.CancelledByPayment,
+        })}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Escolher outro horário" })
+        .every(
+          (link) => link.getAttribute("href") === "/terapeutas/ana-oliveira",
+        ),
+    ).toBe(true);
+    expect(
+      screen.queryByRole("link", { name: "Tentar pagamento novamente" }),
+    ).toBeNull();
+  });
 });
 
 function makeData({
   canJoin,
   financialStatus,
   meetingUrl = null,
+  now = new Date("2026-08-01T13:50:00.000Z"),
   provider = "zoom",
   status = BookingStatus.Confirmed,
 }: {
   canJoin?: boolean;
   financialStatus: SessionFinancialStatus;
   meetingUrl?: string | null;
+  now?: Date;
   provider?: "external" | "google_meet" | "zoom";
   status?: BookingStatus;
 }): PatientSessionDetailPageData {
@@ -211,7 +263,7 @@ function makeData({
       },
       endsAt: booking.endsAt,
       financialStatus,
-      now: new Date("2026-08-01T13:50:00.000Z"),
+      now,
       startsAt: booking.startsAt,
     }),
     booking,
@@ -224,7 +276,7 @@ function makeData({
       bookingStatus: booking.status,
       endsAt: booking.endsAt,
       financialStatus,
-      now: new Date("2026-08-01T13:50:00.000Z"),
+      now,
       provider,
       startsAt: booking.startsAt,
     }),
