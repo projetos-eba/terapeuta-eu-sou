@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(26);
 
 create temporary table reschedule_slots as
 with payload as (
@@ -46,6 +46,24 @@ select is(
   ),
   true,
   'service_role can invoke booking availability'
+);
+
+select ok(
+  position(
+    'patient_blockers as materialized' in lower(
+      pg_get_functiondef(
+        'public.get_booking_reschedule_availability_v1(uuid,uuid,text,date,integer)'::regprocedure
+      )
+    )
+  ) > 0
+  and position(
+    'patient_has_schedule_conflict_v1' in lower(
+      pg_get_functiondef(
+        'public.get_booking_reschedule_availability_v1(uuid,uuid,text,date,integer)'::regprocedure
+      )
+    )
+  ) = 0,
+  'booking availability materializes patient blockers instead of evaluating one conflict RPC per candidate'
 );
 
 select ok(

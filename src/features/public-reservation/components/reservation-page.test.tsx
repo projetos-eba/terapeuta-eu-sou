@@ -202,22 +202,22 @@ describe("ReservationPage", () => {
       searchParams: {
         duration: "50",
         etapa: "pagamento",
-        slot: "2026-09-03T21:30:00.000Z",
+        slot: "2099-09-03T21:30:00.000Z",
       },
     });
     const result = applyPatientScheduleConflicts({
       availabilityDays: [
         {
-          date: "2026-09-03",
+          date: "2099-09-03",
           dateLabel: "03/09",
           dayLabel: "Amanhã",
           slots: [
             {
               dateLabel: "03/09",
               dayLabel: "Amanhã",
-              endsAt: "2026-09-03T22:20:00.000Z",
+              endsAt: "2099-09-03T22:20:00.000Z",
               serviceId: "d1000000-0000-4000-8000-000000000001",
-              startsAt: "2026-09-03T21:30:00.000Z",
+              startsAt: "2099-09-03T21:30:00.000Z",
               timeLabel: "18:30",
             },
           ],
@@ -226,8 +226,8 @@ describe("ReservationPage", () => {
       context: base,
       intervals: [
         {
-          endsAt: "2026-09-03T22:20:00.000Z",
-          startsAt: "2026-09-03T21:30:00.000Z",
+          endsAt: "2099-09-03T22:20:00.000Z",
+          startsAt: "2099-09-03T21:30:00.000Z",
         },
       ],
     });
@@ -266,24 +266,24 @@ describe("ReservationPage", () => {
     const result = applyPatientScheduleConflicts({
       availabilityDays: [
         {
-          date: "2026-09-03",
+          date: "2099-09-03",
           dateLabel: "03/09",
           dayLabel: "Amanhã",
           slots: [
             {
               dateLabel: "03/09",
               dayLabel: "Amanhã",
-              endsAt: "2026-09-03T22:20:00.000Z",
+              endsAt: "2099-09-03T22:20:00.000Z",
               serviceId: "d1000000-0000-4000-8000-000000000001",
-              startsAt: "2026-09-03T21:30:00.000Z",
+              startsAt: "2099-09-03T21:30:00.000Z",
               timeLabel: "18:30",
             },
             {
               dateLabel: "03/09",
               dayLabel: "Amanhã",
-              endsAt: "2026-09-03T23:10:00.000Z",
+              endsAt: "2099-09-03T23:10:00.000Z",
               serviceId: "d1000000-0000-4000-8000-000000000001",
-              startsAt: "2026-09-03T22:20:00.000Z",
+              startsAt: "2099-09-03T22:20:00.000Z",
               timeLabel: "19:20",
             },
           ],
@@ -292,8 +292,8 @@ describe("ReservationPage", () => {
       context: resolveReservationContext({ isPatientAuthenticated: true }),
       intervals: [
         {
-          endsAt: "2026-09-03T22:20:00.000Z",
-          startsAt: "2026-09-03T21:30:00.000Z",
+          endsAt: "2099-09-03T22:20:00.000Z",
+          startsAt: "2099-09-03T21:30:00.000Z",
         },
       ],
     });
@@ -370,6 +370,33 @@ describe("ReservationPage", () => {
 
     expect(advanceButton).toBeDefined();
     expect(advanceButton).toBeEnabled();
+  });
+
+  it("explains why payment cannot continue when the selected slot is no longer available", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        etapa: "preparar",
+        service: "d1000000-0000-4000-8000-000000000001",
+        slot: "2026-09-01T16:15:00.000Z",
+      },
+    });
+
+    render(
+      <ReservationPage
+        availabilityDays={[]}
+        context={{ ...context, canPrepareEncounter: false }}
+      />,
+    );
+
+    expect(
+      screen.getByText(/este horário não está mais disponível/i),
+    ).toHaveAttribute("role", "alert");
+    expect(
+      screen
+        .getAllByRole("button", { name: /avançar para pagamento/i })
+        .find((button) => button.getAttribute("type") === "submit"),
+    ).toBeDisabled();
   });
 
   it("restores the checkout journey after a browser refresh", async () => {
