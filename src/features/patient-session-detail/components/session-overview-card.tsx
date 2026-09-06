@@ -375,12 +375,8 @@ function canReviewFeedback(
 ) {
   return (
     status === BookingStatus.Completed ||
-    status === BookingStatus.CancelledByPatient ||
-    status === BookingStatus.CancelledByTherapist ||
     status === BookingStatus.NoShowPatient ||
-    status === BookingStatus.NoShowTherapist ||
-    status === BookingStatus.CancelledByPayment ||
-    status === BookingStatus.Refunded
+    status === BookingStatus.NoShowTherapist
   );
 }
 

@@ -9,6 +9,7 @@ import {
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { OnlineSessionCard } from "./online-session-card";
+import { PreparationCard } from "./preparation-card";
 import { SessionOverviewCard } from "./session-overview-card";
 
 describe("OnlineSessionCard", () => {
@@ -99,6 +100,30 @@ describe("OnlineSessionCard", () => {
       "href",
       "/app/encontros/f2000000-0000-4000-8000-000000000001/video?feedback=1",
     );
+  });
+
+  it("does not offer feedback for an encounter cancelled before it happened", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.CancelledByPatient,
+    });
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <OnlineSessionCard data={data} />
+        <PreparationCard data={data} />
+      </>,
+    );
+
+    expect(
+      screen.queryByRole("link", { name: /avaliar encontro/i }),
+    ).toBeNull();
+    expect(
+      screen.getByText(/a sala não será liberada/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Seu encontro online")).toBeNull();
+    expect(screen.queryByText("Antes do encontro")).toBeNull();
   });
 
   it("highlights a confirmed encounter without repeating utility actions", () => {

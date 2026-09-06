@@ -20,6 +20,24 @@ const baseInput = {
 };
 
 describe("getPatientEncounterPresentationState", () => {
+  it("does not promise room access when a paid encounter was cancelled without a refund", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPatient,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T13:40:00.000Z"),
+    });
+
+    expect(state.payment).toMatchObject({
+      kind: "cancelled",
+      retryAllowed: false,
+      slotState: "released",
+      title: "Encontro cancelado",
+    });
+    expect(state.payment.message).toContain("a sala não será liberada");
+    expect(state.actions).toEqual(["contact_support"]);
+  });
+
   it.each([
     [ZoomAccessReason.TooLate, "schedule_ended"],
     [ZoomAccessReason.SessionEnded, "ended"],
