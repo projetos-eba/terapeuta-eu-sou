@@ -94,7 +94,9 @@ incluir até 5 anexos privados de 10 MB por arquivo, nos formatos PDF, JPG, PNG
 ou WebP, sempre validados no cliente e novamente no servidor/Storage/RPC. Os
 arquivos sobem individualmente e diretamente ao Storage privado por URL
 temporária autorizada para o ticket e `requestId`; nunca encaminhar todos os
-binários pela Route Handler ou expor token de sessão no navegador.
+binários pela Route Handler ou expor token de sessão no navegador. Em seleção
+múltipla, autorizar e enviar na ordem escolhida, um arquivo por vez; em falha
+parcial, limpar somente os objetos já enviados.
 
 Cada card de chamado apresenta categoria, assunto, última mensagem pública,
 badge de quem precisa agir, última atualização e protocolo persistido. Não usar
@@ -160,8 +162,8 @@ aguardar recarregamento manual.
   paciente e do terapeuta, inclusive estado resolvido e mobile.
 - Verificar o estado `waiting_support`: mensagem explicativa, composer e anexo
   continuam acionáveis para complementos; validar também limites e formatos dos
-  anexos permitidos, inclusive dois a cinco arquivos na mesma mensagem e limpeza
-  em caso de falha parcial.
+  anexos permitidos, inclusive dois a cinco arquivos na mesma mensagem, envio
+  ordenado e limpeza dos arquivos já enviados em caso de falha parcial.
 - Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
 - Verificar que `Ver sessão`/`Ver encontro` genérico não aparece nos tickets de
   participante, tanto no fluxo terapeuta-paciente quanto no paciente-terapeuta.

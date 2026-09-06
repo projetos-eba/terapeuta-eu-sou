@@ -117,4 +117,84 @@ describe("SupportTicketPage", () => {
       screen.getByRole("button", { name: "Enviar resposta" }),
     ).toBeEnabled();
   });
+
+  it("sends every selected attachment in the same support reply", async () => {
+    let replyBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (
+        url === `/api/support/tickets/${ticket.id}` &&
+        init?.method === "POST"
+      ) {
+        replyBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return Promise.resolve(Response.json({ ok: true }));
+      }
+      if (url === `/api/support/tickets/${ticket.id}/attachments`) {
+        const payload = JSON.parse(String(init?.body)) as { action?: string };
+        expect(payload.action).toBe("prepare");
+        return Promise.resolve(
+          Response.json({
+            ok: true,
+            uploads: [
+              {
+                mimeType: "application/pdf",
+                originalName: "primeiro.pdf",
+                signedUrl: "https://storage.test/one",
+                sizeBytes: 3,
+                storageObjectPath: `${ticket.id}/request/01-primeiro.pdf`,
+              },
+              {
+                mimeType: "image/png",
+                originalName: "segundo.png",
+                signedUrl: "https://storage.test/two",
+                sizeBytes: 5,
+                storageObjectPath: `${ticket.id}/request/02-segundo.png`,
+              },
+            ],
+          }),
+        );
+      }
+      if (url.startsWith("https://storage.test/")) {
+        return Promise.resolve(new Response(null, { status: 200 }));
+      }
+      if (url === `/api/support/tickets/${ticket.id}?role=therapist`) {
+        return Promise.resolve(
+          Response.json({ ticket: { ...ticket, status: "open" } }),
+        );
+      }
+      return Promise.resolve(new Response(null, { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SupportTicketPage actorRole="therapist" ticketId={ticket.id} />);
+
+    const input = await waitFor(() => {
+      const node = document.querySelector('input[type="file"]');
+      expect(node).toBeInstanceOf(HTMLInputElement);
+      return node as HTMLInputElement;
+    });
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(["pdf"], "primeiro.pdf", { type: "application/pdf" }),
+          new File(["image"], "segundo.png", { type: "image/png" }),
+        ],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar resposta" }));
+
+    await waitFor(() => expect(replyBody).not.toBeNull());
+    expect(replyBody).toMatchObject({
+      actorRole: "therapist",
+      attachments: [
+        expect.objectContaining({
+          storageObjectPath: `${ticket.id}/request/01-primeiro.pdf`,
+        }),
+        expect.objectContaining({
+          storageObjectPath: `${ticket.id}/request/02-segundo.png`,
+        }),
+      ],
+    });
+  });
 });

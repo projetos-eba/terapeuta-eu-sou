@@ -39,6 +39,8 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
   binário sobe diretamente ao Storage privado e uma chamada autenticada conclui
   a associação com a mensagem. Não proxyar o conjunto de arquivos pelo Next,
   pois limites agregados de hospedagem podem contradizer o limite por arquivo.
+  Em seleção múltipla, autorizar e enviar cada arquivo na ordem escolhida, um
+  por vez; se houver falha parcial, limpar somente os objetos já enviados.
 - Renderizar `body` como texto; não usar HTML, Markdown privilegiado ou `dangerouslySetInnerHTML`.
 - A thread Admin usa exclusivamente a RPC administrativa
   `admin_get_support_ticket_thread_v1`; somente ela pode incluir
@@ -57,6 +59,7 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 - Validar protocolo persistido, complementos consecutivos em `waiting_support`,
   estado após resposta do TES/solicitante, retorno do ticket ao topo por
   `last_activity_at` e atualização entre duas sessões autenticadas.
-- Validar dois a cinco anexos em uma única mensagem, incluindo upload direto,
-  confirmação no banco e limpeza segura se um arquivo falhar.
+- Validar dois a cinco anexos em uma única mensagem, incluindo autorização e
+  upload diretos ordenados, confirmação no banco e limpeza segura dos arquivos
+  já enviados se um arquivo falhar.
 - Rodar testes API/Vitest, pgTAP de suporte e o teste de bypass de participante.
