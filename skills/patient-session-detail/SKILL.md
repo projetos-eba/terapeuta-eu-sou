@@ -113,6 +113,10 @@ anotação.
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.
+- Um cancelamento tardio com retenção integral e sem revisão manual deve
+  encerrar o atendimento sem `refund_pending`; a elegibilidade financeira usa
+  somente a decisão processada e integralmente reconciliada, sem apresentar o
+  serviço cancelado como realizado.
 - Reagendamento abre um único `TESDialog` com próximos horários, agenda completa
   e confirmação. A disponibilidade vem de `bookingId`, mantém terapia, duração,
   preço e buffers dos snapshots imutáveis e não cria hold enquanto a proposta

@@ -352,7 +352,10 @@ the related demand tip is not rendered without `agenda_insights`.
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
   necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo
   da terapeuta permanece direto. `metadata.userReason` é privado e separado do
-  código financeiro interno.
+  código financeiro interno. Retenção integral sem revisão fecha o serviço
+  como `canceled`, mantém `refund_pending=false` e só permite elegibilidade de
+  repasse quando a decisão processada reconcilia integralmente os valores do
+  pagamento.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
   serviço.
