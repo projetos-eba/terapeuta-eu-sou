@@ -13641,6 +13641,19 @@ export type Database = {
         Args: { p_therapy_id: string };
         Returns: undefined;
       };
+      apply_patient_booking_reschedule_v1: {
+        Args: {
+          p_actor_profile_id: string;
+          p_booking_id: string;
+          p_expected_booking_version?: number;
+          p_proposed_ends_at: string;
+          p_proposed_starts_at: string;
+          p_proposed_timezone: string;
+          p_reason: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       apply_session_payment_state_v1: {
         Args: {
           p_financial_status: Database["public"]["Enums"]["session_financial_status"];

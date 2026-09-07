@@ -16,15 +16,23 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(page).toHaveURL(/\/terapeuta$/);
     await expect(page.getByText("TES Premium Plus").first()).toBeVisible();
 
-    await page.goto("/terapeuta/agenda?aba=calendario");
+    await page.goto(
+      "/terapeuta/agenda?aba=calendario&visao=week&data=2026-07-27",
+    );
     await expect(
       page.getByRole("heading", { level: 1, name: "Minha agenda" }),
     ).toBeVisible();
-    await expect(page.getByText("Encontros de hoje")).toBeVisible();
-    await expect(page.getByText("Insights para sua agenda")).toBeVisible();
+    await expect(page.getByText("Sessões de hoje")).toBeVisible();
+    await expect(page.getByText("Acompanhe sua agenda")).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Semana" }),
     ).toHaveAttribute("aria-current", "page");
+    await expect(
+      page.locator('[data-calendar-layer="active"]').first(),
+    ).toHaveCSS("z-index", "20");
+    await expect(
+      page.locator('[data-calendar-layer="closed"]').first(),
+    ).toHaveCSS("z-index", "10");
 
     const calendarBooking = page.locator('button[aria-label*=" com "]').first();
     await expect(calendarBooking).toBeVisible();
@@ -46,9 +54,11 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     ).toBeVisible();
     await expect(page.getByText("Pagamento", { exact: true })).toBeVisible();
     await expect(
-      page.getByText("Sala de atendimento", { exact: true }),
+      page.getByRole("heading", { name: "Sala de atendimento" }),
     ).toBeVisible();
-    await expect(page.getByText("Sessão", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Sessão", { exact: true }).first(),
+    ).toBeVisible();
     await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
@@ -78,9 +88,27 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     });
 
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/terapeuta/agenda?aba=calendario");
+    await page.goto(
+      "/terapeuta/agenda?aba=calendario&visao=week&data=2026-07-27",
+    );
     await page.getByRole("link", { exact: true, name: "Mês" }).click();
     await expect(page).toHaveURL(/visao=month/);
+    const monthBookings = page.locator("[data-calendar-month-booking]");
+    await expect(monthBookings.first()).toBeVisible();
+    expect(
+      await monthBookings.evaluateAll((bookings) =>
+        bookings.every((booking) => {
+          const day = booking.closest("[data-calendar-day]");
+          if (!day) return false;
+          const bookingRect = booking.getBoundingClientRect();
+          const dayRect = day.getBoundingClientRect();
+          return (
+            bookingRect.left >= dayRect.left + 7 &&
+            bookingRect.right <= dayRect.right - 7
+          );
+        }),
+      ),
+    ).toBe(true);
     await page.getByRole("link", { exact: true, name: "Dia" }).click();
     await expect(page).toHaveURL(/visao=day/);
     await page.getByRole("link", { name: "Adicionar horários" }).click();

@@ -716,7 +716,8 @@ function TimelineBooking({
   return (
     <button
       aria-label={`Sessão ${booking.sessionReference}: ${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}, ${status.label}`}
-      className={`absolute inset-x-2 z-10 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted" : `${style.border} ${style.surface}`}`}
+      className={`absolute inset-x-2 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-30 hover:brightness-[0.98] focus-visible:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${isClosed ? "z-10 border-tesText-muted" : `z-20 ${style.border} ${style.surface}`}`}
+      data-calendar-layer={isClosed ? "closed" : "active"}
       data-session-state={status.state}
       onClick={() => onSelect(booking)}
       style={{
@@ -837,7 +838,8 @@ function MonthCalendar({
               );
               return (
                 <div
-                  className="min-h-[126px] border-b border-r border-brand-lavender/60 p-2"
+                  className="min-h-[126px] min-w-0 overflow-hidden border-b border-r border-brand-lavender/60 p-2"
+                  data-calendar-day={day}
                   key={day}
                 >
                   <span
@@ -849,7 +851,7 @@ function MonthCalendar({
                   >
                     {Number(day.slice(-2))}
                   </span>
-                  <div className="mt-2 grid gap-1">
+                  <div className="mt-2 grid min-w-0 gap-1">
                     {dayBookings.slice(0, 3).map((booking) => {
                       const style = colorStyles[booking.colorKey];
                       const presentation = mapSessionPresentation(booking);
@@ -860,18 +862,21 @@ function MonthCalendar({
                       return (
                         <button
                           aria-label={`Sessão ${booking.sessionReference}: ${formatTime(booking.startsAt, timezone)}, ${booking.patientName}, ${presentation.label}`}
-                          className={`flex min-h-11 items-center gap-1.5 rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
+                          className={`flex min-h-11 w-full min-w-0 items-center gap-1.5 overflow-hidden rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
+                          data-calendar-month-booking={booking.bookingId}
                           data-session-state={presentation.state}
                           key={booking.bookingId}
                           onClick={() => onSelect(booking)}
                           style={isClosed ? closedBookingPattern : undefined}
                           type="button"
                         >
-                          <span>{formatTime(booking.startsAt, timezone)}</span>
-                          <span className="truncate">
+                          <span className="shrink-0">
+                            {formatTime(booking.startsAt, timezone)}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate">
                             {booking.patientName}
                           </span>
-                          <span className="ml-auto font-mono text-[10px] font-semibold opacity-80 md:text-[11px]">
+                          <span className="ml-auto min-w-0 max-w-20 shrink truncate font-mono text-[10px] font-semibold opacity-80 md:text-[11px]">
                             #{booking.sessionReference}
                           </span>
                         </button>

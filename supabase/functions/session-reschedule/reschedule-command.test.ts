@@ -7,6 +7,7 @@ import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 import {
   mapRescheduleDatabaseError,
+  resolveParticipantActorRole,
   validateRescheduleCommand,
 } from "./reschedule-command.ts";
 
@@ -31,6 +32,36 @@ Deno.test("validates a future reschedule request", () => {
     assertEquals(result.expectedBookingVersion, 2);
   }
 });
+
+Deno.test(
+  "derives the reschedule path from the authenticated participant",
+  () => {
+    assertEquals(
+      resolveParticipantActorRole(
+        "patient-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      "patient",
+    );
+    assertEquals(
+      resolveParticipantActorRole(
+        "therapist-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      "therapist",
+    );
+    assertEquals(
+      resolveParticipantActorRole(
+        "other-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      null,
+    );
+  },
+);
 
 Deno.test("validates booking-scoped availability", () => {
   const result = validateRescheduleCommand({
@@ -98,6 +129,16 @@ Deno.test("maps divergent idempotency replays safely", () => {
   assertEquals(result instanceof DomainError, true);
   assertEquals((result as DomainError).status, 409);
   assertEquals((result as DomainError).code, "reschedule_not_allowed");
+});
+
+Deno.test("maps a therapist direct-apply attempt as forbidden", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(400, "BOOKING_ACTOR_NOT_PATIENT"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).status, 403);
+  assertEquals((result as DomainError).code, "reschedule_forbidden");
 });
 
 function assertDomainError(callback: () => unknown) {

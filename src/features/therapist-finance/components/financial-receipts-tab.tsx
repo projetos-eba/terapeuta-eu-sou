@@ -466,6 +466,7 @@ function ReceiptsVisualSummary({
               ? statusTotals
               : [
                   {
+                    status: "empty",
                     label: "Aguardando dados",
                     value: 0,
                     color: "var(--tes-color-brand-lavender)",
@@ -474,7 +475,8 @@ function ReceiptsVisualSummary({
             ).map((item) => (
               <li
                 className="flex items-center justify-between gap-3"
-                key={item.label}
+                data-receipt-status={item.status}
+                key={item.status}
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
@@ -499,17 +501,32 @@ function ReceiptsVisualSummary({
 function buildStatusTotals(
   items: TherapistReceiptsContract["statusDistribution"],
 ) {
-  const colors: Record<string, string> = {
-    paid: "var(--tes-color-status-success)",
-    waiting_settlement: "var(--tes-color-brand-cyan)",
-    eligible: "var(--tes-color-brand-primary)",
+  const colors: Record<TherapistReceiptStatus, string> = {
+    bank_pending: "var(--tes-color-status-info)",
     blocked: "var(--tes-color-status-warning)",
+    canceled: "var(--tes-color-text-muted)",
+    disputed: "var(--tes-color-brand-deep)",
+    eligible: "var(--tes-color-brand-primary)",
+    failed: "var(--tes-color-status-danger)",
+    paid: "var(--tes-color-status-success)",
+    payout_processing: "var(--tes-color-brand-cyan)",
+    receivable: "var(--tes-color-brand-mint)",
+    refunded:
+      "color-mix(in srgb, var(--tes-color-status-danger) 58%, var(--tes-color-brand-primary))",
+    reversed:
+      "color-mix(in srgb, var(--tes-color-brand-deep) 72%, var(--tes-color-status-danger))",
+    waiting_confirmation: "var(--tes-color-brand-lavender)",
+    waiting_safety_period:
+      "color-mix(in srgb, var(--tes-color-brand-cyan) 58%, var(--tes-color-brand-lavender))",
+    waiting_settlement:
+      "color-mix(in srgb, var(--tes-color-brand-cyan) 72%, var(--tes-color-brand-primary))",
   };
   return items
     .filter((item) => item.amountCents > 0)
     .map((item) => ({
-      color: colors[item.status] ?? "var(--tes-color-brand-lavender)",
+      color: colors[item.status],
       label: receiptStatusLabels[item.status],
+      status: item.status,
       value: item.amountCents,
     }));
 }

@@ -4,12 +4,10 @@ const patientPassword =
   process.env.PATIENT_MANAGEMENT_E2E_PASSWORD ?? "tes-mock-password";
 const reschedulePatientEmail =
   process.env.PATIENT_RESCHEDULE_E2E_EMAIL ?? "paciente.rafael@example.test";
-const rescheduleBookingId =
-  process.env.PATIENT_RESCHEDULE_E2E_BOOKING_ID;
+const rescheduleBookingId = process.env.PATIENT_RESCHEDULE_E2E_BOOKING_ID;
 const cancellationPatientEmail =
   process.env.PATIENT_CANCELLATION_E2E_EMAIL ?? "paciente.rafael@example.test";
-const cancellationBookingId =
-  process.env.PATIENT_CANCELLATION_E2E_BOOKING_ID;
+const cancellationBookingId = process.env.PATIENT_CANCELLATION_E2E_BOOKING_ID;
 
 test.use({ screenshot: "on", trace: "on", video: "on" });
 
@@ -53,7 +51,7 @@ test.describe("patient encounter management", () => {
     }
   });
 
-  test("requests reschedule with a real click from the encounter detail", async ({
+  test("confirms a patient reschedule with a real click from the encounter detail", async ({
     page,
   }) => {
     const rescheduleRequests: unknown[] = [];
@@ -89,21 +87,24 @@ test.describe("patient encounter management", () => {
     await page.goto(`/app/encontros/${bookingId}`);
 
     const rescheduleButton = page.getByRole("button", {
-      name: "Solicitar reagendamento",
+      name: "Reagendar encontro",
     });
     await expect(rescheduleButton).toBeVisible();
     await expect(rescheduleButton).toBeEnabled();
     await rescheduleButton.click();
 
     await expect(
-      page.getByRole("dialog", { name: "Solicitar reagendamento" }),
+      page.getByRole("dialog", { name: "Reagendar encontro" }),
     ).toBeVisible();
     await expect(page.getByText(/Terapia contratada/)).toBeVisible();
-    await page.getByRole("button", { name: "10:00" }).click();
+    await page.getByRole("button", { name: "10:00" }).first().click();
     await page
       .getByLabel("Motivo opcional")
       .fill("Preciso ajustar minha disponibilidade.");
-    await page.getByRole("button", { name: "Enviar proposta" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Confirmar reagendamento" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar reagendamento" }).click();
 
     await expect
       .poll(() => rescheduleRequests.length)
@@ -150,7 +151,10 @@ test.describe("patient encounter management", () => {
     });
 
     await loginAsPatient(page, cancellationPatientEmail);
-    const bookingId = await findManageableBookingId(page, cancellationBookingId);
+    const bookingId = await findManageableBookingId(
+      page,
+      cancellationBookingId,
+    );
     await page.goto(`/app/encontros/${bookingId}`);
 
     const cancelButton = page.getByRole("button", {
@@ -164,6 +168,55 @@ test.describe("patient encounter management", () => {
       name: "Antes de cancelar",
     });
     await expect(retentionDialog).toBeVisible();
+    await expect(
+      retentionDialog.getByRole("heading", {
+        name: "Próximos horários disponíveis",
+      }),
+    ).toBeVisible();
+    await expect(
+      retentionDialog.getByRole("button", { name: "10:00" }),
+    ).toHaveCount(3);
+    await expect(
+      retentionDialog.getByRole("button", {
+        name: "Continuar com o cancelamento",
+      }),
+    ).toBeEnabled();
+
+    for (const viewport of [
+      { height: 900, width: 1440 },
+      { height: 768, width: 1024 },
+      { height: 844, width: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const dimensions = await retentionDialog.evaluate((dialog) => ({
+        clientWidth: dialog.clientWidth,
+        scrollWidth: dialog.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+        dimensions.clientWidth,
+      );
+      await expect(
+        retentionDialog.getByRole("button", {
+          name: "Ver agenda completa e mais horários →",
+        }),
+      ).toBeVisible();
+    }
+
+    await retentionDialog
+      .getByRole("button", { name: "Ver agenda completa e mais horários →" })
+      .click();
+    const calendarDialog = page.getByRole("dialog", {
+      name: "Escolha um dia e horário",
+    });
+    await expect(calendarDialog).toBeVisible();
+    const calendarDimensions = await calendarDialog.evaluate((dialog) => ({
+      clientWidth: dialog.clientWidth,
+      scrollWidth: dialog.scrollWidth,
+    }));
+    expect(calendarDimensions.scrollWidth).toBeLessThanOrEqual(
+      calendarDimensions.clientWidth,
+    );
+    await calendarDialog.getByRole("button", { name: "Voltar" }).click();
     await retentionDialog
       .getByRole("button", { name: "Continuar com o cancelamento" })
       .click();
@@ -245,11 +298,23 @@ async function findManageableBookingId(
 }
 
 function availabilityFixture(bookingId: string) {
-  const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  startsAt.setUTCHours(13, 0, 0, 0);
-  const endsAt = new Date(startsAt.getTime() + 50 * 60 * 1000);
+  const firstDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  firstDate.setUTCHours(13, 0, 0, 0);
+  const slots = Array.from({ length: 3 }, (_, dayIndex) =>
+    Array.from({ length: 5 }, (_, slotIndex) => {
+      const startsAt = new Date(
+        firstDate.getTime() +
+          dayIndex * 24 * 60 * 60 * 1000 +
+          slotIndex * 30 * 60 * 1000,
+      );
+      return {
+        endsAt: new Date(startsAt.getTime() + 50 * 60 * 1000).toISOString(),
+        startsAt: startsAt.toISOString(),
+      };
+    }),
+  ).flat();
   return {
-    booking: { id: bookingId, startsAt: startsAt.toISOString(), version: 1 },
+    booking: { id: bookingId, startsAt: firstDate.toISOString(), version: 1 },
     horizonEndsAt: new Date(
       Date.now() + 90 * 24 * 60 * 60 * 1000,
     ).toISOString(),
@@ -261,7 +326,7 @@ function availabilityFixture(bookingId: string) {
       therapyName: "Reiki",
       title: "Reiki online",
     },
-    slots: [{ endsAt: endsAt.toISOString(), startsAt: startsAt.toISOString() }],
+    slots,
     timezone: "America/Sao_Paulo",
   };
 }

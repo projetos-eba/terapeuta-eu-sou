@@ -331,6 +331,13 @@ the related demand tip is not rendered without `agenda_insights`.
 - O calendário privado continua exibindo sessões canceladas e reembolsadas no
   histórico do período. Timeline, mês e lista mobile usam padrão diagonal,
   legenda e estado textual para não depender somente de cor.
+- Na timeline, sessões ativas devem permanecer em uma camada visual superior a
+  sessões canceladas ou reembolsadas quando ocuparem o mesmo intervalo; foco e
+  hover podem elevar temporariamente qualquer cartão para permitir inspeção.
+- Na visão mensal, cada célula e cartão devem conter o conteúdo com `min-width:
+  0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
+  invadir visualmente outro dia; o nome completo continua preservado no rótulo
+  acessível.
 
 ## Comandos transacionais A2
 
@@ -340,14 +347,21 @@ the related demand tip is not rendered without `agenda_insights`.
   seleciona slot por `get_service_available_slots_v1`, reserva hold
   idempotente, consome hold em booking e inicia `stripe-create-session-payment`.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
-- `request_booking_reschedule_v1`: cria proposta versionada.
+- `apply_patient_booking_reschedule_v1`: aplica imediatamente, no mesmo booking,
+  um horário escolhido pela pessoa após revalidação autoritativa; rejeita ator
+  terapeuta e não cria proposta pendente.
+- `request_booking_reschedule_v1`: cria proposta versionada somente no fluxo
+  iniciado pela terapeuta.
 - `resolve_booking_reschedule_v1`: aplica resolução e sincroniza a sessão local de vídeo.
-- `session-reschedule`: Edge Function autenticada para paciente ou terapeuta;
+- `session-reschedule`: Edge Function autenticada para paciente ou terapeuta e
+  deriva o papel real do participante no servidor. Pessoa usa aplicação direta;
+  terapeuta usa proposta bilateral;
   valida participação e usa `get_booking_reschedule_availability_v1`, derivado
   exclusivamente do booking. Serviço, duração, valor e buffers permanecem nos
-  snapshots; o browser não seleciona serviço nem calcula `endsAt`. Proposta não
-  cria hold nem libera o horário original. Criação e aceite revalidam o slot sob
-  locks; só o aceite move o mesmo booking e sincroniza vídeo/lembretes.
+  snapshots; o browser não seleciona serviço nem calcula `endsAt`. Nenhuma
+  seleção cria hold ou libera o horário original. Aplicação direta, criação de
+  proposta e aceite revalidam o slot sob locks; somente a operação terminal
+  move o mesmo booking e sincroniza vídeo/lembretes.
 - `request-session-cancellation`: continua sendo a função canônica de
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
   necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo
