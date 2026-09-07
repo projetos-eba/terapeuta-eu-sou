@@ -587,7 +587,7 @@ select is(
   (
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       date_trunc('day', now()) + interval '25 days 18 hours',
       date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
       'America/Sao_Paulo',
@@ -602,14 +602,14 @@ select is(
     )
   ).status,
   'pending',
-  'a booking participant can create a pending reschedule request'
+  'the booking therapist can create a pending reschedule request'
 );
 
 select is(
   (
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       date_trunc('day', now()) + interval '25 days 18 hours',
       date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
       'America/Sao_Paulo',
@@ -639,7 +639,7 @@ select is(
         from public.booking_reschedule_requests
         where request_id = 'a2-reschedule-request-0001'
       ),
-      'aaaaaaaa-0000-4000-8000-000000000001',
+      'bbbbbbbb-0000-4000-8000-000000000001',
       'accepted',
       'a2-reschedule-resolution-0001',
       (

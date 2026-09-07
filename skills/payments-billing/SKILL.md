@@ -91,6 +91,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   transition request id.
 - TES does not collect bank, KYC, identity, or tax details for connected accounts; Stripe-hosted onboarding does.
 - Do not call Stripe invoices or receipts "nota fiscal".
+- Financial status charts must map every receipt status explicitly to a stable,
+  semantically distinct color. Keep the textual legend and amounts so color is
+  never the only status cue, and key legend entries by the canonical status
+  rather than by translated labels that may repeat.
 
 ## Architecture Map
 

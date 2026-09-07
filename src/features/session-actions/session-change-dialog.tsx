@@ -114,25 +114,13 @@ export function SessionChangeDialog({
     return () => controller.abort();
   }, [actorRole, availability, bookingId, screen, visibleMonth]);
 
-  const compactSlots = useMemo(() => {
-    if (!availability) return [];
-    return mode === "cancel"
-      ? selectRetentionSlots(
-          availability.slots,
-          availability.booking.startsAt,
-          availability.timezone,
-        )
-      : availability.slots;
-  }, [availability, mode]);
   const compactGroups = useMemo(
     () =>
-      groupSlots(
-        compactSlots,
+      groupNextAvailableSlots(
+        availability?.slots ?? [],
         availability?.timezone ?? "America/Sao_Paulo",
-        mode === "cancel" ? 3 : 3,
-        mode === "cancel" ? 2 : 5,
       ),
-    [availability?.timezone, compactSlots, mode],
+    [availability],
   );
   const monthGroups = useMemo(
     () => groupSlots(monthSlots, availability?.timezone ?? "America/Sao_Paulo"),
@@ -150,15 +138,21 @@ export function SessionChangeDialog({
       : screen === "calendar"
         ? "Escolha um dia e horário"
         : screen === "confirm"
-          ? "Confirmar proposta"
+          ? actorRole === "patient"
+            ? "Confirmar reagendamento"
+            : "Confirmar proposta"
           : mode === "cancel"
             ? "Antes de cancelar"
-            : "Solicitar reagendamento";
+            : actorRole === "patient"
+              ? "Reagendar encontro"
+              : "Solicitar reagendamento";
   const description =
     screen === "cancel"
       ? "A plataforma aplica a política financeira e registra o cancelamento com segurança."
       : screen === "confirm"
-        ? "O reagendamento só será concluído depois que a outra parte aceitar a proposta."
+        ? actorRole === "patient"
+          ? "O novo horário será confirmado imediatamente após a validação final da agenda."
+          : "O reagendamento só será concluído depois que a outra parte aceitar a proposta."
         : mode === "cancel" && screen === "schedule"
           ? "Antes de cancelar, podemos tentar um horário que combine melhor com sua rotina."
           : "A terapia, a duração e o valor contratados permanecem os mesmos.";
@@ -240,7 +234,7 @@ export function SessionChangeDialog({
                   onClick={() => setScreen("confirm")}
                   type="button"
                 >
-                  Propor reagendamento
+                  Reagendar encontro
                 </button>
               </div>
             ) : null}
@@ -279,7 +273,9 @@ export function SessionChangeDialog({
           <LockedServiceSummary availability={availability} />
           <div className="rounded-xl border border-brand-lavender bg-brand-lavenderSoft p-4">
             <p className="text-sm font-extrabold text-brand-deep">
-              Novo horário proposto
+              {actorRole === "patient"
+                ? "Novo horário escolhido"
+                : "Novo horário proposto"}
             </p>
             <p className="mt-1 text-sm font-semibold text-tesText-secondary">
               {formatDateTime(selectedSlot.startsAt, availability.timezone)}
@@ -301,7 +297,11 @@ export function SessionChangeDialog({
             backLabel="Escolher outro horário"
             isSubmitting={isSubmitting}
             onBack={() => setScreen("schedule")}
-            submitLabel="Enviar proposta"
+            submitLabel={
+              actorRole === "patient"
+                ? "Confirmar reagendamento"
+                : "Enviar proposta"
+            }
           />
         </form>
       ) : null}
@@ -706,29 +706,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-export function selectRetentionSlots(
+export function groupNextAvailableSlots(
   slots: RescheduleSlot[],
-  originalStartsAt: string,
   timezone: string,
 ) {
-  const originalMinutes = localMinutes(originalStartsAt, timezone);
-  const groups = groupSlots(slots, timezone);
-  return groups.slice(0, 3).flatMap((group) => {
-    const sorted = [...group.slots].sort(
-      (a, b) =>
-        Math.abs(localMinutes(a.startsAt, timezone) - originalMinutes) -
-        Math.abs(localMinutes(b.startsAt, timezone) - originalMinutes),
-    );
-    const first = sorted[0];
-    const firstPeriod = first ? dayPeriod(first.startsAt, timezone) : null;
-    const second =
-      sorted.find(
-        (slot) => dayPeriod(slot.startsAt, timezone) !== firstPeriod,
-      ) ?? sorted[1];
-    return [first, second].filter((slot): slot is RescheduleSlot =>
-      Boolean(slot),
-    );
-  });
+  return groupSlots(slots, timezone, 3, 5);
 }
 
 function groupSlots(
@@ -747,21 +729,6 @@ function groupSlots(
   return [...groups.entries()]
     .slice(0, maxDays)
     .map(([date, grouped]) => ({ date, slots: grouped }));
-}
-function localMinutes(value: string, timezone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    hour12: false,
-    minute: "2-digit",
-    timeZone: timezone,
-  }).formatToParts(new Date(value));
-  const read = (type: string) =>
-    Number(parts.find((part) => part.type === type)?.value ?? 0);
-  return read("hour") * 60 + read("minute");
-}
-function dayPeriod(value: string, timezone: string) {
-  const minutes = localMinutes(value, timezone);
-  return minutes < 720 ? "morning" : minutes < 1080 ? "afternoon" : "evening";
 }
 function dateKeyInTimezone(date: Date, timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {

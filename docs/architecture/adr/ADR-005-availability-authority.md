@@ -48,10 +48,15 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 - Reagendamento usa `get_booking_reschedule_availability_v1`, sempre derivado do
   `booking_id`. Serviço, preço, duração, buffers e timezone vêm dos snapshots do
   booking; o navegador informa somente o novo início escolhido.
-- Proposta não cria hold e não libera o intervalo original. Criação e aceite
-  revalidam regras, exceções, antecedência, horizonte, bloqueios e conflitos sob
-  locks. O mesmo booking muda de intervalo somente no aceite atômico; rejeição,
-  retirada, expiração ou indisponibilidade preservam o intervalo original.
+- Reagendamento iniciado pela pessoa é aplicado ao mesmo booking em uma única
+  transação, sem proposta nem hold, depois de revalidar regras, exceções,
+  antecedência, horizonte, bloqueios, buffers e conflitos sob locks. O intervalo
+  antigo permanece ocupado até o commit e só volta a aparecer se ainda cumprir
+  as regras atuais da agenda.
+- Reagendamento iniciado pela terapeuta continua como proposta bilateral. A
+  proposta não cria hold nem libera o intervalo original. Criação e aceite
+  revalidam a disponibilidade sob locks; rejeição, retirada, expiração ou
+  indisponibilidade preservam o intervalo original.
 - Uma expiração gera `booking_reschedule_resolved` determinístico para sustentar
   notificações e e-mails idempotentes. Se o slot se perder antes do aceite, a
   proposta é encerrada como indisponível e o booking não é movido.

@@ -118,14 +118,20 @@ anotação.
   somente a decisão processada e integralmente reconciliada, sem apresentar o
   serviço cancelado como realizado.
 - Reagendamento abre um único `TESDialog` com próximos horários, agenda completa
-  e confirmação. A disponibilidade vem de `bookingId`, mantém terapia, duração,
-  preço e buffers dos snapshots imutáveis e não cria hold enquanto a proposta
-  aguarda aceite. O horário original permanece ocupado até o aceite atômico.
-- O cancelamento da pessoa começa com uma sugestão reversível de até seis
-  horários, no máximo dois por data e distribuídos por até três datas. A ação
-  “Continuar com o cancelamento” permanece sempre visível, inclusive em falha
-  ou vazio de disponibilidade. Na confirmação, `userReason` é obrigatório,
-  privado, limitado a 500 caracteres e nunca aparece para a contraparte.
+  e confirmação. A disponibilidade vem de `bookingId` e mantém terapia, duração,
+  preço e buffers dos snapshots imutáveis. Quando a própria pessoa confirma um
+  horário, a Edge aplica a mudança imediatamente ao mesmo booking em uma RPC
+  transacional, sem proposta nem hold; o horário original permanece ocupado até
+  o commit. Propostas pendentes exibidas à pessoa são exclusivamente as
+  iniciadas pela terapeuta e mantêm as ações de aceitar ou recusar.
+- O cancelamento da pessoa começa com o mesmo componente completo de próximos
+  horários do reagendamento: até cinco opções por dia nos três próximos dias
+  disponíveis e acesso a “Ver agenda completa e mais horários”. A disponibilidade
+  continua derivada exclusivamente do `bookingId`; não criar seleção ou regra
+  paralela para retenção. A ação “Continuar com o cancelamento” permanece sempre
+  visível, inclusive em falha ou vazio de disponibilidade. Na confirmação,
+  `userReason` é obrigatório, privado, limitado a 500 caracteres e nunca aparece
+  para a contraparte.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados, as
   ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
   mostram o motivo em texto acessível.

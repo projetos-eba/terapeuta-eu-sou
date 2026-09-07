@@ -149,7 +149,11 @@ export function SessionOperationActions({
       method: "POST",
     }).catch(() => null);
     if (!response) {
-      setError("Não foi possível solicitar o reagendamento agora.");
+      setError(
+        actorRole === "patient"
+          ? "Não foi possível confirmar o reagendamento agora."
+          : "Não foi possível solicitar o reagendamento agora.",
+      );
       setIsSubmitting(false);
       return;
     }
@@ -162,7 +166,9 @@ export function SessionOperationActions({
       setError(
         payload?.ok === false && payload.error?.message
           ? payload.error.message
-          : "Não foi possível solicitar o reagendamento agora.",
+          : actorRole === "patient"
+            ? "Não foi possível confirmar o reagendamento agora."
+            : "Não foi possível solicitar o reagendamento agora.",
       );
       setIsSubmitting(false);
       return;
@@ -270,7 +276,9 @@ export function SessionOperationActions({
           type="button"
         >
           <CalendarClock aria-hidden="true" size={18} />
-          Solicitar reagendamento
+          {actorRole === "patient"
+            ? "Reagendar encontro"
+            : "Solicitar reagendamento"}
         </button>
         <button
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-status-danger/30 bg-white px-4 text-sm font-extrabold text-status-danger transition hover:bg-status-dangerBg disabled:cursor-not-allowed disabled:opacity-50"

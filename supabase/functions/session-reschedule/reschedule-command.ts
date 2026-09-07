@@ -182,6 +182,8 @@ export function mapRescheduleDatabaseError(error: unknown) {
   }
   if (
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
+    details.includes("BOOKING_ACTOR_NOT_PATIENT") ||
+    details.includes("BOOKING_PROPOSAL_REQUIRES_THERAPIST") ||
     details.includes("BOOKING_NOT_FOUND") ||
     details.includes("BOOKING_RESCHEDULE_NOT_FOUND")
   ) {
@@ -204,6 +206,16 @@ export function mapRescheduleDatabaseError(error: unknown) {
   }
 
   return error;
+}
+
+export function resolveParticipantActorRole(
+  userId: string,
+  patientUserId: string | null | undefined,
+  therapistUserId: string | null | undefined,
+) {
+  if (patientUserId === userId) return "patient" as const;
+  if (therapistUserId === userId) return "therapist" as const;
+  return null;
 }
 
 function invalid(): never {

@@ -221,6 +221,39 @@ describe("TherapistFinancePage", () => {
     expect(distribution).not.toHaveTextContent("Cancelado");
   });
 
+  it("uses a distinct semantic color for every rendered receipt status", () => {
+    const baseReceipts = fixture().receipts;
+
+    renderPage("receipts", {
+      receipts: {
+        ...baseReceipts,
+        statusDistribution: [
+          { amountCents: 100, itemCount: 1, status: "blocked" },
+          { amountCents: 200, itemCount: 1, status: "canceled" },
+          { amountCents: 300, itemCount: 1, status: "eligible" },
+          { amountCents: 400, itemCount: 1, status: "failed" },
+          { amountCents: 500, itemCount: 1, status: "waiting_confirmation" },
+          { amountCents: 600, itemCount: 1, status: "waiting_settlement" },
+        ],
+      },
+    });
+
+    const distribution = screen
+      .getByRole("heading", { name: "Distribuição por status" })
+      .closest("section");
+    const legendItems = Array.from(
+      distribution!.querySelectorAll<HTMLElement>("[data-receipt-status]"),
+    );
+    const markerStyles = legendItems.map((item) =>
+      item
+        .querySelector<HTMLElement>("[aria-hidden='true']")
+        ?.getAttribute("style"),
+    );
+
+    expect(legendItems).toHaveLength(6);
+    expect(new Set(markerStyles).size).toBe(markerStyles.length);
+  });
+
   it.each(Object.entries(financialReceiptCopyByStatus))(
     "renders dynamic receipts copy for %s",
     (status, copy) => {
@@ -529,9 +562,9 @@ describe("TherapistFinancePage", () => {
 
     const summary = screen.getByRole("region", { name: "Resumo de repasses" });
     expect(
-      within(summary).getAllByRole("heading", { level: 2 }).map((heading) =>
-        heading.textContent,
-      ),
+      within(summary)
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent),
     ).toEqual([
       "Em processamento",
       "Disponível para repasse",

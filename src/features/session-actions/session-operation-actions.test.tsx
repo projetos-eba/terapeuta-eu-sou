@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -118,21 +119,21 @@ describe("SessionOperationActions", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps the booking service fixed and reuses the proposal command id", async () => {
+  it("keeps the booking service fixed and reuses the direct patient command id", async () => {
     vi.stubGlobal("crypto", {
       randomUUID: vi
         .fn()
         .mockReturnValue("a1000000-0000-4000-8000-000000000009"),
     });
-    let proposalAttempts = 0;
+    let rescheduleAttempts = 0;
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/availability?")) {
         return Promise.resolve(jsonResponse({ ok: true, data: availability }));
       }
-      proposalAttempts += 1;
+      rescheduleAttempts += 1;
       return Promise.resolve(
-        proposalAttempts === 1
+        rescheduleAttempts === 1
           ? jsonResponse(
               { ok: false, error: { message: "Horário indisponível." } },
               409,
@@ -156,30 +157,133 @@ describe("SessionOperationActions", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Solicitar reagendamento" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Reagendar encontro" }));
     expect(await screen.findByText("Reiki")).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "10:00" }));
-    const submit = screen.getByRole("button", { name: "Enviar proposta" });
+    expect(
+      screen.getByRole("heading", { name: "Confirmar reagendamento" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "O novo horário será confirmado imediatamente após a validação final da agenda.",
+      ),
+    ).toBeVisible();
+    const submit = screen.getByRole("button", {
+      name: "Confirmar reagendamento",
+    });
     fireEvent.click(submit);
     expect(
       await screen.findByText("Horário indisponível."),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Enviar proposta" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar reagendamento" }),
+    );
 
     await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
-    const proposalCalls = fetchMock.mock.calls.filter(([url]) =>
+    const rescheduleCalls = fetchMock.mock.calls.filter(([url]) =>
       String(url).endsWith("/api/session/reschedule"),
     );
     const first = requestPayload<{
       command: { requestId: string };
-    }>(proposalCalls[0]);
+    }>(rescheduleCalls[0]);
     const second = requestPayload<{
       command: { requestId: string };
-    }>(proposalCalls[1]);
+    }>(rescheduleCalls[1]);
     expect(first.command.requestId).toBe(second.command.requestId);
+    expect(first).toMatchObject({
+      command: { action: "request" },
+    });
+    expect(first.command).not.toHaveProperty("serviceId");
+  });
+
+  it("shows the full next-slot component before patient cancellation", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(jsonResponse({ ok: true, data: fullAvailability })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderActions();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar encontro" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Próximos horários disponíveis",
+      }),
+    ).toBeVisible();
+    for (const time of ["09:00", "10:00", "11:00", "12:00", "13:00"]) {
+      expect(screen.getAllByRole("button", { name: time })).toHaveLength(3);
+    }
+    expect(
+      screen.getByRole("button", { name: "Continuar com o cancelamento" }),
+    ).toBeEnabled();
+
+    const reschedule = within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Reagendar encontro",
+    });
+    expect(reschedule).toBeDisabled();
+    fireEvent.click(screen.getAllByRole("button", { name: "10:00" })[0]);
+    expect(reschedule).toBeEnabled();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Ver agenda completa e mais horários →",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Escolha um dia e horário" }),
+    ).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("scope=month"),
+      expect.objectContaining({ cache: "no-store" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Reagendar encontro",
+      }),
+    ).toBeEnabled();
+  });
+
+  it("keeps therapist-initiated rescheduling as a proposal", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          jsonResponse({
+            ok: true,
+            data: availability,
+          }),
+        ),
+      ),
+    );
+
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000001"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule
+        cancelDisabledReason={null}
+        cancellationImpactLabel="Política aplicável."
+        reschedule={null}
+        rescheduleDisabledReason={null}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Solicitar reagendamento" }),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Confirmar proposta" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Enviar proposta" }),
+    ).toBeVisible();
   });
 });
 
@@ -227,6 +331,26 @@ const availability = {
   ],
   timezone: "America/Sao_Paulo",
 };
+
+const fullAvailability = {
+  ...availability,
+  slots: [
+    ...daySlots("2026-09-14", 12),
+    ...daySlots("2026-09-15", 12),
+    ...daySlots("2026-09-16", 12),
+    ...daySlots("2026-09-17", 12),
+  ],
+};
+
+function daySlots(date: string, firstUtcHour: number) {
+  return Array.from({ length: 6 }, (_, index) => {
+    const startsAt = `${date}T${String(firstUtcHour + index).padStart(2, "0")}:00:00.000Z`;
+    return {
+      endsAt: new Date(Date.parse(startsAt) + 50 * 60_000).toISOString(),
+      startsAt,
+    };
+  });
+}
 
 function jsonResponse(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {

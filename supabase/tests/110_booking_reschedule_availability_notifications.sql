@@ -110,7 +110,7 @@ select is(
   (
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       (select starts_at from reschedule_slots offset 1 limit 1),
       (select ends_at from reschedule_slots offset 1 limit 1),
       (select timezone from reschedule_slots offset 1 limit 1),
@@ -134,8 +134,8 @@ select is(
   (
     select count(*)::integer
     from public.notifications
-    where kind = 'booking_reschedule_requested_therapist'
-      and event_key like 'booking-event:%:therapist'
+    where kind = 'booking_reschedule_requested_patient'
+      and event_key like 'booking-event:%:patient'
   ),
   1,
   'proposal creation notifies only the counterparty in app'
@@ -144,7 +144,7 @@ select is(
 select is(
   (
     select count(*)::integer from public.email_outbox
-    where action_key = 'booking_reschedule_requested_therapist'
+    where action_key = 'booking_reschedule_requested_patient'
       and related_entity_id = 'f2000000-0000-4000-8000-000000000001'
   ),
   1,
@@ -155,7 +155,7 @@ select is(
   (
     public.resolve_booking_reschedule_v1(
       (select id from public.booking_reschedule_requests where request_id = 'reschedule-security-request-0001'),
-      'aaaaaaaa-0000-4000-8000-000000000001',
+      'bbbbbbbb-0000-4000-8000-000000000001',
       'rejected',
       'reschedule-security-reject-0001',
       null
@@ -174,7 +174,7 @@ select is(
 select is(
   (
     select count(*)::integer from public.notifications
-    where kind = 'booking_reschedule_rejected_patient'
+    where kind = 'booking_reschedule_rejected_therapist'
   ),
   1,
   'rejection notifies the requester'
@@ -183,7 +183,7 @@ select is(
 select lives_ok(
   $$ select public.request_booking_reschedule_v1(
     'f2000000-0000-4000-8000-000000000001',
-    'bbbbbbbb-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
     (select starts_at from reschedule_slots offset 2 limit 1),
     (select ends_at from reschedule_slots offset 2 limit 1),
     (select timezone from reschedule_slots offset 2 limit 1),
@@ -245,7 +245,7 @@ select is(
 select lives_ok(
   $$ select public.request_booking_reschedule_v1(
     'f2000000-0000-4000-8000-000000000001',
-    'bbbbbbbb-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
     (select starts_at from reschedule_slots offset 3 limit 1),
     (select ends_at from reschedule_slots offset 3 limit 1),
     (select timezone from reschedule_slots offset 3 limit 1),
@@ -261,7 +261,7 @@ select is(
   (
     public.resolve_booking_reschedule_v1(
       (select id from public.booking_reschedule_requests where request_id = 'reschedule-security-request-0003'),
-      'aaaaaaaa-0000-4000-8000-000000000001',
+      'bbbbbbbb-0000-4000-8000-000000000001',
       'accepted',
       'reschedule-security-accept-0001',
       (select version from public.bookings where id = 'f2000000-0000-4000-8000-000000000001')
