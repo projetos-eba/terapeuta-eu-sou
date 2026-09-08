@@ -2,7 +2,7 @@ import { routes } from "@/lib/routes";
 
 import type { TherapistSearchCard } from "./types";
 
-export const THERAPIST_SEARCH_PAGE_SIZE = 6;
+export const THERAPIST_SEARCH_PAGE_SIZE = 8;
 
 export const therapistSearchHero = {
   titleStart: "Encontre alguém para",

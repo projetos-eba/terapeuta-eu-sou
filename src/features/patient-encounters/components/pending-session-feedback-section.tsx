@@ -165,7 +165,8 @@ function confirmationLabel(
     blocked_for_review: "Bloqueada para análise",
     completed: "Concluída",
     next_batch: "Próximo lote",
-    safety_period: "Período de segurança de 24 horas",
+    processing_payment: "Pagamento em processamento",
+    safety_period: "Pagamento em processamento",
   };
   return labels[state];
 }

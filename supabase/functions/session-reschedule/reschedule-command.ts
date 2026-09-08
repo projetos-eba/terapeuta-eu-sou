@@ -1,15 +1,16 @@
 import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
-import {
-  selectAvailableSlot,
-  slotRangeEnd,
-  type ServiceAvailableSlotsResponse,
-} from "../session-booking-checkout/booking-checkout-command.ts";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type RescheduleCommandBody =
+  | {
+      action?: "availability";
+      anchor?: string;
+      bookingId?: string;
+      scope?: "day" | "month" | "next";
+    }
   | {
       action?: "request";
       bookingId?: string;
@@ -28,6 +29,12 @@ export type RescheduleCommandBody =
 
 export type ValidRescheduleCommand =
   | {
+      action: "availability";
+      anchor: string | null;
+      bookingId: string;
+      scope: "day" | "month" | "next";
+    }
+  | {
       action: "request";
       bookingId: string;
       expectedBookingVersion: number | null;
@@ -43,15 +50,29 @@ export type ValidRescheduleCommand =
       resolution: "accepted" | "cancelled" | "rejected";
     };
 
-export type SelectedRescheduleSlot = {
-  endsAt: string;
-  startsAt: string;
-  timezone: string;
-};
-
 export function validateRescheduleCommand(
   body: RescheduleCommandBody,
 ): ValidRescheduleCommand {
+  if (body.action === "availability") {
+    const scope = body.scope ?? "next";
+    const needsAnchor = scope === "day" || scope === "month";
+    if (
+      !isUuid(body.bookingId) ||
+      !["day", "month", "next"].includes(scope) ||
+      (needsAnchor && !isDateOnly(body.anchor)) ||
+      (!needsAnchor && body.anchor !== undefined && !isDateOnly(body.anchor))
+    ) {
+      invalid();
+    }
+
+    return {
+      action: "availability",
+      anchor: body.anchor ?? null,
+      bookingId: body.bookingId,
+      scope,
+    };
+  }
+
   if (body.action === "request") {
     if (
       !isUuid(body.bookingId) ||
@@ -107,17 +128,6 @@ export function validateRescheduleCommand(
   invalid();
 }
 
-export function selectRescheduleSlot(
-  response: ServiceAvailableSlotsResponse | null,
-  proposedStartsAt: string,
-): SelectedRescheduleSlot {
-  return selectAvailableSlot(response, proposedStartsAt);
-}
-
-export function rescheduleSlotRangeEnd(proposedStartsAt: string) {
-  return slotRangeEnd(proposedStartsAt);
-}
-
 export function mapRescheduleDatabaseError(error: unknown) {
   if (!(error instanceof SupabaseHttpError)) return error;
 
@@ -133,9 +143,17 @@ export function mapRescheduleDatabaseError(error: unknown) {
       "Este horario entrou em conflito com outra reserva.",
     );
   }
+  if (details.includes("PATIENT_SCHEDULE_CONFLICT")) {
+    return new DomainError(
+      "patient_schedule_conflict",
+      409,
+      "Você já possui outro encontro confirmado neste horário.",
+    );
+  }
   if (
     details.includes("SLOT_NOT_AVAILABLE") ||
-    details.includes("INVALID_AVAILABILITY_RANGE")
+    details.includes("INVALID_AVAILABILITY_RANGE") ||
+    details.includes("INVALID_RESCHEDULE_RANGE")
   ) {
     return new DomainError(
       "reschedule_slot_not_available",
@@ -164,6 +182,8 @@ export function mapRescheduleDatabaseError(error: unknown) {
   }
   if (
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
+    details.includes("BOOKING_ACTOR_NOT_PATIENT") ||
+    details.includes("BOOKING_PROPOSAL_REQUIRES_THERAPIST") ||
     details.includes("BOOKING_NOT_FOUND") ||
     details.includes("BOOKING_RESCHEDULE_NOT_FOUND")
   ) {
@@ -188,6 +208,16 @@ export function mapRescheduleDatabaseError(error: unknown) {
   return error;
 }
 
+export function resolveParticipantActorRole(
+  userId: string,
+  patientUserId: string | null | undefined,
+  therapistUserId: string | null | undefined,
+) {
+  if (patientUserId === userId) return "patient" as const;
+  if (therapistUserId === userId) return "therapist" as const;
+  return null;
+}
+
 function invalid(): never {
   throw new DomainError(
     "invalid_reschedule_payload",
@@ -206,9 +236,19 @@ function isIsoInstant(value: unknown): value is string {
   return Number.isFinite(time);
 }
 
-function isOptionalVersion(value: unknown) {
+function isDateOnly(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    value === undefined ||
-    (Number.isInteger(value) && Number(value) >= 1)
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
+}
+
+function isOptionalVersion(value: unknown) {
+  return value === undefined || (Number.isInteger(value) && Number(value) >= 1);
 }

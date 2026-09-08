@@ -85,6 +85,8 @@ export function ZoomWaitingRoom({
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
   const audienceNoun = actorRole === "patient" ? "encontro" : "sessão";
+  const audienceWithArticle =
+    actorRole === "patient" ? "do encontro" : "da sessão";
   const isEntryAvailable = kind === "entry_available";
   const isTooEarly = kind === "too_early";
   const isOperationalUnavailable = kind === "operational_unavailable";
@@ -307,7 +309,7 @@ export function ZoomWaitingRoom({
 
   return (
     <section
-      aria-label={`Sala de espera do ${audienceNoun}`}
+      aria-label={`Sala de espera ${audienceWithArticle}`}
       className="mx-auto grid w-full max-w-[1536px] gap-4 lg:gap-5"
     >
       <div className="grid w-full min-w-0 overflow-hidden rounded-[28px] border border-brand-lavender/75 bg-white shadow-soft lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,0.98fr)]">
@@ -329,7 +331,7 @@ export function ZoomWaitingRoom({
             <div className="grid min-w-0 gap-3">
               <h2 className="max-w-[16ch] font-display text-[2.3rem] font-light italic leading-[1.02] text-brand-deep sm:text-5xl">
                 {isTooEarly
-                  ? `A sala estará pronta no horário do ${audienceNoun}`
+                  ? `A sala estará pronta no horário ${audienceWithArticle}`
                   : statusTitle}
               </h2>
               <p className="max-w-[62ch] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">

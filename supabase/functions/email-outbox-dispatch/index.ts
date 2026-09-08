@@ -161,17 +161,8 @@ async function dispatchOne(
           "delivery_outcome_unknown",
         );
   } catch (error) {
-    if (
-      error instanceof Error &&
-      isSkippableDeliveryError(error.message)
-    )
-      return finish(
-        client,
-        row.id,
-        workerId,
-        "skipped",
-        error.message,
-      );
+    if (error instanceof Error && isSkippableDeliveryError(error.message))
+      return finish(client, row.id, workerId, "skipped", error.message);
     if (
       error instanceof EmailProviderError &&
       error.deliveryOutcome === "not_accepted"
@@ -241,7 +232,10 @@ async function resolveDelivery(
     };
   }
 
-  if (row.related_entity_type === "booking" && isBookingAction(row.action_key)) {
+  if (
+    row.related_entity_type === "booking" &&
+    isBookingAction(row.action_key)
+  ) {
     const booking = await loadBooking(client, row.related_entity_id);
     const isPatientAction = row.action_key.endsWith("_patient");
     const expectedRecipient = isPatientAction
@@ -261,6 +255,9 @@ async function resolveDelivery(
     }
 
     const baseUrl = getSiteUrl(runtime);
+    const rescheduleTiming = row.action_key.startsWith("booking_reschedule_")
+      ? await loadRescheduleTiming(client, row.domain_event_id)
+      : null;
     return {
       templateData: {
         counterparty_name: counterparty.display_name,
@@ -268,11 +265,12 @@ async function resolveDelivery(
           ? `${baseUrl}/app/encontros/${encodeURIComponent(row.related_entity_id)}`
           : `${baseUrl}/terapeuta/sessoes/${encodeURIComponent(row.related_entity_id)}`,
         meeting_date_time: formatBookingDateTime(
-          booking.starts_at,
-          booking.timezone,
+          rescheduleTiming?.starts_at ?? booking.starts_at,
+          rescheduleTiming?.timezone ?? booking.timezone,
         ),
-        meeting_timezone: booking.timezone,
-        recipient_name: recipient.display_name ?? expectedRecipient.display_name,
+        meeting_timezone: rescheduleTiming?.timezone ?? booking.timezone,
+        recipient_name:
+          recipient.display_name ?? expectedRecipient.display_name,
         service_title: booking.service_title_snapshot,
       },
     };
@@ -283,7 +281,10 @@ async function resolveDelivery(
     isSessionPaymentAction(row.action_key)
   ) {
     const payment = await loadSessionPayment(client, row.related_entity_id);
-    if (payment.patient_user_id !== recipient.id || recipient.role !== "patient") {
+    if (
+      payment.patient_user_id !== recipient.id ||
+      recipient.role !== "patient"
+    ) {
       throw new Error("payment_recipient_mismatch");
     }
     const baseUrl = getSiteUrl(runtime);
@@ -337,8 +338,7 @@ async function resolveDelivery(
       templateData: {
         amount: formatCurrency(payout.amount_cents, payout.currency),
         finance_url: `${getSiteUrl(runtime)}/terapeuta/financeiro`,
-        recipient_name:
-          recipient.display_name ?? payout.therapist_display_name,
+        recipient_name: recipient.display_name ?? payout.therapist_display_name,
       },
     };
   }
@@ -347,7 +347,8 @@ async function resolveDelivery(
     row.related_entity_type === "payout_operational_incident" &&
     row.action_key === "payout_operational_alert_admin"
   ) {
-    if (recipient.role !== "admin") throw new Error("payout_admin_recipient_mismatch");
+    if (recipient.role !== "admin")
+      throw new Error("payout_admin_recipient_mismatch");
     const incident = await loadPayoutIncident(client, row.related_entity_id);
     return {
       templateData: {
@@ -381,7 +382,9 @@ async function resolveDelivery(
     if (row.action_key === "therapist_subscription_created") {
       return {
         templateData: {
-          date: formatDate(subscription.current_period_start ?? event.created_at),
+          date: formatDate(
+            subscription.current_period_start ?? event.created_at,
+          ),
           next_renewal_date: formatDate(subscription.current_period_end),
           plan_name: formatPlanName(event.next_plan ?? subscription.plan_code),
           recipient_name:
@@ -396,7 +399,9 @@ async function resolveDelivery(
         templateData: {
           account_status: `Plano ${formatPlanName(subscription.current_plan)}`,
           date: formatDate(subscription.ended_at ?? event.created_at),
-          plan_name: formatPlanName(event.previous_plan ?? subscription.plan_code),
+          plan_name: formatPlanName(
+            event.previous_plan ?? subscription.plan_code,
+          ),
           recipient_name:
             recipient.display_name ?? subscription.therapist_display_name,
           subscription_url: subscriptionUrl,
@@ -407,7 +412,9 @@ async function resolveDelivery(
     return {
       templateData: {
         date: formatDate(event.created_at),
-        new_plan_name: formatPlanName(event.next_plan ?? subscription.plan_code),
+        new_plan_name: formatPlanName(
+          event.next_plan ?? subscription.plan_code,
+        ),
         next_renewal_date: formatDate(subscription.current_period_end),
         recipient_name:
           recipient.display_name ?? subscription.therapist_display_name,
@@ -420,7 +427,10 @@ async function resolveDelivery(
     row.related_entity_type === "billing_invoice" &&
     row.action_key === "therapist_subscription_renewed"
   ) {
-    const invoice = await loadSubscriptionInvoice(client, row.related_entity_id);
+    const invoice = await loadSubscriptionInvoice(
+      client,
+      row.related_entity_id,
+    );
     const subscription = await loadTherapistSubscription(
       client,
       invoice.therapist_subscription_id,
@@ -467,6 +477,14 @@ function isBookingAction(actionKey: EmailActionKey) {
     "booking_cancelled_therapist",
     "booking_rescheduled_patient",
     "booking_rescheduled_therapist",
+    "booking_reschedule_requested_patient",
+    "booking_reschedule_requested_therapist",
+    "booking_reschedule_rejected_patient",
+    "booking_reschedule_rejected_therapist",
+    "booking_reschedule_withdrawn_patient",
+    "booking_reschedule_withdrawn_therapist",
+    "booking_reschedule_expired_patient",
+    "booking_reschedule_expired_therapist",
   ].includes(actionKey);
 }
 
@@ -554,7 +572,8 @@ async function loadBooking(client: SupabaseRestClient, id: string) {
       `/rest/v1/therapist_profiles?select=public_name,user_id&id=eq.${encodeURIComponent(booking.therapist_profile_id)}&limit=1`,
     ),
   ]);
-  if (!patient[0] || !therapist[0]) throw new Error("booking_participant_missing");
+  if (!patient[0] || !therapist[0])
+    throw new Error("booking_participant_missing");
 
   return {
     ...booking,
@@ -566,6 +585,32 @@ async function loadBooking(client: SupabaseRestClient, id: string) {
       display_name: therapist[0].public_name,
       user_id: therapist[0].user_id,
     },
+  };
+}
+
+async function loadRescheduleTiming(
+  client: SupabaseRestClient,
+  bookingEventId: string,
+) {
+  const [event] = await client.get<Array<{ payload: Record<string, unknown> }>>(
+    `/rest/v1/booking_events?select=payload&id=eq.${encodeURIComponent(bookingEventId)}&limit=1`,
+  );
+  const requestId = event?.payload?.rescheduleRequestId;
+  if (typeof requestId !== "string") {
+    throw new Error("booking_reschedule_event_invalid");
+  }
+  const [request] = await client.get<
+    Array<{
+      proposed_starts_at: string;
+      proposed_timezone: string;
+    }>
+  >(
+    `/rest/v1/booking_reschedule_requests?select=proposed_starts_at,proposed_timezone&id=eq.${encodeURIComponent(requestId)}&limit=1`,
+  );
+  if (!request) throw new Error("booking_reschedule_request_not_found");
+  return {
+    starts_at: request.proposed_starts_at,
+    timezone: request.proposed_timezone,
   };
 }
 
@@ -653,7 +698,8 @@ async function loadSessionPayment(client: SupabaseRestClient, id: string) {
       `/rest/v1/patient_profiles?select=display_name,user_id&id=eq.${encodeURIComponent(payment.patient_profile_id)}&limit=1`,
     ),
   ]);
-  if (!booking[0] || !patient[0]) throw new Error("session_payment_data_missing");
+  if (!booking[0] || !patient[0])
+    throw new Error("session_payment_data_missing");
 
   return {
     ...payment,
@@ -674,7 +720,10 @@ async function loadSessionRefund(client: SupabaseRestClient, id: string) {
     `/rest/v1/session_refunds?select=amount_cents,currency,session_payment_id&id=eq.${encodeURIComponent(id)}&limit=1`,
   );
   if (!refund) throw new Error("session_refund_not_found");
-  return { ...refund, payment: await loadSessionPayment(client, refund.session_payment_id) };
+  return {
+    ...refund,
+    payment: await loadSessionPayment(client, refund.session_payment_id),
+  };
 }
 
 async function loadStripePayout(client: SupabaseRestClient, id: string) {
@@ -724,7 +773,10 @@ function formatIncidentType(value: string) {
   return labels[value] ?? "ocorrência operacional";
 }
 
-async function loadTherapistSubscription(client: SupabaseRestClient, id: string) {
+async function loadTherapistSubscription(
+  client: SupabaseRestClient,
+  id: string,
+) {
   const [subscription] = await client.get<
     Array<{
       current_period_end: string | null;
@@ -805,7 +857,8 @@ function formatCurrency(amountCents: number, currency: string) {
 function formatDate(value: string | null) {
   if (!value) throw new Error("subscription_date_missing");
   const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) throw new Error("subscription_date_invalid");
+  if (Number.isNaN(date.valueOf()))
+    throw new Error("subscription_date_invalid");
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "long",
     timeZone: "America/Sao_Paulo",

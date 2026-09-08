@@ -8,12 +8,14 @@ export type CancellationCommandBody = {
   bookingId?: string;
   reason?: string;
   requestId?: string;
+  userReason?: string;
 };
 
 export type ValidCancellationCommand = {
   bookingId: string;
   reason: string | null;
   requestId: string;
+  userReason: string | null;
 };
 
 export function validateCancellationCommand(
@@ -23,7 +25,9 @@ export function validateCancellationCommand(
     !isUuid(body.bookingId) ||
     !isUuid(body.requestId) ||
     (body.reason !== undefined &&
-      (typeof body.reason !== "string" || body.reason.length > 500))
+      (typeof body.reason !== "string" || body.reason.length > 500)) ||
+    (body.userReason !== undefined &&
+      (typeof body.userReason !== "string" || body.userReason.length > 500))
   ) {
     throw new DomainError(
       "invalid_cancellation_payload",
@@ -36,6 +40,7 @@ export function validateCancellationCommand(
     bookingId: body.bookingId,
     reason: body.reason?.trim() || null,
     requestId: body.requestId,
+    userReason: body.userReason?.trim() || null,
   };
 }
 

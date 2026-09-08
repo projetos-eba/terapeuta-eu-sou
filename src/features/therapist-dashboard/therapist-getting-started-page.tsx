@@ -52,8 +52,23 @@ export function TherapistGettingStartedPage({
       ? (completedSteps / onboardingSteps.length) * 100
       : 100,
   );
-  const pendingChecklist = readiness.checklist.filter((item) => !item.complete);
+  const pendingChecklist = requiredChecklist.filter((item) => !item.complete);
   const pendingDocuments = readiness.documents.filter((item) => !item.complete);
+  const pendingItems = [
+    ...pendingChecklist,
+    ...pendingDocuments.map((document) => ({
+      ...document,
+      actionLabel:
+        document.state === "attention"
+          ? "Enviar novamente"
+          : "Enviar documento",
+      href: routes.therapist.settings,
+    })),
+  ];
+  const pendingSection = pendingSectionContent({
+    pendingItems,
+    verificationStatus: readiness.verificationStatus,
+  });
   const primaryAction =
     pendingChecklist[0] ??
     (pendingDocuments[0]
@@ -155,13 +170,13 @@ export function TherapistGettingStartedPage({
             id="pendencias"
           >
             <SectionHeading
-              description="Envie os documentos necessários para que sua análise possa começar."
-              title="Pendências para análise"
+              description={pendingSection.description}
+              title={pendingSection.title}
             />
-            {pendingDocuments.length > 0 ? (
+            {pendingItems.length > 0 ? (
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {pendingDocuments.map((document) => (
-                  <DocumentPendingCard document={document} key={document.id} />
+                {pendingItems.map((item) => (
+                  <PendingItemCard item={item} key={item.id} />
                 ))}
               </div>
             ) : (
@@ -171,8 +186,8 @@ export function TherapistGettingStartedPage({
                   className="mt-0.5 size-5 shrink-0 text-status-success"
                 />
                 <p>
-                  Seus documentos obrigatórios foram enviados. Acompanhe o
-                  andamento da análise na situação ao lado.
+                  Seus itens obrigatórios foram concluídos. Acompanhe a
+                  situação do cadastro ao lado.
                 </p>
               </div>
             )}
@@ -212,19 +227,19 @@ export function TherapistGettingStartedPage({
               </div>
             </div>
 
-            {pendingDocuments.length > 0 ? (
+            {pendingItems.length > 0 ? (
               <div className="mt-5 border-t border-border pt-4">
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-muted">
-                  Falta enviar
+                  Falta concluir
                 </p>
                 <ul className="mt-3 grid gap-2">
-                  {pendingDocuments.map((document) => (
+                  {pendingItems.map((item) => (
                     <li
                       className="flex items-center gap-2 text-sm font-semibold text-tesText-secondary"
-                      key={document.id}
+                      key={item.id}
                     >
                       <span className="size-1.5 rounded-full bg-status-warning" />
-                      {document.title}
+                      {item.title}
                     </li>
                   ))}
                 </ul>
@@ -401,12 +416,26 @@ function ReviewStep({ status }: { status: string }) {
   );
 }
 
-function DocumentPendingCard({
-  document,
-}: {
-  document: TherapistHomeDocument;
-}) {
-  const needsAttention = document.state === "attention";
+type PendingOnboardingItem = {
+  actionLabel: string;
+  description: string;
+  href: string;
+  id: TherapistHomeChecklistItem["id"] | TherapistHomeDocument["id"];
+  state: TherapistHomeChecklistItem["state"] | TherapistHomeDocument["state"];
+  title: string;
+};
+
+function PendingItemCard({ item }: { item: PendingOnboardingItem }) {
+  const needsAttention = item.state === "attention";
+  const isDocument =
+    item.id === "identity_document" || item.id === "address_proof";
+  const Icon = isDocument
+    ? FileText
+    : checklistIcons[item.id as TherapistHomeChecklistItem["id"]];
+  const description =
+    needsAttention && isDocument
+      ? "Este documento precisa ser enviado novamente."
+      : item.description;
 
   return (
     <article className="flex flex-col justify-between gap-5 rounded-[22px] border border-status-warning/30 bg-status-warningBg/40 p-5">
@@ -415,26 +444,24 @@ function DocumentPendingCard({
           {needsAttention ? (
             <AlertCircle aria-hidden="true" className="size-5" />
           ) : (
-            <FileText aria-hidden="true" className="size-5" />
+            <Icon aria-hidden="true" className="size-5" />
           )}
         </span>
         <div>
           <h3 className="text-base font-extrabold text-brand-deep">
-            {document.title}
+            {item.title}
           </h3>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            {needsAttention
-              ? "Este documento precisa ser enviado novamente."
-              : document.description}
+            {description}
           </p>
         </div>
       </div>
       <TESButton
         className="min-h-11 self-start rounded-lg"
-        href={routes.therapist.settings}
+        href={item.href}
         variant="secondary"
       >
-        {needsAttention ? "Enviar novamente" : "Enviar documento"}
+        {item.actionLabel}
       </TESButton>
     </article>
   );
@@ -537,6 +564,44 @@ function progressSummary({
     return "Falta apenas uma etapa para você concluir o cadastro.";
   }
   return `Faltam ${totalPending} etapas para você concluir o cadastro.`;
+}
+
+function pendingSectionContent({
+  pendingItems,
+  verificationStatus,
+}: {
+  pendingItems: PendingOnboardingItem[];
+  verificationStatus: string;
+}) {
+  if (pendingItems.length === 0) {
+    return {
+      description:
+        verificationStatus === "approved"
+          ? "Seu cadastro está completo e aprovado."
+          : "Seus itens obrigatórios foram concluídos. Acompanhe a situação do cadastro.",
+      title:
+        verificationStatus === "approved"
+          ? "Cadastro concluído"
+          : "Cadastro em análise",
+    };
+  }
+
+  const itemTitles = pendingItems.map((item) => item.title);
+
+  return {
+    description:
+      itemTitles.length === 1
+        ? `Falta concluir: ${itemTitles[0]}.`
+        : `Faltam concluir: ${formatPendingItemTitles(itemTitles)}.`,
+    title: "Pendências do cadastro",
+  };
+}
+
+function formatPendingItemTitles(titles: string[]) {
+  if (titles.length <= 1) return titles[0] ?? "";
+  if (titles.length === 2) return `${titles[0]} e ${titles[1]}`;
+
+  return `${titles.slice(0, -1).join(", ")} e ${titles.at(-1)}`;
 }
 
 function verificationTitle(status: string) {

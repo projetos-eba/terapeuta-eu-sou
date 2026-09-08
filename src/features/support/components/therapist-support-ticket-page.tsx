@@ -23,6 +23,11 @@ import {
   supportTicketBodyLimit,
   type SupportTicketAttachment,
 } from "../support-contracts";
+import {
+  cleanupSupportAttachments,
+  prepareAndUploadSupportAttachments,
+  SupportAttachmentUploadError,
+} from "../support-direct-attachment-upload";
 
 type Ticket = {
   bookingId: string | null;
@@ -96,13 +101,37 @@ export function SupportTicketPage({
     setError(null);
     setFeedback(null);
     requestId.current ??= crypto.randomUUID();
-    const formData = new FormData();
-    formData.set("actorRole", actorRole);
-    formData.set("body", body);
-    formData.set("requestId", requestId.current);
-    for (const file of attachments) formData.append("attachments", file);
+    let uploadedAttachments: Awaited<
+      ReturnType<typeof prepareAndUploadSupportAttachments>
+    > = [];
+    try {
+      if (attachments.length > 0) {
+        uploadedAttachments = await prepareAndUploadSupportAttachments({
+          actorRole,
+          files: attachments,
+          requestId: requestId.current,
+          ticketId,
+        });
+      }
+    } catch (uploadError) {
+      setIsSubmitting(false);
+      setFeedback(
+        uploadError instanceof SupportAttachmentUploadError
+          ? uploadError.message
+          : "Não foi possível preparar os anexos agora.",
+      );
+      return;
+    }
     const response = await fetch(`/api/support/tickets/${ticketId}`, {
-      body: formData,
+      body: JSON.stringify({
+        actorRole,
+        ...(uploadedAttachments.length > 0
+          ? { attachments: uploadedAttachments }
+          : {}),
+        body,
+        requestId: requestId.current,
+      }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as {
@@ -111,6 +140,12 @@ export function SupportTicketPage({
     } | null;
     setIsSubmitting(false);
     if (!response.ok || !payload?.ok) {
+      await cleanupSupportAttachments({
+        actorRole,
+        attachments: uploadedAttachments,
+        requestId: requestId.current,
+        ticketId,
+      });
       setFeedback(
         payload?.error?.message ??
           "Não foi possível enviar sua resposta agora.",

@@ -27,6 +27,7 @@ export type SessionConfirmationState =
   | "blocked_for_review"
   | "completed"
   | "next_batch"
+  | "processing_payment"
   | "safety_period";
 
 export type SessionFeedbackServerStatus = Exclude<
@@ -122,5 +123,8 @@ export const SESSION_FEEDBACK_REASONS: Array<{
 export function getSessionFeedbackReasonLabel(
   reason: SessionFeedbackReason | null | undefined,
 ) {
-  return SESSION_FEEDBACK_REASONS.find((item) => item.value === reason)?.label ?? "Não informado";
+  return (
+    SESSION_FEEDBACK_REASONS.find((item) => item.value === reason)?.label ??
+    "Não informado"
+  );
 }

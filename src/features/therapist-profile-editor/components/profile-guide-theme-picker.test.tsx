@@ -19,13 +19,13 @@ describe("ProfileGuideThemePicker", () => {
     );
 
     expect(screen.getAllByRole("button")).toHaveLength(10);
-    expect(screen.getByText("1/4 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("1/6 selecionados")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Emoções e Bem-Estar/ }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("allows up to four themes and explains the limit", () => {
+  it("allows up to six themes and explains the limit", () => {
     render(<Harness />);
 
     fireEvent.click(
@@ -40,16 +40,24 @@ describe("ProfileGuideThemePicker", () => {
         name: /Espiritualidade e Conexão Interior/,
       }),
     );
-    expect(screen.getByText("4/4 selecionados")).toBeInTheDocument();
-
     fireEvent.click(
       screen.getByRole("button", { name: /Energia e Equilíbrio Energético/ }),
     );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Autoestima e Poder Pessoal/ }),
+    );
+    expect(screen.getByText("6/6 selecionados")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Corpo, Relaxamento e Qualidade de Vida/,
+      }),
+    );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Você pode escolher até 4 temas.",
+      "Você pode escolher até 6 temas.",
     );
-    expect(screen.getByText("4/4 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("6/6 selecionados")).toBeInTheDocument();
   });
 
   it("preserves legacy free-text paths until a platform theme is chosen", () => {
@@ -65,6 +73,6 @@ describe("ProfileGuideThemePicker", () => {
     expect(
       screen.queryByText(/caminhos personalizados salvos anteriormente/i),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("1/4 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("1/6 selecionados")).toBeInTheDocument();
   });
 });

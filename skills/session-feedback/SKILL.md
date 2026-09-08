@@ -43,13 +43,14 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   navegador envia `bookingId`, campos da resposta e `requestId` opaco para
   retries; nunca envia `actorRole`.
 - `get_session_feedback_v2` devolve a resposta do participante atual, as duas
-  confirmações, origens, vencimentos, estado bilateral, segurança, lote e
-  bloqueios. O fim programado/definitivo libera o formulário; joins do Zoom
+  confirmações, origens, vencimentos, estado bilateral e bloqueios. O fim
+  programado/definitivo libera o formulário; joins do Zoom
   são evidência e sinal de risco, não uma trava para resposta ou automação.
 - `session_participant_confirmations` guarda uma confirmação independente por
   papel e snapshot da política. Paciente vence em +7 dias e terapeuta em +30;
   o automático grava o vencimento em `confirmed_at`. A segunda resposta
-  `completed` define `service_confirmed_at`; `eligible_at` fica 24 horas depois.
+  `completed` define `service_confirmed_at` e inicia a verificação da liquidação
+  Stripe, sem espera fixa adicional.
 - `session-feedback-command` valida o payload e chama o RPC service-role
   idempotente. O feedback realizado registra a confirmação do ator e pode
   finalizar o estado bilateral; `not_performed` bloqueia o pagamento e abre
@@ -63,8 +64,8 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - Admin visualiza respostas do paciente e terapeuta, resultado, nota, motivo,
   comentário, data de envio, participantes pendentes e divergências.
 - Admin não edita opiniões. Divergência exige decisão humana auditada por
-  `admin_resolve_session_confirmation_incident_v1`: realizada inicia 24 horas
-  de segurança na decisão; não realizada mantém o bloqueio e segue o fluxo de
+  `admin_resolve_session_confirmation_incident_v1`: realizada inicia a
+  verificação de liquidação na decisão; não realizada mantém o bloqueio e segue o fluxo de
   cancelamento/reembolso.
 - O detalhe exibe presença, origem manual/automática, prazo, elegibilidade
   financeira e bloqueios de repasse.
@@ -79,6 +80,10 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   vídeo, sessão remarcada, cancelamento em cima da hora ou outro motivo.
 - Campos usam labels, foco visível, controles de pelo menos 44px, live regions,
   tokens TES e linguagem sem termos técnicos.
+- O sucesso confirma apenas que a resposta foi registrada e preserva sua
+  privacidade. Nunca mencionar no feedback gates financeiros, segurança,
+  liquidação, lotes, jobs, provedores ou próximos passos internos sem ação da
+  pessoa usuária.
 - Manter `prefers-reduced-motion` e estados honestos de carregamento,
   indisponibilidade, erro e sucesso.
 
@@ -90,7 +95,8 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - Testar feedback ausente, parcial, completo e conflitante no Admin.
 - Testar antes do fim, ausência de telemetria, confirmação manual nas duas
   ordens, paciente automático no dia 7, terapeuta automático no dia 30,
-  recuperação atrasada, concorrência/repetição e elegibilidade após 24 horas.
+  recuperação atrasada, concorrência/repetição e início imediato da verificação
+  de liquidação após a confirmação bilateral.
 - Testar bloqueio por relato negativo, cancelamento, reembolso, disputa,
   administração, decisão humana e cutoff do próximo lote.
 - Testar isolamento RLS/RPC e ausência de secrets, JWT, nomes de sessão, URLs,

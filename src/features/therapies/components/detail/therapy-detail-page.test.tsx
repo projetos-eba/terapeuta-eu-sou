@@ -48,7 +48,7 @@ describe("TherapyDetailPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Ver terapeutas" }),
+      screen.getByRole("link", { name: "Explorar caminhos" }),
     ).toHaveAttribute("href", "/terapeutas");
     expect(
       screen.queryByText("Cada pessoa é única, e cada caminho também."),

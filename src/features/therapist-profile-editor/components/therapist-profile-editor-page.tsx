@@ -11,6 +11,7 @@ import {
   AppPageMain,
 } from "@/components/app-page";
 import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
+import { MAX_THERAPIST_PROFILE_GUIDE_ITEMS } from "@/features/therapist-profile/types";
 import { routes } from "@/lib/routes";
 
 import {
@@ -682,12 +683,12 @@ function validateDraftFields(
     };
   }
   if (
-    fields.guideItems.length > 4 &&
+    fields.guideItems.length > MAX_THERAPIST_PROFILE_GUIDE_ITEMS &&
     fields.guideItems.every(isTherapistProfileGuideThemeItem)
   ) {
     return {
       focusId: "guideItems",
-      message: "Escolha no máximo 4 temas em Como posso te guiar.",
+      message: "Escolha no máximo 6 temas em Como posso te guiar.",
     };
   }
   if (

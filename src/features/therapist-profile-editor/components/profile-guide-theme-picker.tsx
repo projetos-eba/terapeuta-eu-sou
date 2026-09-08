@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { DetailIcon } from "@/features/therapies/components/detail/detail-icons";
 import { cn } from "@/lib/utils";
 
+import { MAX_THERAPIST_PROFILE_GUIDE_ITEMS } from "../../therapist-profile/types";
 import type { TherapistProfileGuideItem } from "../therapist-profile-editor.types";
 import {
   guideItemsFromThemes,
@@ -13,8 +14,6 @@ import {
   selectedTherapistProfileGuideThemes,
   therapistProfileGuideThemes,
 } from "../therapist-profile-guide-themes";
-
-const MAX_SELECTED_GUIDE_THEMES = 4;
 
 export function ProfileGuideThemePicker({
   items,
@@ -44,8 +43,8 @@ export function ProfileGuideThemePicker({
       return;
     }
 
-    if (selectedThemes.length >= MAX_SELECTED_GUIDE_THEMES) {
-      setMessage("Você pode escolher até 4 temas.");
+    if (selectedThemes.length >= MAX_THERAPIST_PROFILE_GUIDE_ITEMS) {
+      setMessage("Você pode escolher até 6 temas.");
       return;
     }
 
@@ -60,11 +59,12 @@ export function ProfileGuideThemePicker({
           className="text-sm font-semibold leading-6 text-tesText-secondary"
           id="guideItems-description"
         >
-          Escolha até 4 temas que representam os caminhos pelos quais você pode
+          Escolha até 6 temas que representam os caminhos pelos quais você pode
           acompanhar cada pessoa.
         </p>
         <span className="shrink-0 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-sm font-extrabold text-brand-primary">
-          {selectedThemes.length}/{MAX_SELECTED_GUIDE_THEMES} selecionados
+          {selectedThemes.length}/{MAX_THERAPIST_PROFILE_GUIDE_ITEMS}{" "}
+          selecionados
         </span>
       </div>
 
@@ -141,7 +141,7 @@ export function ProfileGuideThemePicker({
           <p>
             Você ainda tem caminhos personalizados salvos anteriormente. Eles
             continuam no perfil até que você escolha um dos temas acima; ao
-            escolher, serão substituídos por até 4 temas da plataforma.
+            escolher, serão substituídos por até 6 temas da plataforma.
           </p>
         </div>
       ) : null}

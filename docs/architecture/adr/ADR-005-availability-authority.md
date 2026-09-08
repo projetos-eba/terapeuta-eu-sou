@@ -2,7 +2,7 @@
 
 Data: 2026-07-25
 
-Status: aceito. Revisado em 2026-08-28.
+Status: aceito. Revisado em 2026-09-05.
 
 Implementação: invariantes transacionais concluídos na A2 em 2026-07-26;
 configuração versionada concluída em A3.0/A3.1 conforme ADR-006; composição
@@ -33,8 +33,10 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 - Holds e bookings usam Postgres/RPC, TTL, idempotência, advisory lock e
   exclusão GiST por terapeuta.
 - Toda escrita ativa adquire locks na ordem terapeuta e paciente. O lock do
-  paciente usa namespace próprio e bloqueia sobreposições entre terapeutas nos
-  estados `draft`, `pending_payment`, `confirmed` e holds ativos não expirados.
+  paciente usa namespace próprio. Para conflito pessoal, a autoridade considera
+  bookings `confirmed`/`completed` pagos e `capture_pending` ainda reivindicados
+  por `slot_claimed_at`; tentativas sem autorização e holds não representam um
+  segundo encontro da pessoa.
 - O conflito do paciente compara apenas `[starts_at, ends_at)`, sem buffers do
   terapeuta; um encontro que começa exatamente no término do anterior é válido.
 - O motor A5 compõe regras, exceções, timezone, duração, cadência, buffers,
@@ -43,6 +45,21 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
   causa da indisponibilidade.
 - A criação do hold repete a validação autoritativa no Postgres; o resultado
   público não substitui a proteção transacional A2.
+- Reagendamento usa `get_booking_reschedule_availability_v1`, sempre derivado do
+  `booking_id`. Serviço, preço, duração, buffers e timezone vêm dos snapshots do
+  booking; o navegador informa somente o novo início escolhido.
+- Reagendamento iniciado pela pessoa é aplicado ao mesmo booking em uma única
+  transação, sem proposta nem hold, depois de revalidar regras, exceções,
+  antecedência, horizonte, bloqueios, buffers e conflitos sob locks. O intervalo
+  antigo permanece ocupado até o commit e só volta a aparecer se ainda cumprir
+  as regras atuais da agenda.
+- Reagendamento iniciado pela terapeuta continua como proposta bilateral. A
+  proposta não cria hold nem libera o intervalo original. Criação e aceite
+  revalidam a disponibilidade sob locks; rejeição, retirada, expiração ou
+  indisponibilidade preservam o intervalo original.
+- Uma expiração gera `booking_reschedule_resolved` determinístico para sustentar
+  notificações e e-mails idempotentes. Se o slot se perder antes do aceite, a
+  proposta é encerrada como indisponível e o booking não é movido.
 
 ## Alternativas
 
@@ -68,3 +85,8 @@ paciente fica adiada para uma janela com auditoria de volume e impacto de lock.
 O calendário privado preserva sessões encerradas no histórico e as
 diferencia com estado textual e padrão visual, sem recolocá-las entre os
 conflitos de disponibilidade.
+
+O seletor público continua responsável por novas reservas e pode alternar entre
+serviços. O seletor de reagendamento reutiliza somente sua linguagem visual:
+ele usa o contrato específico do booking e nunca aceita troca de terapia ou de
+condições comerciais.

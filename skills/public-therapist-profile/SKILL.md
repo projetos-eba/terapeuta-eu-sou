@@ -54,6 +54,11 @@ Consultar antes de alterar:
   confirmação `completed` da pessoa paciente; depois de publicada, sua
   visibilidade não volta a depender de booking ou pagamento.
 - Disponibilidade deve vir dos RPCs autoritativos `get_service_available_slots_v1`, `get_service_available_days_v1` e `get_service_available_day_slots_v1`, que derivam regras semanais, exceções, bookings existentes, buffers, antecedência mínima, duração e timezone do serviço. Não recalcular slots públicos no runtime Next.
+- O reagendamento autenticado reutiliza somente os elementos visuais do painel
+  roxo e do calendário. Ele não chama estes RPCs públicos: usa o contrato
+  específico do booking, sem abas de serviço, links de nova reserva ou troca de
+  terapia. Mudanças no adaptador de reagendamento não alteram funcionalmente o
+  perfil público.
 - A lista pública `/terapeutas` usa a mesma autoridade: `next_slot_at` da view
   `public_therapist_search` é projetado a partir do primeiro slot do RPC e
   `schedule_timezone` deve ser respeitado na apresentação. Uma previsão de

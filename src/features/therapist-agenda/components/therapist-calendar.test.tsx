@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -20,6 +26,7 @@ vi.mock("next/navigation", () => ({
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -114,6 +121,62 @@ describe("TherapistCalendar", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps only confirmed, paid bookings in today's operational summary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-27T15:00:00.000Z"));
+
+    const fixture = calendarFixture();
+    const confirmedPaid = fixture.bookings[0]!;
+    fixture.bookings.push(
+      {
+        ...confirmedPaid,
+        bookingId: "f2000000-0000-4000-8000-000000000002",
+        financialStatus: SessionFinancialStatus.Pending,
+        patientName: "Pagamento ainda pendente",
+        sessionReference: "26L000002",
+      },
+      {
+        ...confirmedPaid,
+        bookingId: "f2000000-0000-4000-8000-000000000003",
+        bookingStatus: BookingStatus.PendingPayment,
+        patientName: "Reserva sem confirmação",
+        sessionReference: "26L000003",
+      },
+    );
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const todayCard = screen
+      .getByRole("heading", { name: "Sessões de hoje" })
+      .closest("article");
+    expect(todayCard).not.toBeNull();
+    expect(within(todayCard!).getByText("1 sessão(ões)")).toBeInTheDocument();
+    expect(within(todayCard!).getByText("Beatriz Almeida")).toBeInTheDocument();
+    expect(
+      within(todayCard!).queryByText("Pagamento ainda pendente"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(todayCard!).queryByText("Reserva sem confirmação"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not let local calendar filters hide today's confirmed paid sessions", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-27T15:00:00.000Z"));
+
+    render(<TherapistCalendar data={calendarFixture()} />);
+
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "sem resultado" },
+    });
+
+    const todayCard = screen
+      .getByRole("heading", { name: "Sessões de hoje" })
+      .closest("article");
+    expect(todayCard).not.toBeNull();
+    expect(within(todayCard!).getByText("Beatriz Almeida")).toBeInTheDocument();
+  });
+
   it("uses the configured availability to render early-morning hours", () => {
     const fixture = calendarFixture();
     fixture.bookings[0]!.startsAt = "2026-07-27T07:00:00.000Z";
@@ -195,6 +258,61 @@ describe("TherapistCalendar", () => {
     expect(
       screen.getAllByText("Cancelada ou reembolsada").length,
     ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps an active session above a closed session in the same timeline slot", () => {
+    const fixture = calendarFixture();
+    const activeBooking = fixture.bookings[0]!;
+    fixture.bookings.push({
+      ...activeBooking,
+      bookingId: "f2000000-0000-4000-8000-000000000099",
+      bookingStatus: BookingStatus.CancelledByPatient,
+      financialStatus: SessionFinancialStatus.Canceled,
+      patientName: "Sessão encerrada sobreposta",
+      sessionReference: "26L000099",
+    });
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const activeTimelineBooking = document.querySelector(
+      '[data-calendar-layer="active"]',
+    );
+    const closedTimelineBooking = document.querySelector(
+      '[data-calendar-layer="closed"]',
+    );
+
+    expect(activeTimelineBooking).toHaveClass("z-20");
+    expect(closedTimelineBooking).toHaveClass("z-10");
+    expect(activeTimelineBooking).toHaveClass(
+      "hover:z-30",
+      "focus-visible:z-30",
+    );
+    expect(closedTimelineBooking).toHaveClass(
+      "hover:z-30",
+      "focus-visible:z-30",
+    );
+  });
+
+  it("constrains month bookings to the width of their day cell", () => {
+    const fixture = calendarFixture();
+    fixture.view = "month";
+    fixture.bookings[0]!.patientName =
+      "Paciente com nome suficientemente longo para exigir truncamento";
+    fixture.bookings[0]!.sessionReference = "26LONGREFERENCE";
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const dayCell = document.querySelector('[data-calendar-day="2026-07-27"]');
+    const monthBooking = document.querySelector(
+      `[data-calendar-month-booking="${fixture.bookings[0]!.bookingId}"]`,
+    );
+    const patientName = monthBooking?.children[1];
+    const sessionReference = monthBooking?.children[2];
+
+    expect(dayCell).toHaveClass("min-w-0", "overflow-hidden");
+    expect(monthBooking).toHaveClass("w-full", "min-w-0", "overflow-hidden");
+    expect(patientName).toHaveClass("min-w-0", "flex-1", "truncate");
+    expect(sessionReference).toHaveClass("min-w-0", "max-w-20", "truncate");
   });
 });
 

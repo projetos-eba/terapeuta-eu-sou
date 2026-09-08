@@ -26,8 +26,6 @@ const colorKeys = new Set<TherapyCalendarColorKey>([
 const calendarViews = new Set<TherapistCalendarView>(["day", "month", "week"]);
 
 const attentionKinds = new Set<TherapistCalendarAttentionItem["kind"]>([
-  "block_impact",
-  "pending_payment",
   "reschedule",
 ]);
 

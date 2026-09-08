@@ -11,7 +11,9 @@ próxima revisão: ao alterar stack, perfis, planos ou integrações
 > - Expor secrets, credenciais ou valores de `.env` em qualquer output.
 > - Exibir informações, mensagens ou termos de desenvolvimento no front-end,
 >   incluindo nomes técnicos de tabela, read model, stack, ambiente, debug,
->   mock, seed, TODO ou erro interno.
+>   mock, seed, TODO, erro interno, arquitetura ou explicações do fluxo
+>   operacional. A interface final deve comunicar apenas o estado útil e o
+>   próximo passo em linguagem de produto adequada à pessoa usuária.
 > - Afirmar que validação ocorreu sem tê-la executado de fato.
 > - Remover rota, componente ou migration sem plano de transição aprovado.
 > - Prometer cura, diagnóstico ou resultado garantido em qualquer copy ou comentário de código.
@@ -216,8 +218,10 @@ Nenhuma tarefa pode ser considerada pronta sem essa declaração.
 - Interfaces operacionais priorizam tarefa, estado, risco, prazo e valor antes
   de decoração.
 - O front-end deve falar em linguagem de produto. Nunca exibir mensagens de
-  desenvolvimento para usuários finais ou admins; detalhes técnicos pertencem
-  a logs, documentação, testes ou painéis internos apropriados.
+  desenvolvimento, arquitetura, integração ou fluxo interno para usuários
+  finais ou admins; detalhes técnicos pertencem a logs, documentação, testes ou
+  painéis internos apropriados. Mensagens de sucesso não devem explicar gates,
+  jobs, lotes, webhooks, provedores ou regras que não exijam uma ação da pessoa.
 
 ## 5. Implementação
 
@@ -426,14 +430,16 @@ Stack real identificada:
   fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
   onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
   amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
-  A automação semanal está versionada e desativada até homologação HML: terça
-  02:00 America/Sao_Paulo, confirmação em 7 dias, segurança de 1 dia e backlog
-  até o cutoff. ADR-018 define Transfer semanal controlado pelo TES e Payout
+  A automação semanal está versionada para terça às 02:00
+  America/Sao_Paulo, com confirmação automática do paciente em 7 dias e do
+  terapeuta em 30 dias. Não existe espera local fixa após a confirmação; a
+  liquidação Stripe é o gate financeiro até o cutoff. ADR-018 define Transfer
+  semanal controlado pelo TES e Payout
   automático diário criado pela Stripe para contas BR. `destination_payment` e
   Balance Transactions atribuem cada Transfer a um Payout; lotes e Payouts
   formam a relação muitos-para-muitos, sem metadata TES no Payout. Transfer liquida a obrigação no ledger;
-  elegibilidade exige Balance Transaction da Charge `available` após o prazo
-  de segurança, atualizada por reconciliação financeira horária e revalidada no
+  elegibilidade exige Balance Transaction da Charge `available`, atualizada
+  por reconciliação financeira horária e revalidada no
   cutoff/Transfer. Somente cobertura integral reconciliada em Payout `paid`
   conclui o banco. A política
   v5 e o cron permanecem inativos até preflight e prova externa. Runbook em

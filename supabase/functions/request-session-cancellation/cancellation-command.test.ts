@@ -17,13 +17,14 @@ const requestId = "a1000000-0000-4000-8000-000000000001";
 Deno.test("validates a cancellation command with a client command id", () => {
   const result = validateCancellationCommand({
     bookingId,
-    reason: "Preciso ajustar minha agenda.",
     requestId,
+    userReason: "  Preciso ajustar minha agenda.  ",
   });
 
   assertEquals(result.bookingId, bookingId);
   assertEquals(result.requestId, requestId);
-  assertEquals(result.reason, "Preciso ajustar minha agenda.");
+  assertEquals(result.reason, null);
+  assertEquals(result.userReason, "Preciso ajustar minha agenda.");
 });
 
 Deno.test("rejects cancellation commands without an idempotency key", () => {

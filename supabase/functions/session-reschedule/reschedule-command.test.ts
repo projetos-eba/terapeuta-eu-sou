@@ -7,8 +7,7 @@ import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 import {
   mapRescheduleDatabaseError,
-  rescheduleSlotRangeEnd,
-  selectRescheduleSlot,
+  resolveParticipantActorRole,
   validateRescheduleCommand,
 } from "./reschedule-command.ts";
 
@@ -34,6 +33,52 @@ Deno.test("validates a future reschedule request", () => {
   }
 });
 
+Deno.test(
+  "derives the reschedule path from the authenticated participant",
+  () => {
+    assertEquals(
+      resolveParticipantActorRole(
+        "patient-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      "patient",
+    );
+    assertEquals(
+      resolveParticipantActorRole(
+        "therapist-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      "therapist",
+    );
+    assertEquals(
+      resolveParticipantActorRole(
+        "other-user",
+        "patient-user",
+        "therapist-user",
+      ),
+      null,
+    );
+  },
+);
+
+Deno.test("validates booking-scoped availability", () => {
+  const result = validateRescheduleCommand({
+    action: "availability",
+    anchor: "2026-09-05",
+    bookingId,
+    scope: "month",
+  });
+
+  assertEquals(result, {
+    action: "availability",
+    anchor: "2026-09-05",
+    bookingId,
+    scope: "month",
+  });
+});
+
 Deno.test("rejects invalid request payloads", () => {
   assertDomainError(() =>
     validateRescheduleCommand({
@@ -57,32 +102,6 @@ Deno.test("validates reschedule resolution", () => {
   if (result.action === "resolve") assertEquals(result.resolution, "accepted");
 });
 
-Deno.test("selects an exact authoritative slot", () => {
-  const result = selectRescheduleSlot(
-    {
-      contractVersion: 1,
-      slots: [
-        {
-          endsAt: new Date(Date.parse(futureStartsAt) + 50 * 60_000).toISOString(),
-          startsAt: futureStartsAt,
-        },
-      ],
-      timezone: "America/Sao_Paulo",
-    },
-    futureStartsAt,
-  );
-
-  assertEquals(result.startsAt, futureStartsAt);
-});
-
-Deno.test("uses a one-day slot lookup range", () => {
-  assertEquals(
-    Date.parse(rescheduleSlotRangeEnd(futureStartsAt)) -
-      Date.parse(futureStartsAt),
-    86_400_000,
-  );
-});
-
 Deno.test("maps database conflicts safely", () => {
   const result = mapRescheduleDatabaseError(
     new SupabaseHttpError(400, "BOOKING_CONFLICT"),
@@ -93,6 +112,15 @@ Deno.test("maps database conflicts safely", () => {
   assertEquals((result as DomainError).code, "reschedule_slot_conflict");
 });
 
+Deno.test("maps patient conflicts separately", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(400, "PATIENT_SCHEDULE_CONFLICT"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "patient_schedule_conflict");
+});
+
 Deno.test("maps divergent idempotency replays safely", () => {
   const result = mapRescheduleDatabaseError(
     new SupabaseHttpError(400, "IDEMPOTENCY_KEY_REUSED"),
@@ -101,6 +129,16 @@ Deno.test("maps divergent idempotency replays safely", () => {
   assertEquals(result instanceof DomainError, true);
   assertEquals((result as DomainError).status, 409);
   assertEquals((result as DomainError).code, "reschedule_not_allowed");
+});
+
+Deno.test("maps a therapist direct-apply attempt as forbidden", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(400, "BOOKING_ACTOR_NOT_PATIENT"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).status, 403);
+  assertEquals((result as DomainError).code, "reschedule_forbidden");
 });
 
 function assertDomainError(callback: () => unknown) {

@@ -8,6 +8,11 @@ export function SessionStatusStrip({
   data: PatientSessionDetailPageData;
 }) {
   const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
+  const paymentSupporting = data.encounterState.actions.includes(
+    "retry_payment",
+  )
+    ? undefined
+    : data.encounterState.payment.message;
   const roomAvailable = ["entry_available", "therapist_present"].includes(
     data.encounterState.waitingRoom.kind,
   );
@@ -21,7 +26,7 @@ export function SessionStatusStrip({
     >
       <StatusItem
         icon={CreditCard}
-        supporting={data.encounterState.payment.message}
+        supporting={paymentSupporting}
         tone={paymentConfirmed ? "success" : "warning"}
         title={data.encounterState.payment.title}
       />
@@ -54,7 +59,7 @@ function StatusItem({
   tone,
 }: {
   icon: typeof CreditCard;
-  supporting: string;
+  supporting?: string;
   title: string;
   tone: "neutral" | "success" | "warning";
 }) {
@@ -75,9 +80,11 @@ function StatusItem({
         <h2 className="text-[14px] font-extrabold leading-5 text-brand-deep sm:text-base">
           {title}
         </h2>
-        <p className="mt-1 text-[11px] font-semibold leading-4 text-tesText-secondary sm:text-sm sm:leading-5">
-          {supporting}
-        </p>
+        {supporting ? (
+          <p className="mt-1 text-[11px] font-semibold leading-4 text-tesText-secondary sm:text-sm sm:leading-5">
+            {supporting}
+          </p>
+        ) : null}
       </div>
     </div>
   );

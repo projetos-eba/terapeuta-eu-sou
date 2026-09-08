@@ -32,24 +32,24 @@ describe("payment money rules", () => {
 describe("session transfer eligibility", () => {
   const confirmedAt = new Date("2026-08-11T12:00:00.000Z");
 
-  it("waits seven days after service confirmation", () => {
+  it("waits for Stripe settlement after service confirmation", () => {
     expect(
       evaluateSessionTransferEligibility({
         connectTransfersActive: true,
         financialStatus: "paid",
-        now: new Date("2026-08-17T12:00:00.000Z"),
+        now: new Date("2026-08-11T12:00:00.000Z"),
         serviceConfirmedAt: confirmedAt,
         serviceStatus: "confirmed_by_patient_review",
         therapistAmountCents: 16_000,
       }),
     ).toMatchObject({
-      eligibleAt: new Date("2026-08-18T12:00:00.000Z"),
-      reason: "waiting_safety_period",
-      status: "waiting_safety_period",
+      eligibleAt: confirmedAt,
+      reason: "stripe_settlement_pending",
+      status: "waiting_settlement",
     });
   });
 
-  it("marks paid and confirmed sessions as eligible after the safety period", () => {
+  it("marks a confirmed session as eligible with recent available settlement evidence", () => {
     expect(
       evaluateSessionTransferEligibility({
         connectTransfersActive: true,
@@ -57,6 +57,11 @@ describe("session transfer eligibility", () => {
         now: new Date("2026-08-18T12:00:00.000Z"),
         serviceConfirmedAt: confirmedAt,
         serviceStatus: "confirmed_by_patient_review",
+        stripeBalanceAvailableOn: new Date("2026-08-18T10:00:00.000Z"),
+        stripeBalanceCheckedAt: new Date("2026-08-18T12:00:00.000Z"),
+        stripeBalanceStatus: "available",
+        stripeBalanceTransactionId: "txn_test",
+        stripeChargeId: "ch_test",
         therapistAmountCents: 16_000,
       }),
     ).toMatchObject({
@@ -73,6 +78,11 @@ describe("session transfer eligibility", () => {
         now: new Date("2026-08-18T12:00:00.000Z"),
         serviceConfirmedAt: confirmedAt,
         serviceStatus: "confirmed_bilateral",
+        stripeBalanceAvailableOn: new Date("2026-08-18T10:00:00.000Z"),
+        stripeBalanceCheckedAt: new Date("2026-08-18T12:00:00.000Z"),
+        stripeBalanceStatus: "available",
+        stripeBalanceTransactionId: "txn_test",
+        stripeChargeId: "ch_test",
         therapistAmountCents: 16_000,
       }),
     ).toMatchObject({

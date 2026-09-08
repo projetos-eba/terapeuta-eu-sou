@@ -107,7 +107,7 @@ export function getPatientEncounterPresentationState({
     startsAtMs,
     zoomAccess,
   });
-  const actions = getActions(payment.kind, waitingRoom.kind);
+  const actions = getActions(payment, waitingRoom.kind);
 
   return {
     actions,
@@ -147,6 +147,20 @@ function getPaymentState({
   nowMs: number;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
+  if (
+    financialStatus === SessionFinancialStatus.Paid &&
+    isCancelledBookingStatus(bookingStatus)
+  ) {
+    return {
+      kind: "cancelled",
+      message:
+        "Este encontro foi cancelado e a sala não será liberada. Consulte o histórico para acompanhar a situação financeira.",
+      retryAllowed: false,
+      slotState: "released",
+      title: "Encontro cancelado",
+    };
+  }
+
   if (financialStatus === SessionFinancialStatus.Paid) {
     return {
       kind: "confirmed",
@@ -197,12 +211,19 @@ function getPaymentState({
   }
 
   if (financialStatus === SessionFinancialStatus.Canceled) {
+    const canRetry =
+      bookingStatus === BookingStatus.CancelledByPayment &&
+      Number.isFinite(startsAtMs) &&
+      nowMs < startsAtMs;
+
     return {
       kind: "cancelled",
-      message: "A cobrança foi cancelada e a sala não está disponível.",
-      retryAllowed: false,
+      message: canRetry
+        ? "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será confirmado após a autorização."
+        : "A cobrança foi cancelada. Este horário não pode mais ser retomado.",
+      retryAllowed: canRetry,
       slotState: "released",
-      title: "Cobrança cancelada",
+      title: canRetry ? "Pagamento não concluído" : "Cobrança cancelada",
     };
   }
 
@@ -424,16 +445,21 @@ function getWaitingRoomState({
 }
 
 function getActions(
-  paymentKind: PatientEncounterPaymentKind,
+  payment: PatientEncounterPresentationState["payment"],
   waitingRoomKind: PatientEncounterWaitingRoomKind,
 ): PatientEncounterAction[] {
   const actions = new Set<PatientEncounterAction>();
 
-  if (paymentKind === "failed" || paymentKind === "not_started") {
+  if (
+    payment.retryAllowed &&
+    (payment.kind === "failed" ||
+      payment.kind === "cancelled" ||
+      payment.kind === "not_started")
+  ) {
     actions.add("retry_payment");
   }
 
-  if (paymentKind !== "confirmed") {
+  if (payment.kind !== "confirmed") {
     actions.add("contact_support");
     return [...actions];
   }
@@ -492,6 +518,14 @@ function isTerminalBookingStatus(status: string) {
     status === BookingStatus.NoShowTherapist ||
     status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
+  );
+}
+
+function isCancelledBookingStatus(status: string) {
+  return (
+    status === BookingStatus.CancelledByPatient ||
+    status === BookingStatus.CancelledByTherapist ||
+    status === BookingStatus.CancelledByPayment
   );
 }
 

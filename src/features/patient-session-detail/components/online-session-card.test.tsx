@@ -9,7 +9,9 @@ import {
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { OnlineSessionCard } from "./online-session-card";
+import { PreparationCard } from "./preparation-card";
 import { SessionOverviewCard } from "./session-overview-card";
+import { SessionStatusStrip } from "./session-status-strip";
 
 describe("OnlineSessionCard", () => {
   afterEach(cleanup);
@@ -101,6 +103,28 @@ describe("OnlineSessionCard", () => {
     );
   });
 
+  it("does not offer feedback for an encounter cancelled before it happened", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.CancelledByPatient,
+    });
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <OnlineSessionCard data={data} />
+        <PreparationCard data={data} />
+      </>,
+    );
+
+    expect(
+      screen.queryByRole("link", { name: /avaliar encontro/i }),
+    ).toBeNull();
+    expect(screen.getByText(/a sala não será liberada/i)).toBeInTheDocument();
+    expect(screen.queryByText("Seu encontro online")).toBeNull();
+    expect(screen.queryByText("Antes do encontro")).toBeNull();
+  });
+
   it("highlights a confirmed encounter without repeating utility actions", () => {
     render(
       <SessionOverviewCard
@@ -145,18 +169,80 @@ describe("OnlineSessionCard", () => {
         ),
     ).toBe(true);
   });
+
+  it("replaces room entry with the safe payment retry for a future interrupted payment", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Canceled,
+      status: BookingStatus.CancelledByPayment,
+    });
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Tentar pagamento novamente" })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/reserva?booking=f2000000-0000-4000-8000-000000000001&etapa=pagamento",
+        ),
+    ).toBe(true);
+    expect(
+      screen.getAllByText(
+        "O horário será confirmado somente após a autorização do pagamento.",
+      ),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByText(
+        "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será confirmado após a autorização.",
+      ),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Entrar no encontro" }),
+    ).toBeNull();
+  });
+
+  it("offers a new time instead of retrying an elapsed interrupted payment", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          financialStatus: SessionFinancialStatus.Canceled,
+          now: new Date("2026-08-01T14:00:00.000Z"),
+          status: BookingStatus.CancelledByPayment,
+        })}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Escolher outro horário" })
+        .every(
+          (link) => link.getAttribute("href") === "/terapeutas/ana-oliveira",
+        ),
+    ).toBe(true);
+    expect(
+      screen.queryByRole("link", { name: "Tentar pagamento novamente" }),
+    ).toBeNull();
+  });
 });
 
 function makeData({
   canJoin,
   financialStatus,
   meetingUrl = null,
+  now = new Date("2026-08-01T13:50:00.000Z"),
   provider = "zoom",
   status = BookingStatus.Confirmed,
 }: {
   canJoin?: boolean;
   financialStatus: SessionFinancialStatus;
   meetingUrl?: string | null;
+  now?: Date;
   provider?: "external" | "google_meet" | "zoom";
   status?: BookingStatus;
 }): PatientSessionDetailPageData {
@@ -186,7 +272,7 @@ function makeData({
       },
       endsAt: booking.endsAt,
       financialStatus,
-      now: new Date("2026-08-01T13:50:00.000Z"),
+      now,
       startsAt: booking.startsAt,
     }),
     booking,
@@ -199,7 +285,7 @@ function makeData({
       bookingStatus: booking.status,
       endsAt: booking.endsAt,
       financialStatus,
-      now: new Date("2026-08-01T13:50:00.000Z"),
+      now,
       provider,
       startsAt: booking.startsAt,
     }),

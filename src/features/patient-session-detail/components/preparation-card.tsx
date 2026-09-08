@@ -9,6 +9,8 @@ export function PreparationCard({
 }) {
   const { preparation } = data.encounterState;
 
+  if (data.encounterState.waitingRoom.kind === "ended") return null;
+
   return (
     <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div>

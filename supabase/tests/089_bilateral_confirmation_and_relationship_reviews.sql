@@ -14,8 +14,8 @@ select is(
 );
 select is(
   (select transfer_safety_period_days from public.financial_policy_versions where is_active),
-  1,
-  'active policy keeps twenty-four complete hours of safety'
+  0,
+  'active policy moves directly from confirmation to settlement verification'
 );
 select is(
   (select count(*)::integer from pg_trigger where tgrelid = 'public.reviews'::regclass and tgname = 'confirm_session_from_review_trigger'),
@@ -147,21 +147,26 @@ select is(
 );
 select is(
   (select eligible_at - service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001'),
-  interval '1 day',
-  'eligible_at is exactly twenty-four hours after the second confirmation'
+  interval '0 days',
+  'eligible_at starts at the second confirmation without an extra delay'
 );
 select is(
   (select transfer_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001'),
-  'waiting_safety_period',
-  'payment is not eligible before the safety period completes'
+  'waiting_settlement',
+  'payment waits for Stripe settlement immediately after confirmation'
 );
+update public.session_payments
+set stripe_balance_status = 'available',
+    stripe_balance_available_on = service_confirmed_at,
+    stripe_balance_checked_at = service_confirmed_at
+where booking_id = 'b8000000-0000-4000-8000-000000000001';
 select is(
   public.refresh_session_transfer_eligibility(
     'b8100000-0000-4000-8000-000000000001',
     (select eligible_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001')
   )::text,
   'eligible',
-  'payment becomes eligible exactly at the twenty-four-hour boundary'
+  'payment becomes eligible when the settlement snapshot is available'
 );
 
 select public.create_weekly_payout_batch(
@@ -290,13 +295,13 @@ select is(
 );
 select is(
   (select eligible_at - service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  interval '1 day',
-  'admin performed resolution starts a fresh twenty-four-hour safety period'
+  interval '0 days',
+  'admin performed resolution starts settlement verification immediately'
 );
 select is(
   (select transfer_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  'waiting_safety_period',
-  'admin performed resolution does not release the transfer immediately'
+  'waiting_settlement',
+  'admin performed resolution still requires Stripe settlement evidence'
 );
 select is(
   public.admin_resolve_session_confirmation_incident_v1(

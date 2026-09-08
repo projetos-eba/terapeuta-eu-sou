@@ -19,6 +19,10 @@ import {
   validateCancellationCommand,
   type CancellationCommandBody,
 } from "./cancellation-command.ts";
+import { finalizeAutomaticRefund } from "./automatic-refund-finalization.ts";
+import {
+  finalizeRetainedCancellation,
+} from "./retained-cancellation-finalization.ts";
 
 type CalculatedCancellationDecision = {
   booking_id: string;
@@ -85,6 +89,13 @@ runtime.serve(async (request) => {
     const command = validateCancellationCommand(
       await parseJsonBody<CancellationCommandBody>(request),
     );
+    if (user.role === "patient" && !command.userReason) {
+      throw new DomainError(
+        "cancellation_reason_required",
+        422,
+        "Conte brevemente o motivo para continuar com o cancelamento.",
+      );
+    }
     const reason = resolveCancellationReason(command.reason, user.role);
     const [payment] = await client.get<SessionPaymentRow[]>(
       `/rest/v1/session_payments?select=id,booking_id,patient_profile_id,therapist_profile_id,gross_amount_cents,financial_status,transfer_status,stripe_payment_intent_id&booking_id=eq.${encodeURIComponent(
@@ -127,7 +138,10 @@ runtime.serve(async (request) => {
       {
         p_booking_id: command.bookingId,
         p_decision: decision.decision,
-        p_metadata: { stripeMode: config.stripeMode },
+        p_metadata: {
+          stripeMode: config.stripeMode,
+          ...(command.userReason ? { userReason: command.userReason } : {}),
+        },
         p_platform_retained_cents: decision.platform_retained_cents,
         p_policy_version_id: decision.policy_version_id,
         p_reason: reason,
@@ -151,7 +165,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    if (record.requires_manual_review || record.refund_amount_cents <= 0) {
+    if (record.requires_manual_review) {
       await blockTransferForReview(client, payment.id);
       await transitionBookingCancellation(client, record);
       await markCancellationDecisionProcessed(client, record.id);
@@ -161,6 +175,38 @@ runtime.serve(async (request) => {
         decisionId: record.id,
         refundAmountCents: record.refund_amount_cents,
         requiresManualReview: record.requires_manual_review,
+      });
+    }
+
+    if (record.refund_amount_cents <= 0) {
+      const cancelledAt = new Date().toISOString();
+      await finalizeRetainedCancellation(
+        {
+          bookingId: record.booking_id,
+          cancelledAt,
+          decisionId: record.id,
+          internalReason: record.reason,
+          paymentId: payment.id,
+        },
+        {
+          markBookingCancellation: (input) =>
+            markBookingCancellationMetadata(client, input),
+          markDecisionProcessed: (decisionId) =>
+            markCancellationDecisionProcessed(client, decisionId),
+          refreshTransferEligibility: (paymentId) =>
+            refreshTransferEligibility(client, paymentId),
+          transitionBookingCancellation: () =>
+            transitionBookingCancellation(client, record),
+          updatePayment: (input) =>
+            updateRetainedCancellationPayment(client, input),
+        },
+      );
+
+      return success({
+        decision: record.decision,
+        decisionId: record.id,
+        refundAmountCents: 0,
+        requiresManualReview: false,
       });
     }
 
@@ -213,21 +259,27 @@ runtime.serve(async (request) => {
       },
       "resolution=merge-duplicates,return=minimal",
     );
-    await client.patch(
-      `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
+    const cancelledAt = new Date().toISOString();
+    await finalizeAutomaticRefund(
       {
-        financial_status:
-          record.refund_amount_cents >= payment.gross_amount_cents
-            ? "refunded"
-            : "partially_refunded",
-        refund_pending: true,
-        transfer_blocked_reason: "refund",
-        transfer_status: "blocked",
+        bookingId: record.booking_id,
+        cancelledAt,
+        decisionId: record.id,
+        grossAmountCents: payment.gross_amount_cents,
+        internalReason: record.reason,
+        paymentId: payment.id,
+        refundAmountCents: record.refund_amount_cents,
       },
-      "return=minimal",
+      {
+        markBookingCancellation: (input) =>
+          markBookingCancellationMetadata(client, input),
+        markDecisionProcessed: (decisionId) =>
+          markCancellationDecisionProcessed(client, decisionId),
+        transitionBookingCancellation: () =>
+          transitionBookingCancellation(client, record),
+        updatePayment: (input) => updateRefundedPayment(client, input),
+      },
     );
-    await transitionBookingCancellation(client, record);
-    await markCancellationDecisionProcessed(client, record.id);
 
     return success({
       decision: record.decision,
@@ -288,21 +340,71 @@ async function blockTransferForReview(
   );
 }
 
-async function markBookingCanceled(
+async function updateRetainedCancellationPayment(
   client: SupabaseRestClient,
-  bookingId: string,
-  role: "admin" | "patient" | "therapist",
-  reason: string,
+  input: { cancelledAt: string; paymentId: string },
 ) {
   await client.patch(
-    `/rest/v1/bookings?id=eq.${encodeURIComponent(bookingId)}`,
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(input.paymentId)}`,
     {
-      cancellation_reason: reason,
-      cancelled_at: new Date().toISOString(),
-      status:
-        role === "therapist"
-          ? "cancelled_by_therapist"
-          : "cancelled_by_patient",
+      canceled_at: input.cancelledAt,
+      eligible_at: null,
+      refund_pending: false,
+      service_confirmation_source: null,
+      service_confirmed_at: input.cancelledAt,
+      service_status: "canceled",
+      transfer_blocked_reason: "retained_cancellation_pending_eligibility",
+      transfer_status: "blocked",
+    },
+    "return=minimal",
+  );
+}
+
+async function refreshTransferEligibility(
+  client: SupabaseRestClient,
+  sessionPaymentId: string,
+) {
+  await client.rpc("refresh_session_transfer_eligibility", {
+    p_now: new Date().toISOString(),
+    p_session_payment_id: sessionPaymentId,
+  });
+}
+
+async function markBookingCancellationMetadata(
+  client: SupabaseRestClient,
+  input: {
+    bookingId: string;
+    cancelledAt: string;
+    internalReason: string;
+  },
+) {
+  await client.patch(
+    `/rest/v1/bookings?id=eq.${encodeURIComponent(input.bookingId)}`,
+    {
+      cancellation_reason: input.internalReason,
+      cancelled_at: input.cancelledAt,
+    },
+    "return=minimal",
+  );
+}
+
+async function updateRefundedPayment(
+  client: SupabaseRestClient,
+  input: {
+    cancelledAt: string;
+    financialStatus: "partially_refunded" | "refunded";
+    paymentId: string;
+  },
+) {
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(input.paymentId)}`,
+    {
+      canceled_at: input.cancelledAt,
+      financial_status: input.financialStatus,
+      refund_pending: true,
+      service_status: "canceled",
+      transfer_blocked_reason: "refund",
+      transfer_status: "blocked",
     },
     "return=minimal",
   );

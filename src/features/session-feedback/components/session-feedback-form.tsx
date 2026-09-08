@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckCircle2, CircleAlert, Loader2, Send, ShieldCheck, Star } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleAlert,
+  Loader2,
+  Send,
+  ShieldCheck,
+  Star,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { TESButton } from "@/components/tes";
@@ -32,9 +39,13 @@ export function SessionFeedbackForm({
   sessionLabel,
 }: SessionFeedbackFormProps) {
   const [status, setStatus] = useState<SessionFeedbackStatus>("loading");
-  const [existingFeedback, setExistingFeedback] = useState<SessionFeedbackRecord | null>(null);
-  const [readPayload, setReadPayload] = useState<SessionFeedbackReadPayload | null>(null);
-  const [selectedOutcome, setSelectedOutcome] = useState<"completed" | "not_performed" | "">("");
+  const [existingFeedback, setExistingFeedback] =
+    useState<SessionFeedbackRecord | null>(null);
+  const [readPayload, setReadPayload] =
+    useState<SessionFeedbackReadPayload | null>(null);
+  const [selectedOutcome, setSelectedOutcome] = useState<
+    "completed" | "not_performed" | ""
+  >("");
   const [rating, setRating] = useState(0);
   const [reason, setReason] = useState<SessionFeedbackReason | "">("");
   const [comment, setComment] = useState("");
@@ -53,9 +64,10 @@ export function SessionFeedbackForm({
           `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
           { cache: "no-store" },
         );
-        const payload = (await response.json().catch(() => null)) as
-          | { data?: SessionFeedbackReadPayload; ok?: boolean }
-          | null;
+        const payload = (await response.json().catch(() => null)) as {
+          data?: SessionFeedbackReadPayload;
+          ok?: boolean;
+        } | null;
 
         if (!response.ok || !payload?.ok || !payload.data) {
           throw new Error("feedback_unavailable");
@@ -74,7 +86,9 @@ export function SessionFeedbackForm({
       } catch {
         if (!cancelled) {
           setStatus("error");
-          setErrorMessage("Não conseguimos consultar seu feedback agora. Você ainda pode tentar enviar sua resposta.");
+          setErrorMessage(
+            "Não conseguimos consultar seu feedback agora. Você ainda pode tentar enviar sua resposta.",
+          );
         }
       }
     }
@@ -91,7 +105,8 @@ export function SessionFeedbackForm({
   const canSubmit = useMemo(() => {
     if (!isQualityEligible && !isIncidentOnly) return false;
     if (selectedOutcome === "completed") return rating >= 1 && rating <= 5;
-    if (selectedOutcome === "not_performed" || isIncidentOnly) return Boolean(reason);
+    if (selectedOutcome === "not_performed" || isIncidentOnly)
+      return Boolean(reason);
     return false;
   }, [isIncidentOnly, isQualityEligible, rating, reason, selectedOutcome]);
 
@@ -108,7 +123,9 @@ export function SessionFeedbackForm({
           bookingId,
           comment: comment.trim(),
           notPerformedReason:
-            selectedOutcome === "not_performed" || isIncidentOnly ? reason : null,
+            selectedOutcome === "not_performed" || isIncidentOnly
+              ? reason
+              : null,
           outcome:
             selectedOutcome === "not_performed" || isIncidentOnly
               ? "not_performed"
@@ -119,9 +136,11 @@ export function SessionFeedbackForm({
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
-      const payload = (await response.json().catch(() => null)) as
-        | { data?: { feedback?: SessionFeedbackRecord }; error?: { message?: string }; ok?: boolean }
-        | null;
+      const payload = (await response.json().catch(() => null)) as {
+        data?: { feedback?: SessionFeedbackRecord };
+        error?: { message?: string };
+        ok?: boolean;
+      } | null;
 
       if (!response.ok || !payload?.ok || !payload.data?.feedback) {
         throw new Error(payload?.error?.message ?? "feedback_submit_failed");
@@ -144,9 +163,14 @@ export function SessionFeedbackForm({
 
   const rolePhrase = actorRole === "patient" ? "seu encontro" : "sua sessão";
   const subjectDefinite = actorRole === "patient" ? "o encontro" : "a sessão";
-  const subjectEnded = actorRole === "patient" ? "O encontro foi encerrado" : "A sessão foi encerrada";
-  const subjectWithArticle = actorRole === "patient" ? "este encontro" : "esta sessão";
-  const subjectWithPreposition = actorRole === "patient" ? "deste encontro" : "desta sessão";
+  const subjectEnded =
+    actorRole === "patient"
+      ? "O encontro foi encerrado"
+      : "A sessão foi encerrada";
+  const subjectWithArticle =
+    actorRole === "patient" ? "este encontro" : "esta sessão";
+  const subjectWithPreposition =
+    actorRole === "patient" ? "deste encontro" : "desta sessão";
 
   return (
     <section
@@ -158,34 +182,58 @@ export function SessionFeedbackForm({
           <ShieldCheck aria-hidden="true" size={21} />
         </span>
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">{sessionLabel}</p>
-          <h2 id="session-feedback-title" className="mt-1 font-display text-3xl font-light italic text-brand-deep sm:text-4xl">
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+            {sessionLabel}
+          </p>
+          <h2
+            id="session-feedback-title"
+            className="mt-1 font-display text-3xl font-light italic text-brand-deep sm:text-4xl"
+          >
             Como foi {rolePhrase}?
           </h2>
         </div>
       </div>
 
       <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        Sua resposta é privada e ajuda a equipe a acompanhar a qualidade da sala online.
+        Sua resposta é privada e ajuda a equipe a acompanhar a qualidade da sala
+        online.
       </p>
 
       {introductoryMessage ? (
-        <p aria-live="polite" className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-tesText-secondary">
+        <p
+          aria-live="polite"
+          className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-tesText-secondary"
+        >
           {introductoryMessage}
         </p>
       ) : null}
 
       {status === "loading" ? (
-        <div aria-live="polite" className="mt-6 flex items-center gap-2 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-tesText-secondary">
-          <Loader2 aria-hidden="true" className="animate-spin text-brand-primary" size={18} />
+        <div
+          aria-live="polite"
+          className="mt-6 flex items-center gap-2 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-tesText-secondary"
+        >
+          <Loader2
+            aria-hidden="true"
+            className="animate-spin text-brand-primary"
+            size={18}
+          />
           Preparando o feedback…
         </div>
       ) : null}
 
       {status === "unavailable" ? (
-        <div aria-live="polite" className="mt-6 flex items-start gap-2 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          <CircleAlert aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={18} />
-          Ainda estamos confirmando os dados {subjectWithPreposition}. O feedback ficará disponível quando houver pagamento confirmado.
+        <div
+          aria-live="polite"
+          className="mt-6 flex items-start gap-2 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary"
+        >
+          <CircleAlert
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-brand-primary"
+            size={18}
+          />
+          Ainda estamos confirmando os dados {subjectWithPreposition}. O
+          feedback ficará disponível quando houver pagamento confirmado.
         </div>
       ) : null}
 
@@ -197,34 +245,49 @@ export function SessionFeedbackForm({
 
       {status === "waiting_for_participants" ? (
         <FeedbackInfoState>
-          Ainda não há registro da entrada dos dois participantes. Quando {subjectDefinite}
+          Ainda não há registro da entrada dos dois participantes. Quando{" "}
+          {subjectDefinite}
           acontecer, você poderá compartilhar como foi.
         </FeedbackInfoState>
       ) : null}
 
       {status === "attendance_pending" ? (
         <FeedbackInfoState>
-          {subjectEnded}, mas ainda estamos confirmando a presença
-          dos dois participantes. Esta tela será atualizada quando houver uma
-          confirmação segura.
+          {subjectEnded}, mas ainda estamos confirmando a presença dos dois
+          participantes. Esta tela será atualizada quando houver uma confirmação
+          segura.
         </FeedbackInfoState>
       ) : null}
 
       {status === "error" ? (
-        <div aria-live="assertive" className="mt-6 flex items-start gap-2 rounded-2xl bg-status-errorBg px-4 py-3 text-sm font-semibold leading-6 text-status-error">
-          <CircleAlert aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-          {errorMessage ?? "Não conseguimos consultar o feedback agora. Tente novamente mais tarde."}
+        <div
+          aria-live="assertive"
+          className="mt-6 flex items-start gap-2 rounded-2xl bg-status-errorBg px-4 py-3 text-sm font-semibold leading-6 text-status-error"
+        >
+          <CircleAlert
+            aria-hidden="true"
+            className="mt-0.5 shrink-0"
+            size={18}
+          />
+          {errorMessage ??
+            "Não conseguimos consultar o feedback agora. Tente novamente mais tarde."}
         </div>
       ) : null}
 
       {existingFeedback ? (
-        <FeedbackSentState actorRole={actorRole} feedback={existingFeedback} payload={readPayload} />
+        <FeedbackSentState
+          actorRole={actorRole}
+          feedback={existingFeedback}
+          payload={readPayload}
+        />
       ) : isQualityEligible || isIncidentOnly ? (
         <div className="mt-6 grid gap-6">
           {isQualityEligible ? (
             <fieldset>
               <legend className="text-base font-extrabold text-brand-deep">
-                {subjectWithArticle.charAt(0).toUpperCase() + subjectWithArticle.slice(1)} aconteceu?
+                {subjectWithArticle.charAt(0).toUpperCase() +
+                  subjectWithArticle.slice(1)}{" "}
+                aconteceu?
               </legend>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <OutcomeButton
@@ -249,11 +312,18 @@ export function SessionFeedbackForm({
 
           {isQualityEligible && selectedOutcome === "completed" ? (
             <fieldset>
-              <legend className="text-base font-extrabold text-brand-deep">Como você avalia {subjectWithArticle}?</legend>
+              <legend className="text-base font-extrabold text-brand-deep">
+                Como você avalia {subjectWithArticle}?
+              </legend>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                A nota desta resposta permanece privada. A avaliação pública do terapeuta é uma etapa opcional e separada.
+                A nota desta resposta permanece privada. A avaliação pública do
+                terapeuta é uma etapa opcional e separada.
               </p>
-              <div aria-label="Nota de 1 a 5" className="mt-3 flex gap-1 sm:gap-3" role="radiogroup">
+              <div
+                aria-label="Nota de 1 a 5"
+                className="mt-3 flex gap-1 sm:gap-3"
+                role="radiogroup"
+              >
                 {Array.from({ length: 5 }, (_, index) => {
                   const value = index + 1;
                   const selected = value <= rating;
@@ -267,7 +337,11 @@ export function SessionFeedbackForm({
                       onClick={() => setRating(value)}
                       type="button"
                     >
-                      <Star aria-hidden="true" className={selected ? "fill-brand-primary" : ""} size={30} />
+                      <Star
+                        aria-hidden="true"
+                        className={selected ? "fill-brand-primary" : ""}
+                        size={30}
+                      />
                     </button>
                   );
                 })}
@@ -275,13 +349,19 @@ export function SessionFeedbackForm({
             </fieldset>
           ) : isIncidentOnly || selectedOutcome === "not_performed" ? (
             <fieldset>
-              <legend className="text-base font-extrabold text-brand-deep">O que aconteceu?</legend>
+              <legend className="text-base font-extrabold text-brand-deep">
+                O que aconteceu?
+              </legend>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                Este relato é separado da avaliação de qualidade e permanece privado.
+                Este relato é separado da avaliação de qualidade e permanece
+                privado.
               </p>
               <div className="mt-3 grid gap-2">
                 {SESSION_FEEDBACK_REASONS.map((item) => (
-                  <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-brand-lavender/70 px-4 py-3 text-sm font-semibold text-brand-deep has-[:checked]:border-brand-primary has-[:checked]:bg-brand-lavenderSoft" key={item.value}>
+                  <label
+                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-brand-lavender/70 px-4 py-3 text-sm font-semibold text-brand-deep has-[:checked]:border-brand-primary has-[:checked]:bg-brand-lavenderSoft"
+                    key={item.value}
+                  >
                     <input
                       checked={reason === item.value}
                       className="size-5 accent-brand-primary"
@@ -297,8 +377,12 @@ export function SessionFeedbackForm({
             </fieldset>
           ) : null}
 
-          <label className="grid gap-2 text-sm font-extrabold text-brand-deep" htmlFor="session-feedback-comment">
-            Observações <span className="font-semibold text-tesText-muted">(opcional)</span>
+          <label
+            className="grid gap-2 text-sm font-extrabold text-brand-deep"
+            htmlFor="session-feedback-comment"
+          >
+            Observações{" "}
+            <span className="font-semibold text-tesText-muted">(opcional)</span>
             <textarea
               className="min-h-28 resize-y rounded-2xl border border-brand-lavender bg-white px-4 py-3 text-sm font-semibold text-tesText-primary outline-none placeholder:text-tesText-muted focus-visible:ring-4 focus-visible:ring-ring/20"
               id="session-feedback-comment"
@@ -307,12 +391,21 @@ export function SessionFeedbackForm({
               placeholder={`Compartilhe algo importante sobre ${subjectWithArticle}…`}
               value={comment}
             />
-            <span className="text-right text-xs font-semibold text-tesText-muted">{comment.length}/500</span>
+            <span className="text-right text-xs font-semibold text-tesText-muted">
+              {comment.length}/500
+            </span>
           </label>
 
           {errorMessage ? (
-            <p aria-live="assertive" className="flex items-start gap-2 rounded-2xl bg-status-errorBg px-4 py-3 text-sm font-semibold leading-6 text-status-error">
-              <CircleAlert aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
+            <p
+              aria-live="assertive"
+              className="flex items-start gap-2 rounded-2xl bg-status-errorBg px-4 py-3 text-sm font-semibold leading-6 text-status-error"
+            >
+              <CircleAlert
+                aria-hidden="true"
+                className="mt-0.5 shrink-0"
+                size={18}
+              />
               {errorMessage}
             </p>
           ) : null}
@@ -325,7 +418,11 @@ export function SessionFeedbackForm({
             type="button"
             variant="gradient"
           >
-            {isSubmitting ? <Loader2 aria-hidden="true" className="animate-spin" size={20} /> : <Send aria-hidden="true" size={18} />}
+            {isSubmitting ? (
+              <Loader2 aria-hidden="true" className="animate-spin" size={20} />
+            ) : (
+              <Send aria-hidden="true" size={18} />
+            )}
             {isSubmitting ? "Enviando…" : "Enviar feedback"}
           </TESButton>
         </div>
@@ -361,8 +458,15 @@ function OutcomeButton({
 
 function FeedbackInfoState({ children }: { children: ReactNode }) {
   return (
-    <div aria-live="polite" className="mt-6 flex items-start gap-2 rounded-2xl bg-surface-soft px-4 py-4 text-sm font-semibold leading-6 text-tesText-secondary">
-      <CircleAlert aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={18} />
+    <div
+      aria-live="polite"
+      className="mt-6 flex items-start gap-2 rounded-2xl bg-surface-soft px-4 py-4 text-sm font-semibold leading-6 text-tesText-secondary"
+    >
+      <CircleAlert
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-brand-primary"
+        size={18}
+      />
       <span>{children}</span>
     </div>
   );
@@ -385,7 +489,11 @@ function FeedbackSentState({
   return (
     <div className="mt-6 grid gap-4 rounded-2xl border border-status-success/30 bg-status-successBg/60 p-5">
       <p className="flex items-center gap-2 text-base font-extrabold text-brand-deep">
-        <CheckCircle2 aria-hidden="true" className="text-status-success" size={20} />
+        <CheckCircle2
+          aria-hidden="true"
+          className="text-status-success"
+          size={20}
+        />
         Sua confirmação foi registrada
       </p>
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
@@ -393,15 +501,23 @@ function FeedbackSentState({
           ? `Sua resposta permanece privada. Ainda falta a confirmação ${payload?.confirmationState === "awaiting_patient" ? "do paciente" : "do terapeuta"}.`
           : payload?.confirmationState === "blocked_for_review"
             ? `Sua resposta permanece privada e ${actorRole === "patient" ? "o encontro foi bloqueado" : "a sessão foi bloqueada"} para análise da equipe.`
-            : "Sua resposta permanece privada. A confirmação financeira segue o prazo de segurança e o próximo lote aplicável."}
+            : "Sua resposta permanece privada. Obrigado por compartilhar como foi."}
       </p>
       <div className="flex flex-wrap gap-2 text-sm font-extrabold text-brand-deep">
         <span className="rounded-full bg-white px-3 py-2">
           {feedback.outcome === "completed"
-            ? actorRole === "patient" ? "Encontro realizado" : "Sessão realizada"
-            : actorRole === "patient" ? "Encontro não realizado" : "Sessão não realizada"}
+            ? actorRole === "patient"
+              ? "Encontro realizado"
+              : "Sessão realizada"
+            : actorRole === "patient"
+              ? "Encontro não realizado"
+              : "Sessão não realizada"}
         </span>
-        {feedback.rating ? <span className="rounded-full bg-white px-3 py-2">{feedback.rating}/5</span> : null}
+        {feedback.rating ? (
+          <span className="rounded-full bg-white px-3 py-2">
+            {feedback.rating}/5
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -413,9 +529,10 @@ async function loadReadPayload(bookingId: string) {
       `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
       { cache: "no-store" },
     );
-    const payload = (await response.json().catch(() => null)) as
-      | { data?: SessionFeedbackReadPayload; ok?: boolean }
-      | null;
+    const payload = (await response.json().catch(() => null)) as {
+      data?: SessionFeedbackReadPayload;
+      ok?: boolean;
+    } | null;
     return response.ok && payload?.ok && payload.data ? payload.data : null;
   } catch {
     return null;

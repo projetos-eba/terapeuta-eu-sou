@@ -1,17 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  CalendarClock,
-  Check,
-  CircleX,
-  Loader2,
-  RotateCcw,
-  X,
-} from "lucide-react";
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { CalendarClock, Check, CircleX, RotateCcw, X } from "lucide-react";
+import { useRef, useState } from "react";
 
-import { TESDialog, TESFeedbackDialog } from "@/components/tes";
+import { TESFeedbackDialog } from "@/components/tes";
+import { SessionChangeDialog } from "./session-change-dialog";
 
 type ActorRole = "patient" | "therapist";
 
@@ -76,6 +70,8 @@ export function SessionOperationActions({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const cancellationRequestId = useRef<string | null>(null);
+  const rescheduleRequestId = useRef<string | null>(null);
+  const resolutionRequestIds = useRef<Record<string, string>>({});
   const pendingReschedule =
     reschedule?.status === "pending" ? reschedule : null;
   const canResolvePending =
@@ -95,7 +91,7 @@ export function SessionOperationActions({
         body: JSON.stringify({
           actorRole,
           bookingId,
-          reason: reason || undefined,
+          userReason: reason || undefined,
           requestId,
         }),
         headers: { "Content-Type": "application/json" },
@@ -132,6 +128,8 @@ export function SessionOperationActions({
     proposedStartsAt: string;
     reason: string;
   }) {
+    const requestId = rescheduleRequestId.current ?? crypto.randomUUID();
+    rescheduleRequestId.current = requestId;
     setIsSubmitting(true);
     setError(null);
 
@@ -144,12 +142,21 @@ export function SessionOperationActions({
           expectedBookingVersion: bookingVersion,
           proposedStartsAt: new Date(input.proposedStartsAt).toISOString(),
           reason: input.reason || null,
-          requestId: crypto.randomUUID(),
+          requestId,
         },
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
-    });
+    }).catch(() => null);
+    if (!response) {
+      setError(
+        actorRole === "patient"
+          ? "Não foi possível confirmar o reagendamento agora."
+          : "Não foi possível solicitar o reagendamento agora.",
+      );
+      setIsSubmitting(false);
+      return;
+    }
     const payload = (await response.json().catch(() => null)) as
       | ApiFailure
       | { ok: true }
@@ -159,12 +166,15 @@ export function SessionOperationActions({
       setError(
         payload?.ok === false && payload.error?.message
           ? payload.error.message
-          : "Não foi possível solicitar o reagendamento agora.",
+          : actorRole === "patient"
+            ? "Não foi possível confirmar o reagendamento agora."
+            : "Não foi possível solicitar o reagendamento agora.",
       );
       setIsSubmitting(false);
       return;
     }
 
+    rescheduleRequestId.current = null;
     setIsSubmitting(false);
     setDialog(null);
     router.refresh();
@@ -174,6 +184,10 @@ export function SessionOperationActions({
     rescheduleRequestId: string,
     resolution: "accepted" | "cancelled" | "rejected",
   ) {
+    const operationKey = `${rescheduleRequestId}:${resolution}`;
+    const requestId =
+      resolutionRequestIds.current[operationKey] ?? crypto.randomUUID();
+    resolutionRequestIds.current[operationKey] = requestId;
     setIsSubmitting(true);
     setError(null);
 
@@ -183,14 +197,19 @@ export function SessionOperationActions({
         command: {
           action: "resolve",
           expectedBookingVersion: bookingVersion,
-          requestId: crypto.randomUUID(),
+          requestId,
           rescheduleRequestId,
           resolution,
         },
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
-    });
+    }).catch(() => null);
+    if (!response) {
+      setError("Não foi possível atualizar o reagendamento agora.");
+      setIsSubmitting(false);
+      return;
+    }
     const payload = (await response.json().catch(() => null)) as
       | ApiFailure
       | { ok: true }
@@ -207,6 +226,7 @@ export function SessionOperationActions({
     }
 
     setIsSubmitting(false);
+    delete resolutionRequestIds.current[operationKey];
     router.refresh();
   }
 
@@ -235,7 +255,7 @@ export function SessionOperationActions({
         />
       ) : null}
 
-      {error ? (
+      {error && dialog === null ? (
         <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
 
@@ -244,6 +264,7 @@ export function SessionOperationActions({
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-50"
           disabled={!canRequestReschedule || Boolean(pendingReschedule)}
           onClick={() => {
+            rescheduleRequestId.current = crypto.randomUUID();
             setError(null);
             setDialog("reschedule");
           }}
@@ -255,7 +276,9 @@ export function SessionOperationActions({
           type="button"
         >
           <CalendarClock aria-hidden="true" size={18} />
-          Solicitar reagendamento
+          {actorRole === "patient"
+            ? "Reagendar encontro"
+            : "Solicitar reagendamento"}
         </button>
         <button
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-status-danger/30 bg-white px-4 text-sm font-extrabold text-status-danger transition hover:bg-status-dangerBg disabled:cursor-not-allowed disabled:opacity-50"
@@ -292,23 +315,36 @@ export function SessionOperationActions({
       ) : null}
 
       {dialog === "cancel" ? (
-        <CancelDialog
+        <SessionChangeDialog
+          actorRole={actorRole}
+          bookingId={bookingId}
+          errorMessage={error}
           impactLabel={cancellationImpactLabel}
           isSubmitting={isSubmitting}
+          mode="cancel"
           onClose={() => {
             cancellationRequestId.current = null;
             setDialog(null);
           }}
-          onSubmit={submitCancel}
-          title={`Cancelar ${userFacingSubject}`}
+          onSubmitCancel={submitCancel}
+          onSubmitReschedule={submitReschedule}
         />
       ) : null}
 
       {dialog === "reschedule" ? (
-        <RescheduleDialog
+        <SessionChangeDialog
+          actorRole={actorRole}
+          bookingId={bookingId}
+          errorMessage={error}
+          impactLabel={cancellationImpactLabel}
           isSubmitting={isSubmitting}
-          onClose={() => setDialog(null)}
-          onSubmit={submitReschedule}
+          mode="reschedule"
+          onClose={() => {
+            rescheduleRequestId.current = null;
+            setDialog(null);
+          }}
+          onSubmitCancel={submitCancel}
+          onSubmitReschedule={submitReschedule}
         />
       ) : null}
     </section>
@@ -384,170 +420,6 @@ function PendingReschedulePanel({
       ) : null}
     </div>
   );
-}
-
-function CancelDialog({
-  impactLabel,
-  isSubmitting,
-  onClose,
-  onSubmit,
-  title,
-}: {
-  impactLabel: string;
-  isSubmitting: boolean;
-  onClose: () => void;
-  onSubmit: (reason: string) => void;
-  title: string;
-}) {
-  const [reason, setReason] = useState("");
-
-  return (
-    <TESDialog
-      description="A plataforma aplica a política de cancelamento, bloqueia repasse quando necessário e só registra reembolso depois da operação financeira."
-      onClose={onClose}
-      title={title}
-    >
-      <form
-        className="grid gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit(reason);
-        }}
-      >
-        <p className="rounded-xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep">
-          {impactLabel}
-        </p>
-        <label className="grid gap-2">
-          <span className="text-sm font-extrabold text-brand-deep">
-            Motivo opcional
-          </span>
-          <textarea
-            className="min-h-[110px] rounded-lg border border-brand-lavender px-4 py-3 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            maxLength={240}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Conte brevemente o motivo, se fizer sentido."
-            value={reason}
-          />
-        </label>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
-            onClick={onClose}
-            type="button"
-          >
-            Voltar
-          </button>
-          <SubmitButton
-            isSubmitting={isSubmitting}
-            label="Confirmar cancelamento"
-            tone="danger"
-          />
-        </div>
-      </form>
-    </TESDialog>
-  );
-}
-
-function RescheduleDialog({
-  isSubmitting,
-  onClose,
-  onSubmit,
-}: {
-  isSubmitting: boolean;
-  onClose: () => void;
-  onSubmit: (input: { proposedStartsAt: string; reason: string }) => void;
-}) {
-  const defaultStartsAt = useMemo(() => getDefaultLocalDateTime(), []);
-  const [proposedStartsAt, setProposedStartsAt] = useState(defaultStartsAt);
-  const [reason, setReason] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!proposedStartsAt) return;
-    onSubmit({ proposedStartsAt, reason });
-  }
-
-  return (
-    <TESDialog
-      description="A plataforma vai validar o horário na agenda autoritativa antes de criar a proposta."
-      onClose={onClose}
-      title="Solicitar reagendamento"
-    >
-      <form className="grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2">
-          <span className="text-sm font-extrabold text-brand-deep">
-            Novo dia e horário
-          </span>
-          <input
-            className="min-h-12 rounded-lg border border-brand-lavender px-4 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            min={getDefaultLocalDateTime()}
-            onChange={(event) => setProposedStartsAt(event.target.value)}
-            required
-            type="datetime-local"
-            value={proposedStartsAt}
-          />
-        </label>
-        <label className="grid gap-2">
-          <span className="text-sm font-extrabold text-brand-deep">
-            Motivo opcional
-          </span>
-          <textarea
-            className="min-h-[92px] rounded-lg border border-brand-lavender px-4 py-3 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            maxLength={240}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Explique a necessidade de ajuste, se quiser."
-            value={reason}
-          />
-        </label>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
-            onClick={onClose}
-            type="button"
-          >
-            Voltar
-          </button>
-          <SubmitButton isSubmitting={isSubmitting} label="Enviar proposta" />
-        </div>
-      </form>
-    </TESDialog>
-  );
-}
-
-function SubmitButton({
-  isSubmitting,
-  label,
-  tone = "brand",
-}: {
-  isSubmitting: boolean;
-  label: string;
-  tone?: "brand" | "danger";
-}) {
-  return (
-    <button
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white disabled:opacity-60 ${
-        tone === "danger" ? "bg-status-danger" : "bg-brand-primary"
-      }`}
-      disabled={isSubmitting}
-      type="submit"
-    >
-      {isSubmitting ? (
-        <Loader2 aria-hidden="true" className="animate-spin" size={17} />
-      ) : null}
-      {label}
-    </button>
-  );
-}
-
-function getDefaultLocalDateTime() {
-  const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  date.setMinutes(0, 0, 0);
-  return toDatetimeLocalValue(date);
-}
-
-function toDatetimeLocalValue(date: Date) {
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function formatDateTime(value: string, timezone: string) {

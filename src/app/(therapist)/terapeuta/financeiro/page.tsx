@@ -101,9 +101,11 @@ function parseFilters(
         : null,
     search: normalizeSearch(first(params?.q)),
     status:
-      status && financialStatuses.has(status)
-        ? (status as TherapistFinanceFilters["status"])
-        : null,
+      status === "waiting_safety_period"
+        ? "waiting_settlement"
+        : status && financialStatuses.has(status)
+          ? (status as TherapistFinanceFilters["status"])
+          : null,
     therapyId: normalizeUuid(first(params?.therapyId)),
   };
 }

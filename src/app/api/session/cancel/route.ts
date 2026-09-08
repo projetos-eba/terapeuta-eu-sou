@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       {
         body: JSON.stringify({
           bookingId: parsed.bookingId,
-          reason: parsed.reason,
+          userReason: parsed.userReason,
           requestId: parsed.requestId,
         }),
         cache: "no-store",
@@ -69,7 +69,7 @@ function parseActionBody(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const bookingId = Reflect.get(value, "bookingId");
   const actorRole = Reflect.get(value, "actorRole");
-  const reason = Reflect.get(value, "reason");
+  const userReason = Reflect.get(value, "userReason");
   const requestId = Reflect.get(value, "requestId");
 
   if (
@@ -78,7 +78,8 @@ function parseActionBody(value: unknown) {
     typeof requestId !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(requestId) ||
     (actorRole !== "patient" && actorRole !== "therapist") ||
-    (reason !== undefined && typeof reason !== "string")
+    (userReason !== undefined &&
+      (typeof userReason !== "string" || userReason.length > 500))
   ) {
     return null;
   }
@@ -86,7 +87,7 @@ function parseActionBody(value: unknown) {
   return {
     actorRole,
     bookingId,
-    reason: reason || undefined,
+    userReason: userReason || undefined,
     requestId,
   };
 }

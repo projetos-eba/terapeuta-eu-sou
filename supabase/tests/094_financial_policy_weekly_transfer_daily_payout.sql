@@ -10,8 +10,8 @@ select is(
 
 select is(
   (select version from public.financial_policy_versions where is_active),
-  'tes-payments-v8-commission-15-percent',
-  'the current bilateral weekly payout policy is active'
+  'tes-payments-v9-settlement-only',
+  'the current settlement-only weekly payout policy is active'
 );
 
 select is(
@@ -52,8 +52,8 @@ select is(
 
 select is(
   (select transfer_safety_period_days from public.financial_policy_versions where is_active),
-  1,
-  'the full transfer safety day remains preserved'
+  0,
+  'the active policy has no additional transfer safety period'
 );
 
 select is(

@@ -20,6 +20,24 @@ const baseInput = {
 };
 
 describe("getPatientEncounterPresentationState", () => {
+  it("does not promise room access when a paid encounter was cancelled without a refund", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPatient,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T13:40:00.000Z"),
+    });
+
+    expect(state.payment).toMatchObject({
+      kind: "cancelled",
+      retryAllowed: false,
+      slotState: "released",
+      title: "Encontro cancelado",
+    });
+    expect(state.payment.message).toContain("a sala não será liberada");
+    expect(state.actions).toEqual(["contact_support"]);
+  });
+
   it.each([
     [ZoomAccessReason.TooLate, "schedule_ended"],
     [ZoomAccessReason.SessionEnded, "ended"],
@@ -141,16 +159,45 @@ describe("getPatientEncounterPresentationState", () => {
   it("blocks Zoom access for failed payments and exposes retry only before start", () => {
     const state = getPatientEncounterPresentationState({
       ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPayment,
       financialStatus: SessionFinancialStatus.Failed,
       now: new Date("2026-08-01T13:40:00.000Z"),
     });
 
     expect(state.payment.kind).toBe("failed");
     expect(state.payment.retryAllowed).toBe(true);
-    expect(state.waitingRoom.kind).toBe("payment_required");
+    expect(state.waitingRoom.kind).toBe("ended");
     expect(state.actions).toEqual(
       expect.arrayContaining(["retry_payment", "contact_support"]),
     );
+  });
+
+  it("offers a cancelled payment retry only for a future payment-cancelled booking", () => {
+    const retryable = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPayment,
+      financialStatus: SessionFinancialStatus.Canceled,
+      now: new Date("2026-08-01T13:40:00.000Z"),
+    });
+    const unrelatedCancellation = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPatient,
+      financialStatus: SessionFinancialStatus.Canceled,
+      now: new Date("2026-08-01T13:40:00.000Z"),
+    });
+    const elapsed = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.CancelledByPayment,
+      financialStatus: SessionFinancialStatus.Canceled,
+      now: new Date("2026-08-01T14:00:00.000Z"),
+    });
+
+    expect(retryable.payment.retryAllowed).toBe(true);
+    expect(retryable.actions).toContain("retry_payment");
+    expect(unrelatedCancellation.payment.retryAllowed).toBe(false);
+    expect(unrelatedCancellation.actions).not.toContain("retry_payment");
+    expect(elapsed.payment.retryAllowed).toBe(false);
+    expect(elapsed.payment.message).toContain("não pode mais ser retomado");
   });
 
   it("shows waiting room and prolonged absence without issuing a join action", () => {

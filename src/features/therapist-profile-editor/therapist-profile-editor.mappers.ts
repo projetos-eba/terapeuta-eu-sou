@@ -1,5 +1,8 @@
 import { createEmptyEditorFields } from "./therapist-profile-editor.parsers";
-import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+import {
+  MAX_THERAPIST_PROFILE_GUIDE_ITEMS,
+  type PublicTherapistProfile,
+} from "@/features/therapist-profile/types";
 import { isPublicProfileThemeId } from "@/features/therapist-profile/personalization";
 import { TherapistPlan } from "@/domain/tes";
 
@@ -175,17 +178,19 @@ export function mapEditorFieldsToPublicPreview({
     },
     services: [],
     slug,
-    tags: fields.guideItems.slice(0, 4).map((item) => item.label),
+    tags: fields.guideItems
+      .slice(0, MAX_THERAPIST_PROFILE_GUIDE_ITEMS)
+      .map((item) => item.label),
     video:
       editor.derived.plan !== TherapistPlan.Free && fields.videoUrl
-      ? {
-          provider: fields.videoProvider,
-          thumbnailUrl:
-            fields.videoThumbnailUrl || fields.photoUrl || "/icon.svg",
-          title: fields.videoTitle || "Vídeo de apresentação",
-          url: fields.videoUrl,
-        }
-      : null,
+        ? {
+            provider: fields.videoProvider,
+            thumbnailUrl:
+              fields.videoThumbnailUrl || fields.photoUrl || "/icon.svg",
+            title: fields.videoTitle || "Vídeo de apresentação",
+            url: fields.videoUrl,
+          }
+        : null,
   };
 }
 

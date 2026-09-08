@@ -89,6 +89,17 @@ describe("therapist profile editor parsers", () => {
     ).toThrow(TherapistProfileContractError);
   });
 
+  it("accepts six guide items", () => {
+    const parsed = parseEditorPayload({
+      guideItems: Array.from({ length: 6 }, (_, index) => ({
+        label: `Item ${index}`,
+      })),
+      publicName: "Ana Oliveira",
+    });
+
+    expect(parsed.guideItems).toHaveLength(6);
+  });
+
   it("accepts only YouTube or Vimeo for external video links", () => {
     expect(
       parseEditorPayload({

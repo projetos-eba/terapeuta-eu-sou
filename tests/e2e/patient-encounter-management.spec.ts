@@ -4,14 +4,10 @@ const patientPassword =
   process.env.PATIENT_MANAGEMENT_E2E_PASSWORD ?? "tes-mock-password";
 const reschedulePatientEmail =
   process.env.PATIENT_RESCHEDULE_E2E_EMAIL ?? "paciente.rafael@example.test";
-const rescheduleBookingId =
-  process.env.PATIENT_RESCHEDULE_E2E_BOOKING_ID ??
-  "f2000000-0000-4000-8000-000000000002";
+const rescheduleBookingId = process.env.PATIENT_RESCHEDULE_E2E_BOOKING_ID;
 const cancellationPatientEmail =
-  process.env.PATIENT_CANCELLATION_E2E_EMAIL ?? "paciente.juliana@example.test";
-const cancellationBookingId =
-  process.env.PATIENT_CANCELLATION_E2E_BOOKING_ID ??
-  "f2000000-0000-4000-8000-000000000004";
+  process.env.PATIENT_CANCELLATION_E2E_EMAIL ?? "paciente.rafael@example.test";
+const cancellationBookingId = process.env.PATIENT_CANCELLATION_E2E_BOOKING_ID;
 
 test.use({ screenshot: "on", trace: "on", video: "on" });
 
@@ -20,7 +16,8 @@ test.describe("patient encounter management", () => {
     page,
   }, testInfo) => {
     await loginAsPatient(page, reschedulePatientEmail);
-    await page.goto(`/app/encontros/${rescheduleBookingId}`);
+    const bookingId = await findManageableBookingId(page, rescheduleBookingId);
+    await page.goto(`/app/encontros/${bookingId}`);
     await expect(
       page.getByRole("heading", { name: "Detalhe do encontro" }),
     ).toBeVisible();
@@ -54,10 +51,27 @@ test.describe("patient encounter management", () => {
     }
   });
 
-  test("requests reschedule with a real click from the encounter detail", async ({
+  test("confirms a patient reschedule with a real click from the encounter detail", async ({
     page,
   }) => {
     const rescheduleRequests: unknown[] = [];
+
+    await page.route(
+      "**/api/session/reschedule/availability?**",
+      async (route) => {
+        const bookingId = new URL(route.request().url()).searchParams.get(
+          "bookingId",
+        );
+        await route.fulfill({
+          body: JSON.stringify({
+            ok: true,
+            data: availabilityFixture(bookingId ?? "unknown-booking"),
+          }),
+          contentType: "application/json",
+          status: 200,
+        });
+      },
+    );
 
     await page.route("**/api/session/reschedule", async (route) => {
       rescheduleRequests.push(route.request().postDataJSON());
@@ -69,25 +83,28 @@ test.describe("patient encounter management", () => {
     });
 
     await loginAsPatient(page, reschedulePatientEmail);
-    await page.goto(`/app/encontros/${rescheduleBookingId}`);
+    const bookingId = await findManageableBookingId(page, rescheduleBookingId);
+    await page.goto(`/app/encontros/${bookingId}`);
 
     const rescheduleButton = page.getByRole("button", {
-      name: "Solicitar reagendamento",
+      name: "Reagendar encontro",
     });
     await expect(rescheduleButton).toBeVisible();
     await expect(rescheduleButton).toBeEnabled();
     await rescheduleButton.click();
 
     await expect(
-      page.getByRole("dialog", { name: "Solicitar reagendamento" }),
+      page.getByRole("dialog", { name: "Reagendar encontro" }),
     ).toBeVisible();
-    await page
-      .getByLabel("Novo dia e horário")
-      .fill(getFutureDatetimeLocalValue());
+    await expect(page.getByText(/Terapia contratada/)).toBeVisible();
+    await page.getByRole("button", { name: "10:00" }).first().click();
     await page
       .getByLabel("Motivo opcional")
       .fill("Preciso ajustar minha disponibilidade.");
-    await page.getByRole("button", { name: "Enviar proposta" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Confirmar reagendamento" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar reagendamento" }).click();
 
     await expect
       .poll(() => rescheduleRequests.length)
@@ -96,7 +113,7 @@ test.describe("patient encounter management", () => {
       actorRole: "patient",
       command: {
         action: "request",
-        bookingId: rescheduleBookingId,
+        bookingId,
         reason: "Preciso ajustar minha disponibilidade.",
       },
     });
@@ -106,6 +123,23 @@ test.describe("patient encounter management", () => {
     page,
   }) => {
     const cancellationRequests: unknown[] = [];
+
+    await page.route(
+      "**/api/session/reschedule/availability?**",
+      async (route) => {
+        const bookingId = new URL(route.request().url()).searchParams.get(
+          "bookingId",
+        );
+        await route.fulfill({
+          body: JSON.stringify({
+            ok: true,
+            data: availabilityFixture(bookingId ?? "unknown-booking"),
+          }),
+          contentType: "application/json",
+          status: 200,
+        });
+      },
+    );
 
     await page.route("**/api/session/cancel", async (route) => {
       cancellationRequests.push(route.request().postDataJSON());
@@ -117,7 +151,11 @@ test.describe("patient encounter management", () => {
     });
 
     await loginAsPatient(page, cancellationPatientEmail);
-    await page.goto(`/app/encontros/${cancellationBookingId}`);
+    const bookingId = await findManageableBookingId(
+      page,
+      cancellationBookingId,
+    );
+    await page.goto(`/app/encontros/${bookingId}`);
 
     const cancelButton = page.getByRole("button", {
       name: "Cancelar encontro",
@@ -126,6 +164,62 @@ test.describe("patient encounter management", () => {
     await expect(cancelButton).toBeEnabled();
     await cancelButton.click();
 
+    const retentionDialog = page.getByRole("dialog", {
+      name: "Antes de cancelar",
+    });
+    await expect(retentionDialog).toBeVisible();
+    await expect(
+      retentionDialog.getByRole("heading", {
+        name: "Próximos horários disponíveis",
+      }),
+    ).toBeVisible();
+    await expect(
+      retentionDialog.getByRole("button", { name: "10:00" }),
+    ).toHaveCount(3);
+    await expect(
+      retentionDialog.getByRole("button", {
+        name: "Continuar com o cancelamento",
+      }),
+    ).toBeEnabled();
+
+    for (const viewport of [
+      { height: 900, width: 1440 },
+      { height: 768, width: 1024 },
+      { height: 844, width: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const dimensions = await retentionDialog.evaluate((dialog) => ({
+        clientWidth: dialog.clientWidth,
+        scrollWidth: dialog.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+        dimensions.clientWidth,
+      );
+      await expect(
+        retentionDialog.getByRole("button", {
+          name: "Ver agenda completa e mais horários →",
+        }),
+      ).toBeVisible();
+    }
+
+    await retentionDialog
+      .getByRole("button", { name: "Ver agenda completa e mais horários →" })
+      .click();
+    const calendarDialog = page.getByRole("dialog", {
+      name: "Escolha um dia e horário",
+    });
+    await expect(calendarDialog).toBeVisible();
+    const calendarDimensions = await calendarDialog.evaluate((dialog) => ({
+      clientWidth: dialog.clientWidth,
+      scrollWidth: dialog.scrollWidth,
+    }));
+    expect(calendarDimensions.scrollWidth).toBeLessThanOrEqual(
+      calendarDimensions.clientWidth,
+    );
+    await calendarDialog.getByRole("button", { name: "Voltar" }).click();
+    await retentionDialog
+      .getByRole("button", { name: "Continuar com o cancelamento" })
+      .click();
     const cancellationDialog = page.getByRole("dialog", {
       name: "Cancelar encontro",
     });
@@ -136,7 +230,7 @@ test.describe("patient encounter management", () => {
       ),
     ).toBeVisible();
     await page
-      .getByLabel("Motivo opcional")
+      .getByLabel(/Motivo\s+do cancelamento/)
       .fill("Preciso cancelar este horário.");
     await page.getByRole("button", { name: "Confirmar cancelamento" }).click();
 
@@ -145,8 +239,8 @@ test.describe("patient encounter management", () => {
       .toBeGreaterThanOrEqual(1);
     expect(cancellationRequests[0]).toMatchObject({
       actorRole: "patient",
-      bookingId: cancellationBookingId,
-      reason: "Preciso cancelar este horário.",
+      bookingId,
+      userReason: "Preciso cancelar este horário.",
       requestId: expect.stringMatching(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       ),
@@ -188,9 +282,51 @@ async function loginAsPatient(
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
 }
 
-function getFutureDatetimeLocalValue() {
-  const value = new Date(Date.now() + 72 * 60 * 60 * 1000);
-  value.setMinutes(0, 0, 0);
-  const offsetMs = value.getTimezoneOffset() * 60_000;
-  return new Date(value.getTime() - offsetMs).toISOString().slice(0, 16);
+async function findManageableBookingId(
+  page: import("@playwright/test").Page,
+  preferredBookingId?: string,
+) {
+  if (preferredBookingId) return preferredBookingId;
+
+  await page.goto("/app");
+  const detailsLink = page.getByRole("link", { name: "Ver detalhes" }).first();
+  await expect(detailsLink).toBeVisible();
+  const href = await detailsLink.getAttribute("href");
+  const bookingId = href?.match(/\/app\/encontros\/([^/?#]+)/)?.[1];
+  expect(bookingId).toBeTruthy();
+  return bookingId!;
+}
+
+function availabilityFixture(bookingId: string) {
+  const firstDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  firstDate.setUTCHours(13, 0, 0, 0);
+  const slots = Array.from({ length: 3 }, (_, dayIndex) =>
+    Array.from({ length: 5 }, (_, slotIndex) => {
+      const startsAt = new Date(
+        firstDate.getTime() +
+          dayIndex * 24 * 60 * 60 * 1000 +
+          slotIndex * 30 * 60 * 1000,
+      );
+      return {
+        endsAt: new Date(startsAt.getTime() + 50 * 60 * 1000).toISOString(),
+        startsAt: startsAt.toISOString(),
+      };
+    }),
+  ).flat();
+  return {
+    booking: { id: bookingId, startsAt: firstDate.toISOString(), version: 1 },
+    horizonEndsAt: new Date(
+      Date.now() + 90 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+    service: {
+      currency: "BRL",
+      durationMinutes: 50,
+      id: "d1000000-0000-4000-8000-000000000001",
+      priceCents: 12300,
+      therapyName: "Reiki",
+      title: "Reiki online",
+    },
+    slots,
+    timezone: "America/Sao_Paulo",
+  };
 }

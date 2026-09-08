@@ -200,6 +200,12 @@ the related demand tip is not rendered without `agenda_insights`.
 - Copy operacional canônica: “Sessões de hoje”, “Pendências da agenda”,
   “Acompanhe sua agenda”, “Dica do TES” e “Clique em um horário para ver
   ou editar o agendamento.”
+- No trilho contextual do Calendário (Figma `13366:5342`), “Sessões de hoje”
+  usa somente reservas do dia local com `booking.status = confirmed` e
+  `session_payments.financial_status = paid`, sem seguir filtros locais.
+  “Pendências da agenda” e `summary.pendingAttention` mostram exclusivamente
+  solicitações de reagendamento em `pending`. Pagamentos pendentes continuam
+  visíveis na grade e nos filtros, pois ainda ocupam o horário.
 - O fechamento A6/A7 fica em
   `docs/architecture/agenda-a6-a7-closure.md`.
 - O fechamento A8/A10 fica em
@@ -325,6 +331,13 @@ the related demand tip is not rendered without `agenda_insights`.
 - O calendário privado continua exibindo sessões canceladas e reembolsadas no
   histórico do período. Timeline, mês e lista mobile usam padrão diagonal,
   legenda e estado textual para não depender somente de cor.
+- Na timeline, sessões ativas devem permanecer em uma camada visual superior a
+  sessões canceladas ou reembolsadas quando ocuparem o mesmo intervalo; foco e
+  hover podem elevar temporariamente qualquer cartão para permitir inspeção.
+- Na visão mensal, cada célula e cartão devem conter o conteúdo com `min-width:
+  0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
+  invadir visualmente outro dia; o nome completo continua preservado no rótulo
+  acessível.
 
 ## Comandos transacionais A2
 
@@ -334,15 +347,29 @@ the related demand tip is not rendered without `agenda_insights`.
   seleciona slot por `get_service_available_slots_v1`, reserva hold
   idempotente, consome hold em booking e inicia `stripe-create-session-payment`.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
-- `request_booking_reschedule_v1`: cria proposta versionada.
+- `apply_patient_booking_reschedule_v1`: aplica imediatamente, no mesmo booking,
+  um horário escolhido pela pessoa após revalidação autoritativa; rejeita ator
+  terapeuta e não cria proposta pendente.
+- `request_booking_reschedule_v1`: cria proposta versionada somente no fluxo
+  iniciado pela terapeuta.
 - `resolve_booking_reschedule_v1`: aplica resolução e sincroniza a sessão local de vídeo.
-- `session-reschedule`: Edge Function autenticada para paciente ou terapeuta;
-  valida participação, seleciona o slot por `get_service_available_slots_v1` e
-  então chama `request_booking_reschedule_v1` ou
-  `resolve_booking_reschedule_v1`.
+- `session-reschedule`: Edge Function autenticada para paciente ou terapeuta e
+  deriva o papel real do participante no servidor. Pessoa usa aplicação direta;
+  terapeuta usa proposta bilateral;
+  valida participação e usa `get_booking_reschedule_availability_v1`, derivado
+  exclusivamente do booking. Serviço, duração, valor e buffers permanecem nos
+  snapshots; o browser não seleciona serviço nem calcula `endsAt`. Nenhuma
+  seleção cria hold ou libera o horário original. Aplicação direta, criação de
+  proposta e aceite revalidam o slot sob locks; somente a operação terminal
+  move o mesmo booking e sincroniza vídeo/lembretes.
 - `request-session-cancellation`: continua sendo a função canônica de
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
-  necessário.
+  necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo
+  da terapeuta permanece direto. `metadata.userReason` é privado e separado do
+  código financeiro interno. Retenção integral sem revisão fecha o serviço
+  como `canceled`, mantém `refund_pending=false` e só permite elegibilidade de
+  repasse quando a decisão processada reconcilia integralmente os valores do
+  pagamento.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
   serviço.

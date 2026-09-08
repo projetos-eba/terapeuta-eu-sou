@@ -1,8 +1,15 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   TherapistAdvancedFinancialDashboard,
+  TherapistFinanceDateRange,
   TherapistFinanceFilters,
   TherapistFinancePageData,
   TherapistReceiptStatus,
@@ -11,9 +18,12 @@ import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => window.location.pathname,
   useRouter: () => ({
+    push: vi.fn(),
     refresh: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 afterEach(cleanup);
@@ -48,7 +58,9 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(screen.getAllByText("Valor bruto").length).toBeGreaterThan(0);
-    expect(screen.getByText("Custos da plataforma")).toBeInTheDocument();
+    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getByText("Incluídos no cálculo do repasse"),
     ).toBeInTheDocument();
@@ -188,6 +200,60 @@ describe("TherapistFinancePage", () => {
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
   });
 
+  it("does not render zero-value statuses in the distribution", () => {
+    const baseReceipts = fixture().receipts;
+
+    renderPage("receipts", {
+      receipts: {
+        ...baseReceipts,
+        statusDistribution: [
+          { amountCents: 7000, itemCount: 1, status: "refunded" },
+          { amountCents: 0, itemCount: 0, status: "canceled" },
+        ],
+      },
+    });
+
+    const distribution = screen
+      .getByRole("heading", { name: "Distribuição por status" })
+      .closest("section");
+
+    expect(distribution).not.toBeNull();
+    expect(distribution).not.toHaveTextContent("Cancelado");
+  });
+
+  it("uses a distinct semantic color for every rendered receipt status", () => {
+    const baseReceipts = fixture().receipts;
+
+    renderPage("receipts", {
+      receipts: {
+        ...baseReceipts,
+        statusDistribution: [
+          { amountCents: 100, itemCount: 1, status: "blocked" },
+          { amountCents: 200, itemCount: 1, status: "canceled" },
+          { amountCents: 300, itemCount: 1, status: "eligible" },
+          { amountCents: 400, itemCount: 1, status: "failed" },
+          { amountCents: 500, itemCount: 1, status: "waiting_confirmation" },
+          { amountCents: 600, itemCount: 1, status: "waiting_settlement" },
+        ],
+      },
+    });
+
+    const distribution = screen
+      .getByRole("heading", { name: "Distribuição por status" })
+      .closest("section");
+    const legendItems = Array.from(
+      distribution!.querySelectorAll<HTMLElement>("[data-receipt-status]"),
+    );
+    const markerStyles = legendItems.map((item) =>
+      item
+        .querySelector<HTMLElement>("[aria-hidden='true']")
+        ?.getAttribute("style"),
+    );
+
+    expect(legendItems).toHaveLength(6);
+    expect(new Set(markerStyles).size).toBe(markerStyles.length);
+  });
+
   it.each(Object.entries(financialReceiptCopyByStatus))(
     "renders dynamic receipts copy for %s",
     (status, copy) => {
@@ -272,13 +338,89 @@ describe("TherapistFinancePage", () => {
       },
     );
 
-    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
+    const loadMore = screen.getByRole("link", { name: "Carregar mais" });
+    expect(loadMore).toHaveAttribute(
       "href",
       "/terapeuta/financeiro?tab=recebimentos&page=2&status=canceled&therapyId=therapy-1&q=Lucas",
     );
     expect(
       screen.getByRole("link", { name: "Limpar filtros" }),
     ).toHaveAttribute("href", "/terapeuta/financeiro?tab=recebimentos");
+  });
+
+  it("keeps previous and next receipt controls as distinct destinations after loading more", () => {
+    const baseReceipts = fixture().receipts;
+    const pageOneData = {
+      ...fixture(),
+      receipts: {
+        ...baseReceipts,
+        pagination: {
+          ...baseReceipts.pagination,
+          hasNextPage: true,
+          totalCount: 18,
+          totalPages: 3,
+        },
+      },
+    };
+    const pageTwoData = {
+      ...pageOneData,
+      receipts: {
+        ...pageOneData.receipts,
+        pagination: {
+          ...pageOneData.receipts.pagination,
+          page: 2,
+        },
+      },
+    };
+    const filters: TherapistFinanceFilters = {
+      page: 1,
+      payoutStatus: null,
+      search: null,
+      status: null,
+      therapyId: null,
+    };
+    const dateRange: TherapistFinanceDateRange = {
+      end: "2026-07-28",
+      key: "30",
+      start: "2026-06-29",
+    };
+    const rendered = render(
+      <TherapistFinancePage
+        data={pageOneData}
+        dateRange={dateRange}
+        filters={filters}
+        tab="receipts"
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "Mostrar menos" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&page=2",
+    );
+
+    rendered.rerender(
+      <TherapistFinancePage
+        data={pageTwoData}
+        dateRange={dateRange}
+        filters={{ ...filters, page: 2 }}
+        tab="receipts"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Mostrar menos" })).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos",
+    );
+    const nextPage = screen.getByRole("link", { name: "Carregar mais" });
+    expect(nextPage).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&page=3",
+    );
+    expect(within(nextPage).getByText("Carregar mais")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
   });
 
   it("does not render a local bank-data form for Connect", () => {
@@ -378,26 +520,69 @@ describe("TherapistFinancePage", () => {
     expect(select).not.toHaveTextContent("Disponível");
   });
 
-  it("orders the payout path from preparation through bank credit", () => {
+  it("shows the three approved payout phases in order", () => {
     renderPage("payouts");
 
+    const timeline = screen
+      .getByRole("heading", { name: "Próximos repasses" })
+      .closest("section");
     const labels = [
-      "Confirmação, segurança e liquidação",
-      "Disponível para o lote semanal",
+      "Processando",
+      "Disponível para o próximo lote",
       "Próximo lote de transferência",
-      "Transferência e crédito bancário",
-    ].map((label) => screen.getAllByText(label).at(-1)!);
+    ];
 
+    expect(timeline).not.toBeNull();
     expect(
       labels.every(
         (label, index) =>
           index === 0 ||
-          Boolean(
-            labels[index - 1].compareDocumentPosition(label) &
-            Node.DOCUMENT_POSITION_FOLLOWING,
-          ),
+          timeline!.textContent!.indexOf(labels[index - 1]) <
+            timeline!.textContent!.indexOf(label),
       ),
     ).toBe(true);
+    expect(
+      screen.queryByText("Transferência e crédito bancário"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/O TES organiza Transfers/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("puts processing first and explains its operational position", () => {
+    renderPage("payouts", {
+      payouts: {
+        ...fixture().payouts,
+        summary: {
+          ...fixture().payouts.summary,
+          payoutProcessingCents: 9600,
+        },
+      },
+    });
+
+    const summary = screen.getByRole("region", { name: "Resumo de repasses" });
+    expect(
+      within(summary)
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      "Em processamento",
+      "Disponível para repasse",
+      "Próximo lote de transferência",
+    ]);
+    expect(
+      screen.getByText(
+        "Pagamentos a receber, aguardando confirmação ou em liquidação",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Posição atual: inclui sessões futuras já pagas, independentemente do período do histórico.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("offers a typed custom date range in the summary", () => {
@@ -416,19 +601,52 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
   });
+
+  it.each(["receipts", "payouts"] as const)(
+    "shows custom date inputs in the %s filters and hides them for preset periods",
+    (tab) => {
+      renderPage(
+        tab,
+        {},
+        {},
+        {
+          end: "2026-08-31",
+          key: "custom",
+          start: "2026-08-01",
+        },
+      );
+
+      const periodLabel =
+        tab === "payouts" ? "Período do histórico" : "Período";
+      expect(screen.getByLabelText(periodLabel)).toHaveValue("custom");
+      expect(screen.getByLabelText("De")).toHaveValue("2026-08-01");
+      expect(screen.getByLabelText("Até")).toHaveValue("2026-08-31");
+
+      fireEvent.change(screen.getByLabelText(periodLabel), {
+        target: { value: "90" },
+      });
+      expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
+    },
+  );
 });
 
 function renderPage(
   tab: "account" | "payouts" | "receipts" | "summary" = "summary",
   overrides: Partial<TherapistFinancePageData> = {},
   filtersOverride: Partial<TherapistFinanceFilters> = {},
+  dateRange: TherapistFinanceDateRange = {
+    end: "2026-07-28",
+    key: "30",
+    start: "2026-06-29",
+  },
 ) {
   const data = { ...fixture(), ...overrides };
 
-  render(
+  return render(
     <TherapistFinancePage
       data={data}
-      dateRange={{ end: "2026-07-28", key: "30", start: "2026-06-29" }}
+      dateRange={dateRange}
       filters={{
         page: 1,
         payoutStatus: null,

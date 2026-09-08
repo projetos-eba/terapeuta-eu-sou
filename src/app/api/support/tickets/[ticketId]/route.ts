@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { normalizePlainText } from "@/features/support/support-contracts";
+import {
+  normalizePlainText,
+  parseSupportTicketAttachmentDescriptors,
+  type SupportTicketAttachmentDescriptor,
+} from "@/features/support/support-contracts";
 import { supportTicketAttachmentErrorMessage } from "@/features/support/support-ticket-presentation";
 import {
   readSupportAttachmentFiles,
@@ -137,6 +141,7 @@ export async function POST(request: Request, { params }: Params) {
     .includes("multipart/form-data");
   let payload: unknown;
   let attachments: ReturnType<typeof readSupportAttachmentFiles>["files"] = [];
+  let directAttachments: SupportTicketAttachmentDescriptor[] = [];
   if (isMultipart) {
     const formData = await request.formData().catch(() => null);
     if (!formData) return failure("Envie os dados em formato válido.", 400);
@@ -154,9 +159,28 @@ export async function POST(request: Request, { params }: Params) {
     } catch {
       return failure("Envie os dados em formato válido.", 400);
     }
+    if (
+      payload &&
+      typeof payload === "object" &&
+      !Array.isArray(payload) &&
+      Object.prototype.hasOwnProperty.call(payload, "attachments")
+    ) {
+      const parsedAttachments = parseSupportTicketAttachmentDescriptors(
+        Reflect.get(payload, "attachments"),
+      );
+      if (!parsedAttachments) return failure(attachmentContractMessage, 422);
+      directAttachments = parsedAttachments;
+    }
   }
-  const parsed = parseMessage(payload, attachments.length > 0);
+  const attachmentCount = attachments.length + directAttachments.length;
+  const parsed = parseMessage(payload, attachmentCount > 0);
   if (!parsed.ok) return failure(parsed.message, 422);
+  if (
+    directAttachments.length > 0 &&
+    !allPathsBelongToRequest(directAttachments, ticketId, parsed.requestId)
+  ) {
+    return failure(attachmentContractMessage, 422);
+  }
 
   const context = await getContext(parsed.actorRole);
   if (!context.ok) return failure(context.message, context.status);
@@ -190,13 +214,15 @@ export async function POST(request: Request, { params }: Params) {
           })
         : { descriptors: [], uploadedPaths: [] };
     uploadedPaths = uploaded.uploadedPaths;
+    const attachmentDescriptors =
+      attachments.length > 0 ? uploaded.descriptors : directAttachments;
     const response = await fetch(
-      `${context.config.url}/rest/v1/rpc/${attachments.length > 0 ? "send_support_ticket_requester_message_with_attachments_v1" : "send_support_ticket_requester_message_v1"}`,
+      `${context.config.url}/rest/v1/rpc/${attachmentDescriptors.length > 0 ? "send_support_ticket_requester_message_with_attachments_v1" : "send_support_ticket_requester_message_v1"}`,
       {
         body: JSON.stringify({
           p_body: parsed.body,
-          ...(attachments.length > 0
-            ? { p_attachments: uploaded.descriptors }
+          ...(attachmentDescriptors.length > 0
+            ? { p_attachments: attachmentDescriptors }
             : {}),
           p_request_id: parsed.requestId,
           p_ticket_id: ticketId,
@@ -211,11 +237,10 @@ export async function POST(request: Request, { params }: Params) {
       },
     );
     if (!response.ok) {
-      await removeSupportAttachments(
-        context.config,
-        context.accessToken,
-        uploadedPaths,
-      );
+      await removeSupportAttachments(context.config, context.accessToken, [
+        ...uploadedPaths,
+        ...directAttachments.map((attachment) => attachment.storageObjectPath),
+      ]);
       return rpcFailure(await response.json().catch(() => null));
     }
 
@@ -224,11 +249,10 @@ export async function POST(request: Request, { params }: Params) {
       { headers: noStoreHeaders, status: 201 },
     );
   } catch {
-    await removeSupportAttachments(
-      context.config,
-      context.accessToken,
-      uploadedPaths,
-    );
+    await removeSupportAttachments(context.config, context.accessToken, [
+      ...uploadedPaths,
+      ...directAttachments.map((attachment) => attachment.storageObjectPath),
+    ]);
     return failure("Não foi possível enviar sua resposta agora.", 503);
   }
 }
@@ -258,6 +282,22 @@ function parseMessage(value: unknown, hasAttachments = false) {
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+const attachmentContractMessage =
+  "Não foi possível enviar o anexo. Use até 5 arquivos de até 10 MB cada, nos formatos PDF, JPG, PNG ou WebP.";
+
+function allPathsBelongToRequest(
+  attachments: SupportTicketAttachmentDescriptor[],
+  ticketId: string,
+  requestId: string,
+) {
+  const prefix = `${ticketId}/${requestId}/`;
+  return attachments.every(
+    (attachment) =>
+      attachment.storageObjectPath.startsWith(prefix) &&
+      !attachment.storageObjectPath.includes(".."),
+  );
 }
 
 function toAttachment(

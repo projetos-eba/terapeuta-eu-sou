@@ -82,6 +82,12 @@ Especificar content, empty, no-results, loading, unavailable, forbidden e error,
 além de hover, focus, pressed e disabled. Optimistic UI somente em ação reversível
 e de baixo risco. Não transformar falha em vazio ou sucesso aparente.
 
+Toda mensagem visível deve falar somente do estado útil, impacto e próximo passo
+para a pessoa. Nunca transportar para o front-end termos ou explicações de
+desenvolvimento, arquitetura, integrações ou fluxo interno, como jobs, webhooks,
+read models, gates, lotes ou nomes técnicos de provedores. Em sucesso, não expor
+etapas futuras quando a pessoa não precisa agir sobre elas.
+
 ### 6. Criticar a identidade
 
 Responder: “Existe alguma parte desta interface que poderia pertencer

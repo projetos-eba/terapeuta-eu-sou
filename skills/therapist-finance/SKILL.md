@@ -82,6 +82,10 @@ All derive the therapist from `auth.uid()`. Do not accept
 - User-facing copy should say `recebimentos`, `repasses` and `conta de
 recebimento`; provider and reconciliation terminology stays in the service
   boundary and is translated into a clear next step.
+- Nunca expor no front-end explicações de arquitetura ou do fluxo interno,
+  incluindo nomes de jobs, webhooks, read models, gates, Balance Transaction,
+  cutoff ou `source_transaction`. Mostrar apenas o status financeiro útil, seu
+  impacto e uma ação quando ela realmente existir.
 - Sem base financeira deve aparecer como `Sem dados` em textos e `-` em
   números. Zero só deve ser mostrado quando houver movimentação real no
   período.
@@ -109,11 +113,12 @@ recebimento`; provider and reconciliation terminology stays in the service
   Premium Plus. Premium sees an upgrade card and keeps F2.
 - F4 operational payout lifecycle uses the existing authorities: Stripe webhook
   marks payment, `confirm_session_service` records realization,
-  `refresh_session_transfer_eligibility` applies the safety period,
+  `refresh_session_transfer_eligibility` requires service confirmation and then
+  applies the Stripe settlement gate without an additional time delay,
   hourly reconciliation verifies the source Charge Balance Transaction,
   `create_weekly_payout_batch_v2` reserves only settled eligible payments and
   `process-payout-batch` creates Connect Transfers with `source_transaction`.
-- Keep `waiting_settlement` visible between the safety period and Stripe
+- Keep `waiting_settlement` visible between service confirmation and Stripe
   availability. `eligible` requires a recent authoritative `available` snapshot;
   the weekly cutoff and worker must revalidate it.
 - The hourly worker must first re-evaluate only recoverable

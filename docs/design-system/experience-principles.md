@@ -26,6 +26,9 @@ Uma experiência TES combina seis qualidades:
 
 - **clareza serena**: a próxima decisão é evidente sem criar urgência artificial;
 - **precisão humana**: estados e dados são exatos, mas explicados em linguagem de produto;
+- **linguagem de produto**: a interface comunica estado, impacto e próximo passo,
+  nunca termos ou explicações de desenvolvimento, arquitetura, integração ou
+  fluxo interno;
 - **calor editorial**: tipografia, ritmo e imagem constroem acolhimento sem infantilização;
 - **dignidade operacional**: tarefas densas continuam legíveis, eficientes e visualmente cuidadas;
 - **distinção silenciosa**: personalidade vem de composição, voz, tipografia e cor, não de decoração acumulada;

@@ -25,6 +25,8 @@ export type BioIllustrationId =
   | "organic_flow"
   | "warm_layers";
 
+export const MAX_THERAPIST_PROFILE_GUIDE_ITEMS = 6;
+
 export type PublicTherapistProfile = {
   acceptsOnlineSessions: boolean;
   badges: string[];

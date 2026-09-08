@@ -210,8 +210,8 @@ export const financialReceiptCopyByStatus: Record<
     "Sessões pagas que ainda aguardam a confirmação da realização.",
   ),
   waiting_safety_period: receiptCopy(
-    "No prazo de segurança",
-    "Sessões confirmadas dentro do prazo de segurança anterior à liquidação.",
+    "Em liquidação",
+    "Pagamento confirmado aguardando a disponibilização do saldo pela Stripe.",
   ),
   waiting_settlement: receiptCopy(
     "Em liquidação",
@@ -241,7 +241,7 @@ export const receiptStatusLabels: Record<TherapistReceiptStatus, string> = {
   refunded: "Reembolsado",
   reversed: "Revertido",
   waiting_confirmation: "Aguardando confirmação",
-  waiting_safety_period: "Prazo de segurança",
+  waiting_safety_period: "Em liquidação",
   waiting_settlement: "Em liquidação",
 };
 
@@ -256,7 +256,7 @@ export const payoutStatusLabels: Record<TherapistPayoutStatus, string> = {
   transferred: "Transferido",
   transfer_pending: "Processando",
   waiting_confirmation: "Aguardando confirmação",
-  waiting_safety_period: "Período de segurança",
+  waiting_safety_period: "Em liquidação",
   waiting_settlement: "Em liquidação",
 };
 

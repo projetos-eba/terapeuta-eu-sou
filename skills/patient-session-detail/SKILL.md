@@ -1,3 +1,8 @@
+---
+name: patient-session-detail
+description: Implementar e manter o detalhe autenticado de encontro da pessoa paciente, incluindo gestão, cancelamento, reagendamento e acesso seguro à sala.
+---
+
 # Patient Session Detail Page
 
 Use this skill when implementing or refactoring the authenticated client/patient booking detail page.
@@ -108,9 +113,36 @@ anotação.
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.
+- Um cancelamento tardio com retenção integral e sem revisão manual deve
+  encerrar o atendimento sem `refund_pending`; a elegibilidade financeira usa
+  somente a decisão processada e integralmente reconciliada, sem apresentar o
+  serviço cancelado como realizado.
+- Reagendamento abre um único `TESDialog` com próximos horários, agenda completa
+  e confirmação. A disponibilidade vem de `bookingId` e mantém terapia, duração,
+  preço e buffers dos snapshots imutáveis. Quando a própria pessoa confirma um
+  horário, a Edge aplica a mudança imediatamente ao mesmo booking em uma RPC
+  transacional, sem proposta nem hold; o horário original permanece ocupado até
+  o commit. Propostas pendentes exibidas à pessoa são exclusivamente as
+  iniciadas pela terapeuta e mantêm as ações de aceitar ou recusar.
+- O cancelamento da pessoa começa com o mesmo componente completo de próximos
+  horários do reagendamento: até cinco opções por dia nos três próximos dias
+  disponíveis e acesso a “Ver agenda completa e mais horários”. A disponibilidade
+  continua derivada exclusivamente do `bookingId`; não criar seleção ou regra
+  paralela para retenção. A ação “Continuar com o cancelamento” permanece sempre
+  visível, inclusive em falha ou vazio de disponibilidade. Na confirmação,
+  `userReason` é obrigatório, privado, limitado a 500 caracteres e nunca aparece
+  para a contraparte.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados, as
   ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
   mostram o motivo em texto acessível.
+- Quando um booking futuro estiver `cancelled_by_payment` com pagamento
+  `failed` ou `canceled`, o hero substitui a entrada desabilitada por
+  `Tentar pagamento novamente` e usa somente
+  `/reserva?booking=<uuid>&etapa=pagamento`. O status permanece informativo e
+  não vira link. A retomada não libera a sala, não cria hold e só confirma o
+  horário após a autorização e a revalidação autoritativa. Depois do início,
+  o detalhe oferece `Escolher outro horário` no perfil do terapeuta em vez de
+  tentar reutilizar o booking encerrado.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados
@@ -120,7 +152,8 @@ anotação.
 
 - Run `npm run typecheck`, `npm run lint`, `npm run build`.
 - Run focused tests for patient detail components when changing access or state presentation.
-- Run Supabase validation when possible: `npx supabase db reset`.
+- Preserve o volume local: use migration dry-run/push e pgTAP focado; não use
+  `db reset` sem autorização explícita.
 - Test:
   - `/app/encontros/96000000-0000-4000-8000-000000000001`
   - `/app/sessoes/96000000-0000-4000-8000-000000000001`

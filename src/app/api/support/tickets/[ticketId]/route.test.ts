@@ -312,6 +312,44 @@ describe("support ticket detail route", () => {
     expect(response.status, JSON.stringify(await response.json())).toBe(201);
   });
 
+  it("persists every descriptor from a multi-file direct upload in one reply", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/auth/v1/user")) {
+          return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+        }
+        if (url.includes("/rest/v1/profiles")) {
+          return Response.json([{ role: "therapist" }]);
+        }
+        if (
+          url.includes(
+            "/rpc/send_support_ticket_requester_message_with_attachments_v1",
+          )
+        ) {
+          const payload = JSON.parse(String(init?.body));
+          expect(payload.p_attachments).toEqual([
+            expect.objectContaining({
+              originalName: "primeiro.pdf",
+              storageObjectPath: `${ticketId}/${requestId}/01-primeiro.pdf`,
+            }),
+            expect.objectContaining({
+              originalName: "segundo.png",
+              storageObjectPath: `${ticketId}/${requestId}/02-segundo.png`,
+            }),
+          ]);
+          return Response.json({ id: "40000000-0000-4000-8000-000000000005" });
+        }
+        return new Response(null, { status: 404 });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(directAttachmentRequest(), context);
+
+    expect(response.status, JSON.stringify(await response.json())).toBe(201);
+  });
+
   it("loads and replies to a patient-owned support thread", async () => {
     headerMocks.cookieGet.mockImplementation((name: string) =>
       name === "tes_patient_access_token"
@@ -400,4 +438,25 @@ function multipartRequest() {
     formData: async () => formData,
     headers: new Headers({ "Content-Type": "multipart/form-data" }),
   } as unknown as Request;
+}
+
+function directAttachmentRequest() {
+  return request({
+    attachments: [
+      {
+        mimeType: "application/pdf",
+        originalName: "primeiro.pdf",
+        sizeBytes: 3,
+        storageObjectPath: `${ticketId}/${requestId}/01-primeiro.pdf`,
+      },
+      {
+        mimeType: "image/png",
+        originalName: "segundo.png",
+        sizeBytes: 3,
+        storageObjectPath: `${ticketId}/${requestId}/02-segundo.png`,
+      },
+    ],
+    body: "Complemento com dois anexos.",
+    requestId,
+  });
 }

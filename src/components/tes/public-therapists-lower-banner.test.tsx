@@ -18,7 +18,7 @@ describe("PublicTherapistsLowerBanner", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Ver terapeutas" }),
+      screen.getByRole("link", { name: "Explorar caminhos" }),
     ).toHaveAttribute("href", "/terapeutas");
   });
 });

@@ -69,6 +69,8 @@ describe("public reservation data contract", () => {
   });
 
   it("keeps patient conflicts visible and preserves an exactly consecutive slot", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-03T12:00:00.000Z"));
     const context = resolveReservationContext({
       isPatientAuthenticated: true,
       searchParams: {

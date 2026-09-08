@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SessionFeedbackForm } from "./session-feedback-form";
@@ -15,7 +21,10 @@ describe("SessionFeedbackForm", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        jsonResponse({ data: { feedback: null, status: "eligible" }, ok: true }),
+        jsonResponse({
+          data: { feedback: null, status: "eligible" },
+          ok: true,
+        }),
       )
       .mockResolvedValueOnce(
         jsonResponse({
@@ -46,8 +55,14 @@ describe("SessionFeedbackForm", () => {
 
     await screen.findByText("Como foi seu encontro?");
     fireEvent.click(screen.getByRole("button", { name: "Sim, foi realizado" }));
-    expect(screen.getByText("Como você avalia este encontro?")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Compartilhe algo importante sobre este encontro…")).toBeInTheDocument();
+    expect(
+      screen.getByText("Como você avalia este encontro?"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(
+        "Compartilhe algo importante sobre este encontro…",
+      ),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "4 estrelas" }));
     fireEvent.change(screen.getByLabelText(/observações/i), {
       target: { value: "Boa qualidade de áudio." },
@@ -55,7 +70,9 @@ describe("SessionFeedbackForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
 
     await waitFor(() => {
-      const call = fetchMock.mock.calls.find(([url]) => url === "/api/session-feedback");
+      const call = fetchMock.mock.calls.find(
+        ([url]) => url === "/api/session-feedback",
+      );
       expect(call?.[1]).toEqual(expect.objectContaining({ method: "POST" }));
       expect(JSON.parse(String(call?.[1]?.body))).toEqual({
         bookingId,
@@ -68,13 +85,26 @@ describe("SessionFeedbackForm", () => {
     });
 
     expect(document.body.textContent).not.toMatch(/actorRole|requestId/);
-    expect(await screen.findByText("Sua confirmação foi registrada")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Sua confirmação foi registrada"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Sua resposta permanece privada. Obrigado por compartilhar como foi.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/prazo de segurança/i)).not.toBeInTheDocument();
   });
 
   it("requires a non-completion reason and preserves the 500 character limit", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: { feedback: null, status: "incident_only" }, ok: true }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({
+          data: { feedback: null, status: "incident_only" },
+          ok: true,
+        }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     render(
@@ -86,23 +116,36 @@ describe("SessionFeedbackForm", () => {
     );
 
     await screen.findByText("Como foi sua sessão?");
-    expect(screen.getByPlaceholderText("Compartilhe algo importante sobre esta sessão…")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(
+        "Compartilhe algo importante sobre esta sessão…",
+      ),
+    ).toBeInTheDocument();
     const comment = screen.getByLabelText(/observações/i);
     fireEvent.change(comment, { target: { value: "x".repeat(600) } });
 
     expect(comment).toHaveValue("x".repeat(500));
-    expect(screen.getByRole("button", { name: /enviar feedback/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /enviar feedback/i }),
+    ).toBeDisabled();
     fireEvent.click(screen.getByLabelText("Problema de internet"));
-    expect(screen.getByRole("button", { name: /enviar feedback/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /enviar feedback/i }),
+    ).toBeEnabled();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("renders an unavailable state without exposing the feedback form", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ data: { feedback: null, status: "unavailable" }, ok: true }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({
+            data: { feedback: null, status: "unavailable" },
+            ok: true,
+          }),
+        ),
     );
 
     render(
@@ -113,8 +156,14 @@ describe("SessionFeedbackForm", () => {
       />,
     );
 
-    expect(await screen.findByText(/Ainda estamos confirmando os dados deste encontro/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /enviar feedback/i })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Ainda estamos confirmando os dados deste encontro/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /enviar feedback/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

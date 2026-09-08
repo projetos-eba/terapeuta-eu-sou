@@ -9,11 +9,13 @@ import {
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
+import { PendingNavigationLink } from "@/components/tes/pending-navigation-link";
 import { routes } from "@/lib/routes";
 
 import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
+  TherapistReceiptStatus,
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
 import {
@@ -26,6 +28,7 @@ import {
   formatPaymentOrigin,
 } from "./financial-formatters";
 import { buildFinanceHref } from "./financial-route";
+import { FinancialPeriodFields } from "./financial-period-fields";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
 export function FinancialReceiptsTab({
@@ -44,86 +47,73 @@ export function FinancialReceiptsTab({
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
-        <form
-          className="grid gap-3 lg:gap-4 lg:grid-cols-[170px_170px_180px_1fr_auto]"
-          method="get"
-        >
+        <form className="grid min-w-0 gap-4" method="get">
           <input name="tab" type="hidden" value="recebimentos" />
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Período
-            <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={dateRange.key}
-              name="period"
-            >
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="month">Mês atual</option>
-              {dateRange.key === "custom" ? (
-                <option value="custom">Período personalizado</option>
-              ) : null}
-            </select>
-          </label>
-          {dateRange.key === "custom" ? (
-            <>
-              <input name="start" type="hidden" value={dateRange.start} />
-              <input name="end" type="hidden" value={dateRange.end} />
-            </>
-          ) : null}
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:max-w-[720px]">
+            <FinancialPeriodFields dateRange={dateRange} />
+          </div>
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Situação
-            <select
-              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={filters.status ?? ""}
-              name="status"
-            >
-              <option value="">Todos</option>
-              {Object.entries(receiptStatusLabels).map(([status, label]) => (
-                <option key={status} value={status}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,280px)_minmax(180px,240px)_minmax(320px,1fr)]">
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+              Situação
+              <select
+                className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.status ?? ""}
+                name="status"
+              >
+                <option value="">Todos</option>
+                {(
+                  Object.entries(receiptStatusLabels) as Array<
+                    [TherapistReceiptStatus, string]
+                  >
+                )
+                  .filter(([status]) => status !== "waiting_safety_period")
+                  .map(([status, label]) => (
+                    <option key={status} value={status}>
+                      {label}
+                    </option>
+                  ))}
+              </select>
+            </label>
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Terapia
-            <select
-              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={filters.therapyId ?? ""}
-              name="therapyId"
-            >
-              <option value="">Todas</option>
-              {receipts.therapyOptions.map((option) => (
-                <option key={option.therapyId} value={option.therapyId}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+              Terapia
+              <select
+                className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.therapyId ?? ""}
+                name="therapyId"
+              >
+                <option value="">Todas</option>
+                {receipts.therapyOptions.map((option) => (
+                  <option key={option.therapyId} value={option.therapyId}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Buscar paciente
-            <span className="relative">
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
-                size={18}
-              />
-              <input
-                className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white pl-10 pr-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
-                defaultValue={filters.search ?? ""}
-                name="q"
-                placeholder="Nome ou terapia"
-                type="search"
-              />
-            </span>
-          </label>
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep sm:col-span-2 lg:col-span-1">
+              Buscar paciente
+              <span className="relative">
+                <Search
+                  aria-hidden="true"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
+                  size={18}
+                />
+                <input
+                  className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white pl-10 pr-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  defaultValue={filters.search ?? ""}
+                  name="q"
+                  placeholder="Nome ou terapia"
+                  type="search"
+                />
+              </span>
+            </label>
+          </div>
 
           <button
-            className="inline-flex min-h-11 items-center justify-center self-end rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="inline-flex min-h-11 w-full items-center justify-center justify-self-start rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             type="submit"
           >
             Filtrar
@@ -219,7 +209,7 @@ export function FinancialReceiptsTab({
                       Bruto
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Comissão TES
+                      Custos da plataforma
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Líquido
@@ -324,7 +314,7 @@ export function FinancialReceiptsTab({
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <ReceiptDetail
-                      label="Comissão TES"
+                      label="Custos da plataforma"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <ReceiptDetail
@@ -476,6 +466,7 @@ function ReceiptsVisualSummary({
               ? statusTotals
               : [
                   {
+                    status: "empty",
                     label: "Aguardando dados",
                     value: 0,
                     color: "var(--tes-color-brand-lavender)",
@@ -484,7 +475,8 @@ function ReceiptsVisualSummary({
             ).map((item) => (
               <li
                 className="flex items-center justify-between gap-3"
-                key={item.label}
+                data-receipt-status={item.status}
+                key={item.status}
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
@@ -509,17 +501,34 @@ function ReceiptsVisualSummary({
 function buildStatusTotals(
   items: TherapistReceiptsContract["statusDistribution"],
 ) {
-  const colors: Record<string, string> = {
-    paid: "var(--tes-color-status-success)",
-    waiting_settlement: "var(--tes-color-brand-cyan)",
-    eligible: "var(--tes-color-brand-primary)",
+  const colors: Record<TherapistReceiptStatus, string> = {
+    bank_pending: "var(--tes-color-status-info)",
     blocked: "var(--tes-color-status-warning)",
+    canceled: "var(--tes-color-text-muted)",
+    disputed: "var(--tes-color-brand-deep)",
+    eligible: "var(--tes-color-brand-primary)",
+    failed: "var(--tes-color-status-danger)",
+    paid: "var(--tes-color-status-success)",
+    payout_processing: "var(--tes-color-brand-cyan)",
+    receivable: "var(--tes-color-brand-mint)",
+    refunded:
+      "color-mix(in srgb, var(--tes-color-status-danger) 58%, var(--tes-color-brand-primary))",
+    reversed:
+      "color-mix(in srgb, var(--tes-color-brand-deep) 72%, var(--tes-color-status-danger))",
+    waiting_confirmation: "var(--tes-color-brand-lavender)",
+    waiting_safety_period:
+      "color-mix(in srgb, var(--tes-color-brand-cyan) 58%, var(--tes-color-brand-lavender))",
+    waiting_settlement:
+      "color-mix(in srgb, var(--tes-color-brand-cyan) 72%, var(--tes-color-brand-primary))",
   };
-  return items.map((item) => ({
-    color: colors[item.status] ?? "var(--tes-color-brand-lavender)",
-    label: receiptStatusLabels[item.status],
-    value: item.amountCents,
-  }));
+  return items
+    .filter((item) => item.amountCents > 0)
+    .map((item) => ({
+      color: colors[item.status],
+      label: receiptStatusLabels[item.status],
+      status: item.status,
+      value: item.amountCents,
+    }));
 }
 
 function chartPoints(values: number[], max: number) {
@@ -651,40 +660,47 @@ function Pagination({
   page: number;
 }) {
   if (page <= 1 && !hasNextPage) return null;
+  const previousHref =
+    page > 1
+      ? buildFinanceHref({
+          end: dateRange.end,
+          filters,
+          page: page - 1,
+          period: dateRange.key,
+          start: dateRange.start,
+          tab: "receipts",
+        })
+      : null;
+  const nextHref = hasNextPage
+    ? buildFinanceHref({
+        end: dateRange.end,
+        filters,
+        page: page + 1,
+        period: dateRange.key,
+        start: dateRange.start,
+        tab: "receipts",
+      })
+    : null;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
-      {page > 1 ? (
-        <Link
+      {previousHref ? (
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={buildFinanceHref({
-            end: dateRange.end,
-            filters,
-            page: page - 1,
-            period: dateRange.key,
-            start: dateRange.start,
-            tab: "receipts",
-          })}
-          scroll={false}
+          href={previousHref}
+          key={previousHref}
         >
           Mostrar menos
-        </Link>
+        </PendingNavigationLink>
       ) : null}
-      {hasNextPage ? (
-        <Link
+      {nextHref ? (
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={buildFinanceHref({
-            end: dateRange.end,
-            filters,
-            page: page + 1,
-            period: dateRange.key,
-            start: dateRange.start,
-            tab: "receipts",
-          })}
-          scroll={false}
+          href={nextHref}
+          key={nextHref}
         >
           Carregar mais
-        </Link>
+        </PendingNavigationLink>
       ) : null}
     </div>
   );

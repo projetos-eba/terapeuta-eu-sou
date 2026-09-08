@@ -15,6 +15,11 @@ import {
 import { PublicFooter, PublicHeader } from "@/components/tes";
 import { TrackedBookingLink } from "@/features/public-metrics";
 import {
+  MAX_THERAPIST_PROFILE_GUIDE_ITEMS,
+  type PublicTherapistProfile,
+  type TherapistProfileReview,
+} from "@/features/therapist-profile/types";
+import {
   profilePhotoShapeClassName,
   publicProfileThemeById,
 } from "@/features/therapist-profile/personalization";
@@ -25,7 +30,6 @@ import { FavoriteTherapistButton } from "./favorite-therapist-button";
 import { ProfileShareButton } from "./profile-share-button";
 import { PublicServiceDescription } from "./public-service-description";
 import { ReviewsCarousel } from "./reviews-carousel";
-import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
 import { getPublicVideoEmbedUrl } from "../video-embed";
 
 export type TherapistProfilePageMode = "preview" | "public";
@@ -222,7 +226,10 @@ function IntroCards({
   profile: PublicTherapistProfile;
 }) {
   const videoEmbedUrl = getPublicVideoEmbedUrl(profile.video);
-  const guideItems = profile.content.guideItems.slice(0, 4);
+  const guideItems = profile.content.guideItems.slice(
+    0,
+    MAX_THERAPIST_PROFILE_GUIDE_ITEMS,
+  );
 
   return (
     <section className="mx-auto grid max-w-[1348px] gap-5 px-5 pt-8 sm:px-8 md:grid-cols-3">
@@ -264,25 +271,25 @@ function IntroCards({
         </div>
       </article>
 
-      <article className="rounded-[22px] border border-brand-lavender bg-white p-6 shadow-card sm:p-9 md:text-center md:shadow-none">
+      <article className="rounded-[22px] border border-brand-lavender bg-white p-5 shadow-card sm:p-6 md:text-center md:shadow-none">
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Como posso te guiar
         </h2>
         <div
           aria-label="Caminhos pelos quais posso te guiar"
-          className="mt-7 grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-x-6"
+          className="mt-6 grid grid-cols-1 gap-x-3 gap-y-4 min-[420px]:grid-cols-2 xl:grid-cols-3"
           role="list"
         >
-          {guideItems.map((item, index) => (
+          {guideItems.map((item) => (
             <div
-              className={`grid content-start gap-3 px-2 text-center ${index % 2 === 1 ? "border-l border-brand-lavender" : ""} ${guideItems.length % 2 === 1 && index === guideItems.length - 1 ? "col-span-2 mx-auto w-full max-w-[180px] border-l-0" : ""}`}
+              className="flex min-h-11 items-center gap-2 px-1 text-left xl:justify-center"
               key={item.label}
               role="listitem"
             >
-              <span className="mx-auto grid size-[68px] place-items-center rounded-full bg-brand-lavenderSoft sm:size-[72px]">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft">
                 <IconByName name={item.icon} />
               </span>
-              <p className="text-sm font-medium leading-[1.45] text-tesText-primary">
+              <p className="text-sm font-medium leading-5 text-tesText-primary">
                 {item.label}
               </p>
             </div>
