@@ -145,7 +145,7 @@ describe("therapist metric detail contracts", () => {
   });
 
   it("renders the plan gate and protected MTR-5 states", () => {
-    const { rerender } = render(
+    const { container, rerender } = render(
       <TherapistInterestMetricsPage
         data={mapTherapistInterestMetrics(lockedInterestPayload())}
       />,
@@ -173,11 +173,118 @@ describe("therapist metric detail contracts", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/mais dados são necessários/i).length).toBe(3);
     expect(
-      screen.getByText(/ainda não há dados neste período/i),
+      screen.getByText(/ainda não há temas estruturados para mostrar/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Favoritos que viraram sessão"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Temas mais recorrentes na jornada",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Retorno por grupo")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /abrir histórico da jornada/i }),
+    ).toHaveAttribute("href", "/terapeuta/pacientes");
+    expect(
+      screen.getByText(/cada pessoa aparece uma única vez/i),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelectorAll('[data-state="insufficient_sample"]'),
+    ).toHaveLength(6);
+    expect(
+      Array.from(
+        container.querySelectorAll(
+          '[data-state="insufficient_sample"] span[aria-label]',
+        ),
+      ).map((element) => element.getAttribute("aria-label")),
+    ).toEqual([
+      "8 de 10 registros necessários",
+      "3 de 10 registros necessários",
+      "8 de 10 registros necessários",
+      "8 de 10 registros necessários",
+      "8 de 10 registros necessários",
+      "8 de 10 registros necessários",
+    ]);
+  });
+
+  it("renders compact interest cards with truthful period comparisons", () => {
+    const payload = readyInterestPayload();
+    payload.segments = {
+      definitionVersion: 1,
+      items: [
+        { key: "active", percentage: 75, value: 15 },
+        { key: "inactive", percentage: 25, value: 5 },
+      ],
+      minimumSample: 10,
+      observedSample: 20,
+      status: "ready",
+    };
+    payload.summary = {
+      peopleReturned: sampledReady(
+        "therapist_metrics.people_returned.up",
+        12,
+        8,
+        "people",
+        20,
+      ),
+      profileFavorites: {
+        ...sampledReady(
+          "therapist_metrics.profile_favorites.stable",
+          3,
+          4,
+          "favorites",
+          20,
+        ),
+        direction: "down",
+        directionCopyKey: "therapist_metrics.profile_favorites.down",
+      },
+      returnRate: sampledReady(
+        "therapist_metrics.return_rate.up",
+        60,
+        50,
+        "percent",
+        20,
+      ),
+      sessionsPerPerson: sampledReady(
+        "therapist_metrics.sessions_per_person.up",
+        2.4,
+        2,
+        "ratio",
+        20,
+      ),
+    };
+
+    const { container } = render(
+      <TherapistInterestMetricsPage
+        data={mapTherapistInterestMetrics(payload)}
+      />,
+    );
+
+    expect(screen.getByText("↑ 50%")).toBeInTheDocument();
+    expect(screen.getByText("↑ 10 p.p.")).toBeInTheDocument();
+    expect(screen.getByText("↑ 20%")).toBeInTheDocument();
+    expect(screen.getByText("↓ 25%")).toBeInTheDocument();
+    expect(screen.getAllByText("vs. período anterior")).toHaveLength(4);
+    expect(
+      screen.getByRole("heading", { name: "Pessoas ativas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Pessoas inativas" }),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector('[aria-label="75% da base acompanhada"]'),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector('[aria-label="25% da base acompanhada"]'),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelectorAll('article[data-state="ready"]'),
+    ).toHaveLength(6);
+    expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(
+      4,
+    );
   });
 });
 
