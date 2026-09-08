@@ -545,35 +545,41 @@ export function DistributionDonut({
         role="img"
         tabIndex={0}
       >
-        <ResponsiveContainer height="100%" width="100%">
-          <PieChart accessibilityLayer>
-            <Pie
-              data={visualItems}
-              dataKey="value"
-              innerRadius="62%"
-              isAnimationActive={false}
-              nameKey="label"
-              outerRadius="88%"
-              paddingAngle={2}
-            >
-              {visualItems.map((item, index) => (
-                <Cell
-                  fill={
-                    isReference
-                      ? "var(--tes-color-brand-lavender-soft)"
-                      : chartPalette[index % chartPalette.length]
-                  }
-                  key={item.label}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              content={<TherapistChartTooltip />}
-              isAnimationActive={false}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <span className="pointer-events-none absolute inset-0 grid place-items-center text-center text-sm font-extrabold text-brand-deep">
+        <div className="relative z-10 h-full w-full" data-chart-graphics-layer>
+          <ResponsiveContainer height="100%" width="100%">
+            <PieChart accessibilityLayer>
+              <Pie
+                data={visualItems}
+                dataKey="value"
+                innerRadius="62%"
+                isAnimationActive={false}
+                nameKey="label"
+                outerRadius="88%"
+                paddingAngle={2}
+              >
+                {visualItems.map((item, index) => (
+                  <Cell
+                    fill={
+                      isReference
+                        ? "var(--tes-color-brand-lavender-soft)"
+                        : chartPalette[index % chartPalette.length]
+                    }
+                    key={item.label}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                content={<TherapistChartTooltip />}
+                isAnimationActive={false}
+                wrapperStyle={{ zIndex: 20 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <span
+          className="pointer-events-none absolute inset-0 z-0 grid place-items-center text-center text-sm font-extrabold text-brand-deep"
+          data-chart-center-label
+        >
           {isReference ? "0" : centerLabel}
         </span>
       </div>
