@@ -47,4 +47,25 @@ describe("TherapistChartTooltip", () => {
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
+
+  it("keeps values inside the tooltip when labels are long", () => {
+    render(
+      <TherapistChartTooltip
+        active
+        label="4 de setembro de 2026"
+        payload={[
+          {
+            name: "Canceladas pela pessoa atendida",
+            value: 4,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("tooltip")).toHaveClass("overflow-hidden");
+    expect(screen.getByRole("listitem")).toHaveClass(
+      "grid-cols-[auto_minmax(0,1fr)_auto]",
+    );
+    expect(screen.getByText("4")).toHaveClass("justify-self-end");
+  });
 });

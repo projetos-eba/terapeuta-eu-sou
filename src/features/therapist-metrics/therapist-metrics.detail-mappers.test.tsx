@@ -139,6 +139,15 @@ describe("therapist metric detail contracts", () => {
         name: "Distribuição por dia e horário",
       }),
     ).toBeInTheDocument();
+    const outcomeDonut = screen.getByRole("img", {
+      name: "Distribuição dos resultados das sessões",
+    });
+    expect(
+      outcomeDonut.querySelector("[data-chart-graphics-layer]"),
+    ).toHaveClass("z-10");
+    expect(outcomeDonut.querySelector("[data-chart-center-label]")).toHaveClass(
+      "z-0",
+    );
     expect(
       screen.getByText(/motivos escritos livremente permanecem ocultos/i),
     ).toBeInTheDocument();
