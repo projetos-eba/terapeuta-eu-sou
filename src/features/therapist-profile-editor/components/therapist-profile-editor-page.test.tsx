@@ -295,15 +295,45 @@ describe("TherapistProfileEditorPage", () => {
       publicProfileSlug: "ana-presenca",
       version: 5,
     });
-    commandMocks.sendTherapistProfileCommand
-      .mockResolvedValueOnce({
-        data: { normalizedSlug: "ana-presenca", status: "available" },
-        status: "success",
-      })
-      .mockResolvedValueOnce({
-        data: { editor: updatedEditor, idempotentReplay: false },
-        status: "success",
-      });
+    commandMocks.sendTherapistProfileCommand.mockImplementation(
+      async (command) => {
+        if (command.action === "check_slug_availability") {
+          return {
+            data: { normalizedSlug: "ana-presenca", status: "available" },
+            status: "success" as const,
+          };
+        }
+        if (command.action === "update_slug") {
+          return {
+            data: { editor: updatedEditor, idempotentReplay: false },
+            status: "success" as const,
+          };
+        }
+        if (command.action === "save_draft") {
+          return {
+            data: {
+              editor: makeEditor({
+                draft: {
+                  baseProfileVersion: 4,
+                  contentVersionId: "autosaved-before-slug",
+                  fields: {
+                    ...makeEditor().published.fields,
+                    publicName: command.payload.publicName,
+                  },
+                  publishedAt: null,
+                  status: "draft",
+                  updatedAt: "2026-08-27T14:00:00.000Z",
+                },
+                version: 5,
+              }),
+              idempotentReplay: false,
+            },
+            status: "success" as const,
+          };
+        }
+        throw new Error(`Unexpected command: ${command.action}`);
+      },
+    );
 
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
@@ -328,7 +358,7 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar link" }));
 
     await waitFor(() =>
-      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenLastCalledWith(
+      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "update_slug",
           slug: "Ana Presença",
