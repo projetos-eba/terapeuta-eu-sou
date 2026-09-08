@@ -111,9 +111,57 @@ describe("therapist journey history", () => {
       serviceTitle: "Reiki",
       topicLabels: [],
     });
+    expect(detail?.topicCounts).toEqual([
+      {
+        count: 1,
+        key: "self_knowledge",
+        label: "Autoconhecimento",
+      },
+    ]);
+    expect(detail?.client.totalSharedMemories).toBe(1);
     expect(detail?.client.nextSessionServiceTitle).toBe("Reiki");
     expect(detail?.client.lastSessionServiceTitle).toBe("Reiki");
+    expect(detail?.client.firstSessionAt).toBe("2026-07-20T14:00:00-03:00");
+    expect(detail?.client.lastSessionAt).toBe("2026-07-20T14:00:00-03:00");
+    expect(detail?.client.nextSessionAt).toBe("2026-08-03T14:00:00-03:00");
     expect(detail?.timeline[0].href).toContain("/terapeuta/sessoes/");
+  });
+
+  it("keeps only completed historical sessions that have a shared summary in memory", () => {
+    const rows = createRows();
+    rows.bookings.push({
+      completed_at: "2026-07-26T15:00:00-03:00",
+      created_at: "2026-07-20T09:00:00-03:00",
+      ends_at: "2026-07-26T15:00:00-03:00",
+      id: "f2000000-0000-4000-8000-000000000005",
+      patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+      payment_status: "paid",
+      service_id: "s1000000-0000-4000-8000-000000000001",
+      starts_at: "2026-07-26T14:00:00-03:00",
+      status: "completed",
+    });
+    rows.summaries.push({
+      booking_id: "f2000000-0000-4000-8000-000000000002",
+      created_at: "2026-07-20T09:30:00-03:00",
+      patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+      summary: "Não deve aparecer: a reserva ainda é futura.",
+      title: "Futuro",
+      visibility: "patient",
+    });
+
+    const detail = mapJourneyHistoryDetail({
+      ...rows,
+      now,
+      patientId: "b1000000-0000-4000-8000-000000000001",
+      source: "supabase",
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    });
+
+    expect(detail?.timeline).toHaveLength(1);
+    expect(detail?.timeline[0]?.bookingId).toBe(
+      "f2000000-0000-4000-8000-000000000001",
+    );
+    expect(detail?.client.totalSharedMemories).toBe(1);
   });
 });
 
@@ -209,6 +257,15 @@ function createRows(): JourneyHistoryRows {
       { id: "s1000000-0000-4000-8000-000000000001", title: "Reiki" },
       { id: "s1000000-0000-4000-8000-000000000002", title: "Mindfulness" },
       { id: "s1000000-0000-4000-8000-000000000003", title: "Aromaterapia" },
+    ],
+    themeSelections: [
+      {
+        booking_id: "f2000000-0000-4000-8000-000000000001",
+        created_at: "2026-07-20T15:20:00-03:00",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        taxonomy_version: "journey_topics_v1",
+        theme_keys: ["self_knowledge"],
+      },
     ],
     summaries: [
       {

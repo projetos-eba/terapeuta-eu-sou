@@ -30,12 +30,16 @@ O Codex atua como agente de desenvolvimento, manutenção, refatoração, contro
 Toda alteração deve respeitar:
 
 - a solicitação atual do usuário;
-- o Figma do projeto;
+- as referências em imagem fornecidas pelo usuário, quando a tarefa envolver
+  ajuste visual;
+- o padrão visual já implementado na plataforma, os componentes existentes e
+  a Calibration aplicável;
 - a documentação central;
 - o Design System;
 - o sitemap e as rotas canônicas;
 - os tokens TES;
 - o código existente;
+- o Figma do projeto, como referência complementar;
 - as regras de segurança e rastreabilidade deste arquivo.
   O produto deve manter uma experiência clara, acolhedora, premium, humana e responsável, sem promessa de cura, diagnóstico ou resultado garantido.
 
@@ -47,17 +51,22 @@ Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 2. Skill e documentação de produto/domínio aplicáveis à página ou feature.
 3. `docs/product/sitemap.md`, `docs/product/routes-map.md` e
    `docs/product/glossary.md`.
-4. `docs/design-system/experience-principles.md`,
+4. Referências em imagem fornecidas pelo usuário, quando a tarefa envolver
+   ajuste visual.
+5. Componentes e padrões já usados na página/feature e em `src/components/`,
+   para evitar duplicação e preservar a linguagem visual da plataforma.
+6. `docs/design-refactor/calibration-contract.md`,
+   `docs/design-system/experience-principles.md`,
    `docs/design-system/density.md` e
    `docs/design-system/anti-patterns.md`, quando a tarefa envolver UI.
-5. `docs/design-system/design-system.md`,
+7. `docs/design-system/design-system.md`,
    `docs/design-system/composition-patterns.md` e
    `docs/design-system/interaction-patterns.md`, quando a tarefa envolver UI ou
    componentes.
-6. Figma atualizado, quando a tarefa envolver UI, fluxo, navegação, visual ou
-   componentes.
-7. `README.md`.
-8. Arquivos diretamente afetados pela tarefa.
+8. Figma atualizado, somente quando contribuir com fluxo, navegação,
+   permissões, iconografia ou uma referência visual complementar.
+9. `README.md`.
+10. Arquivos diretamente afetados pela tarefa.
    Consultar documentos adicionais somente quando necessário e solicitado:
 
 - `docs/design-system/tokens.md`: tokens, design tokens.
@@ -77,20 +86,34 @@ Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 
 ## 3. Fontes de verdade
 
-Quando houver conflito, usar esta prioridade:
+Quando houver conflito de produto, domínio, rota, permissão, dados ou contrato,
+usar esta prioridade:
 
 1. Solicitação atual do usuário.
 2. `AGENTS.md`.
 3. Produto/domínio: ADRs, skill aplicável, `docs/product/product.md`, sitemap,
    routes map e glossary.
-4. `docs/design-system/experience-principles.md` e regras de densidade.
-5. `docs/design-system/design-system.md`, composition/interaction patterns e
-   tokens TES.
-6. Figma atualizado do arquivo `Projeto Terapeuta Eu Sou Atualizado`.
-7. Código existente, com `src/lib/routes.ts` e `src/lib/permissions.ts` como
+4. Código existente, com `src/lib/routes.ts` e `src/lib/permissions.ts` como
    autoridades executáveis de seus respectivos contratos.
-8. Padrões inferidos por recorrência documentada.
-   Regras de conflito:
+5. Padrões inferidos por recorrência documentada.
+
+Para decisões de ajuste visual que não contrariem as autoridades acima, usar a
+seguinte ordem:
+
+1. Referência em imagem fornecida pelo usuário para a tela em ajuste.
+2. Padrão visual já implementado na plataforma e componente reutilizável já
+   existente.
+3. `docs/design-refactor/calibration-contract.md`.
+4. Experience Language, densidade, anti-patterns, Design System, patterns e
+   tokens TES aplicáveis.
+5. Figma atualizado do arquivo `Projeto Terapeuta Eu Sou Atualizado`, como
+   evidência complementar.
+
+Uma imagem de referência orienta composição, densidade, hierarquia, ritmo,
+responsividade e estilo. Ela não autoriza inferir ou alterar fluxo, rota,
+permissão, domínio, dado, contrato ou regra de negócio.
+
+Regras de conflito:
 
 - Registrar a inconsistência explicitamente.
 - Explicar impacto e risco.
@@ -118,8 +141,11 @@ Arquivo principal:
   consultado antes de criar ou substituir iconografia.
   Ao trabalhar com Figma:
 - Usar `↳ Jornadas dos Usuários` para fluxo e permissão.
-- Usar `↳ Design Telas` para comparação visual.
-- Usar `↳ Design System` para componentes, estilos e tokens.
+- Usar `↳ Design Telas` como comparação visual complementar, após a referência
+  em imagem do usuário, os componentes existentes e a Calibration.
+- Usar `↳ Design System` como evidência complementar de componentes, estilos e
+  tokens; o código e os documentos TES aplicáveis permanecem a autoridade de
+  implementação.
 - Usar `ícones` antes de desenhar ícones locais.
 - Registrar node IDs relevantes no resumo final.
   Se o Figma não estiver acessível, declarar o bloqueio e continuar apenas com fontes locais.
@@ -458,7 +484,9 @@ Stack real identificada:
 
 Uma tarefa só pode ser considerada pronta quando:
 
-- respeita Figma e fontes de verdade aplicáveis;
+- para UI, respeita a referência em imagem fornecida pelo usuário quando
+  aplicável, o padrão da plataforma, os componentes existentes, a Calibration
+  e as fontes de verdade aplicáveis; Figma é complementar;
 - respeita `src/lib/routes.ts` e `src/lib/permissions.ts`;
 - usa tokens TES (`docs/design-system/tokens.md`);
 - segue linguagem acolhedora e responsável — sem prometer cura, diagnóstico ou resultado;
@@ -481,7 +509,11 @@ Uma tarefa só pode ser considerada pronta quando:
   Validações padrão:
 - Conferir comandos disponíveis no `README.md` e em `package.json`.
 - Rodar `npm run typecheck`, `npm run lint` e `npm run build` quando o ambiente permitir.
-- Para UI, validar responsividade e comparar com Figma ou `Referencias/{perfil}` quando aplicável.
+- Para UI, validar responsividade e comparar prioritariamente com a referência
+  em imagem fornecida pelo usuário; na ausência dela, comparar com o padrão da
+  plataforma, componentes existentes, Calibration e `Referencias/{perfil}`.
+  Usar Figma como evidência complementar e registrar divergências visuais
+  intencionais.
 - Para docs, confirmar que não há referências quebradas nem duplicação desnecessária.
   Se uma validação não for executada, explicar o motivo.
 
@@ -544,7 +576,10 @@ Toda página implementada ou refatorada deve ter uma skill local correspondente 
 
 Regras:
 
-- A skill deve registrar fontes obrigatórias, node(s) Figma, rotas, componentes, dados dinâmicos, fallback, checklist de QA, copy responsável e pendências conhecidas da página.
+- A skill deve registrar referências em imagem fornecidas pelo usuário quando
+  existirem, padrões e componentes reutilizados, Calibration aplicável, node(s)
+  Figma complementares, rotas, componentes, dados dinâmicos, fallback,
+  checklist de QA, copy responsável e pendências conhecidas da página.
 - A skill deve ser atualizada junto com a página sempre que mudarem layout, fonte de dados, rota, componente crítico, regra de negócio ou documentação relacionada.
 - Exceção: páginas de perfil de terapeuta não usam uma única skill por plano. Devem existir skills por função contemplando simultaneamente Básico, Premium e Premium Plus, para evitar divergência entre os três planos.
 

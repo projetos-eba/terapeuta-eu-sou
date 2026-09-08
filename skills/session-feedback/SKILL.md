@@ -57,6 +57,15 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   `session_confirmation_incidents`. O comando nunca cria Transfer ou lote.
 - `reviews` permanece separado, usa outro comando e nunca altera confirmação,
   pagamento ou lote.
+- Depois de um feedback `completed` do terapeuta, Premium Plus pode abrir a
+  seção opcional “Temas da jornada”. Ela é um comando separado em
+  `booking_journey_theme_selections`: aceita de um a três chaves da taxonomia
+  fechada `journey_topics_v1`, exige declaração explícita, não tem texto livre
+  e é imutável por booking. Falha, ausência ou retry desses temas nunca bloqueia
+  feedback, confirmação, pagamento, ledger, repasse ou avaliação.
+- O paciente não vê nem envia temas. O backend deriva terapeuta e vínculo da
+  reserva, e o registro não alimenta Aura, exportação ou métricas entre pessoas
+  nesta fase.
 
 ## Auditoria Admin
 
@@ -101,6 +110,9 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   administração, decisão humana e cutoff do próximo lote.
 - Testar isolamento RLS/RPC e ausência de secrets, JWT, nomes de sessão, URLs,
   áudio, vídeo ou transcrição.
+- Testar temas apenas para terapeuta Premium Plus após confirmação realizada:
+  limite de 1–3, taxonomia fechada, declaração obrigatória, replay idempotente,
+  imutabilidade e rejeição de paciente, terapeuta externo e sessão inelegível.
 - Executar Vitest focado, Deno, typecheck, lint, build, migrações progressivas,
   `npx supabase db lint --local` e `npx supabase test db --local`. Nunca resetar
   dados locais sem autorização explícita.

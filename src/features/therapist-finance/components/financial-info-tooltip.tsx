@@ -6,9 +6,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function FinancialInfoTooltip({
+  align = "start",
   label,
   text,
 }: {
+  align?: "end" | "start";
   label: string;
   text: string;
 }) {
@@ -39,7 +41,7 @@ export function FinancialInfoTooltip({
         aria-controls={tooltipId}
         aria-expanded={open}
         aria-label={`Saiba mais sobre ${label}`}
-        className="grid size-7 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="grid size-11 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         onClick={() => setOpen((current) => !current)}
         type="button"
       >
@@ -47,7 +49,8 @@ export function FinancialInfoTooltip({
       </button>
       <span
         className={cn(
-          "invisible absolute left-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-lg border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary opacity-0 shadow-card transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100",
+          "invisible absolute top-full z-50 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-lg border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary opacity-0 shadow-card transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100",
+          align === "end" ? "right-0" : "left-0",
           open && "visible opacity-100",
         )}
         id={tooltipId}

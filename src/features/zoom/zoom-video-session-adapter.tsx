@@ -251,6 +251,7 @@ export function ZoomVideoSessionAdapter({
   scheduledEndsAt,
   scheduledStartsAt,
   sessionTitle,
+  showJourneyThemes = false,
 }: {
   access: ZoomAccessState | null;
   actorRole: "patient" | "therapist";
@@ -264,6 +265,7 @@ export function ZoomVideoSessionAdapter({
   scheduledEndsAt?: string;
   scheduledStartsAt?: string;
   sessionTitle?: string;
+  showJourneyThemes?: boolean;
 }) {
   const [state, setSessionState] = useState<SessionState>("idle");
   const stateRef = useRef(state);
@@ -3187,6 +3189,7 @@ export function ZoomVideoSessionAdapter({
               ? "Seu encontro foi encerrado"
               : "Sua sessão foi encerrada"
           }
+          showJourneyThemes={showJourneyThemes}
         />
         {backHref ? (
           <a

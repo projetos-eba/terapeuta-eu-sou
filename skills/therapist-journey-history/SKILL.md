@@ -47,9 +47,9 @@ operacional da jornada:
   sessões e templates aprovados;
 - faixa de resumo com início da jornada, sessões registradas, próxima e última
   sessão;
-- temas compartilhados diretamente na jornada, sem inferir informação a partir
-  de texto livre e sem afirmar diagnóstico ou frequência que não exista na
-  fonte;
+- temas privados registrados manualmente pelo próprio terapeuta Premium Plus,
+  sem inferir informação a partir de texto livre e sem afirmar diagnóstico ou
+  frequência que não exista na fonte;
 - memória das sessões em tabela no desktop e cartões cronológicos no mobile,
   com link canônico para a sessão;
 - cards finais para preferências de acolhimento e próximo encontro. Quando não
@@ -65,6 +65,7 @@ A página não cria uma nova autoridade clínica ou financeira. A leitura é der
 - `patient_profiles`
 - `therapist_services`
 - `booking_session_summaries`
+- `booking_journey_theme_selections`
 
 Regras:
 
@@ -76,9 +77,19 @@ Regras:
 - Os títulos de terapia por sessão podem ser derivados dos mesmos `bookings`,
   `therapist_services` e `booking_session_summaries` já autorizados pela
   feature; não adicionar uma fonte paralela para enriquecer a tela.
+- A memória inclui exclusivamente uma reserva `completed`, em data passada e
+  com `booking_session_summaries`; não exibir sessão futura, ausência, reserva
+  sem resumo ou uma linha sintética de “sessão registrada”.
+- Os indicadores do detalhe usam, respectivamente: primeira sessão concluída,
+  total de memórias visíveis, primeira reserva futura `confirmed` e sessão
+  concluída mais recente. Datas e horários usam Brasília.
+- Temas são uma seleção manual, opcional, privada e imutável do terapeuta
+  Premium Plus em uma sessão realizada já confirmada pelo próprio terapeuta.
+  A seleção usa de um a três itens da taxonomia `journey_topics_v1`, sem texto
+  livre, e aparece na jornada individual com a contagem de sessões marcadas.
 - Não inferir temas com palavras-chave do nome da terapia, título, resumo ou
-  qualquer outro texto livre. Enquanto não houver uma fonte estruturada,
-  consentida e específica, `segments` e `topicLabels` devem permanecer vazios.
+  qualquer outro texto livre. Temas não entram em Aura, exportação, métricas
+  entre pessoas ou qualquer fluxo do paciente nesta fase.
 - O parâmetro legado `segment` pode continuar sendo aceito pela URL por
   compatibilidade, mas é ignorado e não pode filtrar a lista.
 
@@ -149,12 +160,16 @@ Regra de acompanhamento:
   Confirmar uma coluna e ausência de overflow em 320, 375, 390 e 430 px,
   inclusive com fotos reais de `patient_profiles.avatar_url` e fallback por
   iniciais.
-- Confirmar que nomes como “Reiki”, títulos e resumos não criam o tema
-  “Espiritualidade” e que o estado vazio informa “Ainda não há temas
-  compartilhados para mostrar.”.
+- Confirmar que nomes como “Reiki”, títulos e resumos não criam temas; o estado
+  vazio orienta que os temas podem ser registrados após uma sessão realizada.
+- Verificar memória sem overflow no desktop e equivalência de registros entre a
+  tabela desktop e a lista cronológica mobile.
+- Verificar que paciente e outro terapeuta não leem nem registram temas, que a
+  seleção não muda confirmação, pagamento, ledger ou repasse e que replay é
+  idempotente.
 
 ## Pendências Conhecidas
 
 - O Figma mostra e-mail do cliente, mas a implementação atual usa rótulo seguro (`timezone`/`Cliente TES`) para respeitar as policies existentes.
-- Não há fonte estruturada e consentida de temas da jornada nesta etapa; não
-  inferir temas de títulos, resumos ou serviços.
+- A taxonomia de temas é fechada na versão `journey_topics_v1`; qualquer nova
+  categoria exige decisão de privacidade e nova versão.

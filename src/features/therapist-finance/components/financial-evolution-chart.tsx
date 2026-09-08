@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { BarChart3, TrendingUp } from "lucide-react";
 
 import { formatCurrency } from "./financial-formatters";
 
@@ -59,16 +59,21 @@ export function FinancialEvolutionChart({
   return (
     <section
       aria-label="Evolução financeira"
-      className="grid min-w-0 gap-5 overflow-hidden rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+      className="grid min-h-[438px] min-w-0 gap-5 overflow-hidden rounded-panel border border-brand-lavender bg-white p-5 shadow-card xl:min-h-[476px] sm:p-6"
     >
       <div className="grid gap-4 xl:grid-cols-[minmax(190px,0.9fr)_minmax(0,1.7fr)_auto] xl:items-start">
-        <div>
-          <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep sm:text-[32px]">
-            Evolução financeira
-          </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Compare a leitura dos períodos com mais clareza.
-          </p>
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <BarChart3 aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
+              Evolução financeira
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Compare a leitura dos períodos com mais clareza.
+            </p>
+          </div>
         </div>
         {highlights.length ? (
           <div className="grid gap-3 sm:grid-cols-3">
@@ -116,26 +121,29 @@ export function FinancialEvolutionChart({
       </div>
 
       {hasData ? (
-        <div className="min-w-0 overflow-x-auto rounded-[14px] border border-brand-lavender/60 bg-surface-soft/55 px-2 py-4 sm:px-4">
+        <div className="min-w-0 overflow-x-auto rounded-[14px] border border-brand-lavender/60 bg-white px-3 py-5 sm:px-5">
           <div
             aria-label="Gráfico com a evolução dos valores financeiros"
-            className="h-[270px] min-w-[560px]"
+            className="h-[350px] min-w-[680px]"
             role="img"
             tabIndex={0}
           >
             <ResponsiveContainer height="100%" width="100%">
               <ComposedChart
                 data={points}
-                margin={{ bottom: 4, left: 8, right: 12, top: 10 }}
+                barCategoryGap="28%"
+                barGap={8}
+                margin={{ bottom: 12, left: 12, right: 24, top: 18 }}
               >
                 <CartesianGrid
                   stroke="var(--tes-color-brand-lavender)"
-                  strokeDasharray="2 5"
+                  strokeDasharray="4 8"
                   vertical={false}
                 />
                 <XAxis
                   axisLine={false}
                   dataKey="label"
+                  padding={{ left: 28, right: 28 }}
                   tick={{
                     fill: "var(--tes-color-text-secondary)",
                     fontSize: 12,
@@ -179,13 +187,13 @@ export function FinancialEvolutionChart({
                       fill={item.color}
                       isAnimationActive={false}
                       key={item.dataKey}
-                      maxBarSize={34}
+                      maxBarSize={30}
                       name={item.label}
                       radius={[8, 8, 0, 0]}
                     />
                   ) : (
                     <Line
-                      activeDot={{ r: 5, strokeWidth: 2 }}
+                      activeDot={{ r: 6, strokeWidth: 2 }}
                       dataKey={item.dataKey}
                       dot={{ fill: item.color, r: 4, strokeWidth: 2 }}
                       isAnimationActive={false}
@@ -193,6 +201,7 @@ export function FinancialEvolutionChart({
                       name={item.label}
                       stroke={item.color}
                       strokeDasharray="6 5"
+                      strokeLinecap="round"
                       strokeWidth={3}
                       type="monotone"
                     />

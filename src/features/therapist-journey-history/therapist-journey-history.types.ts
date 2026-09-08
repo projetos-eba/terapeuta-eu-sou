@@ -26,7 +26,14 @@ export type JourneyHistoryClient = {
   therapyLabels: string[];
   timelineHref: string;
   totalEncounters: number;
+  totalSharedMemories: number;
   topicLabels: string[];
+};
+
+export type JourneyThemeCount = {
+  count: number;
+  key: string;
+  label: string;
 };
 
 export type JourneyHistorySegment = {
@@ -84,6 +91,7 @@ export type JourneyHistoryDetailData = {
     title: string;
     topicLabels: string[];
   }>;
+  topicCounts: JourneyThemeCount[];
 };
 
 export type JourneyHistoryFilters = {
