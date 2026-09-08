@@ -67,7 +67,9 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByText(/Custos da plataforma incluem os valores previstos/i),
     ).toBeInTheDocument();
-    const costTooltip = screen.getByRole("tooltip");
+    const costTooltip = screen.getByRole("tooltip", {
+      name: /Custos da plataforma incluem os valores previstos/i,
+    });
     expect(costTooltip).toHaveClass("invisible");
     fireEvent.click(
       screen.getByRole("button", {
@@ -80,6 +82,55 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
     ).not.toBeInTheDocument();
+  });
+
+  it("offers a contextual explanation for every summary indicator", () => {
+    renderPage();
+
+    const indicators = [
+      [
+        "Receita líquida",
+        "É o valor que pertence a você após os custos da plataforma e os reembolsos confirmados, quando houver.",
+      ],
+      [
+        "A receber",
+        "Reúne valores que continuam em confirmação, liquidação ou processamento antes do próximo repasse.",
+      ],
+      [
+        "Sessões realizadas",
+        "Conta as sessões concluídas ou confirmadas no período selecionado.",
+      ],
+    ] as const;
+
+    for (const [label, explanation] of indicators) {
+      fireEvent.click(
+        screen.getByRole("button", { name: `Saiba mais sobre ${label}` }),
+      );
+      expect(screen.getByText(explanation)).toBeVisible();
+    }
+  });
+
+  it("keeps the average ticket in the five-card quick summary", () => {
+    renderPage();
+
+    const quickSummary = screen.getByRole("region", {
+      name: "Panorama financeiro",
+    });
+
+    expect(
+      within(quickSummary).getByRole("heading", { name: "Resumo rápido" }),
+    ).toBeInTheDocument();
+    expect(
+      within(quickSummary).getByRole("heading", { name: "Ticket médio" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Ticket médio" })).toHaveLength(
+      1,
+    );
+    expect(
+      within(quickSummary).getByRole("img", {
+        name: "Tendência de Ticket médio: ainda sem dados",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("renders Premium financial metrics and locks the Premium Plus dashboard", () => {
@@ -96,7 +147,7 @@ describe("TherapistFinancePage", () => {
     );
     fireEvent.click(
       screen.getByRole("button", {
-        name: /Sua agenda e potencial.*Premium Plus/i,
+        name: /Saúde financeira.*Premium Plus/i,
       }),
     );
     expect(
@@ -130,10 +181,10 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Sua agenda e potencial" }),
+      screen.getByRole("heading", { name: "Saúde financeira" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Oportunidade do mês" }),
+      screen.getByRole("heading", { name: "Crescimento" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Realizado líquido").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Potencial estimado").length).toBeGreaterThan(0);
@@ -152,6 +203,69 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Dica TES" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the financial reading panels free of agenda and sessions shortcuts", () => {
+    renderPage("summary", {
+      advanced: {
+        dashboard: advancedFixture(),
+        status: "available",
+      },
+      analytics: {
+        metrics: {
+          ...fixture().analytics.metrics!,
+          plan: "premium_plus",
+        },
+        status: "available",
+      },
+      overview: {
+        ...fixture().overview,
+        plan: "premium_plus",
+      },
+    });
+
+    const financialReading = screen.getByRole("region", {
+      name: "Leituras financeiras",
+    });
+
+    expect(
+      within(financialReading).queryByRole("link", { name: "Ver agenda" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(financialReading).queryByRole("link", {
+        name: "Ver como preencher",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(financialReading).queryByRole("link", { name: /sessões/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("stacks details beside the evolution with the strategic ranking", () => {
+    renderPage();
+
+    const strategicView = screen.getByRole("region", {
+      name: "Visão estratégica",
+    });
+
+    expect(
+      within(strategicView).getByRole("heading", { name: "Estratégico" }),
+    ).toBeInTheDocument();
+    expect(
+      within(strategicView).getByRole("heading", {
+        name: "Detalhes e metodologia",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(strategicView).getByRole("heading", {
+        name: "Evolução financeira",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(strategicView).queryByRole("link", {
+        name: "Ver relatório completo",
+      }),
     ).not.toBeInTheDocument();
   });
 

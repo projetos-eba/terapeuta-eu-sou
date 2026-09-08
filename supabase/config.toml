@@ -206,6 +206,9 @@ verify_jwt = false
 [functions.confirm-session-by-therapist]
 verify_jwt = false
 
+[functions.session-journey-themes-command]
+verify_jwt = false
+
 [functions.auto-confirm-sessions]
 verify_jwt = false
 

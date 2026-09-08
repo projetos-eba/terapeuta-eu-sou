@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import type { ZoomAccessState } from "@/domain/tes";
+import type { TherapistPlan } from "@/domain/tes";
 import { BookingReference } from "@/features/bookings";
 
 import { ZoomVideoSessionAdapter } from "../zoom-video-session-adapter";
@@ -21,6 +22,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt,
   sessionTitle,
   showFeedback = false,
+  therapistPlan,
 }: {
   access: ZoomAccessState | null;
   actorRole: "patient" | "therapist";
@@ -34,6 +36,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt: string;
   sessionTitle: string;
   showFeedback?: boolean;
+  therapistPlan?: TherapistPlan;
 }) {
   const audienceLabel = actorRole === "patient" ? "SEU ENCONTRO" : "SUA SESSÃO";
 
@@ -103,6 +106,7 @@ export function ZoomVideoCallPage({
           scheduledEndsAt={scheduledEndsAt}
           scheduledStartsAt={scheduledStartsAt}
           sessionTitle={sessionTitle}
+          showJourneyThemes={therapistPlan === "premium_plus"}
         />
       </main>
     </div>

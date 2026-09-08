@@ -43,6 +43,7 @@ export default async function TherapistVideoCallRoute({
       scheduledStartsAt={booking.startsAt}
       sessionTitle={booking.serviceTitle}
       showFeedback={resolvedSearchParams.feedback === "1"}
+      therapistPlan={session.plan}
     />
   );
 }

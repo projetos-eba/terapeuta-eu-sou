@@ -1,3 +1,7 @@
+import {
+  JOURNEY_THEME_LABEL_BY_KEY,
+  type JourneyThemeKey,
+} from "@/features/session-feedback/session-journey-themes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -8,6 +12,7 @@ import type {
   JourneyHistoryReminder,
   JourneyHistorySource,
   JourneyHistorySummary,
+  JourneyThemeCount,
 } from "./therapist-journey-history.types";
 
 export type JourneyRelationshipRow = {
@@ -50,12 +55,21 @@ export type JourneySummaryRow = {
   visibility: string;
 };
 
+export type JourneyThemeSelectionRow = {
+  booking_id: string;
+  created_at: string;
+  patient_profile_id: string;
+  taxonomy_version: string;
+  theme_keys: string[];
+};
+
 export type JourneyHistoryRows = {
   bookings: JourneyBookingRow[];
   patients: JourneyPatientRow[];
   relationships: JourneyRelationshipRow[];
   services: JourneyServiceRow[];
   summaries: JourneySummaryRow[];
+  themeSelections: JourneyThemeSelectionRow[];
 };
 
 type MappingInput = JourneyHistoryRows & {
@@ -64,18 +78,7 @@ type MappingInput = JourneyHistoryRows & {
   therapistProfileId: string;
 };
 
-const ACTIVE_BOOKING_STATUSES = new Set([
-  "confirmed",
-  "completed",
-  "no_show_patient",
-  "no_show_therapist",
-]);
-
-const COMPLETED_BOOKING_STATUSES = new Set([
-  "completed",
-  "no_show_patient",
-  "no_show_therapist",
-]);
+const COMPLETED_BOOKING_STATUS = "completed";
 
 const RECENT_ENCOUNTER_WINDOW_DAYS = 30;
 
@@ -144,36 +147,60 @@ export function mapJourneyHistoryDetail(
   const summaryByBooking = new Map(
     input.summaries.map((summary) => [summary.booking_id, summary]),
   );
+  const now = input.now ?? new Date();
   const timeline = input.bookings
-    .filter((booking) => booking.patient_profile_id === input.patientId)
+    .filter(
+      (booking) =>
+        booking.patient_profile_id === input.patientId &&
+        booking.status === COMPLETED_BOOKING_STATUS &&
+        new Date(booking.starts_at).getTime() <= now.getTime() &&
+        summaryByBooking.has(booking.id),
+    )
     .sort(
       (a, b) =>
         new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime(),
     )
     .map((booking) => {
       const service = serviceById.get(booking.service_id);
-      const summary = summaryByBooking.get(booking.id);
+      const summary = summaryByBooking.get(booking.id)!;
       const serviceTitle = service?.title ?? "Sessão TES";
       return {
         bookingId: booking.id,
         date: booking.starts_at,
-        description:
-          summary?.summary ??
-          "Sessão registrada sem resumo compartilhado nesta área.",
+        description: summary.summary ?? "Sem detalhes adicionais.",
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
         status: booking.status,
         serviceTitle,
-        title: summary?.title ?? serviceTitle,
+        title: summary.title ?? "Resumo compartilhado",
         topicLabels: [],
       };
     });
+
+  const completedBookingIds = new Set(
+    input.bookings
+      .filter(
+        (booking) =>
+          booking.patient_profile_id === input.patientId &&
+          booking.status === COMPLETED_BOOKING_STATUS &&
+          new Date(booking.starts_at).getTime() <= now.getTime(),
+      )
+      .map((booking) => booking.id),
+  );
+  const topicCounts = buildTopicCounts(
+    input.themeSelections.filter(
+      (selection) =>
+        selection.patient_profile_id === input.patientId &&
+        completedBookingIds.has(selection.booking_id),
+    ),
+  );
 
   return {
     client,
     source: page.source,
     therapistProfileId: page.therapistProfileId,
     timeline,
+    topicCounts,
   };
 }
 
@@ -210,10 +237,10 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
           (a, b) =>
             new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
         );
-      const countedBookings = bookings.filter((booking) =>
-        ACTIVE_BOOKING_STATUSES.has(booking.status),
+      const completedBookings = bookings.filter(
+        (booking) => booking.status === COMPLETED_BOOKING_STATUS,
       );
-      const pastBookings = countedBookings.filter(
+      const completedPastBookings = completedBookings.filter(
         (booking) => new Date(booking.starts_at).getTime() <= now.getTime(),
       );
       const futureBookings = bookings.filter(
@@ -221,9 +248,12 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
           booking.status === "confirmed" &&
           new Date(booking.starts_at).getTime() > now.getTime(),
       );
-      const lastSession = pastBookings.at(-1) ?? null;
+      const lastSession = completedPastBookings.at(-1) ?? null;
       const nextSession = futureBookings.at(0) ?? null;
       const relationship = relationshipByPatient.get(patientId);
+      const totalSharedMemories = completedPastBookings.filter((booking) =>
+        input.summaries.some((summary) => summary.booking_id === booking.id),
+      ).length;
       const therapyLabels = unique(
         bookings
           .map((booking) => serviceById.get(booking.service_id)?.title)
@@ -232,8 +262,7 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
       return {
         avatarUrl: patient.avatar_url,
         emailLabel: patient.timezone ?? "Cliente TES",
-        firstSessionAt:
-          countedBookings[0]?.starts_at ?? relationship?.started_at ?? null,
+        firstSessionAt: completedPastBookings[0]?.starts_at ?? null,
         id: patient.id,
         lastSessionAt: lastSession?.starts_at ?? null,
         lastSessionServiceTitle: lastSession
@@ -252,9 +281,8 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
         ),
         therapyLabels: therapyLabels.length ? therapyLabels : ["Jornada TES"],
         timelineHref: routes.therapist.patientJourney(patient.id),
-        totalEncounters: countedBookings.filter((booking) =>
-          COMPLETED_BOOKING_STATUSES.has(booking.status),
-        ).length,
+        totalEncounters: completedPastBookings.length,
+        totalSharedMemories,
         topicLabels: [],
       };
     })
@@ -264,6 +292,28 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
       const nextB = b.lastSessionAt ? new Date(b.lastSessionAt).getTime() : 0;
       return nextB - nextA || a.name.localeCompare(b.name, "pt-BR");
     });
+}
+
+function buildTopicCounts(
+  selections: JourneyThemeSelectionRow[],
+): JourneyThemeCount[] {
+  const counts = new Map<JourneyThemeKey, number>();
+
+  selections.forEach((selection) => {
+    selection.theme_keys.forEach((key) => {
+      const themeKey = key as JourneyThemeKey;
+      if (!JOURNEY_THEME_LABEL_BY_KEY.has(themeKey)) return;
+      counts.set(themeKey, (counts.get(themeKey) ?? 0) + 1);
+    });
+  });
+
+  return [...counts.entries()]
+    .map(([key, count]) => ({
+      count,
+      key,
+      label: JOURNEY_THEME_LABEL_BY_KEY.get(key)!,
+    }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
 }
 
 function getClientStatus(

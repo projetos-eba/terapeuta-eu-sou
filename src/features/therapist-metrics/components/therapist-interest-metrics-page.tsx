@@ -1,4 +1,12 @@
-import { Heart, Repeat2, Sparkles, UsersRound } from "lucide-react";
+import Link from "next/link";
+import {
+  Heart,
+  Repeat2,
+  Sparkles,
+  UserCheck,
+  UserMinus,
+  UsersRound,
+} from "lucide-react";
 
 import {
   AppPageAside,
@@ -9,20 +17,23 @@ import {
 import { TESCard } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
 import { TherapistLockedCard } from "@/features/therapist-access";
+import { routes } from "@/lib/routes";
 
-import { getTherapistMetricCopy } from "../therapist-metrics.copy";
 import type {
   TherapistInterestMetrics,
   TherapistInterestMetricsReady,
+  TherapistInterestSegmentKey,
+  TherapistMetricDirection,
   TherapistMetricProtectedCollection,
-  TherapistMetricSampledValue,
 } from "../therapist-metrics.types";
 import { TherapistMetricsLayout } from "./therapist-metrics-layout";
 import {
   DistributionDonut,
+  MetricSparkline,
   PeopleEvolutionChart,
   TherapyBarsChart,
 } from "./therapist-metrics-charts";
+import type { MetricChartTone } from "./therapist-metrics-charts";
 
 const segmentLabels = {
   active: "Ativas",
@@ -65,7 +76,20 @@ export function TherapistInterestMetricsPage({
             quando há pelo menos 10 registros.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <SegmentSampledCard
+            data={data}
+            icon={UserCheck}
+            label="Pessoas ativas"
+            segment="active"
+            tone="primary"
+          />
+          <SampledCard
+            icon={Heart}
+            label="Novos favoritos do perfil"
+            metric={data.summary.profileFavorites}
+            tone="danger"
+          />
           <SampledCard
             icon={Repeat2}
             label="Pessoas que voltaram"
@@ -78,17 +102,18 @@ export function TherapistInterestMetricsPage({
             metric={data.summary.returnRate}
             tone="mint"
           />
+          <SegmentSampledCard
+            data={data}
+            icon={UserMinus}
+            label="Pessoas inativas"
+            segment="inactive"
+            tone="danger"
+          />
           <SampledCard
             icon={Sparkles}
             label="Sessões por pessoa"
             metric={data.summary.sessionsPerPerson}
             tone="warning"
-          />
-          <SampledCard
-            icon={Heart}
-            label="Novos favoritos do perfil"
-            metric={data.summary.profileFavorites}
-            tone="danger"
           />
         </div>
       </section>
@@ -96,7 +121,7 @@ export function TherapistInterestMetricsPage({
       <AppPageGrid>
         <AppPageMain>
           <BaseEvolution data={data} />
-          <CohortTable data={data} />
+          <JourneyThemes data={data} />
           <TherapyReturn data={data} />
         </AppPageMain>
 
@@ -109,59 +134,238 @@ export function TherapistInterestMetricsPage({
   );
 }
 
+type InterestSummaryCardMetric =
+  | {
+      direction: TherapistMetricDirection | null;
+      minimumSample: number;
+      observedSample: number;
+      previousValue: number | null;
+      status: "ready";
+      unit: "favorites" | "people" | "percent" | "ratio";
+      value: number;
+    }
+  | {
+      direction: null;
+      minimumSample: number;
+      observedSample: number;
+      previousValue: null;
+      status: "empty" | "insufficient_sample";
+      unit: "favorites" | "people" | "percent" | "ratio";
+      value: null;
+    };
+
+type InterestCardBadge = {
+  accessibleLabel: string;
+  caption: string;
+  className: string;
+  label: string;
+};
+
+function SegmentSampledCard({
+  data,
+  icon,
+  label,
+  segment,
+  tone,
+}: {
+  data: TherapistInterestMetricsReady;
+  icon: typeof Repeat2;
+  label: string;
+  segment: Extract<TherapistInterestSegmentKey, "active" | "inactive">;
+  tone: Extract<MetricChartTone, "danger" | "primary">;
+}) {
+  const collection = data.segments;
+  const item =
+    collection.status === "ready"
+      ? collection.items.find((entry) => entry.key === segment)
+      : null;
+  const metric: InterestSummaryCardMetric =
+    collection.status === "ready"
+      ? {
+          direction: null,
+          minimumSample: collection.minimumSample,
+          observedSample: collection.observedSample,
+          previousValue: null,
+          status: "ready",
+          unit: "people",
+          value: item?.value ?? 0,
+        }
+      : {
+          direction: null,
+          minimumSample: collection.minimumSample,
+          observedSample: collection.observedSample,
+          previousValue: null,
+          status: collection.status,
+          unit: "people",
+          value: null,
+        };
+  const badge: InterestCardBadge | undefined = item
+    ? {
+        accessibleLabel: `${formatPercent(item.percentage)} da base acompanhada`,
+        caption: "da base no período",
+        className:
+          tone === "danger"
+            ? "bg-status-dangerBg text-status-danger"
+            : "bg-brand-lavenderSoft text-brand-primary",
+        label: formatPercent(item.percentage),
+      }
+    : undefined;
+
+  return (
+    <SampledCard
+      badge={badge}
+      icon={icon}
+      label={label}
+      metric={metric}
+      tone={tone}
+    />
+  );
+}
+
 function SampledCard({
+  badge,
   icon: Icon,
   label,
   metric,
   tone,
 }: {
+  badge?: InterestCardBadge;
   icon: typeof Repeat2;
   label: string;
-  metric:
-    | TherapistMetricSampledValue<"favorites">
-    | TherapistMetricSampledValue<"people">
-    | TherapistMetricSampledValue<"percent">
-    | TherapistMetricSampledValue<"ratio">;
-  tone: "danger" | "mint" | "primary" | "warning";
+  metric: InterestSummaryCardMetric;
+  tone: Extract<MetricChartTone, "danger" | "mint" | "primary" | "warning">;
 }) {
-  const styles = {
-    danger: "from-status-dangerBg/60 before:bg-status-danger",
-    mint: "from-status-successBg/70 before:bg-status-success",
-    primary: "from-brand-lavenderSoft/70 before:bg-brand-primary",
-    warning: "from-status-warningBg/65 before:bg-status-warning",
+  const iconStyle = {
+    danger: "bg-status-dangerBg text-status-danger",
+    mint: "bg-status-successBg text-status-success",
+    primary: "bg-brand-lavenderSoft text-brand-primary",
+    warning: "bg-status-warningBg text-status-warning",
   }[tone];
+  const trend =
+    metric.status === "ready" ? (badge ?? getMetricTrend(metric)) : null;
+  const sparkline =
+    metric.status === "ready" && metric.previousValue !== null
+      ? [
+          { label: "Período anterior", value: metric.previousValue },
+          { label: "Período atual", value: metric.value },
+        ]
+      : [];
+
   return (
     <TESCard
       as="article"
-      className={`relative grid min-h-[215px] content-between overflow-hidden border-brand-lavender/70 bg-gradient-to-b via-white to-white p-5 shadow-[0_14px_34px_rgba(57,45,90,0.06)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full ${styles}`}
+      className="relative flex min-h-[168px] min-w-0 flex-col overflow-hidden border-brand-lavender/55 bg-white p-4 shadow-[0_8px_22px_rgba(57,45,90,0.055)] sm:min-h-[176px]"
+      data-state={metric.status}
+      data-tone={tone}
     >
-      <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-        <Icon aria-hidden="true" size={21} />
-      </span>
-      <div className="mt-5">
-        <p className="text-sm font-extrabold leading-5 text-brand-deep">
+      <div className="flex min-h-10 items-start gap-3">
+        <span
+          className={`grid size-9 shrink-0 place-items-center rounded-full ${iconStyle}`}
+        >
+          <Icon aria-hidden="true" size={18} />
+        </span>
+        <h3 className="pt-0.5 text-sm font-extrabold leading-[18px] text-brand-deep">
           {label}
-        </p>
-        {metric.status === "ready" ? (
-          <>
-            <p className="mt-2 text-[34px] font-extrabold leading-none text-brand-deep">
-              {formatSampledValue(metric.value, metric.unit)}
-            </p>
-            <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
-              {metric.previousValue === null
-                ? "Este é o primeiro período com dados suficientes para esta leitura."
-                : getTherapistMetricCopy(metric.directionCopyKey)}
-            </p>
-          </>
-        ) : (
-          <ProtectedSummary
-            minimum={metric.minimumSample}
-            observed={metric.observedSample}
-          />
-        )}
+        </h3>
+      </div>
+      {metric.status === "ready" ? (
+        <>
+          <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
+            {formatSampledValue(metric.value, metric.unit)}
+          </p>
+          <div className="mt-2 flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1">
+            <span
+              aria-label={trend?.accessibleLabel}
+              className={`inline-flex min-h-6 items-center rounded-full px-2 text-xs font-extrabold ${trend?.className}`}
+            >
+              {trend?.label}
+            </span>
+            <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+              {trend?.caption}
+            </span>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-2 text-[30px] font-extrabold leading-none text-brand-deep">
+            <span className="sr-only">Valor ainda indisponível.</span>
+            <span aria-hidden="true">—</span>
+          </p>
+          <div className="mt-2 flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1">
+            <span
+              aria-label={`${metric.observedSample} de ${metric.minimumSample} registros necessários`}
+              className="inline-flex min-h-6 items-center rounded-full bg-brand-lavenderSoft px-2 text-xs font-extrabold text-brand-primary"
+            >
+              {metric.observedSample} de {metric.minimumSample}
+            </span>
+            <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+              registros no período
+            </span>
+            <span className="sr-only">Ainda sem dados suficientes.</span>
+          </div>
+        </>
+      )}
+      <div className="mt-auto pt-2.5">
+        <MetricSparkline
+          className="h-7"
+          data={sparkline}
+          empty={sparkline.length < 2}
+          label={`Tendência de ${label}`}
+          tone={tone}
+        />
       </div>
     </TESCard>
   );
+}
+
+function getMetricTrend(
+  metric: Extract<InterestSummaryCardMetric, { status: "ready" }>,
+) {
+  if (metric.previousValue === null) {
+    return {
+      accessibleLabel: "Primeiro período com dados suficientes",
+      caption: "histórico em formação",
+      className: "bg-brand-lavenderSoft text-brand-primary",
+      label: "Primeiro período",
+    };
+  }
+
+  if (metric.direction === "stable" || metric.value === metric.previousValue) {
+    return {
+      accessibleLabel: "Resultado estável em relação ao período anterior",
+      caption: "vs. período anterior",
+      className: "bg-brand-lavenderSoft text-brand-primary",
+      label: "Estável",
+    };
+  }
+
+  const arrow = metric.direction === "up" ? "↑" : "↓";
+  const className =
+    metric.direction === "up"
+      ? "bg-status-successBg text-status-success"
+      : "bg-status-dangerBg text-status-danger";
+  const absoluteDifference = Math.abs(metric.value - metric.previousValue);
+  const change =
+    metric.unit === "percent"
+      ? `${formatCompactNumber(absoluteDifference)} p.p.`
+      : metric.previousValue === 0
+        ? "novo resultado"
+        : `${formatCompactNumber(
+            (absoluteDifference / Math.abs(metric.previousValue)) * 100,
+          )}%`;
+
+  return {
+    accessibleLabel: `${metric.direction === "up" ? "Aumento" : "Queda"} de ${change} em relação ao período anterior`,
+    caption: "vs. período anterior",
+    className,
+    label: `${arrow} ${change}`,
+  };
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 function Segments({ data }: { data: TherapistInterestMetricsReady }) {
@@ -171,7 +375,8 @@ function Segments({ data }: { data: TherapistInterestMetricsReady }) {
         Distribuição por continuidade
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Os grupos não se repetem: cada pessoa aparece em apenas uma categoria.
+        Mostra em qual etapa de continuidade cada pessoa está no período. Cada
+        pessoa aparece uma única vez, conforme sua situação mais recente.
       </p>
       {data.segments.status === "ready" ? (
         <DistributionDonut
@@ -224,84 +429,54 @@ function BaseEvolution({ data }: { data: TherapistInterestMetricsReady }) {
   );
 }
 
-function CohortTable({ data }: { data: TherapistInterestMetricsReady }) {
+function JourneyThemes({ data }: { data: TherapistInterestMetricsReady }) {
   return (
-    <AppPageSection>
-      <h2 className="text-xl font-extrabold text-brand-deep">
-        Retorno por grupo
-      </h2>
-      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Cada linha reúne pessoas cuja primeira sessão realizada ocorreu no mesmo
-        mês. Só entram grupos com pelo menos 10 pessoas.
-      </p>
-      {data.cohorts.status === "ready" ? (
-        <div
-          aria-label="Retorno mensal por grupo"
-          className="mt-5 overflow-x-auto"
-          role="region"
-          tabIndex={0}
-        >
-          <table className="min-w-[650px] border-separate border-spacing-1.5">
-            <thead>
-              <tr>
-                <th className="p-2 text-left text-xs text-tesText-muted">
-                  Início
-                </th>
-                {Array.from({ length: 6 }, (_, index) => (
-                  <th
-                    className="p-2 text-center text-xs text-tesText-muted"
-                    key={index}
-                    scope="col"
-                  >
-                    Mês {index}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.cohorts.items.map((cohort) => (
-                <tr key={cohort.cohortMonth}>
-                  <th
-                    className="p-2 text-left text-sm font-extrabold text-brand-deep"
-                    scope="row"
-                  >
-                    {formatMonth(cohort.cohortMonth)}
-                  </th>
-                  {Array.from({ length: 6 }, (_, offset) => {
-                    const point = cohort.retention.find(
-                      (item) => item.monthOffset === offset,
-                    );
-                    return (
-                      <td className="p-0.5 text-center" key={offset}>
-                        {point ? (
-                          <span className="relative block overflow-hidden rounded bg-brand-lavenderSoft px-2 py-3 text-xs font-extrabold text-brand-deep">
-                            <span
-                              aria-hidden="true"
-                              className="absolute inset-0 bg-brand-primary"
-                              style={{
-                                opacity: Math.max(0.25, point.percentage / 100),
-                              }}
-                            />
-                            <span className="relative">
-                              {formatPercent(point.percentage)}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="block px-2 py-3 text-xs text-tesText-muted">
-                            —
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <AppPageSection aria-labelledby="journey-themes-title">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2
+            className="text-xl font-extrabold text-brand-deep"
+            id="journey-themes-title"
+          >
+            Temas mais recorrentes na jornada
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+            Reunirá os temas compartilhados diretamente pelas pessoas no
+            Histórico da Jornada. Os percentuais mostrarão em quantas jornadas
+            cada tema aparece, sem expor anotações individuais.
+          </p>
         </div>
-      ) : (
-        <ProtectedCollection collection={data.cohorts} />
-      )}
+        <span className="inline-flex min-h-7 w-fit shrink-0 items-center rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
+          Em preparação
+        </span>
+      </div>
+
+      <div
+        className="mt-5 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5"
+        data-state={data.journeyThemes.status}
+      >
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-brand-primary shadow-card">
+            <Sparkles aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <p className="text-sm font-extrabold text-brand-deep">
+              Ainda não há temas estruturados para mostrar
+            </p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Quando os temas forem registrados nos detalhes de cada jornada,
+              esta visão será atualizada com os mais recorrentes.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          className="mt-5 inline-flex min-h-10 items-center rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition-colors hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+          href={routes.therapist.patients}
+        >
+          Abrir Histórico da Jornada →
+        </Link>
+      </div>
     </AppPageSection>
   );
 }
@@ -344,11 +519,6 @@ function UnavailableSignals() {
     {
       label: "Lacuna da agenda",
       reason: "O sinal de procura sem disponibilidade ainda não foi ativado.",
-    },
-    {
-      label: "Temas e motivos de saída",
-      reason:
-        "Textos escritos livremente ainda não podem ser organizados com segurança.",
     },
   ];
 
@@ -402,25 +572,6 @@ function ProtectedCollection({
   );
 }
 
-function ProtectedSummary({
-  minimum,
-  observed,
-}: {
-  minimum: number;
-  observed: number;
-}) {
-  return (
-    <div className="mt-3">
-      <p className="text-sm font-extrabold text-brand-primary">
-        Ainda sem dados suficientes
-      </p>
-      <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-        Disponível a partir de {minimum} registros. Até agora, temos {observed}.
-      </p>
-    </div>
-  );
-}
-
 function formatSampledValue(
   value: number,
   unit: "favorites" | "people" | "percent" | "ratio",
@@ -435,14 +586,6 @@ function formatPercent(value: number) {
   return `${new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 1,
   }).format(value)}%`;
-}
-
-function formatMonth(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    month: "short",
-    timeZone: "UTC",
-    year: "2-digit",
-  }).format(new Date(`${value}T12:00:00Z`));
 }
 
 function isReadyInterest(

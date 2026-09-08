@@ -161,7 +161,7 @@ export function TherapistJourneyDetailPage({
 }: {
   data: JourneyHistoryDetailData;
 }) {
-  const { client, timeline } = data;
+  const { client, timeline, topicCounts } = data;
 
   return (
     <main className="mx-auto w-full max-w-[1210px] pb-10 text-tesText-primary">
@@ -222,7 +222,7 @@ export function TherapistJourneyDetailPage({
       </section>
 
       <JourneyDetailMetrics client={client} />
-      <JourneyTopics client={client} />
+      <JourneyTopics topicCounts={topicCounts} />
       <JourneyMemory timeline={timeline} />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -240,19 +240,19 @@ function JourneyDetailMetrics({ client }: { client: JourneyHistoryClient }) {
         ? `Desde ${formatDateOnly(client.firstSessionAt)}`
         : "Data de início não registrada",
       icon: <HeartHandshake aria-hidden="true" size={22} />,
-      label: "Jornada iniciada há",
+      label: "Jornada iniciada",
       tone: "bg-status-dangerBg text-status-danger",
       value: formatJourneyDuration(client.firstSessionAt),
     },
     {
       description:
-        client.totalEncounters === 1
-          ? "sessão registrada"
-          : "sessões registradas",
+        client.totalSharedMemories === 1
+          ? "memória compartilhada"
+          : "memórias compartilhadas",
       icon: <UsersRound aria-hidden="true" size={22} />,
       label: "Sessões compartilhadas",
       tone: "bg-brand-lavenderSoft text-brand-primary",
-      value: String(client.totalEncounters),
+      value: String(client.totalSharedMemories),
     },
     {
       description: client.nextSessionAt
@@ -324,7 +324,11 @@ function JourneyDetailMetrics({ client }: { client: JourneyHistoryClient }) {
   );
 }
 
-function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
+function JourneyTopics({
+  topicCounts,
+}: {
+  topicCounts: JourneyHistoryDetailData["topicCounts"];
+}) {
   return (
     <section className="mt-6 rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-7">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -337,23 +341,36 @@ function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
           </h2>
         </div>
         <p className="max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
-          Só mostramos aqui temas que a pessoa compartilhou diretamente.
+          Temas registrados por você a partir de sessões realizadas nesta
+          jornada.
         </p>
       </div>
 
       <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5">
         <Sparkles aria-hidden="true" className="text-brand-primary" size={22} />
         <p className="mt-3 text-sm font-extrabold text-brand-deep">
-          {client.topicLabels.length > 0
-            ? "Temas compartilhados na jornada"
-            : "Ainda não há temas compartilhados para mostrar."}
+          {topicCounts.length > 0
+            ? "Temas registrados na jornada"
+            : "Ainda não há temas registrados para mostrar."}
         </p>
-        {client.topicLabels.length === 0 ? (
+        {topicCounts.length === 0 ? (
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Quando alguém compartilhar um tema, ele aparecerá aqui.
+            Os temas podem ser registrados por você após uma sessão realizada.
           </p>
         ) : (
-          <ChipList items={client.topicLabels} />
+          <ul className="mt-4 flex flex-wrap gap-2" aria-label="Temas registrados">
+            {topicCounts.map((topic) => (
+              <li
+                className="inline-flex min-h-8 items-center gap-2 rounded-full bg-white px-3 text-sm font-extrabold text-brand-deep shadow-card"
+                key={topic.key}
+              >
+                {topic.label}
+                <span className="text-xs font-semibold text-tesText-secondary">
+                  {topic.count} {topic.count === 1 ? "sessão" : "sessões"}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </section>
@@ -397,14 +414,17 @@ function JourneyMemory({
 
       {timeline.length > 0 ? (
         <>
-          <div className="hidden overflow-x-auto xl:block">
-            <table className="min-w-[940px] table-fixed text-left">
+          <div className="hidden lg:block">
+            <table className="w-full table-auto text-left">
+              <caption className="sr-only">
+                Memórias compartilhadas das sessões realizadas
+              </caption>
               <thead>
                 <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
-                  <th className="w-[145px] px-5 py-4">Data e hora</th>
-                  <th className="w-[150px] px-4 py-4">Terapia</th>
+                  <th className="w-[18%] px-5 py-4">Data e hora</th>
+                  <th className="w-[20%] px-4 py-4">Terapia</th>
                   <th className="px-4 py-4">Registro compartilhado</th>
-                  <th className="w-[130px] px-5 py-4 text-right">Ação</th>
+                  <th className="w-[154px] px-5 py-4 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-lavender/60">
@@ -437,7 +457,7 @@ function JourneyMemory({
               </tbody>
             </table>
           </div>
-          <div className="divide-y divide-brand-lavender/60 xl:hidden">
+          <div className="divide-y divide-brand-lavender/60 lg:hidden">
             {timeline.map((item) => (
               <article className="grid gap-4 p-5" key={item.id}>
                 <div className="flex items-start justify-between gap-4">
@@ -476,11 +496,11 @@ function JourneyMemory({
             size={28}
           />
           <h3 className="mt-3 text-base font-extrabold text-brand-deep">
-            Nenhuma sessão registrada ainda
+            Nenhuma memória compartilhada ainda
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
-            Os registros compartilhados aparecerão aqui conforme as sessões
-            forem concluídos.
+            As memórias aparecerão aqui quando uma sessão realizada tiver um
+            resumo compartilhado.
           </p>
         </div>
       )}
