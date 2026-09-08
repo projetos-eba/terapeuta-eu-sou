@@ -8,20 +8,27 @@ Este documento registra fundamentos e histórico do sistema. Para decisões de
 produto e implementação, usar a seguinte cadeia:
 
 1. produto, domínio e tarefa real;
-2. [TES Experience Language](./experience-principles.md);
-3. [níveis de densidade](./density.md);
-4. [anti-patterns](./anti-patterns.md);
-5. [composition patterns](./composition-patterns.md) e
+2. referência em imagem fornecida pelo usuário para o ajuste visual em curso;
+3. padrão visual já implementado na plataforma e componentes reutilizáveis
+   existentes;
+4. [Calibration Contract](../design-refactor/calibration-contract.md);
+5. [TES Experience Language](./experience-principles.md),
+   [níveis de densidade](./density.md) e [anti-patterns](./anti-patterns.md);
+6. [composition patterns](./composition-patterns.md) e
    [interaction patterns](./interaction-patterns.md);
-6. tokens, components e skill da feature;
-7. Figma/referências;
-8. [Visual QA](./visual-qa.md) e
+7. tokens, components e skill da feature;
+8. Figma como referência complementar;
+9. [Visual QA](./visual-qa.md) e
    [Visual Quality Score](./visual-quality-score.md).
 
 As skills globais `tes-ui-experience` e `tes-design-system` aplicam esta cadeia.
-Figma permanece referência importante, mas não prevalece sobre produto, domínio,
-acessibilidade ou regras globais calibradas. O histórico abaixo pode descrever
-estados anteriores; o código e o inventário auditado em
+Uma imagem fornecida pelo usuário prevalece para composição, densidade,
+hierarquia, ritmo, responsividade e estilo, sem alterar fluxos, rotas,
+permissões, dados ou contratos. Figma permanece importante para fluxo,
+navegação, permissões, ícones e evidência complementar, mas não prevalece sobre
+o padrão existente da plataforma, componentes reutilizáveis, Calibration,
+acessibilidade ou regras globais TES. O histórico abaixo pode descrever estados
+anteriores; o código e o inventário auditado em
 `docs/design-refactor/audit.md` registram o estado atual.
 
 ## Fontes
@@ -35,9 +42,11 @@ estados anteriores; o código e o inventário auditado em
 - `Referencias/Terapeuta Plus`: IA, insights e detalhe do paciente.
 - `Referencias/Admin`: gestão, moderação e indicadores.
 
-## Fonte Visual Atual
+## Figma como referência complementar
 
-A fonte final de verdade visual está na página única `Design System` do Figma, recriada sem cover e organizada em:
+O arquivo `Design System` do Figma está organizado em uma página única,
+recriada sem cover, e oferece evidência complementar para a cadeia de
+autoridades acima:
 
 - `Design System / Foundations`;
 - `Design System / Component Library`;

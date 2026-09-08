@@ -97,11 +97,31 @@ Wrappers card-heavy atuais são legados compatíveis. Não alterar defaults em m
 - Ações essenciais ficam alcançáveis, touch target tem pelo menos `44px` e texto funcional não fica abaixo de `14px` (`11px` desktop/`10px` mobile só para metadata secundária).
 - Não criar scroll horizontal de página. Scroll interno é exceção justificada.
 
-## 8. Reference Interpretation Rules
+## 8. Reference Priority and Interpretation Rules
 
-Referência externa ou Figma é direção, não especificação. Extrair hierarquia, composição, densidade, ritmo, transformação por viewport e ideia de interação. Adaptar ou rejeitar branding, tokens, copy, decoração, componentes e estruturas que conflitem com tarefa, domínio, acessibilidade ou TES.
+Para ajustes visuais, usar esta ordem de referência:
 
-Registrar divergência relevante entre referência, código e fontes de produto. Screenshot real da página pesa mais que inferência visual. Referência não pode reintroduzir microtexto, cardification, borda/sombra sem função, CTA concorrente ou desktop comprimido no mobile.
+1. imagem de referência fornecida pelo usuário para a tela em ajuste;
+2. padrão visual já implementado na plataforma e componente reutilizável
+   existente;
+3. este contrato de Calibration;
+4. Experience Language, densidade, anti-patterns, patterns e tokens TES;
+5. Figma, como referência complementar.
+
+Uma imagem fornecida pelo usuário é a direção principal para composição,
+densidade, hierarquia, ritmo, responsividade e estilo. Referência externa ou
+Figma é direção, não especificação. Extrair hierarquia, composição, densidade,
+ritmo, transformação por viewport e ideia de interação. Adaptar ou rejeitar
+branding, tokens, copy, decoração, componentes e estruturas que conflitem com a
+tarefa, domínio, acessibilidade, componentes reutilizáveis ou TES.
+
+Registrar divergência visual intencional entre imagem, Figma, código e fontes de
+produto, com o motivo e a regra superior aplicada. Screenshot real da página
+pesa mais que inferência visual quando não houver imagem de referência do
+usuário. Uma referência não pode reintroduzir microtexto, cardification,
+borda/sombra sem função, CTA concorrente ou desktop comprimido no mobile, nem
+inferir ou alterar rota, fluxo, permissão, domínio, dados, contrato ou regra de
+negócio.
 
 ## 9. Deprecated / Rejected Patterns
 

@@ -28,17 +28,39 @@ describe("TherapistJourneyDetailPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Ainda não há temas compartilhados para mostrar."),
+      screen.getByText(
+        "Os temas podem ser registrados por você após uma sessão realizada.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Memória das sessões" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Nenhuma preferência compartilhada nesta área"),
+      screen.getByText("Memórias compartilhadas das sessões realizadas"),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "Abrir sessão" })[0],
     ).toHaveAttribute("href", "/terapeuta/sessoes/booking-1");
+  });
+
+  it("shows private theme counts without exposing free-text details", () => {
+    render(
+      <TherapistJourneyDetailPage
+        data={{
+          ...detailFixture(),
+          topicCounts: [
+            {
+              count: 2,
+              key: "self_knowledge",
+              label: "Autoconhecimento",
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Autoconhecimento")).toBeInTheDocument();
+    expect(screen.getByText("2 sessões")).toBeInTheDocument();
   });
 });
 
@@ -288,9 +310,11 @@ function detailFixture(): JourneyHistoryDetailData {
       timelineHref: "/terapeuta/pacientes/patient-1",
       topicLabels: [],
       totalEncounters: 3,
+      totalSharedMemories: 1,
     },
     source: "supabase",
     therapistProfileId: "therapist-1",
+    topicCounts: [],
     timeline: [
       {
         bookingId: "booking-1",

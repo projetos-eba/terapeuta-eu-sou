@@ -13,6 +13,7 @@ import type {
   JourneyRelationshipRow,
   JourneyServiceRow,
   JourneySummaryRow,
+  JourneyThemeSelectionRow,
 } from "./therapist-journey-history.mappers";
 
 export async function queryTherapistJourneyHistory(input: {
@@ -41,7 +42,7 @@ export async function queryTherapistJourneyHistory(input: {
   ];
   const serviceIds = [...new Set(bookings.map((row) => row.service_id))];
 
-  const [patients, services, summaries] = await Promise.all([
+  const [patients, services, summaries, themeSelections] = await Promise.all([
     getRowsByIds<JourneyPatientRow>(
       config,
       "patient_profiles",
@@ -60,6 +61,12 @@ export async function queryTherapistJourneyHistory(input: {
           `/rest/v1/booking_session_summaries?select=booking_id,patient_profile_id,title,summary,visibility,created_at&therapist_profile_id=eq.${therapistProfileId}&patient_profile_id=in.(${patientIds.join(",")})&order=created_at.desc&limit=300`,
         )
       : Promise.resolve([]),
+    patientIds.length > 0
+      ? supabaseServerRestRequest<JourneyThemeSelectionRow[]>(
+          config,
+          `/rest/v1/booking_journey_theme_selections?select=booking_id,patient_profile_id,theme_keys,taxonomy_version,created_at&therapist_profile_id=eq.${therapistProfileId}&patient_profile_id=in.(${patientIds.join(",")})&order=created_at.desc&limit=500`,
+        )
+      : Promise.resolve([]),
   ]);
 
   return {
@@ -68,5 +75,6 @@ export async function queryTherapistJourneyHistory(input: {
     relationships,
     services,
     summaries,
+    themeSelections,
   };
 }

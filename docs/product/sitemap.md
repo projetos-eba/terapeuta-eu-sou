@@ -1,15 +1,28 @@
 # Sitemap do Produto
 
-Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `↳ Jornadas dos Usuários`, node `12272:2` (`12272-2` na URL), define navegação, permissões e relação entre páginas.
+Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma
+`↳ Jornadas dos Usuários`, node `12272:2` (`12272-2` na URL), é evidência
+complementar de navegação, permissões e relação entre páginas; as autoridades
+executáveis continuam em `src/lib/routes.ts` e `src/lib/permissions.ts`.
 
 ## Fontes
 
-1. Figma `↳ Jornadas dos Usuários` (`12272:2`, frame principal `12280:2`): sitemap, fluxos e permissões.
-2. Documentação de produto: regras de negócio, planos e terminologia.
-3. Figma `Design Telas` (`5999:10563`): layout e componentes.
-4. Pasta `Referencias`: direção visual por perfil.
-5. Inferência controlada: marcada como `inferido`.
-6. `docs/product/integration-map.md`: mapa operacional de rotas, páginas, views, APIs e skills.
+1. Documentação de produto, `src/lib/routes.ts` e `src/lib/permissions.ts`:
+   regras de negócio, planos, terminologia, rotas e permissões.
+2. Figma `↳ Jornadas dos Usuários` (`12272:2`, frame principal `12280:2`):
+   evidência complementar de sitemap, fluxos e permissões.
+3. `docs/product/integration-map.md`: mapa operacional de rotas, páginas,
+   views, APIs e skills.
+4. Figma `Design Telas` (`5999:10563`): evidência complementar de layout e
+   componentes.
+5. Pasta `Referencias`: direção visual por perfil.
+6. Inferência controlada: marcada como `inferido`.
+
+Para ajustes de layout e estilo, seguir a precedência visual de `AGENTS.md` e
+`docs/design-system/design-system.md`: imagem de referência fornecida pelo
+usuário, padrão e componentes existentes da plataforma, Calibration/Design
+System e Figma complementar. Essa regra visual não altera a autoridade deste
+documento sobre o mapa de áreas e rotas.
 
 ## Regras
 

@@ -739,3 +739,23 @@ A implementação futura deve comprovar:
 - estados discriminados;
 - nenhuma tendência agregada no shell ou Aura;
 - nenhum favorito interpretado por serviço.
+
+## Adendo — temas privados da jornada
+
+Status: aceito em 2026-09-08.
+
+Os temas da jornada não são uma métrica, evento de telemetria, sinal da Aura ou
+atributo compartilhado do paciente. São uma seleção manual e opcional do
+terapeuta Premium Plus, feita após registrar uma sessão realizada, para a
+leitura privada da jornada daquela mesma pessoa.
+
+- A taxonomia `journey_topics_v1` é fechada, versionada e não aceita texto
+  livre; `Outro tema` é apenas uma categoria agregadora.
+- Cada booking aceita de um a três temas e uma declaração explícita do
+  terapeuta. O registro é imutável e idempotente por `request_id`.
+- A identidade, plano e vínculo da reserva são derivados no backend. Paciente,
+  outro terapeuta e cliente não autenticado não podem ler ou gravar a seleção.
+- Os temas aparecem apenas com a contagem de sessões marcadas no Histórico da
+  Jornada do mesmo terapeuta. Eles não participam de Aura, exportação,
+  benchmark, métrica entre pessoas, feedback, confirmação, pagamento, ledger ou
+  repasse nesta fase.

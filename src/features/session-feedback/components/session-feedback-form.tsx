@@ -19,6 +19,7 @@ import {
   type SessionFeedbackRecord,
   type SessionFeedbackStatus,
 } from "../session-feedback.types";
+import { TherapistJourneyThemesForm } from "./therapist-journey-themes-form";
 
 type SessionFeedbackFormProps = {
   actorRole: "patient" | "therapist";
@@ -29,6 +30,7 @@ type SessionFeedbackFormProps = {
     readPayload: SessionFeedbackReadPayload | null,
   ) => void;
   sessionLabel: string;
+  showJourneyThemes?: boolean;
 };
 
 export function SessionFeedbackForm({
@@ -37,6 +39,7 @@ export function SessionFeedbackForm({
   introductoryMessage,
   onSubmitted,
   sessionLabel,
+  showJourneyThemes = false,
 }: SessionFeedbackFormProps) {
   const [status, setStatus] = useState<SessionFeedbackStatus>("loading");
   const [existingFeedback, setExistingFeedback] =
@@ -278,7 +281,9 @@ export function SessionFeedbackForm({
         <FeedbackSentState
           actorRole={actorRole}
           feedback={existingFeedback}
+          bookingId={bookingId}
           payload={readPayload}
+          showJourneyThemes={showJourneyThemes}
         />
       ) : isQualityEligible || isIncidentOnly ? (
         <div className="mt-6 grid gap-6">
@@ -474,12 +479,16 @@ function FeedbackInfoState({ children }: { children: ReactNode }) {
 
 function FeedbackSentState({
   actorRole,
+  bookingId,
   feedback,
   payload,
+  showJourneyThemes,
 }: {
   actorRole: "patient" | "therapist";
+  bookingId: string;
   feedback: SessionFeedbackRecord;
   payload: SessionFeedbackReadPayload | null;
+  showJourneyThemes: boolean;
 }) {
   const waitingForCounterpart =
     payload?.confirmationState === "awaiting_patient" ||
@@ -519,6 +528,11 @@ function FeedbackSentState({
           </span>
         ) : null}
       </div>
+      {showJourneyThemes &&
+      actorRole === "therapist" &&
+      feedback.outcome === "completed" ? (
+        <TherapistJourneyThemesForm bookingId={bookingId} />
+      ) : null}
     </div>
   );
 }

@@ -16,6 +16,10 @@ Adicionar `1280 × 800` ou `360 × 800` quando a composição tiver risco espec�
 Validar a primeira dobra e a página completa. Não considerar somente screenshot
 do Figma ou componente isolado.
 
+Quando houver uma imagem de referência fornecida pelo usuário, anexá-la à
+evidência e compará-la prioritariamente em composição, densidade, hierarquia,
+ritmo, responsividade e estilo. O Figma permanece evidência complementar.
+
 ## Estados mínimos
 
 - conteúdo real disponível;
@@ -43,6 +47,8 @@ Não usar dados demonstrativos para transformar falha em sucesso aparente.
 - truncamento com acesso ao valor completo quando necessário;
 - ausência de overflow da página e uso justificado de scroll interno;
 - transformação de tabela, calendário, rail, tabs e ações no mobile/tablet;
+- aderência à imagem de referência fornecida pelo usuário, quando aplicável,
+  sem duplicar componentes nem contrariar a Calibration;
 - touch targets, foco, teclado e contraste;
 - overlay, scroll lock, Escape, foco confinado e retorno de foco em dialogs;
 - empty/loading/error coerentes e sem mensagem técnica.
@@ -52,10 +58,13 @@ Não usar dados demonstrativos para transformar falha em sucesso aparente.
 1. Registrar intent, tarefa primária, densidade e patterns aplicados.
 2. Executar testes funcionais e abrir navegador visível.
 3. Capturar viewports e estados mínimos.
-4. Comparar `Intent vs Implementation vs TES Experience Language vs Design System`.
+4. Comparar `Intent vs Implementation vs referência em imagem do usuário (quando
+   existir) vs padrão/componentes da plataforma vs Calibration vs TES Experience
+   Language vs Design System`; usar Figma como evidência complementar.
 5. Preencher o Visual Quality Score com evidências.
 6. Reprovar em qualquer eliminatório; corrigir e repetir a captura.
-7. Anexar screenshots, rota, data, commit e limitações ao handoff.
+7. Anexar screenshots, referência em imagem usada (quando existir), rota, data,
+   commit, limitações e divergências visuais intencionais ao handoff.
 
 ## Automação proporcional
 

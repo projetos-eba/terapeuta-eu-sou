@@ -180,11 +180,41 @@ Empty visualizations retain their frame, axes, legend and a neutral reference
 state with explicit copy. They must never fabricate financial values.
 
 The summary follows the consolidated visual strip as a deliberate hierarchy:
-editorial header and approved tabs; four KPI cards (`Receita líquida`, `A
-receber`, `Previsto no mês`, `Sessões realizadas`); the paired panels `Seu
-dinheiro` and `Sua agenda e potencial`; therapy ranking, net average ticket and
-opportunity; a full-width financial evolution; and methodology rows. This is a
-page-specific composition, not a new global dashboard primitive.
+editorial header and approved tabs; the five-card `Resumo rápido` strip
+(`Receita líquida`, `A receber`, `Previsto no mês`, `Ticket médio`, `Sessões
+realizadas`); a three-panel financial reading (`Seu dinheiro`, `Saúde
+financeira`, `Crescimento`); a strategic row whose left column stacks the
+`Estratégico` ranking and `Detalhes e metodologia`, beside the enlarged
+financial evolution; and methodology rows. This is a page-specific composition,
+not a new global dashboard primitive.
+
+The available KPI cards use a distinct TES accent on their leading icon — green
+for net revenue, a pair of purple tones for receivable and forecast, and orange
+for completed sessions — while keeping status text semantically correct. Each
+card keeps an accessible 44px information control at its upper-right corner;
+the tooltip supplements rather than replaces the visible product explanation.
+At desktop width, restrained arrows visually connect the quick-summary cards;
+they are hidden before the five-column layout to avoid implying a required
+reading order on smaller screens. A card uses a colored sparkline only with a
+matching real series from a financial contract. Without it, the existing
+`MetricSparkline` renders its explicit neutral reference state rather than an
+invented trend. The full evolution chart remains the detailed time-series
+reading: it uses a spacious plot, separated categories and a purple scale to
+distinguish the financial series. The colors identify categories, not financial
+health.
+
+Below the quick summary, `Seu dinheiro` uses purple, red and green only for
+gross amount, costs/refunds and net amount. `Saúde financeira` uses green for
+occupied capacity, purple for contracted revenue and orange for estimated
+available potential. `Crescimento` uses red and orange surfaces to make unused
+estimated potential and availability scannable, while maintaining copy that
+states the potential is not guaranteed revenue. The three panels remain a
+single column on mobile. `Estratégico` displays only the returned therapies,
+with receita líquida and average ticket in a horizontally scrollable table when
+needed; it must not invent rows or show a "Ver relatório completo" link. The
+financial reading panels do not include shortcut buttons to Agenda or Sessões;
+they stay focused on the current reading. At desktop width, the evolution panel
+receives the larger share of the strategic row and a larger plot area.
 
 The local `FinancialEvolutionChart` is the main financial reading. It combines
 real series from the applicable contract with bars for values in the period,
