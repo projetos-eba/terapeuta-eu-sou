@@ -4,6 +4,7 @@ import { cache } from "react";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import { routes } from "@/lib/routes";
 
 import { resolvePatientAvatarUrl } from "./patient-overview.avatar";
 import { isPatientAppointmentLive } from "./patient-overview.live";
@@ -63,6 +64,7 @@ type ProfessionalRow = {
   id: string;
   photo_url: string | null;
   public_name: string;
+  slug: string;
 };
 
 type FavoriteProfessionalDetailsRow = {
@@ -262,7 +264,7 @@ async function getSupabasePatientOverview(
     getRowsByIds<ProfessionalRow>(
       config,
       "therapist_profiles",
-      "id,public_name,headline,photo_url",
+      "id,slug,public_name,headline,photo_url",
       professionalIds,
     ),
     getRowsByIds<FavoriteProfessionalDetailsRow>(
@@ -478,6 +480,7 @@ function toFavoriteProfessional(
     }),
     id: professional.id,
     name: professional.public_name,
+    profileHref: routes.public.therapistProfile(professional.slug),
     reviewCount: details?.review_count ?? 0,
     summary: details?.short_intro ?? details?.published_headline ?? null,
     specialty: details?.published_headline ?? professional.headline ?? null,
@@ -546,6 +549,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         avatarUrl: "/therapists/andre-lima.png",
         id: "92000000-0000-4000-8000-000000000014",
         name: "André Lima",
+        profileHref: routes.public.therapistProfile("andre-lima"),
         reviewCount: 38,
         summary:
           "Acompanho processos de reconexão e autocuidado com escuta acolhedora.",
@@ -557,6 +561,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         avatarUrl: "/therapists/ana-oliveira.png",
         id: "92000000-0000-4000-8000-000000000015",
         name: "Sofia Mendes",
+        profileHref: routes.public.therapistProfile("sofia-mendes"),
         reviewCount: 24,
         summary:
           "Um espaço tranquilo para olhar para o momento presente e suas possibilidades.",
@@ -568,6 +573,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         avatarUrl: "/therapists/marcio-andrade.png",
         id: "92000000-0000-4000-8000-000000000016",
         name: "Roberto Vaz",
+        profileHref: routes.public.therapistProfile("roberto-vaz"),
         reviewCount: 17,
         summary:
           "Práticas integrativas para apoiar escolhas mais conscientes no cotidiano.",

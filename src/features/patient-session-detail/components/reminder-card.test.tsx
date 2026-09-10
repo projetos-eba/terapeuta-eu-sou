@@ -15,6 +15,8 @@ describe("ReminderCard", () => {
     );
 
     expect(screen.getByText("Seu encontro se aproxima")).toBeInTheDocument();
+    expect(screen.getByText(/, 11h$/)).toBeInTheDocument();
+    expect(screen.getByText("Faltam 2h")).toBeInTheDocument();
   });
 
   it.each([
@@ -38,6 +40,8 @@ function booking({
 }) {
   return {
     minutesUntilStart: 120,
+    startsAt: "2026-08-01T14:00:00.000Z",
     status,
+    timezone: "America/Sao_Paulo",
   } as PatientSessionDetailPageData["booking"];
 }

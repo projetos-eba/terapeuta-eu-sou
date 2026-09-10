@@ -39,10 +39,10 @@ const definitions = [
     unitAmount: 7990,
   },
   {
-    lookupKey: "tes_premium_plus_brl_monthly_v2",
+    lookupKey: "tes_premium_plus_brl_monthly_v3",
     planCode: "premium_plus",
     productId: products.premium_plus.id,
-    unitAmount: 12990,
+    unitAmount: 11990,
   },
   {
     lookupKey: "tes_premium_plus_founder_brl_monthly_v1",
@@ -60,6 +60,7 @@ for (const definition of definitions) {
 for (const lookupKey of [
   "tes_premium_brl_monthly_v1",
   "tes_premium_plus_brl_monthly_v1",
+  "tes_premium_plus_brl_monthly_v2",
   "tes_premium_brl_6months_v1",
   "tes_premium_plus_brl_6months_v1",
 ]) {
@@ -91,7 +92,7 @@ console.log(
     billingCatalog: {
       founderRecurringAmountCents: 7990,
       premiumAmountCents: 7990,
-      premiumPlusAmountCents: 12990,
+      premiumPlusAmountCents: 11990,
       recurringInterval: "month",
     },
     liveTransactionsCreated: false,
@@ -158,6 +159,7 @@ async function findOrCreateProduct(planCode, name) {
 function preferredLookupKeys(planCode) {
   return planCode === "premium_plus"
     ? [
+        "tes_premium_plus_brl_monthly_v3",
         "tes_premium_plus_brl_monthly_v2",
         "tes_premium_plus_founder_brl_monthly_v1",
         "tes_premium_plus_brl_monthly_v1",

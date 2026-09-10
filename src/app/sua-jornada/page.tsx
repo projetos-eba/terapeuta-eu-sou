@@ -32,8 +32,7 @@ export default async function JourneyPage() {
               Como você está se sentindo?
             </h1>
             <p className="mt-8 max-w-[520px] text-[1.08rem] font-semibold leading-8 text-tesText-secondary lg:text-[1.2rem]">
-              Selecione até 3 temas que mais conversam com o seu momento. O TES
-              usa os interesses já associados a cada tema para sugerir caminhos.
+              Escolha até 3 temas que mais conversam com o seu momento. Não precisa ter certeza. Suas escolhas ajudam o Match a apresentar caminhos, práticas e profissionais para você conhecer.
             </p>
           </div>
         </div>

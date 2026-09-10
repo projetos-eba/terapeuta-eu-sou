@@ -60,7 +60,7 @@ export function OnlineSessionCard({
           </h2>
         </div>
         <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-          Entre na sala de videoconferência com segurança quando o acesso
+          Entre na sala de videoconferência quando o acesso
           estiver liberado.
         </p>
       </div>
@@ -163,7 +163,7 @@ export function OnlineSessionCard({
           className="inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={routes.patient.encounterVideo(data.booking.id) as Route<string>}
         >
-          Ir para a sala segura quando a entrada estiver disponível
+          Acessar a sala quando a entrada estiver disponível.​
         </Link>
       ) : null}
     </section>

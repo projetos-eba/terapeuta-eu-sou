@@ -39,6 +39,9 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 - Ações e itens do shell só recebem link quando a página de destino está implementada; rotas planejadas sem página não devem gerar prefetch, redirect ou navegação para `404`.
 - Cards do paciente não recebem `meeting_url`; entrada no Zoom acontece sempre
   pelo detalhe do encontro e pela API autenticada de acesso ao Video SDK.
+- O CTA de cada terapeuta favorito abre o perfil público canônico
+  `/terapeutas/:slug` com o rótulo “Ver perfil”. Ele não inicia uma reserva
+  nem aponta diretamente para `/reserva`.
 - Na agenda da home, cada card de encontro mantém o status em uma coluna própria
   entre a identidade do terapeuta e a data/horário. O menu de ações fica ancorado
   no canto superior direito, com espaço reservado para não se sobrepor ao conteúdo.

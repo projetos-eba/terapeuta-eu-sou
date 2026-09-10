@@ -1,6 +1,6 @@
 # Stripe Phase 3 Homologation
 
-Last updated: 2026-08-26
+Last updated: 2026-09-10
 
 ## Scope
 
@@ -14,7 +14,7 @@ Browser redirects never activate plans or bookings by themselves. The accepted s
 ## Bootstrap mensal
 
 O catálogo de assinaturas é exclusivamente mensal: Premium R$ 79,90 e Premium
-Plus R$ 129,90. A oferta `TERAPEUTAFUNDADOR` usa o mesmo Product Premium Plus,
+Plus R$ 119,90. A oferta `TERAPEUTAFUNDADOR` usa o mesmo Product Premium Plus,
 um Price oculto de R$ 79,90 e Coupon de 100% por três meses.
 
 ```bash

@@ -24,11 +24,14 @@ type RelatedTherapistsProps = {
   therapy: PublicTherapyDetail;
 };
 
-const sortLabels: Record<RelatedTherapistSort, string> = {
-  next_slot: "Próximo horário",
-  rating: "Melhor avaliação",
-  relevance: "Mais relevantes",
-};
+const publicSortOptions: Array<{
+  label: string;
+  value: Exclude<RelatedTherapistSort, "relevance">;
+}> = [
+  { label: "A–Z", value: "az" },
+  { label: "Próximo horário", value: "next_slot" },
+  { label: "Melhor avaliação", value: "rating" },
+];
 
 export function RelatedTherapists({
   errorMessage,
@@ -84,7 +87,7 @@ export function RelatedTherapists({
                 defaultValue={sort}
                 className="min-h-11 w-full rounded-md border border-border bg-white px-4 text-sm font-bold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 sm:w-[210px]"
               >
-                {Object.entries(sortLabels).map(([value, label]) => (
+                {publicSortOptions.map(({ label, value }) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

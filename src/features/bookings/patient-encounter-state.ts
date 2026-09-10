@@ -340,7 +340,7 @@ function getWaitingRoomState({
     return {
       kind: "too_early",
       message:
-        "A sala de espera ficará disponível 15 minutos antes do horário agendado.",
+        "Sala estará disponível assim que o terapeuta liberar o acesso.",
       title: "A sala ainda não abriu",
     };
   }

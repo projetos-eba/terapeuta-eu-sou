@@ -117,6 +117,24 @@ describe("JourneyMatchClient", () => {
     );
   });
 
+  it("mantém o título e a instrução do refinamento sem badge editorial", () => {
+    render(<JourneyMatchClient config={config} />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Autoconhecimento e Transform.*Questões sobre quem você é/,
+      }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Autoconhecimento e Transformação" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Selecione até 3 interesses para refinar este tema."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Interesses")).not.toBeInTheDocument();
+  });
+
   it("remove os refinamentos ao desmarcar o tema", () => {
     render(<JourneyMatchClient config={config} />);
 

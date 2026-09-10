@@ -24,9 +24,18 @@ Use esta skill ao criar, revisar ou refatorar a página pública `/terapias`, o 
 - Query params: `q`, `theme`, `sort`, `page`, `pageSize`
 - Links legados com `category` são normalizados para `/terapias` sem filtro,
   preservando `q`, `sort`, `page` e `pageSize` compatíveis.
-- Sorts públicos: `relevance`, `most_searched`, `popular`, `newest`, `az`
+- Sorts públicos: `most_searched`, `newest`, `az`. O padrão é
+  `most_searched`; links legados com `sort=popular` ou `sort=relevance` são
+  normalizados para ele, sem reintroduzir opções removidas na UI.
+- `newest` é apresentado como “Adicionadas recentemente” e ordena por
+  `created_at desc nulls last, name asc`: a data de cadastro, não a data de
+  publicação. `az` é apresentado como “A–Z” e ordena somente por `name asc`.
 - Match deve apontar para `/terapias/:slug?source=match`
 - Detalhe deve usar `routes.public.therapyDetail(slug)` e preservar `source=match` nos links seguintes.
+- No detalhe, a ordenação pública de profissionais oferece `az` (A–Z),
+  `next_slot` e `rating`; o padrão é `az`. O legado `relevance` normaliza para
+  `az` fora do Match. O Match mantém relevância exclusivamente na sua ordenação
+  interna, sem expor “Mais relevantes” na interface.
 
 ## Dados
 
@@ -113,6 +122,10 @@ Para profissionais relacionados:
 - Benefícios do detalhe devem ser cards compactos com ícone e título, sem descrição visível; descrições podem existir no banco para uso futuro/admin, mas a UI pública simplifica o preenchimento.
 - A nota de segurança não deve aparecer como card destacado no bloco “O que é”; a responsabilidade editorial deve ficar no texto, metadata ou conteúdo administrado apropriado.
 - Profissionais relacionados devem ser cards/lista compacta em duas colunas no desktop quando houver múltiplos resultados, evitando áreas vazias grandes.
+- Em “Temas de atuação” de cada profissional relacionado, usar exclusivamente
+  os `guide_items` publicados de “Como posso te guiar”: mostrar até três e,
+  quando houver excedentes, um contador `+N` com tooltip acessível listando os
+  demais. Tags legadas de perfil e temas da terapia não substituem esse dado.
 - O detalhe termina com o `PublicTherapistsLowerBanner`, compartilhado com a faixa inferior de `/terapeutas`; não há FAQ de terapia.
 
 ## Copy Responsável
@@ -157,7 +170,7 @@ Rodar:
 ## Pendências Conhecidas
 
 - Persistência real de favoritos de terapias para usuário autenticado.
-- Métricas reais separadas para “Mais procuradas” e “Mais populares”.
+- Métricas reais para “Mais procuradas”.
 - Drawer/bottom sheet mobile completo caso a lista de temas cresça muito.
 - Auditar `/admin/terapias` para editar `therapy_public_content`, highlights e benefícios sem alterar pesos do Match.
 - Criar interface admin para `approach_label`, `approach_icon_key`, `visual_theme_key` e `hero_focal_point`.

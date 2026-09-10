@@ -7,7 +7,7 @@ import { TherapistLockedCard } from "./therapist-locked-card";
 
 describe("TherapistLockedCard", () => {
   it("opens an accessible human upgrade dialog without rendering private values", () => {
-    render(
+    const { container } = render(
       <TherapistLockedCard
         description="Acompanhe padrões da sua prática no Premium."
         requiredPlan={TherapistPlan.Premium}
@@ -41,5 +41,17 @@ describe("TherapistLockedCard", () => {
     expect(
       screen.getByRole("link", { name: "Conhecer Premium" }),
     ).toHaveAttribute("href", "/terapeuta/plano");
+    expect(
+      screen.getByRole("list", { name: "Benefícios do Premium" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Acompanhamento da prática")).toBeInTheDocument();
+
+    const lockImage = container.ownerDocument.querySelector(
+      'img[src*="therapist-premium-lock"]',
+    );
+    expect(lockImage).toHaveClass("object-contain");
+    expect(lockImage?.getAttribute("style")).toContain(
+      "radial-gradient(76% 74% at 50% 48%",
+    );
   });
 });

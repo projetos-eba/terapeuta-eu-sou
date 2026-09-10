@@ -100,6 +100,10 @@ Preservar o padrão do node:
   guia e convite; o guia exibe no máximo quatro temas com ícones. Quando houver
   quatro escolhas, a composição usa duas colunas e duas linhas, com respiro
   suficiente entre ícones e textos.
+- A grade de temas em `Como posso te guiar` permanece em duas colunas a partir
+  de `420px`, inclusive em desktop. Não promover para três colunas: os rótulos
+  canônicos podem ser longos e devem manter leitura confortável ao lado do
+  ícone.
 - O hero público usa composição compacta: o fundo temático ocupa menos altura, o
   retrato é reduzido em 30% em cada breakpoint principal e os badges de
   verificação/plano permanecem lado a lado, com tipografia compacta e sem
@@ -118,9 +122,10 @@ Preservar o padrão do node:
   desse limite, exibe “Ver mais” em negrito e abre um `TESDialog` com overlay,
   foco, `Escape` e o texto completo. Tanto o preview quanto o modal devem
   preservar quebra segura de palavras em larguras menores.
-- A seção `Vivências e terapias` usa a terapia canônica como identidade
-  pública. Não exibir títulos operacionais de serviço como chip/aba, por
-  exemplo “Reiki online”.
+- A seção `Vivências e terapias` usa `service.title` como identidade pública
+  de cada oferta, pois é o nome cadastrado pelo terapeuta. A terapia canônica
+  permanece como classificação e metadado secundário; ela não substitui o
+  título, inclusive nas abas de disponibilidade e no modal de descrição.
 - No mobile, a seção de vivências e terapias permanece disponível como
   carrossel horizontal de arraste manual, sem botões de seta; em tablet/desktop,
   preserva o grid existente.
