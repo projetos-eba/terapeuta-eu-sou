@@ -1,4 +1,4 @@
-# Repasses semanais — Transfer semanal + Payout automático
+# Repasses semanais — Transfer semanal + Payout conectado automático
 
 Status: política v8 e schedulers ativados em HML e produção em 2026-08-28,
 após preflight Connect, prova de Transfer idempotente em Stripe Test, readiness
@@ -20,6 +20,22 @@ O contrato aprovado em ADR-018 é:
 `daily` é frequência automática, não uma chamada disparada pelo Transfer nem
 promessa de crédito bancário no mesmo dia. O saldo precisa ficar disponível e
 a Stripe aplica seus cutoffs e prazos bancários.
+
+A agenda da conta da plataforma é distinta das contas conectadas, mas contas BR
+não aceitam `manual`, `weekly`, `monthly` nem saldo mínimo: a plataforma e as
+contas conectadas permanecem em `daily`. A conta BR/BRL validada também não
+aceita Top Up como mecanismo de recomposição do saldo da plataforma. O worker
+verifica a agenda e todo o saldo BRL disponível contra a obrigação não
+transferida do lote antes do claim.
+Se o Payout diário tiver consumido o saldo, o lote falha fechado, preserva as
+mesmas intenções e chaves idempotentes e entra no circuito operacional.
+
+Esse preflight evita processamento parcial, mas não reserva fundos. Garantir
+Transfer semanal em produção exige liquidez operacional aprovada imediatamente
+antes do lote ou uma decisão arquitetural separada que antecipe o Transfer
+vinculado à Charge/mude o tipo de cobrança. A cobrança especial
+`bypassPending` do Stripe Test serve apenas para homologação e recuperação do
+incidente; não é pressuposto de produção BR.
 
 ## Contrato financeiro
 
@@ -140,6 +156,41 @@ Cada Transfer persiste antes da chamada Stripe:
 
 Timeout ambíguo vira `reconciliation_required` e reutiliza a mesma chave. O
 ledger é idempotente e contém uma única entrada por Transfer.
+Falta temporária de saldo agregado da plataforma (`balance_insufficient` ou
+`insufficient_funds`) é retryable, nunca um bloqueio terminal do terapeuta. O
+item preserva a mesma intenção e fingerprint, mas usa uma chave Stripe nova e
+determinística por tentativa, pois uma recusa definitiva pode ser memorizada
+pela chave anterior. Respostas ambíguas preservam a chave original e exigem
+conciliação antes de qualquer nova tentativa. Conta, pagamento, liquidação e
+saldo Stripe devem ser revalidados antes de tentar novamente.
+As tentativas do Transfer usam backoff limitado de 15, 30 e 60 minutos. A
+quarta falha abre o incidente terminal, sem herdar atrasos maiores de fluxos
+legados. Uma retomada terminal é explícita, exclusiva de `service_role`, exige
+o mesmo lote e só é aceita sem ID Stripe nem lançamento no ledger; ela abre um
+novo ciclo de chaves sem perder a intenção financeira original.
+Antes de criar intenções locais, o worker soma toda a obrigação ainda não
+transferida do lote e compara com o saldo BRL `available` da plataforma. Se o
+saldo não cobrir o lote completo, nenhum novo item é claimed; a execução entra
+no backoff do run e registra o incidente interno. Essa pré-condição evita um
+lote parcialmente processado por insuficiência agregada, mas não substitui a
+configuração operacional do Payout da plataforma.
+
+O destino de cada item é imutável durante todo o processamento. A autoridade é
+`payout_batch_items.payout_batch_therapist_id`, que aponta para o
+`connect_account_id` congelado no grupo do lote. Claims e retries não procuram
+novamente uma conta pelo terapeuta, não selecionam a geração corrente e não
+redirecionam um item quando coexistem contas histórica e atual.
+
+Falhas não tratadas do worker são persistidas no próprio run com correlação
+interna. O scheduler aplica backoff de 15, 30 e 60 minutos sem incrementar
+tentativas durante a espera. A quarta falha consecutiva abre um circuito,
+libera o lease, marca o run como `failed` e cria um único incidente crítico por
+run. A retomada é uma operação `service_role` explícita e exige o mesmo lote;
+progresso confirmado zera a sequência de falhas. Respostas HTTP externas
+permanecem genéricas e não expõem SQL, IDs internos nem arquitetura.
+Pausa e retomada operacional do cron usam a RPC interna
+`set_weekly_payout_scheduler_active_v1`, disponível apenas ao `service_role` e
+fixada ao job semanal v2; ela não aceita nome de job fornecido pelo chamador.
 
 Para Payout automático:
 
@@ -169,6 +220,11 @@ reservados, sem qualquer registro de Transfer, voltam com auditoria para
 `eligible` e aguardam a nova conta corrente pronta. Itens que já possuem
 Transfer permanecem vinculados à conta original e exigem reconciliação; nunca
 são retentados contra uma conta nova.
+
+Se uma conta for encerrada antes de existir intenção de Transfer, a rotina de
+encerramento remove o item da reserva e devolve o pagamento à elegibilidade.
+Se a intenção já existe, inclusive em estado ambíguo, o vínculo original é
+preservado para reconciliação e falha fechada.
 
 ## Eventos obrigatórios
 

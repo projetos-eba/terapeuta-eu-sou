@@ -4863,12 +4863,17 @@ export type Database = {
           attempts: number;
           business_date: string;
           completed_at: string | null;
+          consecutive_failures: number;
           created_at: string;
           cutoff_at: string;
           id: string;
           last_error_code: string | null;
           last_error_message: string | null;
+          last_failed_at: string | null;
+          last_request_id: string | null;
+          last_succeeded_at: string | null;
           lease_expires_at: string | null;
+          next_retry_at: string | null;
           payout_batch_id: string | null;
           reference_period_end: string;
           reference_period_start: string;
@@ -4882,12 +4887,17 @@ export type Database = {
           attempts?: number;
           business_date: string;
           completed_at?: string | null;
+          consecutive_failures?: number;
           created_at?: string;
           cutoff_at: string;
           id?: string;
           last_error_code?: string | null;
           last_error_message?: string | null;
+          last_failed_at?: string | null;
+          last_request_id?: string | null;
+          last_succeeded_at?: string | null;
           lease_expires_at?: string | null;
+          next_retry_at?: string | null;
           payout_batch_id?: string | null;
           reference_period_end: string;
           reference_period_start: string;
@@ -4901,12 +4911,17 @@ export type Database = {
           attempts?: number;
           business_date?: string;
           completed_at?: string | null;
+          consecutive_failures?: number;
           created_at?: string;
           cutoff_at?: string;
           id?: string;
           last_error_code?: string | null;
           last_error_message?: string | null;
+          last_failed_at?: string | null;
+          last_request_id?: string | null;
+          last_succeeded_at?: string | null;
           lease_expires_at?: string | null;
+          next_retry_at?: string | null;
           payout_batch_id?: string | null;
           reference_period_end?: string;
           reference_period_start?: string;
@@ -6820,6 +6835,7 @@ export type Database = {
           next_retry_at: string | null;
           payout_batch_item_id: string;
           request_fingerprint: string | null;
+          retry_cycle: number;
           session_payment_id: string;
           status: string;
           stripe_connected_balance_transaction_id: string | null;
@@ -6848,6 +6864,7 @@ export type Database = {
           next_retry_at?: string | null;
           payout_batch_item_id: string;
           request_fingerprint?: string | null;
+          retry_cycle?: number;
           session_payment_id: string;
           status?: string;
           stripe_connected_balance_transaction_id?: string | null;
@@ -6876,6 +6893,7 @@ export type Database = {
           next_retry_at?: string | null;
           payout_batch_item_id?: string;
           request_fingerprint?: string | null;
+          retry_cycle?: number;
           session_payment_id?: string;
           status?: string;
           stripe_connected_balance_transaction_id?: string | null;
@@ -14694,6 +14712,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_payout_transfer_liquidity_requirement_v1: {
+        Args: { p_payout_batch_id: string };
+        Returns: Json;
+      };
       get_private_therapist_retention_analytics_v1: {
         Args: {
           p_period_end?: string;
@@ -15282,6 +15304,10 @@ export type Database = {
         };
         Returns: string;
       };
+      rearm_definitive_payout_transfer_v1: {
+        Args: { p_expected_batch_id: string; p_transfer_id: string };
+        Returns: Json;
+      };
       record_automatic_stripe_payout_v1: {
         Args: {
           p_amount_cents: number;
@@ -15324,6 +15350,26 @@ export type Database = {
           p_therapist_profile_id?: string;
         };
         Returns: string;
+      };
+      record_payout_scheduler_failure_v1: {
+        Args: {
+          p_error_code: string;
+          p_error_message: string;
+          p_now?: string;
+          p_request_id: string;
+          p_run_id: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
+      };
+      record_payout_scheduler_progress_v1: {
+        Args: {
+          p_now?: string;
+          p_request_id: string;
+          p_run_id: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
       };
       record_public_therapist_metric_events_v1: {
         Args: { p_events: Json; p_session_id: string };
@@ -15422,6 +15468,22 @@ export type Database = {
       };
       release_expired_payout_leases_v1: {
         Args: { p_limit?: number };
+        Returns: Json;
+      };
+      resume_failed_payout_scheduler_run_v1: {
+        Args: {
+          p_expected_batch_id: string;
+          p_now?: string;
+          p_run_id: string;
+        };
+        Returns: Json;
+      };
+      resolve_payout_operational_incident_v1: {
+        Args: { p_incident_key: string; p_now?: string };
+        Returns: boolean;
+      };
+      set_weekly_payout_scheduler_active_v1: {
+        Args: { p_active: boolean };
         Returns: Json;
       };
       reorder_therapist_services_v1: {

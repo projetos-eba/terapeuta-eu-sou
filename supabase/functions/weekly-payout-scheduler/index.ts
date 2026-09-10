@@ -9,10 +9,8 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import { runPayoutBatchWorker } from "../_shared/payments/payout-worker.ts";
-import {
-  getPaymentsConfig,
-  getPaymentsRuntime,
-} from "../_shared/payments/runtime.ts";
+import { recordSchedulerFailure } from "../_shared/payments/payout-observability.ts";
+import { getPaymentsConfig, getPaymentsRuntime } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import { reconcileChargeSettlements } from "../_shared/payments/charge-settlement.ts";
 import { resolveWeeklyPayoutStartWindow } from "../_shared/payments/weekly-window.ts";
@@ -32,6 +30,11 @@ runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
   const requestId = crypto.randomUUID();
+  let schedulerContext: {
+    client: SupabaseRestClient;
+    runId: string;
+    workerId: string;
+  } | null = null;
   try {
     if (request.method !== "POST") {
       throw new DomainError("method_not_allowed", 405, "Metodo nao permitido.");
@@ -56,18 +59,17 @@ runtime.serve(async (request) => {
     const startWindow = resolveWeeklyPayoutStartWindow(now);
     const existingRun = startWindow.open
       ? await client.get<Array<{ id: string }>>(
-          `/rest/v1/payout_scheduler_runs?select=id&business_date=eq.${startWindow.businessDate}&limit=1`,
-        )
+        `/rest/v1/payout_scheduler_runs?select=id&business_date=eq.${startWindow.businessDate}&limit=1`,
+      )
       : [];
-    const settlements =
-      startWindow.open && existingRun.length === 0
-        ? await reconcileChargeSettlements({
-            client,
-            limit: 500,
-            observedAt: now,
-            stripe,
-          })
-        : [];
+    const settlements = startWindow.open && existingRun.length === 0
+      ? await reconcileChargeSettlements({
+        client,
+        limit: 500,
+        observedAt: now,
+        stripe,
+      })
+      : [];
     const workerId = crypto.randomUUID();
     const claim = await client.rpc<Claim>(
       "claim_weekly_payout_scheduler_run_v1",
@@ -85,7 +87,14 @@ runtime.serve(async (request) => {
       });
     }
 
+    schedulerContext = { client, runId: claim.runId, workerId };
+
     if (!claim.batchId) {
+      await client.rpc("record_payout_scheduler_progress_v1", {
+        p_request_id: requestId,
+        p_run_id: claim.runId,
+        p_worker_id: workerId,
+      });
       const finalized = await client.rpc<Record<string, unknown>>(
         "finalize_payout_scheduler_run_v1",
         { p_scheduler_run_id: claim.runId },
@@ -115,6 +124,11 @@ runtime.serve(async (request) => {
       p_now: now,
       p_run_id: claim.runId,
     });
+    await client.rpc("record_payout_scheduler_progress_v1", {
+      p_request_id: requestId,
+      p_run_id: claim.runId,
+      p_worker_id: workerId,
+    });
     const finalized = await client.rpc<Record<string, unknown>>(
       "finalize_payout_scheduler_run_v1",
       { p_scheduler_run_id: claim.runId },
@@ -131,6 +145,20 @@ runtime.serve(async (request) => {
       windowOpen: claim.windowOpen === true,
     });
   } catch (error) {
+    if (schedulerContext) {
+      try {
+        await recordSchedulerFailure({
+          ...schedulerContext,
+          error,
+          requestId,
+        });
+      } catch {
+        console.error(JSON.stringify({
+          code: "PAYOUT_SCHEDULER_FAILURE_RECORD_FAILED",
+          request_id: requestId,
+        }));
+      }
+    }
     return failure(error, requestId);
   }
 });

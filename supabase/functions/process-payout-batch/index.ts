@@ -9,6 +9,10 @@ import {
 } from "../_shared/payments/http.ts";
 import { resolveFinanceOperationInstant } from "../_shared/payments/finance-lifecycle.ts";
 import { runPayoutBatchWorker } from "../_shared/payments/payout-worker.ts";
+import {
+  recordBatchWorkerFailure,
+  resolveBatchWorkerFailure,
+} from "../_shared/payments/payout-observability.ts";
 import { getPaymentsConfig, getPaymentsRuntime } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
@@ -25,6 +29,7 @@ runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
   const requestId = crypto.randomUUID();
+  let workerContext: { batchId: string; client: SupabaseRestClient } | null = null;
 
   try {
     if (request.method !== "POST") {
@@ -43,9 +48,14 @@ runtime.serve(async (request) => {
       fieldName: "now_override",
       override: body.nowOverride,
     });
+    const client = new SupabaseRestClient(
+      config.supabaseUrl,
+      config.serviceRoleKey,
+    );
+    workerContext = { batchId, client };
     const result = await runPayoutBatchWorker({
       batchId,
-      client: new SupabaseRestClient(config.supabaseUrl, config.serviceRoleKey),
+      client,
       maxPayouts: boundedLimit(body.maxPayouts),
       maxTransfers: boundedLimit(body.maxTransfers),
       operationInstant,
@@ -54,8 +64,28 @@ runtime.serve(async (request) => {
       stripeMode: config.stripeMode,
       workerId: crypto.randomUUID(),
     });
+    await resolveBatchWorkerFailure({
+      batchId,
+      client,
+      operation: "process_payout_batch",
+    });
     return success({ batchId, ...result });
   } catch (error) {
+    if (workerContext) {
+      try {
+        await recordBatchWorkerFailure({
+          ...workerContext,
+          error,
+          operation: "process_payout_batch",
+          requestId,
+        });
+      } catch {
+        console.error(JSON.stringify({
+          code: "PAYOUT_BATCH_FAILURE_RECORD_FAILED",
+          request_id: requestId,
+        }));
+      }
+    }
     return failure(error, requestId);
   }
 });
