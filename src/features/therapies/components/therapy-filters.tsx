@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowDownAZ, Flame, Sparkles, Star, X } from "lucide-react";
+import { ArrowDownAZ, Flame, Sparkles, X } from "lucide-react";
 
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -21,9 +21,8 @@ const quickSorts: Array<{
   value: TherapySort;
 }> = [
   { icon: Flame, label: "Mais procuradas", value: "most_searched" },
-  { icon: Star, label: "Mais populares", value: "popular" },
-  { icon: Sparkles, label: "Novas terapias", value: "newest" },
-  { icon: ArrowDownAZ, label: "A-Z Nome", value: "az" },
+  { icon: Sparkles, label: "Adicionadas recentemente", value: "newest" },
+  { icon: ArrowDownAZ, label: "A–Z", value: "az" },
 ];
 
 export function TherapyFilters({ params, totalCount }: TherapyFiltersProps) {
@@ -60,7 +59,7 @@ export function TherapyFilters({ params, totalCount }: TherapyFiltersProps) {
             );
           })}
 
-          {(params.q || params.theme || params.sort !== "relevance") && (
+          {(params.q || params.theme || params.sort !== "most_searched") && (
             <Link
               href={routes.public.therapies as Route<string>}
               className="inline-flex min-h-[50px] min-w-[172px] shrink-0 snap-start items-center justify-center gap-2 rounded-[13px] border border-[#E8E2F6] bg-white px-5 text-sm font-extrabold text-brand-primary shadow-[0_8px_11px_rgba(46,26,71,0.05)] transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"

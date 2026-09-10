@@ -1,6 +1,6 @@
 # Códigos promocionais Stripe no TES
 
-Atualizado em 2026-08-26.
+Atualizado em 2026-09-10.
 
 ## Autoridade e arquitetura
 
@@ -135,7 +135,7 @@ provisionado inativo e não recebe transações ou eventos de teste.
 - após as três cobranças integralmente descontadas: R$ 79,90 por mês no
   Premium Plus enquanto a assinatura permanecer ativa e sem mudança de plano.
 
-O preço público normal do Premium Plus permanece R$ 129,90 por mês. Para a
+O preço público normal do Premium Plus é R$ 119,90 por mês. Para a
 campanha, o backend resolve `offer_key=therapist_founder` a partir da metadata
 da Stripe e troca para um Price mensal oculto de R$ 79,90 antes de criar o
 Checkout. O navegador nunca envia esse Price nem escolhe o valor promocional.

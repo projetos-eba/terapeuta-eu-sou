@@ -62,13 +62,15 @@ export function SubscriptionCommandButton({
 
       onSuccess?.(payload.data ?? {});
       setOpen(false);
-      router.refresh();
 
       const projected = await waitForSubscriptionProjection({
         action,
         targetPlan,
       });
-      if (!projected) {
+      if (projected) {
+        onSuccess?.(projected);
+        router.refresh();
+      } else {
         setMessage(
           "Alteração recebida. A confirmação pode levar alguns instantes.",
         );
@@ -153,6 +155,8 @@ async function waitForSubscriptionProjection({
           effectivePlan?: TherapistPlan;
           subscription?: {
             cancelAtPeriodEnd?: boolean;
+            currentPeriodEnd?: string | null;
+            scheduledChangeAt?: string | null;
             scheduledPlan?: TherapistPlan | null;
           } | null;
         };
@@ -167,11 +171,11 @@ async function waitForSubscriptionProjection({
             : overview?.effectivePlan === targetPlan ||
               subscription?.scheduledPlan === targetPlan;
 
-      if (response.ok && projected) return true;
+      if (response.ok && projected) return subscription ?? {};
     } catch {
       // The command already succeeded; a later refresh will reconcile the view.
     }
     await new Promise((resolve) => window.setTimeout(resolve, 750));
   }
-  return false;
+  return null;
 }

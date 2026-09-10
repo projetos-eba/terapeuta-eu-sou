@@ -7,7 +7,6 @@ import {
   BellDot,
   Headphones,
   MessageSquareDot,
-  ShieldCheck,
 } from "lucide-react";
 
 import { TESDecorativeMedia } from "@/components/tes";
@@ -156,25 +155,6 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
           title={data.platformSection.title}
         />
       ) : null}
-
-      <section className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-base font-extrabold text-brand-deep">
-              Comunicação protegida pelo TES
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Esta central não possui chat livre. As interações entre cliente e
-              terapeuta usam modelos pré-aprovados. Já o suporte TES acontece em
-              chamados próprios, com texto livre protegido e rastreável.
-            </p>
-          </div>
-          <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full bg-brand-lavenderSoft px-4 text-xs font-extrabold text-brand-primary">
-            <ShieldCheck aria-hidden="true" size={15} />
-            Mensagens com pacientes protegidas
-          </span>
-        </div>
-      </section>
     </main>
   );
 }

@@ -1,9 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { CalendarDays, Heart, Star } from "lucide-react";
-
-import { routes } from "@/lib/routes";
+import { ArrowRight, Heart, Star } from "lucide-react";
 
 import type { PatientFavoriteProfessional } from "./patient-overview.types";
 
@@ -65,9 +63,9 @@ export function PatientFavoriteTherapistCard({
         ) : null}
         <Link
           className="mt-3 flex min-h-7 items-center justify-center gap-1 rounded-sm border border-[var(--tes-color-border)] text-[10px] font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.public.reservation as Route<string>}
+          href={professional.profileHref as Route<string>}
         >
-          <CalendarDays aria-hidden="true" className="size-3" /> Agendar
+          Ver perfil <ArrowRight aria-hidden="true" className="size-3" />
         </Link>
       </div>
     </article>

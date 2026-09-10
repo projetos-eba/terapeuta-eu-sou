@@ -25,8 +25,8 @@ select is(
    join public.billing_plans plans on plans.id = prices.plan_id
    where plans.code = 'premium_plus' and prices.is_active
      and prices.is_public and prices.interval = 'month'),
-  12990,
-  'Premium Plus monthly costs R$ 129,90'
+  11990,
+  'Premium Plus monthly costs R$ 119,90'
 );
 
 select is(
@@ -59,7 +59,8 @@ select is(
   (select count(*)::integer from public.billing_plan_prices
    where stripe_lookup_key in (
      'tes_premium_brl_monthly_v1',
-     'tes_premium_plus_brl_monthly_v1'
+     'tes_premium_plus_brl_monthly_v1',
+     'tes_premium_plus_brl_monthly_v2'
    ) and (is_active or is_public)),
   0,
   'legacy monthly Prices are retained but inactive and private'
@@ -71,8 +72,8 @@ select is(
      'tes_premium_brl_monthly_v1',
      'tes_premium_plus_brl_monthly_v1'
    )),
-  2,
-  'legacy monthly Price history is preserved'
+  3,
+  'previous public monthly Price history is preserved'
 );
 
 select ok(

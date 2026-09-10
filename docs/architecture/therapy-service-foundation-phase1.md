@@ -25,6 +25,13 @@ Data: 2026-07-28
 | Refinamentos serviço  | `therapist_service_matching_interests`               | Terapeuta via RPC transacional  | Até 3 por tema escolhido no serviço.                   |
 | Reservas/snapshots    | `bookings`, `booking_holds`, `session_payments`      | RPCs A2/A6 e webhooks           | Mantêm histórico mesmo se serviço/terapia mudar.       |
 
+O campo `therapist_services.title` é o nome de apresentação da oferta criada
+pelo terapeuta. Sempre que uma superfície identificar uma oferta específica —
+card privado, perfil público, disponibilidade, busca, destaque ou detalhe de
+encontro — ela mostra esse título. O nome de `therapies` continua canônico para
+catálogo, filtros, Match, classificação e metadados secundários; ele não
+substitui o título da oferta.
+
 ## Estados
 
 Terapias aceitas pelo schema: `draft`, `active` legado, `in_review`,

@@ -68,45 +68,35 @@ const JOURNEY_VISUALS: Record<string, { image: string; title: string }> = {
   },
 };
 
-const DETAIL_COPY: Record<string, { badge: string; subtitle: string }> = {
+const DETAIL_COPY: Record<string, { subtitle: string }> = {
   "autoestima-poder-pessoal": {
-    badge: "Autocuidado",
     subtitle: "Escolha interesses que ajudam a refinar autoestima e confiança.",
   },
   "corpo-energia": {
-    badge: "Energia",
     subtitle: "Marque sinais do corpo e da rotina que mais aparecem agora.",
   },
   "criatividade-expressao": {
-    badge: "Expressão",
     subtitle: "Selecione interesses ligados a voz própria e novos caminhos.",
   },
   "equilibrio-emocional": {
-    badge: "Ansiedade",
     subtitle: "Selecione o que está mais presente para você neste momento.",
   },
   espiritualidade: {
-    badge: "Conexão",
     subtitle: "Escolha interesses que expressem sua busca interior.",
   },
   "estresse-ansiedade": {
-    badge: "Rotina",
     subtitle: "Indique pontos que podem ajudar a encontrar uma pausa possível.",
   },
   "luto-despedidas": {
-    badge: "Acolhimento",
     subtitle: "Marque interesses ligados a despedidas e encerramentos.",
   },
   "mudancas-de-vida": {
-    badge: "Transição",
     subtitle: "Selecione o que melhor descreve essa fase de mudança.",
   },
   "proposito-direcao": {
-    badge: "Clareza",
     subtitle: "Escolha interesses que ajudem a orientar os próximos passos.",
   },
   relacionamentos: {
-    badge: "Vínculos",
     subtitle: "Selecione os temas relacionais que fazem sentido para você.",
   },
 };
@@ -270,7 +260,7 @@ export function JourneyMatchClient({
       </section>
 
       <p className="mx-auto mt-9 max-w-[560px] text-center text-[1.12rem] font-extrabold text-brand-deep">
-        Agora, se quiser, escolha interesses dentro das áreas selecionadas.
+        O que dentro dessas áreas mais faz sentido para você?​
       </p>
 
       <section className="mt-6 space-y-6 lg:mt-7 lg:space-y-8">
@@ -317,7 +307,7 @@ export function JourneyMatchClient({
               <p className="mt-1 text-sm font-bold leading-6 text-tesText-secondary lg:text-base">
                 {selectedInterestCount
                   ? `${selectedInterestCount} ${selectedInterestCount === 1 ? "interesse escolhido" : "interesses escolhidos"} para refinar seus caminhos.`
-                  : "Depois de escolher uma área, você pode refinar com interesses específicos."}
+                  : "Agora, refine suas escolhas com temas que mais se aproximam do seu momento.​"}
               </p>
             </div>
           </div>
@@ -332,7 +322,7 @@ export function JourneyMatchClient({
               <Loader2 className="size-5 animate-spin" />
             ) : (
               <>
-                Ver caminhos para mim
+                Ver técnicas relacionadas​
                 <ArrowRight className="size-6" />
               </>
             )}
@@ -344,7 +334,7 @@ export function JourneyMatchClient({
 }
 
 function JourneyStepper() {
-  const steps = ["Sua jornada", "Refinar", "Seus caminhos"];
+  const steps = ["Seu momento", "Suas Escolhas", "Seus caminhos"];
 
   return (
     <div className="mt-1 grid max-w-full grid-cols-3 items-start gap-2 pb-1 text-brand-primary lg:mt-0 lg:flex lg:max-w-[632px] lg:items-center lg:gap-3">
@@ -387,7 +377,6 @@ function ThemeDetailPanel({
     theme.interests.some((interest) => interest.id === interestId),
   ).length;
   const detail = DETAIL_COPY[theme.slug] ?? {
-    badge: "Interesses",
     subtitle: "Selecione até 3 interesses para refinar este tema.",
   };
 
@@ -405,14 +394,9 @@ function ThemeDetailPanel({
       <div className="p-5 sm:p-7 lg:px-9 lg:py-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-[1.5rem] font-extrabold leading-tight text-brand-deep lg:text-[1.72rem]">
-                {theme.visual.title}
-              </h2>
-              <span className="rounded-full bg-[#f0e6fb] px-3 py-1 text-xs font-extrabold text-brand-primary">
-                {detail.badge}
-              </span>
-            </div>
+            <h2 className="text-[1.5rem] font-extrabold leading-tight text-brand-deep lg:text-[1.72rem]">
+              {theme.visual.title}
+            </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary lg:text-base">
               {detail.subtitle}
             </p>

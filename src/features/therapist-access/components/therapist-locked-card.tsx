@@ -119,7 +119,7 @@ export function TherapistLockedCard({
 
       {isOpen ? (
         <TESDialog
-          className="max-h-[calc(100dvh-32px)] max-w-[980px] rounded-[24px] p-5 sm:max-h-[calc(100dvh-48px)] sm:rounded-[28px] sm:p-8"
+          className="max-h-[calc(100dvh-24px)] max-w-[1040px] rounded-[24px] p-5 sm:max-h-[calc(100dvh-48px)] sm:rounded-[28px] sm:p-8 lg:p-9"
           description={resolvedDialogDescription}
           hideHeader
           onClose={() => setIsOpen(false)}
@@ -127,74 +127,87 @@ export function TherapistLockedCard({
           title={dialogTitle}
         >
           <div className="min-w-0">
-            <div className="pr-14">
+            <div className="pr-16">
               <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-brand-lavenderSoft px-4 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
                 <Gem aria-hidden="true" className="size-4" />
                 Recurso {planLabel}
               </span>
             </div>
-            <div className="mt-5 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.72fr)] lg:items-start lg:gap-8">
-              <div className="order-2 min-w-0 lg:order-1">
-                <h2 className="max-w-[620px] font-display text-[2.7rem] font-light italic leading-[0.98] text-brand-deep sm:text-[3.6rem]">
+            <div className="mt-6 grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1.16fr)_minmax(280px,0.68fr)] lg:items-center lg:gap-10">
+              <div className="min-w-0">
+                <h2 className="max-w-[640px] text-balance font-display text-[2.35rem] font-light italic leading-[1.02] text-brand-deep sm:text-[3.1rem] lg:text-[3.65rem]">
                   {dialogTitle}
                 </h2>
                 <span
                   aria-hidden="true"
-                  className="mt-6 block h-0.5 w-10 bg-brand-primary/60"
+                  className="mt-5 block h-0.5 w-10 bg-brand-primary/60 sm:mt-6"
                 />
-                <p className="mt-5 max-w-[600px] text-base font-semibold leading-7 text-tesText-secondary">
+                <p className="mt-4 max-w-[640px] text-base font-semibold leading-7 text-tesText-secondary sm:mt-5">
                   {resolvedDialogDescription}
                 </p>
                 {dialogBody ? <div className="mt-4">{dialogBody}</div> : null}
-                <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {premiumBenefits.map(({ detail, icon: Icon, title }) => (
-                    <div
-                      className="flex min-w-0 items-center gap-3 rounded-2xl border border-brand-lavender/60 bg-white/70 p-3.5"
-                      key={title}
-                    >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-                        <Icon aria-hidden="true" className="size-5" />
-                      </span>
-                      <span className="min-w-0">
-                        <strong className="block text-sm font-extrabold leading-5 text-brand-deep">
-                          {title}
-                        </strong>
-                        <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
-                          {detail}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-                  <TESButton
-                    className="sm:px-5"
-                    onClick={() => setIsOpen(false)}
-                    type="button"
-                    variant="ghost"
-                  >
-                    Agora não
-                  </TESButton>
-                  <TESButton
-                    className="sm:min-w-[220px]"
-                    href={routes.therapist.plan}
-                  >
-                    <Gem aria-hidden="true" className="size-5" />
-                    {getTherapistUpgradeLabel(requiredPlan)}
-                  </TESButton>
-                </div>
               </div>
-              <div className="order-1 min-w-0 lg:order-2">
-                <div className="relative mx-auto aspect-square w-full max-w-[370px] overflow-hidden rounded-[22px] bg-surface-page">
+              <div className="min-w-0">
+                <div className="relative isolate mx-auto aspect-square w-full max-w-[270px] sm:max-w-[310px] lg:max-w-[340px]">
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-[15%] -z-10 rounded-full bg-brand-lavenderSoft/80 blur-3xl"
+                  />
                   <Image
                     alt=""
-                    className="object-cover"
+                    className="object-contain"
                     fill
-                    sizes="(min-width: 1024px) 370px, 100vw"
+                    sizes="(min-width: 1024px) 340px, (min-width: 640px) 310px, 270px"
                     src={platformAssets.therapistPremiumLock.src}
+                    style={{
+                      maskImage:
+                        "radial-gradient(ellipse 76% 74% at 50% 48%, black 48%, rgba(0, 0, 0, 0.82) 64%, transparent 100%)",
+                      WebkitMaskImage:
+                        "radial-gradient(ellipse 76% 74% at 50% 48%, black 48%, rgba(0, 0, 0, 0.82) 64%, transparent 100%)",
+                    }}
                   />
                 </div>
               </div>
+            </div>
+            <ul
+              aria-label={`Benefícios do ${planLabel}`}
+              className="mt-7 grid gap-3 md:grid-cols-3"
+            >
+              {premiumBenefits.map(({ detail, icon: Icon, title }) => (
+                <li
+                  className="flex min-w-0 items-start gap-3 rounded-2xl border border-brand-lavender/60 bg-surface-soft/70 p-4 sm:p-5"
+                  key={title}
+                >
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+                    <Icon aria-hidden="true" className="size-5" />
+                  </span>
+                  <span className="min-w-0 pt-0.5">
+                    <strong className="block text-sm font-extrabold leading-5 text-brand-deep">
+                      {title}
+                    </strong>
+                    <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
+                      {detail}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <TESButton
+                className="sm:px-5"
+                onClick={() => setIsOpen(false)}
+                type="button"
+                variant="ghost"
+              >
+                Agora não
+              </TESButton>
+              <TESButton
+                className="sm:min-w-[220px]"
+                href={routes.therapist.plan}
+              >
+                <Gem aria-hidden="true" className="size-5" />
+                {getTherapistUpgradeLabel(requiredPlan)}
+              </TESButton>
             </div>
           </div>
         </TESDialog>

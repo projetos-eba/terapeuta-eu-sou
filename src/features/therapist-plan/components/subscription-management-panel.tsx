@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarClock, CheckCircle2, CreditCard, Crown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { AppPageActions, AppPageSection } from "@/components/app-page";
 import { TESButton } from "@/components/tes";
@@ -24,15 +24,16 @@ export function SubscriptionManagementPanel({
 }: {
   data: TherapistPlanPageData;
 }) {
-  const [subscriptionOverride, setSubscriptionOverride] = useState(
-    data.subscription,
-  );
-  useEffect(() => {
-    setSubscriptionOverride(data.subscription);
-  }, [data.subscription]);
+  const [subscriptionOverride, setSubscriptionOverride] =
+    useState<SubscriptionCommandResult | null>(null);
 
   const definition = getTherapistPlanDefinition(data.effectivePlan);
-  const subscription = subscriptionOverride;
+  const subscription = data.subscription
+    ? {
+        ...data.subscription,
+        ...subscriptionOverride,
+      }
+    : data.subscription;
   const catalogItem = data.catalog.find(
     (item) => item.code === data.effectivePlan,
   );
@@ -151,25 +152,21 @@ export function SubscriptionManagementPanel({
   );
 
   function applySubscriptionCommandResult(result: SubscriptionCommandResult) {
-    setSubscriptionOverride((current) => {
-      if (!current) return current;
-
-      return {
-        ...current,
-        ...(typeof result.cancelAtPeriodEnd === "boolean"
-          ? { cancelAtPeriodEnd: result.cancelAtPeriodEnd }
-          : {}),
-        ...(result.currentPeriodEnd
-          ? { currentPeriodEnd: result.currentPeriodEnd }
-          : {}),
-        ...(result.scheduledChangeAt !== undefined
-          ? { scheduledChangeAt: result.scheduledChangeAt }
-          : {}),
-        ...(result.scheduledPlan !== undefined
-          ? { scheduledPlan: result.scheduledPlan }
-          : {}),
-      };
-    });
+    setSubscriptionOverride((current) => ({
+      ...current,
+      ...(typeof result.cancelAtPeriodEnd === "boolean"
+        ? { cancelAtPeriodEnd: result.cancelAtPeriodEnd }
+        : {}),
+      ...(result.currentPeriodEnd
+        ? { currentPeriodEnd: result.currentPeriodEnd }
+        : {}),
+      ...(result.scheduledChangeAt !== undefined
+        ? { scheduledChangeAt: result.scheduledChangeAt }
+        : {}),
+      ...(result.scheduledPlan !== undefined
+        ? { scheduledPlan: result.scheduledPlan }
+        : {}),
+    }));
   }
 }
 

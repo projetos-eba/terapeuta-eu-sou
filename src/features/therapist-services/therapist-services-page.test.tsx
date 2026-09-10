@@ -61,6 +61,9 @@ describe("TherapistServicesPage", () => {
     expect(
       screen.getByRole("img", { name: "Imagem da terapia Reiki" }),
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-admin.jpg");
+    expect(
+      screen.getByRole("heading", { name: "Reiki inicial" }),
+    ).toBeInTheDocument();
   });
 
   it("renders therapy photos in the most-booked services card", () => {
@@ -186,8 +189,8 @@ describe("TherapistServicesPage", () => {
       target: { value: "paused" },
     });
 
-    expect(screen.getByText("Tarô Terapêutico")).toBeInTheDocument();
-    expect(screen.queryByText("Tarô de clareza")).not.toBeInTheDocument();
+    expect(screen.getByText("Tarô de clareza")).toBeInTheDocument();
+    expect(screen.queryByText("Tarô Terapêutico")).not.toBeInTheDocument();
     expect(screen.queryByText("Reiki inicial")).not.toBeInTheDocument();
   });
 

@@ -17,6 +17,11 @@ type PublicTherapistPlanRow = {
   slug: string;
 };
 
+type PublicTherapistContentRow = {
+  guide_items: unknown;
+  slug: string;
+};
+
 function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
 }
@@ -25,8 +30,8 @@ export function parseRelatedTherapistSort(
   value?: string | string[],
 ): RelatedTherapistSort {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === "rating" || raw === "next_slot") return raw;
-  return "relevance";
+  if (raw === "az" || raw === "rating" || raw === "next_slot") return raw;
+  return "az";
 }
 
 export async function getRelatedTherapists({
@@ -81,14 +86,17 @@ export async function getRelatedTherapists({
     }
 
     const rows = (await response.json()) as RelatedTherapistRow[];
-    const premiumSlugs = await getPremiumTherapistSlugs(
-      config,
-      rows.map((row) => row.slug),
-    );
+    const [premiumSlugs, guideThemesBySlug] = await Promise.all([
+      getPremiumTherapistSlugs(
+        config,
+        rows.map((row) => row.slug),
+      ),
+      getPublishedGuideThemes(config, rows.map((row) => row.slug)),
+    ]);
 
     return {
       items: applyPublicSort(rows, sort).map((row) =>
-        mapRelatedTherapist(row, premiumSlugs),
+        mapRelatedTherapist(row, premiumSlugs, guideThemesBySlug),
       ),
     };
   } catch {
@@ -96,6 +104,35 @@ export async function getRelatedTherapists({
       errorMessage: "Não foi possível consultar profissionais relacionados.",
       items: [],
     };
+  }
+}
+
+async function getPublishedGuideThemes(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  slugs: string[],
+) {
+  if (!slugs.length) return new Map<string, string[]>();
+
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/public_therapist_profile_content_v?select=slug,guide_items&slug=in.(${slugs.join(",")})`,
+      {
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        next: { revalidate: 300 },
+      },
+    );
+
+    if (!response.ok) return new Map<string, string[]>();
+
+    const rows = (await response.json()) as PublicTherapistContentRow[];
+    return new Map(
+      rows.map((row) => [row.slug, normalizeGuideThemes(row.guide_items)]),
+    );
+  } catch {
+    return new Map<string, string[]>();
   }
 }
 
@@ -132,6 +169,15 @@ function applyPublicSort(
   rows: RelatedTherapistRow[],
   sort: RelatedTherapistSort,
 ) {
+  if (sort === "az") {
+    return [...rows].sort(
+      (first, second) =>
+        first.public_name.localeCompare(second.public_name, "pt-BR", {
+          sensitivity: "base",
+        }) || first.slug.localeCompare(second.slug, "pt-BR"),
+    );
+  }
+
   if (sort === "rating") {
     return [...rows].sort(
       (first, second) =>
@@ -167,6 +213,7 @@ function compareNullableDate(first: string | null, second: string | null) {
 function mapRelatedTherapist(
   row: RelatedTherapistRow,
   premiumSlugs: Set<string>,
+  guideThemesBySlug: Map<string, string[]>,
 ): RelatedTherapist {
   return {
     averageRating:
@@ -190,6 +237,20 @@ function mapRelatedTherapist(
       row.service_description ??
       "Atendimento online publicado pela plataforma.",
     slug: row.slug,
-    tags: (row.tags ?? []).slice(0, 3),
+    guideThemes: guideThemesBySlug.get(row.slug) ?? [],
   };
+}
+
+function normalizeGuideThemes(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  const uniqueThemes = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== "object" || !("label" in item)) continue;
+    const label = item.label;
+    if (typeof label !== "string" || !label.trim()) continue;
+    uniqueThemes.add(label.trim());
+  }
+
+  return [...uniqueThemes];
 }

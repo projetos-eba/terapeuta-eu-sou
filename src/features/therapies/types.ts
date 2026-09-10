@@ -1,4 +1,4 @@
-export type TherapySort = "relevance" | "most_searched" | "popular" | "newest" | "az";
+export type TherapySort = "most_searched" | "newest" | "az";
 
 export type TherapySearchParams = {
   theme?: string;
@@ -42,6 +42,7 @@ export type PublicTherapyRow = {
   is_new: boolean;
   is_popular: boolean;
   name: string;
+  created_at: string;
   published_at: string | null;
   search_text: string | null;
   short_description: string;

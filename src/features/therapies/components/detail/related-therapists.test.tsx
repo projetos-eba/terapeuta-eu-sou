@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { RelatedTherapists } from "./related-therapists";
@@ -40,7 +40,7 @@ const therapist = {
   reviewCount: 0,
   serviceDescription: "Atendimento publicado.",
   slug: "ana-oliveira",
-  tags: ["Autoconhecimento"],
+  guideThemes: ["Autoconhecimento"],
 };
 
 describe("RelatedTherapists", () => {
@@ -51,7 +51,7 @@ describe("RelatedTherapists", () => {
       <RelatedTherapists
         matchContextActive
         source="match"
-        sort="relevance"
+        sort="az"
         therapists={[therapist]}
         therapy={therapy}
       />,
@@ -77,7 +77,7 @@ describe("RelatedTherapists", () => {
       <RelatedTherapists
         matchContextActive
         source="match"
-        sort="relevance"
+        sort="az"
         therapists={[
           {
             ...therapist,
@@ -102,7 +102,7 @@ describe("RelatedTherapists", () => {
       <RelatedTherapists
         matchContextActive={false}
         source="directory"
-        sort="relevance"
+        sort="az"
         therapists={[{ ...therapist, serviceDescription: longDescription }]}
         therapy={therapy}
       />,
@@ -131,5 +131,60 @@ describe("RelatedTherapists", () => {
     );
 
     expect(screen.getByText("31 de ago., 23:30")).toBeInTheDocument();
+  });
+
+  it("mostra até três temas publicados do guia e revela os demais", () => {
+    render(
+      <RelatedTherapists
+        source="directory"
+        sort="az"
+        therapists={[
+          {
+            ...therapist,
+            guideThemes: [
+              "Autoconhecimento",
+              "Espiritualidade",
+              "Emoções e Bem-Estar",
+              "Relacionamentos",
+            ],
+          },
+        ]}
+        therapy={therapy}
+      />,
+    );
+
+    const themesSection = screen
+      .getByText("Temas de atuação")
+      .closest("div.rounded-md");
+
+    expect(themesSection).not.toBeNull();
+    expect(within(themesSection as HTMLElement).getByText("Autoconhecimento")).toBeVisible();
+    expect(within(themesSection as HTMLElement).getByText("Espiritualidade")).toBeVisible();
+    expect(within(themesSection as HTMLElement).getByText("Emoções e Bem-Estar")).toBeVisible();
+    const moreThemes = within(themesSection as HTMLElement).getByRole("button", {
+      name: "Ver mais 1 tema de Ana Oliveira",
+    });
+    expect(moreThemes).toHaveTextContent("+1");
+    expect(screen.getByRole("tooltip")).toHaveClass("hidden");
+
+    fireEvent.mouseEnter(moreThemes);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Relacionamentos");
+  });
+
+  it("oferece a ordenação alfabética sem expor mais relevantes", () => {
+    render(
+      <RelatedTherapists
+        source="directory"
+        sort="az"
+        therapists={[therapist]}
+        therapy={therapy}
+      />,
+    );
+
+    expect(screen.getByRole("option", { name: "A–Z" })).toHaveValue("az");
+    expect(
+      screen.queryByRole("option", { name: "Mais relevantes" }),
+    ).not.toBeInTheDocument();
   });
 });

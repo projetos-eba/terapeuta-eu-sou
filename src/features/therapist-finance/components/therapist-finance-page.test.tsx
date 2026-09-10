@@ -206,6 +206,44 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps the monthly revenue visible when availability is not configured", () => {
+    const dashboard = advancedFixture();
+    dashboard.agendaPotential = {
+      ...dashboard.agendaPotential,
+      availableMinutes: 0,
+      capacityMinutes: 0,
+      committedMinutes: 0,
+      occupancyRate: null,
+      reason: "no_availability_rules",
+      status: "insufficient_data",
+    };
+
+    renderPage("summary", {
+      advanced: { dashboard, status: "available" },
+      analytics: {
+        metrics: { ...fixture().analytics.metrics!, plan: "premium_plus" },
+        status: "available",
+      },
+      overview: { ...fixture().overview, plan: "premium_plus" },
+    });
+
+    const quickSummary = screen.getByRole("region", {
+      name: "Panorama financeiro",
+    });
+    expect(
+      within(quickSummary).getByRole("heading", { name: "Receita no mês" }),
+    ).toBeInTheDocument();
+    const monthlyRevenueCard = within(quickSummary)
+      .getByRole("heading", { name: "Receita no mês" })
+      .closest("article");
+    expect(monthlyRevenueCard).not.toBeNull();
+    expect(monthlyRevenueCard).toHaveTextContent(/R\$/);
+    expect(
+      screen.getAllByText("Sem horários configurados para o restante do mês"),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText("Aguardando base suficiente")).not.toBeInTheDocument();
+  });
+
   it("keeps the financial reading panels free of agenda and sessions shortcuts", () => {
     renderPage("summary", {
       advanced: {

@@ -7,7 +7,6 @@ export type PatientFavoriteTherapist = {
   isAcceptingBookings: boolean;
   name: string;
   profileHref: string;
-  reservationHref: string;
   reviewCount: number;
   summary: string | null;
   techniques: string[];

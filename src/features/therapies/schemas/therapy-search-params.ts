@@ -3,19 +3,15 @@ import type { TherapySearchParams, TherapySort } from "../types";
 const DEFAULT_PAGE_SIZE = 16;
 const MAX_PAGE_SIZE = 24;
 const sortValues = new Set<TherapySort>([
-  "relevance",
   "most_searched",
-  "popular",
   "newest",
   "az",
 ]);
 
 export const therapySortOptions: Array<{ label: string; value: TherapySort }> = [
-  { label: "Mais relevantes", value: "relevance" },
   { label: "Mais procuradas", value: "most_searched" },
-  { label: "Mais populares", value: "popular" },
-  { label: "Novas terapias", value: "newest" },
-  { label: "A-Z Nome", value: "az" },
+  { label: "Adicionadas recentemente", value: "newest" },
+  { label: "A–Z", value: "az" },
 ];
 
 export function parseTherapySearchParams(
@@ -35,7 +31,8 @@ export function parseTherapySearchParams(
     page,
     pageSize,
     q: q || undefined,
-    sort: sortParam && sortValues.has(sortParam) ? sortParam : "relevance",
+    sort:
+      sortParam && sortValues.has(sortParam) ? sortParam : "most_searched",
   };
 }
 

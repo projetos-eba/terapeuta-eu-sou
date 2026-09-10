@@ -65,7 +65,7 @@ export function SessionOverviewCard({
                   {data.therapist.roleLabel}
                 </p>
                 <p className="mt-2 text-sm font-extrabold text-brand-primary">
-                  {data.service.therapyName}
+                  {data.service.title}
                   {ratingLabel ? ` · ${ratingLabel}` : null}
                 </p>
                 <Link

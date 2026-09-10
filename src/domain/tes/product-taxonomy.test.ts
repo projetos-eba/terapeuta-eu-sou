@@ -16,4 +16,15 @@ describe("product taxonomy guardrails", () => {
 
     expect(planCopy).not.toMatch(/exclusivo Plus|plano Plus|TES Plus/);
   });
+
+  it("keeps featured benefits included in their respective plans", () => {
+    for (const plan of therapistPlanDefinitions) {
+      expect(plan.featuredFeatures).toHaveLength(3);
+      expect(
+        plan.featuredFeatures.every((feature) =>
+          plan.features.includes(feature),
+        ),
+      ).toBe(true);
+    }
+  });
 });

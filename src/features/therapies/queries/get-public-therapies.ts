@@ -139,6 +139,7 @@ function buildListPath(params: TherapySearchParams) {
       "therapist_count",
       "is_popular",
       "is_new",
+      "created_at",
       "published_at",
       "popularity_score",
     ].join(","),
@@ -159,12 +160,9 @@ function buildListPath(params: TherapySearchParams) {
 
 function getOrder(params: TherapySearchParams) {
   if (params.sort === "az") return "name.asc";
-  if (params.sort === "newest") return "published_at.desc.nullslast,name.asc";
-  if (params.sort === "popular") return "popularity_score.desc,name.asc";
+  if (params.sort === "newest") return "created_at.desc.nullslast,name.asc";
   if (params.sort === "most_searched") return "therapist_count.desc,name.asc";
-  return params.q
-    ? "popularity_score.desc,therapist_count.desc,name.asc"
-    : "popularity_score.desc,name.asc";
+  return "therapist_count.desc,name.asc";
 }
 
 function mapTherapy(row: PublicTherapyRow): PublicTherapyListItem {

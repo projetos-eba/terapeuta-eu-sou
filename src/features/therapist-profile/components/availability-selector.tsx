@@ -46,7 +46,7 @@ export function AvailabilitySelector({
             </h2>
             {selectedService ? (
               <p className="mt-1 text-sm font-medium leading-6 text-white/80">
-                {selectedService.therapyName} ·{" "}
+                {selectedService.title} ·{" "}
                 {selectedService.durationMinutes} min ·{" "}
                 {selectedService.priceLabel}
               </p>
@@ -64,7 +64,7 @@ export function AvailabilitySelector({
 
               return staticPreview ? (
                 <span className={className} key={service.id}>
-                  {service.therapyName}
+                  {service.title}
                 </span>
               ) : (
                 <button
@@ -73,7 +73,7 @@ export function AvailabilitySelector({
                   onClick={() => setSelectedServiceId(service.id)}
                   className={className}
                 >
-                  {service.therapyName}
+                  {service.title}
                 </button>
               );
             })}

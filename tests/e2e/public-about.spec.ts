@@ -28,10 +28,7 @@ for (const viewport of viewports) {
 
     await expect(
       page.getByAltText("Plataforma Terapeuta Eu Sou em notebook e celular"),
-    ).toHaveAttribute(
-      "src",
-      /platform-dashboard-2026-08-26-transparent\.png/,
-    );
+    ).toHaveAttribute("src", /platform-dashboard-2026-08-26-transparent\.png/);
 
     const connectionBannerImage = page.getByAltText(
       "Duas pessoas se encontrando diante de um portal iluminado",
@@ -51,6 +48,27 @@ for (const viewport of viewports) {
         name: "Conheça o TES",
       }),
     ).toHaveCount(0);
+
+    const wholeJourney = page.getByTestId("about-whole-journey");
+    const wholeJourneyHeading = wholeJourney.getByRole("heading", {
+      level: 2,
+      name: "O TES OLHA PARA A JORNADA INTEIRA",
+    });
+    await expect(wholeJourneyHeading).toBeVisible();
+    await expect(wholeJourneyHeading).toHaveCSS("font-style", "italic");
+    await expect(wholeJourney.locator("li")).toHaveCount(10);
+
+    const journeyConnectors = wholeJourney.locator(
+      '[data-testid^="journey-connector-"]',
+    );
+    if (viewport.width >= 1280) {
+      await expect(journeyConnectors).toHaveCount(2);
+      await expect(journeyConnectors.first()).toBeVisible();
+      await expect(journeyConnectors.last()).toBeVisible();
+    } else {
+      await expect(journeyConnectors.first()).toBeHidden();
+      await expect(journeyConnectors.last()).toBeHidden();
+    }
 
     if (viewport.label === "wide desktop") {
       const bounds = await heroImage.boundingBox();

@@ -50,10 +50,31 @@ export function formatBookingSchedule(value: string, timezone: string) {
   return `${capitalize(weekday)}, ${time}`;
 }
 
-export function formatRelativeBookingDay(value: string, timezone: string) {
+export function formatBookingReminderSchedule(
+  value: string,
+  timezone: string,
+  now = new Date(),
+) {
+  const time = new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: normalizeTimeZone(timezone),
+  })
+    .format(new Date(value))
+    .replace(":", "h")
+    .replace("h00", "h");
+
+  return `${formatRelativeBookingDay(value, timezone, now)}, ${time}`;
+}
+
+export function formatRelativeBookingDay(
+  value: string,
+  timezone: string,
+  now = new Date(),
+) {
   const timeZone = normalizeTimeZone(timezone);
   const targetKey = formatDateKey(value, timeZone);
-  const todayKey = formatDateKey(new Date().toISOString(), timeZone);
+  const todayKey = formatDateKey(now.toISOString(), timeZone);
   const diffInDays = calendarDayDiff(targetKey, todayKey);
 
   if (diffInDays === 0) return "Hoje";

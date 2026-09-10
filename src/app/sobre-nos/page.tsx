@@ -7,6 +7,7 @@ import {
   ChartNoAxesCombined,
   CircleDollarSign,
   CircleUserRound,
+  Compass,
   Heart,
   Smile,
   Video,
@@ -30,7 +31,7 @@ type IconItem = {
 };
 
 const peopleJourney: IconItem[] = [
-  { icon: Heart, label: "Descobrir práticas\ne possibilidades" },
+  { icon: Compass, label: "Descobrir práticas\ne possibilidades" },
   { icon: CircleUserRound, label: "Encontrar terapeutas\nque façam sentido" },
   { icon: CalendarDays, label: "Escolher e agendar\ncom facilidade" },
   { icon: Heart, label: "Acompanhar seus\natendimentos" },
@@ -102,28 +103,52 @@ export default function AboutUsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1320px] px-5 pb-20 sm:px-8 lg:pb-24">
-        <p className="text-center font-display text-[1.35rem] font-light italic leading-[1.1] tracking-[-0.01em] text-brand-primary sm:text-[1.7rem]">
-          O TES OLHA PARA A JORNADA INTEIRA
-        </p>
+      <section
+        className="relative isolate mx-auto max-w-[1440px] px-5 pb-20 sm:px-8 lg:pb-24"
+        data-testid="about-whole-journey"
+      >
+        <div className="grid items-start gap-8 md:grid-cols-2 md:gap-7 lg:grid-cols-[minmax(0,0.82fr)_minmax(320px,1fr)_minmax(0,0.82fr)] lg:gap-5 xl:grid-cols-[300px_92px_minmax(350px,400px)_92px_300px] xl:justify-center xl:gap-0">
+          <div className="flex min-w-0 flex-col items-center md:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 xl:col-start-3">
+            <h2 className="w-full text-center font-display text-[clamp(2.55rem,8.5vw,4rem)] font-light italic leading-[0.84] tracking-[-0.035em] text-brand-deep lg:w-[440px] lg:text-[3.25rem] xl:w-[590px] xl:text-[4rem]">
+              <span className="block lg:whitespace-nowrap">
+                O TES OLHA PARA A
+              </span>
+              <span className="mt-2 block text-brand-primary lg:whitespace-nowrap">
+                JORNADA INTEIRA
+              </span>
+            </h2>
 
-        <div className="mt-8 grid items-center gap-10 md:grid-cols-2 lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:gap-8">
-          <JourneyColumn items={peopleJourney} title="PARA PESSOAS" />
+            <div
+              aria-hidden="true"
+              className="mt-5 flex items-center justify-center gap-2.5"
+            >
+              <span className="h-px w-14 bg-brand-lavender sm:w-16" />
+              <Heart className="size-3.5 fill-brand-primary text-brand-primary/70" />
+              <span className="h-px w-14 bg-brand-lavender sm:w-16" />
+            </div>
 
-          <div className="order-first flex justify-center md:col-span-2 lg:order-none lg:col-span-1">
-            <div className="relative aspect-square w-full max-w-[540px]">
+            <div className="relative mt-2 aspect-square w-full max-w-[350px] sm:max-w-[390px] lg:max-w-[340px] xl:max-w-[350px]">
               <Image
                 src="/about/figma-11.png"
                 alt="Ilustração TES representando o encontro entre pessoas e terapeutas"
                 fill
                 quality={95}
-                sizes="(min-width: 1024px) 540px, 88vw"
+                sizes="(min-width: 1024px) 350px, (min-width: 640px) 390px, 90vw"
                 className="object-contain"
               />
             </div>
           </div>
 
-          <JourneyColumn items={therapistJourney} title="PARA TERAPEUTAS" />
+          <div className="min-w-0 md:col-start-1 md:row-start-2 lg:col-start-1 lg:row-start-1 xl:col-start-1">
+            <JourneyColumn items={peopleJourney} title="PARA PESSOAS" />
+          </div>
+
+          <JourneyConnector direction="left" />
+          <JourneyConnector direction="right" />
+
+          <div className="min-w-0 md:col-start-2 md:row-start-2 lg:col-start-3 lg:row-start-1 xl:col-start-5">
+            <JourneyColumn items={therapistJourney} title="PARA TERAPEUTAS" />
+          </div>
         </div>
       </section>
 
@@ -283,23 +308,26 @@ export default function AboutUsPage() {
 function JourneyColumn({ items, title }: { items: IconItem[]; title: string }) {
   return (
     <div>
-      <p className="mb-6 flex min-h-10 w-full items-center justify-center rounded-full border border-border bg-surface-default px-5 text-sm font-extrabold tracking-[0.06em] text-brand-primary">
+      <p className="mb-3 flex min-h-11 w-full items-center justify-center rounded-full bg-brand-lavenderSoft px-5 text-sm font-extrabold tracking-[0.04em] text-brand-primary">
         {title}
       </p>
-      <ul className="space-y-5">
+      <ul className="space-y-2.5">
         {items.map((item) => {
           const Icon = item.icon;
 
           return (
-            <li key={item.label} className="flex items-center gap-4">
-              <span className="grid size-14 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-deep">
+            <li
+              key={item.label}
+              className="flex min-h-[72px] items-center gap-3.5 rounded-[18px] bg-surface-default px-3 py-2.5 shadow-soft sm:px-3.5"
+            >
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-deep">
                 <Icon
-                  className="size-7"
+                  className="size-6"
                   strokeWidth={1.55}
                   aria-hidden="true"
                 />
               </span>
-              <span className="whitespace-pre-line text-base font-bold leading-6 text-tesText-primary">
+              <span className="whitespace-pre-line text-sm font-bold leading-5 text-tesText-primary">
                 {item.label}
               </span>
             </li>
@@ -307,6 +335,41 @@ function JourneyColumn({ items, title }: { items: IconItem[]; title: string }) {
         })}
       </ul>
     </div>
+  );
+}
+
+function JourneyConnector({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={`mt-[72px] hidden h-[360px] w-full text-brand-lavender xl:row-start-1 xl:block ${
+        direction === "left" ? "xl:col-start-2" : "xl:col-start-4"
+      }`}
+      data-testid={`journey-connector-${direction}`}
+      fill="none"
+      viewBox="0 0 92 360"
+    >
+      <g
+        transform={
+          direction === "right" ? "translate(92 0) scale(-1 1)" : undefined
+        }
+      >
+        <path d="M0 40C46 40 42 70 84 70" stroke="currentColor" />
+        <path d="M0 109C38 109 42 133 84 133" stroke="currentColor" />
+        <path d="M0 178H84" stroke="currentColor" />
+        <path d="M0 247C38 247 42 223 84 223" stroke="currentColor" />
+        <path d="M0 316C46 316 42 286 84 286" stroke="currentColor" />
+        {[70, 133, 178, 223, 286].map((cy) => (
+          <circle
+            className="fill-brand-primary"
+            cx="86"
+            cy={cy}
+            key={cy}
+            r="2.5"
+          />
+        ))}
+      </g>
+    </svg>
   );
 }
 
