@@ -32,7 +32,7 @@ F2. Premium Plus acessa F2 e F3 via capability `advanced_financials`.
 
 | Versão                           | Uso                         | Regra central                                                                                           |
 | -------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `tes-financial-forecast-v1`      | Previsão do mês             | Separa realizado líquido, receita contratada futura e potencial estimado.                               |
+| `tes-financial-forecast-v1`      | Receita no mês              | Separa realizado líquido, sessões futuras já pagas e potencial estimado.                                |
 | `tes-agenda-potential-v1`        | Potencial da agenda         | Une janelas entre terapias, aplica bloqueios no escopo global ou da terapia, subtrai a ocupação global das reservas com buffers snapshot e usa preço histórico quando há. |
 | `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                    |
 | `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.               |
@@ -51,8 +51,8 @@ nova decisão de produto, privacidade e QA.
 A aba Resumo mantém os blocos F0/F1 e F2. A F3 adiciona, apenas para Premium
 Plus:
 
-- cards superiores de realizado, contratado e potencial;
-- previsão do mês com composição separada;
+- cards superiores de realizado, receita no mês e potencial;
+- receita do mês com composição separada;
 - ocupação e potencial da agenda;
 - oportunidade do mês;
 - Insight TES rule-based;
@@ -72,7 +72,7 @@ comprovantes, reembolsos e Conta de recebimento não são bloqueados por
 - A metodologia inicial é conservadora e pode evoluir por nova versão sem
   reescrever o passado como saldo real.
 - A UI e os testes precisam preservar a separação visual entre realizado,
-  contratado e estimado.
+  sessões futuras já pagas e estimado.
 
 ## Referências
 

@@ -134,23 +134,23 @@ export function FinancialSummaryTab({
               <TherapistLockedCard
                 description="A previsão separa o que já aconteceu do que ainda é possibilidade, para apoiar suas decisões com mais clareza."
                 requiredPlan={TherapistPlan.PremiumPlus}
-                title="Previsto no mês"
+                title="Receita no mês"
                 variant="compact"
               />
             ) : (
               <FinancialKpiCard
                 accent="violet"
-                helpText="Mostra a receita contratada no mês. O potencial da agenda aparece separado porque é uma estimativa, não uma receita garantida."
+                helpText="Soma o valor líquido já realizado no mês às sessões futuras que já foram pagas. O potencial da agenda aparece separado porque é uma estimativa, não uma receita garantida."
                 icon={TrendingUp}
-                label="Previsto no mês"
+                label="Receita no mês"
                 sparkline={contractedEvolution}
                 status={
                   forecastAvailable && forecast
                     ? forecastProgressLabel(forecast)
-                    : "Aguardando base suficiente"
+                    : "Leitura indisponível no momento"
                 }
                 tone={forecastAvailable ? "success" : "muted"}
-                valueNote="Receita contratada no mês"
+                valueNote="Realizado + sessões pagas"
                 value={
                   forecastAvailable && forecast
                     ? formatCurrency(forecast.contractedMonthNetCents)
@@ -525,9 +525,7 @@ function AgendaPotentialPanel({
             {available && occupancy !== null ? formatPercent(occupancy) : "-"}
           </p>
           <p className="mt-3 text-sm font-semibold leading-5 text-status-success">
-            {available
-              ? `${formatMinutes(agenda?.committedMinutes ?? 0)} já comprometidos no período`
-              : "Aguardando base suficiente"}
+            {agendaCapacityMessage(agenda)}
           </p>
         </div>
         <OccupancyDonut occupancy={occupancy} reference={!available} />
@@ -549,7 +547,7 @@ function AgendaPotentialPanel({
         />
         <HealthDetail
           color="bg-brand-primary"
-          label="Receita contratada no mês"
+          label="Receita no mês"
           value={contracted !== null ? formatCurrency(contracted) : "-"}
         />
         <HealthDetail
@@ -561,7 +559,9 @@ function AgendaPotentialPanel({
 
       <p className="flex items-start gap-3 rounded-xl bg-status-warningBg px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
         <Lightbulb aria-hidden="true" className="mt-0.5 shrink-0 text-status-warning" size={20} />
-        Preencha os horários disponíveis para ampliar seu potencial estimado no período. O potencial é uma estimativa e não representa receita garantida.
+        {agenda?.reason === "no_active_services"
+          ? "Ative uma terapia para estimar o potencial dos horários já configurados. O potencial é uma estimativa e não representa receita garantida."
+          : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida."}
       </p>
     </section>
   );
@@ -621,6 +621,22 @@ function HealthDetail({
       </dd>
     </div>
   );
+}
+
+function agendaCapacityMessage(
+  agenda: TherapistAdvancedFinancialDashboard["agendaPotential"] | null,
+) {
+  if (!agenda) return "Leitura da agenda indisponível no momento";
+  if (agenda.status === "available") {
+    if (agenda.reason === "no_active_services") {
+      return "Há horários configurados, mas falta uma terapia ativa para estimar o potencial";
+    }
+    return `${formatMinutes(agenda.committedMinutes)} já comprometidos no período`;
+  }
+  if (agenda.reason === "no_availability_rules") {
+    return "Sem horários configurados para o restante do mês";
+  }
+  return "Não foi possível calcular a ocupação da agenda neste período";
 }
 
 function TherapyRankingCard({
@@ -752,7 +768,9 @@ function OpportunityOfMonth({
         </p>
         <p className="mt-3 text-sm font-semibold leading-5 text-status-danger">
           {availability === null
-            ? "Aguardando base suficiente"
+            ? agenda.reason === "no_availability_rules"
+              ? "Sem horários configurados para o restante do mês"
+              : "Não foi possível estimar o potencial neste período"
             : `${formatPercent(availability)} da agenda permanece disponível`}
         </p>
       </div>
@@ -764,8 +782,12 @@ function OpportunityOfMonth({
         </p>
         <p className="mt-3 text-sm font-semibold leading-5 text-status-warning">
           {available
-            ? `${formatMinutes(agenda.availableMinutes)} livres no período`
-            : "Aguardando base suficiente"}
+            ? agenda.reason === "no_active_services"
+              ? "Configure uma terapia ativa para estimar o potencial"
+              : `${formatMinutes(agenda.availableMinutes)} livres no período`
+            : agenda.reason === "no_availability_rules"
+              ? "Cadastre horários para acompanhar a disponibilidade"
+              : "Não foi possível calcular a disponibilidade"}
         </p>
       </div>
 
@@ -827,7 +849,7 @@ function FinancialEvolutionCard({
           },
           {
             color: "var(--tes-color-brand-primaryHover)",
-            label: "Receita contratada",
+            label: "Receita no mês",
             value: formatCurrency(advanced.forecast.contractedMonthNetCents),
           },
           {
@@ -1039,7 +1061,7 @@ function ReferenceBars({ message }: { message: string }) {
 function forecastProgressLabel(
   forecast: TherapistAdvancedFinancialDashboard["forecast"],
 ) {
-  if (forecast.contractedMonthNetCents <= 0) return "Sem receita contratada";
+  if (forecast.contractedMonthNetCents <= 0) return "Sem sessões pagas no mês";
   const progress = Math.max(
     0,
     Math.min(
@@ -1047,7 +1069,7 @@ function forecastProgressLabel(
       (forecast.realizedNetCents / forecast.contractedMonthNetCents) * 100,
     ),
   );
-  return `${formatPercent(progress, 0)} do contratado já realizado`;
+  return `${formatPercent(progress, 0)} da receita do mês já realizada`;
 }
 
 function getEvolutionFooter(values: number[]) {
