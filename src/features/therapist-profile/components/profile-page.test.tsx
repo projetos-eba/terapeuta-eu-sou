@@ -286,7 +286,7 @@ describe("TherapistProfilePage video block", () => {
     expect(description.className).not.toContain("line-clamp");
 
     const moreButton = screen.getByRole("button", {
-      name: "Ver mais sobre Reiki",
+      name: "Ver mais sobre Reiki online",
     });
     expect(moreButton).toHaveClass("font-bold");
     fireEvent.click(moreButton);
@@ -403,7 +403,7 @@ describe("TherapistProfilePage video block", () => {
     );
   });
 
-  it("shows six guide themes in a compact responsive public layout", () => {
+  it("keeps six guide themes in two columns from the tablet breakpoint", () => {
     const guideItems = [
       { icon: "heart", label: "Emoções e Bem-Estar" },
       { icon: "mind", label: "Autoconhecimento e Transformação" },
@@ -433,7 +433,7 @@ describe("TherapistProfilePage video block", () => {
     });
     expect(guideList).toHaveClass("grid-cols-1");
     expect(guideList).toHaveClass("min-[420px]:grid-cols-2");
-    expect(guideList).toHaveClass("xl:grid-cols-3");
+    expect(guideList).not.toHaveClass("xl:grid-cols-3");
     expect(within(guideList).getAllByRole("listitem")).toHaveLength(6);
     guideItems.forEach((item) => {
       expect(within(guideList).getByText(item.label)).toBeVisible();
@@ -649,7 +649,7 @@ describe("TherapistProfilePage video block", () => {
     ).toHaveAttribute("role", "status");
   });
 
-  it("shows public services by canonical therapy name without operational labels", () => {
+  it("shows the therapist's registered service name on public service cards", () => {
     render(
       <TherapistProfilePage
         profile={{
@@ -687,11 +687,12 @@ describe("TherapistProfilePage video block", () => {
     expect(services).toHaveClass("overflow-x-auto", "snap-x");
     expect(within(services).getByRole("listitem")).toBeInTheDocument();
     expect(screen.queryByText("Serviços online")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Reiki").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("img", { name: "Imagem da terapia Reiki" }),
+      within(services).getByRole("heading", { name: "Reiki online" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Imagem do atendimento Reiki online" }),
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-profile.jpg");
-    expect(screen.queryByText("Reiki online")).not.toBeInTheDocument();
   });
 
   it("shows one therapist reply sentence before expanding the full answer", () => {

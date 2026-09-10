@@ -58,6 +58,7 @@ export type PatientFavoriteProfessional = {
   avatarUrl: string | null;
   id: string;
   name: string;
+  profileHref: string;
   reviewCount: number;
   summary: string | null;
   specialty: string | null;

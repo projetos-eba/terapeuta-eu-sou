@@ -590,6 +590,22 @@ Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e n
 
 ## Recuperacao operacional
 
+- O destino de um item de repasse é o `connect_account_id` congelado em
+  `payout_batch_therapists`. Claims e retries devem navegar pelo grupo do lote;
+  consultar contas apenas por `therapist_profile_id` é proibido porque pode
+  multiplicar o item ou redirecioná-lo para outra geração.
+- Runs semanais persistem falhas consecutivas e usam backoff de 15, 30 e 60
+  minutos. O quarto erro abre circuito, libera o lease e registra incidente
+  crítico deduplicado. Somente `service_role` pode retomar o mesmo run, exigindo
+  o mesmo `payout_batch_id`.
+- Um tick durante `next_retry_at` responde `backoff_active` sem incrementar
+  tentativas. Progresso reconhecido pelo dono do lease limpa o backoff e a
+  sequência de falhas.
+- Recusas definitivas sem objeto Stripe, como saldo insuficiente, mantêm a
+  intenção e o fingerprint locais, mas usam chave idempotente determinística
+  por tentativa. Timeout, erro de conexão ou resposta 5xx são ambíguos:
+  preservam a chave e exigem conciliação. Retomada após o quarto erro exige o
+  mesmo lote e prova de ausência de ID Stripe e ledger.
 - Webhooks com `processing_status = failed` podem ser reprocessados por rotina administrativa futura usando `stripe_event_id`.
 - Pagamentos sem taxa Stripe conciliada devem ser encontrados por `stripe_fee_amount_cents is null`.
 - Sessoes bloqueadas aparecem por `transfer_status = blocked` e `transfer_blocked_reason`.

@@ -3,7 +3,11 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowRight, CalendarClock, Heart, Sparkles, Star } from "lucide-react";
 
-import { PremiumTherapistBadge, TESButton } from "@/components/tes";
+import {
+  PremiumTherapistBadge,
+  TESButton,
+  TESOverflowThemeButton,
+} from "@/components/tes";
 import { routes } from "@/lib/routes";
 import type { RelatedTherapist } from "../../types/therapy-detail";
 import { buildTherapistProfileHref } from "./detail-links";
@@ -82,15 +86,23 @@ export function RelatedTherapistCard({
             Temas de atuação
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {therapist.tags.length > 0 ? (
-              therapist.tags.map((tag) => (
+            {therapist.guideThemes.length > 0 ? (
+              <>
+                {therapist.guideThemes.slice(0, 3).map((theme) => (
                 <span
-                  key={tag}
+                  key={theme}
                   className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold leading-tight text-tesText-secondary"
                 >
-                  {tag}
+                  {theme}
                 </span>
-              ))
+                ))}
+                <TESOverflowThemeButton
+                  className="size-9 min-h-9 shrink-0 border border-brand-lavender bg-white p-0"
+                  entityLabel={therapist.name}
+                  themes={therapist.guideThemes.map((label) => ({ label }))}
+                  visibleCount={3}
+                />
+              </>
             ) : (
               <span className="text-xs font-semibold text-tesText-muted">
                 Perfil em atualização

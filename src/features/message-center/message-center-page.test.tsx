@@ -29,6 +29,9 @@ describe("MessageCenterPage", () => {
     render(<MessageCenterPage data={createData()} />);
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Comunicação protegida pelo TES" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /escolher mensagem/i }));
 

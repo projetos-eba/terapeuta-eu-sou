@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TherapistPlan } from "@/domain/tes";
@@ -66,5 +66,37 @@ describe("therapist authentication UI", () => {
     expect(
       screen.getByRole("link", { name: "Selecionar Premium Plus" }),
     ).toHaveAttribute("href", "/terapeuta/cadastro?plan=premium_plus");
+
+    const freeCard = screen
+      .getByRole("heading", { name: "Free" })
+      .closest("article");
+    const premiumCard = screen
+      .getByRole("heading", { name: "Premium" })
+      .closest("article");
+    const premiumPlusCard = screen
+      .getByRole("heading", { name: "Premium Plus" })
+      .closest("article");
+
+    expect(freeCard).not.toBeNull();
+    expect(premiumCard).not.toBeNull();
+    expect(premiumPlusCard).not.toBeNull();
+    expect(
+      within(freeCard!).getByText("Agenda, bloqueio de dias e horários"),
+    ).toBeInTheDocument();
+    expect(
+      within(premiumCard!).getByText("Link do perfil com o seu nome"),
+    ).toBeInTheDocument();
+    expect(
+      within(premiumCard!).getByText("Métricas do perfil (visitas, cliques)"),
+    ).toBeInTheDocument();
+    expect(
+      within(premiumPlusCard!).getByText("Assessora Aura (Em breve)"),
+    ).toBeInTheDocument();
+    expect(
+      within(premiumPlusCard!).getByText("Visão completa dos recebimentos"),
+    ).toBeInTheDocument();
+    expect(
+      within(premiumPlusCard!).getByText("R$ 119,90/mês"),
+    ).toBeInTheDocument();
   });
 });

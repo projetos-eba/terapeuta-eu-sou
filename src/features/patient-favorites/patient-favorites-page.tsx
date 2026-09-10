@@ -41,11 +41,10 @@ export function PatientFavoriteTherapistsPage({
         <div className="relative z-10 mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <h1 className="font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
-              Terapeutas favoritos
+              Seus terapeutas favoritos
             </h1>
             <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary md:text-base">
-              Retome profissionais que fizeram sentido para sua jornada e siga
-              para o perfil público quando quiser agendar um novo encontro.
+              Aqui ficam os terapeutas que você escolheu guardar para consultar depois. Quando quiser, acesse o perfil de cada profissional e veja as opções para agendar um encontro.​
             </p>
           </div>
           <Link
@@ -110,7 +109,7 @@ function FavoriteTherapistCard({
         {item.avatarUrl ? (
           <Image
             alt=""
-            className="object-cover object-center"
+            className="object-cover object-top"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             src={item.avatarUrl}

@@ -106,6 +106,38 @@ recebimento`; provider and reconciliation terminology stays in the service
   a new receiving account, never shows the historical identifier as current,
   and keeps platform-held eligible values waiting for the new account. Transfers
   or Payouts already bound to the historical account are never redirected.
+- Every payout item must resolve its immutable destination through
+  `payout_batch_item.payout_batch_therapist_id -> payout_batch_therapists.connect_account_id`.
+  Never claim or retry by joining every account for a therapist and never swap
+  the frozen account for the current generation.
+- Weekly scheduler failures must be persisted under the owned lease. Apply
+  15/30/60-minute backoff, open a deduplicated critical circuit on the fourth
+  consecutive failure, and require an explicit service-role resume for the
+  same run and batch. A backoff tick must not increment attempts; acknowledged
+  progress resets the failure sequence.
+- Stripe `balance_insufficient` and `insufficient_funds` are platform-level
+  transient failures. Keep the item retryable with the same local intention,
+  and fingerprint, but rotate to a deterministic per-attempt Stripe idempotency
+  key after a definitive rejection; never surface them as a therapist block.
+  Ambiguous connection, timeout, or provider 5xx responses must retain the
+  original key and enter reconciliation instead of starting a new attempt.
+  Transfer retries use the same bounded 15/30/60-minute sequence as the worker
+  circuit; the fourth provider failure is terminal and opens an incident. A
+  service-role rearm must require the same immutable batch, no provider ID and
+  no ledger entry, and must start a fresh bounded key cycle.
+- Before claiming any new item, compare the complete unresolved batch amount
+  with the platform's available BRL balance. Insufficient aggregate liquidity
+  must fail before claim and enter scheduler backoff; never partially drain a
+  batch without this preflight.
+- Platform and connected-account payout schedules are different contracts.
+  Brazilian platform and connected accounts remain daily because manual,
+  weekly, monthly and minimum-balance retention are unavailable. BRL Top Ups
+  are not a production liquidity fallback for the validated Brazilian account.
+  Before claim, validate the daily platform schedule and the complete batch
+  liability against actual available BRL. Fail closed with retry/backoff when
+  liquidity is short.
+  Never treat a Stripe Test bypass-pending charge as a production liquidity
+  strategy.
 - Operation is available to Free, Premium and Premium Plus.
 - F2 summary metrics use `advanced_metrics` and are available to Premium and
   Premium Plus. Free keeps the F0/F1 operational summary plus an upgrade card.

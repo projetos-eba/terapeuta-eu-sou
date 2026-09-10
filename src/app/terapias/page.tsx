@@ -64,11 +64,10 @@ export default async function TherapiesPage({
         <div className="mx-auto grid min-h-[410px] max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:px-[68px] lg:py-0">
           <div className="relative z-10 max-w-[650px]">
             <h1 className="font-display text-[3.15rem] font-light italic leading-[1.08] text-brand-deep sm:text-[3.5rem]">
-              Conheça os caminhos terapêuticos disponíveis
+              Conheça caminhos terapêuticos
             </h1>
             <p className="mt-5 max-w-[625px] text-lg font-bold leading-8 text-tesText-secondary sm:text-xl">
-              Connheça diferentes práticas e descubra quais fazem sentido para o
-              momento que você está vivendo.
+              Explore diferentes práticas e conheça possibilidades que podem conversar com o momento que você está vivendo
             </p>
 
             <form
@@ -77,7 +76,7 @@ export default async function TherapiesPage({
             >
               <Search className="h-[30px] w-[30px] shrink-0 text-brand-primary" />
               <label className="sr-only" htmlFor="therapy-search">
-                Buscar terapia
+                Qual prática você quer conhecer?
               </label>
               <input
                 id="therapy-search"
@@ -89,7 +88,7 @@ export default async function TherapiesPage({
               {params.theme ? (
                 <input type="hidden" name="theme" value={params.theme} />
               ) : null}
-              {params.sort !== "relevance" ? (
+              {params.sort !== "most_searched" ? (
                 <input type="hidden" name="sort" value={params.sort} />
               ) : null}
               <button type="submit" className="sr-only">

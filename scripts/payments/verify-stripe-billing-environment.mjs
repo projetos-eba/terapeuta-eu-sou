@@ -22,7 +22,7 @@ const stripe = new Stripe(stripeSecretKey, {
 });
 const desired = [
   ["tes_premium_brl_monthly_v2", 7990, "premium"],
-  ["tes_premium_plus_brl_monthly_v2", 12990, "premium_plus"],
+  ["tes_premium_plus_brl_monthly_v3", 11990, "premium_plus"],
   ["tes_premium_plus_founder_brl_monthly_v1", 7990, "premium_plus"],
 ];
 const verifiedPrices = [];
@@ -57,6 +57,7 @@ for (const [lookupKey, amount, planCode] of desired) {
 for (const lookupKey of [
   "tes_premium_brl_monthly_v1",
   "tes_premium_plus_brl_monthly_v1",
+  "tes_premium_plus_brl_monthly_v2",
   "tes_premium_brl_6months_v1",
   "tes_premium_plus_brl_6months_v1",
 ]) {

@@ -16,7 +16,7 @@ describe("PatientFavoriteTherapistsPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Terapeutas favoritos" }),
+      screen.getByRole("heading", { name: "Seus terapeutas favoritos" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveClass("max-w-[1210px]");
     expect(screen.getByText("Ana Oliveira")).toBeInTheDocument();
@@ -24,6 +24,10 @@ describe("PatientFavoriteTherapistsPage", () => {
       "href",
       "/terapeutas/ana-oliveira",
     );
+    const portrait = screen
+      .getAllByAltText("")
+      .find((image) => image.getAttribute("src")?.includes("ana-oliveira"));
+    expect(portrait).toHaveClass("object-top");
     expect(
       screen.getByRole("button", { name: "Remover favorito" }),
     ).toBeInTheDocument();
@@ -58,7 +62,6 @@ function createData(): PatientFavoriteTherapistsPageData {
         isAcceptingBookings: true,
         name: "Ana Oliveira",
         profileHref: "/terapeutas/ana-oliveira",
-        reservationHref: "/terapeutas?therapist=ana-oliveira",
         reviewCount: 38,
         summary: "Acompanho processos de reconexão e autocuidado.",
         techniques: ["Reiki", "Meditação"],

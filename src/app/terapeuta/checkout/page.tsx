@@ -96,7 +96,7 @@ export default async function TherapistCheckoutPage({
             <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
               {hasActivePaidPlan
                 ? `Você está no plano ${getTherapistPlanDefinition(session.plan).name}.`
-                : `Sua conta está pronta. Falta confirmar o plano ${plan.name}.`}
+                : `Sua conta já está pronta. Agora, é só confirmar sua assinatura do ${plan.name}.`}
             </p>
           </div>
 
@@ -139,7 +139,7 @@ export default async function TherapistCheckoutPage({
             />
             <StatusItem
               icon={ShieldCheck}
-              label="Plano escolhido"
+              label="Sua escolha"
               value={plan.name}
             />
           </div>
@@ -262,8 +262,8 @@ function CheckoutReturnWithoutSession({
               {planDefinition.priceLabel}
             </p>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Entre novamente para acompanhar a confirmação e acessar sua área
-              profissional. Nenhum plano pago é liberado apenas por esta página.
+              Entre na sua conta para acompanhar a confirmação. 
+              Seu Premium será ativado assim que o pagamento for confirmado.
             </p>
           </section>
         </div>
@@ -275,7 +275,7 @@ function CheckoutReturnWithoutSession({
             variant="gradient"
             className="min-h-12 w-full rounded-2xl text-base"
           >
-            Entrar para acompanhar
+            Entrar e acompanhar
           </TESButton>
           <TESButton
             href={routes.public.forTherapists}
@@ -375,7 +375,7 @@ function getCheckoutStatusCopy(status?: string) {
       return {
         title: "Pagamento em confirmação",
         description:
-          "Recebemos seu retorno do pagamento. O plano pago será liberado somente após a confirmação segura.",
+          "Recebemos seu retorno do pagamento. Seu plano só é ativado após a confirmação do pagamento.​",
       };
     case "canceled":
       return {
@@ -411,7 +411,7 @@ function getCheckoutStatusCopy(status?: string) {
       return {
         title: "Pagamento online seguro",
         description:
-          "Conclua o pagamento abaixo, sem sair do TES. O plano pago será ativado somente após a confirmação segura.",
+          "Faça o pagamento abaixo, sem sair do TES. Seu plano será ativado assim que o pagamento for confirmado.​",
       };
   }
 }

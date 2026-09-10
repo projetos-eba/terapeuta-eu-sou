@@ -219,6 +219,9 @@ Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renova�
 Prosperidade`). O terapeuta pode selecionar até seis; os cards exibem ícones
   do vocabulário visual compartilhado e persistem no contrato existente de
   `guideItems`. Itens personalizados antigos permanecem até uma nova seleção.
+- Nas prévias de perfil publicado e de rascunho, `Como posso te guiar` mantém
+  duas colunas a partir de `420px`, inclusive em desktop, para preservar a
+  leitura dos rótulos canônicos junto aos ícones.
 - `Sua apresentação` e `Minha essência` exibem ajuda contextual no ícone
   informativo, acessível por foco, hover e clique, com explicações em linguagem
   de produto.

@@ -1,9 +1,9 @@
 "use client";
 
 import { CalendarDays, Clock, HandCoins, Tags } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 
-import { TESCard } from "@/components/tes";
+import { TESCard, TESOverflowThemeButton } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 
@@ -88,7 +88,7 @@ export function TherapistServiceCard({
                   {themeLabels[0]?.label ?? "Tema do Match"}
                 </p>
                 <h3 className="mt-1 break-words font-display text-2xl font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
-                  {service.therapy.name}
+                  {service.title}
                 </h3>
               </div>
               <div className="relative z-10 flex flex-wrap items-center gap-2">
@@ -235,72 +235,13 @@ function ServiceThemeBadges({
   serviceName: string;
   themes: Array<{ id: string; label: string; slug: string }>;
 }) {
-  const [clickedOpen, setClickedOpen] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const tooltipId = useId();
-  const hiddenThemes = themes.slice(1);
-  const tooltipOpen = clickedOpen || focused || hovered;
-
-  useEffect(() => {
-    if (!clickedOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (target instanceof Node && !containerRef.current?.contains(target)) {
-        setClickedOpen(false);
-        setFocused(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [clickedOpen]);
-
-  if (hiddenThemes.length === 0) return null;
-
   return (
-    <div
-      aria-label={`Temas selecionados para ${serviceName}`}
-      className="relative"
-      ref={containerRef}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <button
-        aria-controls={tooltipId}
-        aria-describedby={tooltipOpen ? tooltipId : undefined}
-        aria-expanded={tooltipOpen}
-        aria-label={`Ver mais ${hiddenThemes.length} ${hiddenThemes.length === 1 ? "tema" : "temas"} de ${serviceName}`}
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        onBlur={() => setFocused(false)}
-        onClick={() => setClickedOpen((current) => !current)}
-        onFocus={() => setFocused(true)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            setClickedOpen(false);
-            setFocused(false);
-            event.currentTarget.blur();
-          }
-        }}
-        type="button"
-      >
-        <Tags aria-hidden="true" size={14} />+{hiddenThemes.length}
-      </button>
-      <div
-        className={`absolute bottom-full right-0 z-30 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
-        id={tooltipId}
-        role="tooltip"
-      >
-        <p className="font-extrabold text-brand-deep">Outros temas</p>
-        <ul className="mt-1 space-y-1">
-          {hiddenThemes.map((theme) => (
-            <li key={theme.id}>{theme.label}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    <TESOverflowThemeButton
+      entityLabel={serviceName}
+      icon={<Tags aria-hidden="true" size={14} />}
+      themes={themes}
+      visibleCount={1}
+    />
   );
 }
 

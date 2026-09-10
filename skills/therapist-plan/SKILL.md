@@ -43,7 +43,7 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
 - Catalog and real prices: `billing_plans` plus active
   `billing_plan_prices`.
 - Public paid catalog: Premium R$ 79,90/month and Premium Plus
-  R$ 129,90/month. Hidden rows with `is_public=false` are campaign Prices and
+  R$ 119,90/month. Hidden rows with `is_public=false` are campaign Prices and
   must never appear in this page.
 - Subscription lifecycle: `therapist_subscriptions` and Stripe Billing.
 - Features and entitlements: `src/domain/tes/plan-definitions.ts`,

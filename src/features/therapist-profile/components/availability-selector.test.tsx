@@ -80,7 +80,7 @@ const tarot = createService({
 describe("AvailabilitySelector", () => {
   afterEach(cleanup);
 
-  it("switches Reiki to Tarô and back without retaining stale service data", () => {
+  it("switches registered service names without retaining stale service data", () => {
     render(
       <AvailabilitySelector
         services={[reiki, tarot]}
@@ -88,25 +88,31 @@ describe("AvailabilitySelector", () => {
       />,
     );
 
-    expect(screen.getByText("Reiki · 20 min · R$ 120")).toBeInTheDocument();
+    expect(
+      screen.getByText("Reiki online · 20 min · R$ 120"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "09:00" })).toHaveAttribute(
       "href",
       expect.stringContaining("service=service-reiki"),
     );
     expect(screen.queryByRole("link", { name: "10:15" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Tarô" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tarô online" }));
 
-    expect(screen.getByText("Tarô · 30 min · R$ 122")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tarô online · 30 min · R$ 122"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "10:15" })).toHaveAttribute(
       "href",
       expect.stringContaining("service=service-tarot"),
     );
     expect(screen.queryByRole("link", { name: "09:00" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Reiki" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reiki online" }));
 
-    expect(screen.getByText("Reiki · 20 min · R$ 120")).toBeInTheDocument();
+    expect(
+      screen.getByText("Reiki online · 20 min · R$ 120"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "09:00" })).toHaveAttribute(
       "href",
       expect.stringContaining("service=service-reiki"),

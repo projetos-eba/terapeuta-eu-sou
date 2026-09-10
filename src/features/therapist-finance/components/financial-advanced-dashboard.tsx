@@ -53,7 +53,7 @@ export function FinancialAdvancedDashboard({
         />
         <AdvancedMetricCard
           description="Sessões futuras já pagas e válidas. Não inclui pagamento pendente."
-          label="Receita contratada futura"
+          label="Sessões futuras já pagas"
           muted={!forecastReady}
           value={
             forecastReady
@@ -62,8 +62,8 @@ export function FinancialAdvancedDashboard({
           }
         />
         <AdvancedMetricCard
-          description="Realizado mais receita futura contratada no mês."
-          label="Receita contratada no mês"
+          description="Valor líquido realizado mais sessões futuras já pagas no mês."
+          label="Receita no mês"
           muted={!forecastReady}
           value={
             forecastReady
@@ -187,7 +187,7 @@ function ForecastBreakdown({
           value={dashboard.forecast.realizedNetCents}
         />
         <BreakdownRow
-          label="Receita contratada futura"
+          label="Sessões futuras já pagas"
           value={dashboard.forecast.contractedFutureNetCents}
         />
         <BreakdownRow

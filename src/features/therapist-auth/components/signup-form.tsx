@@ -70,12 +70,11 @@ function PlanSelectionCard({ plan }: { plan: PlanDefinition }) {
       : plan.code === TherapistPlan.Premium
         ? Star
         : UserRound;
-  const primaryFeatures = plan.features
+  const primaryFeatures = plan.featuredFeatures
     .map((featureCode) => getPlanFeatureDefinition(featureCode))
     .filter((feature): feature is NonNullable<typeof feature> =>
       Boolean(feature),
-    )
-    .slice(0, 3);
+    );
 
   return (
     <article

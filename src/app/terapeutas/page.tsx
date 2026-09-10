@@ -332,6 +332,9 @@ function TherapistResultCard({
               <h3 className="text-2xl font-extrabold leading-tight tracking-normal text-brand-deep">
                 {therapist.name}
               </h3>
+              <p className="mt-1 line-clamp-2 text-sm font-extrabold leading-5 text-brand-primary">
+                {therapist.serviceTitle}
+              </p>
               <TherapyBadgeList
                 therapistName={therapist.name}
                 therapies={therapist.therapies}

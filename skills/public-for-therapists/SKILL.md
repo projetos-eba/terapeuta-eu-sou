@@ -35,7 +35,7 @@ Consultar antes de alterar:
 - Premium: `/terapeuta/cadastro?plan=premium`.
 - Premium Plus: `/terapeuta/cadastro?plan=premium_plus`.
 - Frontend envia somente o código do plano, nunca valor, Price ID ou oferta.
-- Valores canônicos: Premium R$ 79,90/mês e Premium Plus R$ 129,90/mês.
+- Valores canônicos: Premium R$ 79,90/mês e Premium Plus R$ 119,90/mês.
 - Nao aceitar preco, valor ou Price ID vindo do navegador.
 
 ## Copy responsavel
@@ -55,7 +55,7 @@ Consultar antes de alterar:
 - Mobile: cards empilhados com CTA e accordion nativo “Ver todos os recursos”.
 - CTAs devem ter pelo menos 44px de altura.
 - A matriz de planos deve exibir apenas o nome do recurso, sem descrições por linha. As descrições podem permanecer no catálogo para outros usos, mas não aparecem na tabela visual.
-- Categorias atuais da matriz: `Operação — base de todos`, `Identidade & presença — a partir do Premium`, `Gestão da prática — exclusivo Plus` e `Academia TES (Em breve)`.
+- Categorias atuais da matriz: `Operação — base de todos`, `Identidade & presença — a partir do Premium`, `Gestão da prática — exclusivo Premium Plus` e `Academia TES (Em breve)`.
 - Bento grid: evitar conteúdo cortado no desktop usando altura suficiente, padding interno generoso e imagem do card `Atenda de onde estiver` afastada das bordas.
 
 ## Pendencias conhecidas

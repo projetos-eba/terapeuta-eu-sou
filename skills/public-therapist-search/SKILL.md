@@ -86,6 +86,9 @@ Regra de apresentação dos cards:
   (`therapist_headline`), com copy visual chamada “Sua apresentação”.
 - Nunca usar `service_description` como apresentação do terapeuta; essa
   descrição pertence à oferta e aparece somente em contextos de serviço.
+- O título da oferta selecionada (`service_title`) aparece abaixo do nome do
+  terapeuta. Chips continuam restritos às terapias canônicas publicadas, para
+  preservar a classificação e os filtros da busca.
 - O card público não exibe tags de cuidado ou temas derivadas de
   `therapist.tags`. Os chips visíveis junto ao nome ficam restritos às terapias
   publicadas, com no máximo duas e o contador acessível das demais.

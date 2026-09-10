@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(32);
 
 select ok(
   has_function_privilege(
@@ -116,6 +116,26 @@ select is(
   ) #>> '{forecast,methodologyVersion}',
   'tes-financial-forecast-v1',
   'forecast returns an explicit methodology version'
+);
+
+select is(
+  public.get_private_therapist_advanced_financial_dashboard_v1(
+    current_date - 29,
+    current_date,
+    'America/Sao_Paulo'
+  ) #>> '{forecast,status}',
+  'available',
+  'month revenue remains available even when potential cannot be estimated'
+);
+
+select is(
+  public.get_private_therapist_advanced_financial_dashboard_v1(
+    current_date - 29,
+    current_date,
+    'America/Sao_Paulo'
+  ) #>> '{agendaPotential,status}',
+  'available',
+  'agenda capacity remains available when configured schedule capacity exists'
 );
 
 select is(

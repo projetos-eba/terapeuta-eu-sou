@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  getRelatedTherapists,
-  parseRelatedTherapistSort,
-} from "@/features/therapies/queries/get-related-therapists";
+import { getRelatedTherapists } from "@/features/therapies/queries/get-related-therapists";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -21,9 +18,6 @@ export async function POST(request: Request) {
 
   const record = isRecord(body) ? body : null;
   const slug = typeof record?.slug === "string" ? record.slug : "";
-  const sort = parseRelatedTherapistSort(
-    typeof record?.sort === "string" ? record.sort : undefined,
-  );
   const themeIds = parseUuidArray(record?.themeIds, 3);
   const interestIds = parseUuidArray(record?.interestIds, 9);
 
@@ -35,7 +29,7 @@ export async function POST(request: Request) {
     interestIds,
     limit: 6,
     slug,
-    sort,
+    sort: "relevance",
     themeIds,
   });
 
