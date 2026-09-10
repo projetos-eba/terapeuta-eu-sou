@@ -8,7 +8,10 @@ import {
 } from "./connect.ts";
 import { extractTransferDestinationReference } from "./automatic-payouts.ts";
 import { buildSessionTransferCreateParams } from "./finance-lifecycle.ts";
-import { classifyProviderFailure } from "./payouts.ts";
+import {
+  classifyProviderFailure,
+  isPlatformPayoutScheduleSafeForWeeklyTransfers,
+} from "./payouts.ts";
 import type { StripeClient } from "./stripe-client.ts";
 import {
   isChargeSettlementAvailable,
@@ -57,6 +60,32 @@ export async function runPayoutBatchWorker(input: {
   stripeMode: "live" | "test";
   workerId: string;
 }) {
+  const requirement = await input.client.rpc<{
+    amountCents: number;
+    itemCount: number;
+  }>("get_payout_transfer_liquidity_requirement_v1", {
+    p_payout_batch_id: input.batchId,
+  });
+  if (requirement.itemCount > 0) {
+    const [balance, balanceSettings] = await Promise.all([
+      input.stripe.balance.retrieve(),
+      input.stripe.balanceSettings.retrieve(),
+    ]);
+    if (!isPlatformPayoutScheduleSafeForWeeklyTransfers(balanceSettings)) {
+      throw Object.assign(
+        new Error("Agenda de saldo da plataforma incompativel com o lote semanal."),
+        { code: "platform_payout_schedule_unsafe", statusCode: 409 },
+      );
+    }
+    const availableCents = getAvailableBrlBalanceCents(balance.available);
+    if (availableCents < requirement.amountCents) {
+      throw Object.assign(
+        new Error("Saldo da plataforma indisponivel para o lote completo."),
+        { code: "balance_insufficient", statusCode: 409 },
+      );
+    }
+  }
+
   const transferClaims = await input.client.rpc<TransferClaim[]>(
     "claim_payout_transfer_items_v1",
     {
@@ -104,8 +133,7 @@ export async function runPayoutBatchWorker(input: {
       }
       await input.client.rpc("complete_payout_transfer_v2", {
         p_connected_balance_available_on: destination.availableOn,
-        p_stripe_connected_balance_transaction_id:
-          destination.balanceTransactionId,
+        p_stripe_connected_balance_transaction_id: destination.balanceTransactionId,
         p_stripe_destination_payment_id: destination.destinationPaymentId,
         p_stripe_transfer_id: transfer.id,
         p_transfer_id: claim.transfer_id,
@@ -135,14 +163,24 @@ export async function runPayoutBatchWorker(input: {
   return { payouts: [], transfers };
 }
 
+export function getAvailableBrlBalanceCents(
+  available: Array<{ amount: number; currency: string }>,
+) {
+  return available
+    .filter((entry) => entry.currency.toLowerCase() === "brl")
+    .reduce((sum, entry) => sum + entry.amount, 0);
+}
+
 async function assertTransferClaimIsReady(
   input: Parameters<typeof runPayoutBatchWorker>[0],
   claim: TransferClaim,
 ) {
   const [payment] = await input.client.get<PaymentState[]>(
-    `/rest/v1/session_payments?select=financial_status,gross_amount_cents,refund_pending,disputed_at,internal_contested_at,admin_blocked_at,stripe_charge_id,stripe_balance_transaction_id,stripe_balance_status,therapist_amount_cents,transfer_status,eligible_at&id=eq.${encodeURIComponent(
-      claim.session_payment_id,
-    )}&limit=1`,
+    `/rest/v1/session_payments?select=financial_status,gross_amount_cents,refund_pending,disputed_at,internal_contested_at,admin_blocked_at,stripe_charge_id,stripe_balance_transaction_id,stripe_balance_status,therapist_amount_cents,transfer_status,eligible_at&id=eq.${
+      encodeURIComponent(
+        claim.session_payment_id,
+      )
+    }&limit=1`,
   );
   const accountRows = await input.client.get<
     Array<{
@@ -154,11 +192,15 @@ async function assertTransferClaimIsReady(
       therapist_profiles: { status: string } | null;
     }>
   >(
-    `/rest/v1/therapist_connect_accounts?select=operational_status,payout_schedule_interval,payout_status,payouts_enabled,stripe_transfers_status,therapist_profiles!inner(status)&id=eq.${encodeURIComponent(
-      claim.connect_account_id,
-    )}&therapist_profile_id=eq.${encodeURIComponent(
-      claim.therapist_profile_id,
-    )}&limit=1`,
+    `/rest/v1/therapist_connect_accounts?select=operational_status,payout_schedule_interval,payout_status,payouts_enabled,stripe_transfers_status,therapist_profiles!inner(status)&id=eq.${
+      encodeURIComponent(
+        claim.connect_account_id,
+      )
+    }&therapist_profile_id=eq.${
+      encodeURIComponent(
+        claim.therapist_profile_id,
+      )
+    }&limit=1`,
   );
   const account = accountRows[0];
 
@@ -215,7 +257,9 @@ async function assertTransferClaimIsReady(
   await persistChargeSettlementSnapshot({
     client: input.client,
     eventCreatedAt: input.operationInstant ?? new Date().toISOString(),
-    eventId: `transfer-preflight:${claim.session_payment_id}:${settlement!.balanceTransactionId}`,
+    eventId: `transfer-preflight:${claim.session_payment_id}:${
+      settlement!.balanceTransactionId
+    }`,
     paymentId: claim.session_payment_id,
     snapshot: settlement!,
   });
@@ -260,9 +304,7 @@ export function isEligibleAtOperationInstant(
 ) {
   if (!eligibleAt) return false;
   const eligibleEpoch = Date.parse(eligibleAt);
-  const operationEpoch = operationInstant
-    ? Date.parse(operationInstant)
-    : Date.now();
+  const operationEpoch = operationInstant ? Date.parse(operationInstant) : Date.now();
   return (
     Number.isFinite(eligibleEpoch) &&
     Number.isFinite(operationEpoch) &&

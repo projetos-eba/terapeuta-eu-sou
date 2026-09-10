@@ -25,7 +25,7 @@ export function selectConnectedPayoutBalance(
     .flatMap((sourceTypes) =>
       (["bank_account", "card"] as const).filter(
         (sourceType) => (sourceTypes[sourceType] ?? 0) >= amountCents,
-      ),
+      )
     );
 
   const unique = [...new Set(eligibleSourceTypes)];
@@ -66,6 +66,21 @@ export type ProviderFailureDisposition =
   | "reconciliation_required"
   | "transient";
 
+export function isPlatformPayoutScheduleSafeForWeeklyTransfers(settings: {
+  payments?: {
+    payouts?: {
+      schedule?: {
+        interval?: string | null;
+      } | null;
+      status?: string | null;
+    } | null;
+  } | null;
+}) {
+  const payouts = settings.payments?.payouts;
+  return payouts?.status === "enabled" &&
+    payouts.schedule?.interval === "daily";
+}
+
 export function classifyProviderFailure(error: unknown): {
   code: string;
   disposition: ProviderFailureDisposition;
@@ -79,7 +94,9 @@ export function classifyProviderFailure(error: unknown): {
     type?: unknown;
   };
   const code = typeof candidate?.code === "string" ? candidate.code : "provider_error";
-  const statusCode = typeof candidate?.statusCode === "number" ? candidate.statusCode : null;
+  const statusCode = typeof candidate?.statusCode === "number"
+    ? candidate.statusCode
+    : null;
   const type = typeof candidate?.type === "string" ? candidate.type : "";
   const message = sanitizeProviderMessage(candidate?.message);
 
@@ -87,11 +104,21 @@ export function classifyProviderFailure(error: unknown): {
     type.includes("Connection") ||
     type.includes("Timeout") ||
     code === "ETIMEDOUT" ||
-    code === "ECONNRESET"
+    code === "ECONNRESET" ||
+    (statusCode !== null && statusCode >= 500)
   ) {
-    return { code: "provider_response_unknown", disposition: "reconciliation_required", message };
+    return {
+      code: "provider_response_unknown",
+      disposition: "reconciliation_required",
+      message,
+    };
   }
-  if (statusCode === 409 || statusCode === 429 || (statusCode !== null && statusCode >= 500)) {
+  if (
+    statusCode === 409 || statusCode === 429
+  ) {
+    return { code, disposition: "transient", message };
+  }
+  if (code === "balance_insufficient" || code === "insufficient_funds") {
     return { code, disposition: "transient", message };
   }
 

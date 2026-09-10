@@ -1,6 +1,9 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-import { isEligibleAtOperationInstant } from "./payout-worker.ts";
+import {
+  getAvailableBrlBalanceCents,
+  isEligibleAtOperationInstant,
+} from "./payout-worker.ts";
 
 Deno.test(
   "worker uses the authorized operation instant for eligibility",
@@ -34,5 +37,16 @@ Deno.test("worker fails closed for missing or invalid instants", () => {
   assertEquals(
     isEligibleAtOperationInstant("2026-09-29T13:20:00Z", "invalid"),
     false,
+  );
+});
+
+Deno.test("worker sums only the available BRL platform balance", () => {
+  assertEquals(
+    getAvailableBrlBalanceCents([
+      { amount: -656, currency: "brl" },
+      { amount: 1000, currency: "usd" },
+      { amount: 500, currency: "BRL" },
+    ]),
+    -156,
   );
 });
