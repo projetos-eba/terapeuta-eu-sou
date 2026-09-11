@@ -92,6 +92,9 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - A pagina deve manter hero com imagem fade, stepper, grid 5x2 de cards ilustrados no desktop e cards empilhados no mobile. O cabeçalho público usa uma faixa branca própria, acima do hero, para preservar a leitura da navegação em telas grandes.
 - O hero não exibe badge temático acima do título; os temas disponíveis são
   apresentados nos cards próprios da seleção.
+- Os painéis de refinamento exibem apenas título, instrução, contador de seleção
+  e interesses. Não renderizar badges editoriais como “Interesses”, “Vínculos”
+  ou “Autocuidado” junto ao título.
 - CTA ativo com pelo menos um tema.
 - Ao atingir tres temas, cards restantes ficam desabilitados, mas visiveis.
 - Ao retornar para `/sua-jornada` pelo navegador, o CTA deve sair do estado de

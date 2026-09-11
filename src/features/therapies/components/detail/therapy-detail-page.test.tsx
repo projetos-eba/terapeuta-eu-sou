@@ -37,7 +37,7 @@ describe("TherapyDetailPage", () => {
       <TherapyDetailPage
         relatedTherapists={[]}
         source="directory"
-        sort="relevance"
+        sort="az"
         therapy={therapy}
       />,
     );

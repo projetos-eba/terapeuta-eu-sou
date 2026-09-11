@@ -316,9 +316,8 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
               Pagamento seguro no TES
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Seus dados de pagamento são processados em ambiente protegido. O
-              TES não recebe número de cartão, CVC ou dados de autenticação
-              bancária.
+              O pagamento é processado em ambiente seguro. 
+              O TES não recebe nem armazena o número completo do seu cartão, CVC ou dados de autenticação bancária.
             </p>
           </div>
         </div>
@@ -329,8 +328,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
               className="mt-0.5 size-4 shrink-0 text-brand-primary"
               aria-hidden="true"
             />
-            Premium e Premium Plus só são liberados após a confirmação segura do
-            pagamento.
+            O Premium e o Premium Plus são ativados após a confirmação do pagamento.​
           </p>
         </div>
 

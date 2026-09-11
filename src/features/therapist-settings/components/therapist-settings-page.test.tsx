@@ -393,6 +393,61 @@ describe("TherapistSettingsPage", () => {
     ).toBeNull();
   });
 
+  it("shows the benefits end date immediately after scheduling cancellation", async () => {
+    const originalFetch = global.fetch;
+    const benefitsEnd = "2026-09-23T03:00:00.000Z";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          data: {
+            cancelAtPeriodEnd: true,
+            currentPeriodEnd: benefitsEnd,
+          },
+          ok: true,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          ok: true,
+          overview: {
+            subscription: {
+              cancelAtPeriodEnd: true,
+              currentPeriodEnd: benefitsEnd,
+              scheduledChangeAt: null,
+              scheduledPlan: null,
+            },
+          },
+        }),
+      );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(
+        <TherapistSettingsPage
+          planData={planFixture("premium_plus")}
+          settings={settingsFixture()}
+        />,
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Cancelar assinatura" }),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Confirmar alteração" }),
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Benefícios disponíveis até"),
+        ).toBeInTheDocument();
+        expect(screen.getByText("23/09/2026")).toBeInTheDocument();
+      });
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("represents a scheduled downgrade without removing current benefits", () => {
     const planData = planFixture("premium_plus");
     if (planData.subscription) {
@@ -499,7 +554,7 @@ function planFixture(
         description: "",
         interval: "month",
         name: "Premium Plus",
-        unitAmountCents: 12990,
+        unitAmountCents: 11990,
       },
     ],
     effectivePlan,

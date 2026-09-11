@@ -23,7 +23,7 @@ describe("TherapistPlanPage", () => {
       within(screen.getByLabelText("Resumo do plano atual")).getByText("Free"),
     ).toBeInTheDocument();
     expect(screen.getAllByText("R$ 79,90").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("R$ 129,90").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 119,90").length).toBeGreaterThan(0);
     expect(
       screen
         .getAllByRole("link", { name: /Assinar/ })
@@ -92,7 +92,7 @@ function fixture(effectivePlan: TherapistPlan): TherapistPlanPageData {
         description: "",
         interval: "month",
         name: "Premium Plus",
-        unitAmountCents: 12990,
+        unitAmountCents: 11990,
       },
     ],
     effectivePlan,

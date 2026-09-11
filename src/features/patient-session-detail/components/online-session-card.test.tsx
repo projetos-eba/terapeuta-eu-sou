@@ -59,7 +59,7 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: /ir para a sala segura/i }),
+      screen.getByRole("link", { name: "Entrar no encontro" }),
     ).toHaveAttribute(
       "href",
       "/app/encontros/f2000000-0000-4000-8000-000000000001/video",

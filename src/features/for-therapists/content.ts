@@ -14,18 +14,18 @@ export const forTherapistsHero = {
   title: "Você cuida de pessoas.",
   accent: "Nós cuidamos do espaço onde esse encontro acontece",
   body: "O TES foi criado para ajudar terapeutas a organizar atendimentos, fortalecer sua presença e construir uma jornada profissional com mais clareza e tranquilidade.",
-  primaryCta: "Quero me cadastrar",
+  primaryCta: "Criar meu perfil",
   secondaryCta: "Ver planos",
 };
 
 export const trustItems = [
   {
     icon: ShieldCheck,
-    label: "Ambiente seguro e privado",
+    label: "Privacidade e cuidado com seus dados​",
   },
   {
     icon: CalendarCheck,
-    label: "Atendimento dentro da plataforma",
+    label: "Atendimento pela plataforma",
   },
   {
     icon: UserRoundCheck,
@@ -41,41 +41,41 @@ export const benefitCards = [
   {
     body: "Seu perfil profissional, sua história e sua forma de trabalhar em um espaço que ajuda a mostrar sua abordagem com clareza.",
     icon: UserRoundCheck,
-    title: "Mostre quem você é e como cuida das pessoas",
+    title: "Mostre quem você é e como trabalha",
     variant: "profile",
   },
   {
-    body: "Agenda, sessões, pagamentos, mensagens e informações organizadas.",
+    body: "Agenda, encontros, pagamentos, mensagens e informações importantes reunidos para facilitar seu dia a dia.​",
     icon: CalendarCheck,
-    title: "Centralize tudo em um só lugar",
+    title: "Organize sua rotina em um só lugar​",
     variant: "calendar",
   },
   {
-    body: "Perfis verificados, privacidade e regras da plataforma para apoiar uma relação de cuidado responsável.",
+    body: "Perfil verificado, informações organizadas e regras da plataforma para apoiar uma relação mais clara e responsável com quem chega até você.​",
     icon: ShieldCheck,
     title: "Presença profissional com segurança",
     variant: "security",
   },
   {
-    body: "Fluxos separados para assinatura e sessões, mantendo clareza operacional e financeira.",
+    body: "Acompanhe seus recebimentos e movimentações com informações claras dentro da plataforma.​",
     icon: LockKeyhole,
-    title: "Pagamentos seguros",
+    title: "Pagamentos organizados",
     variant: "payments",
   },
   {
-    body: "Mensagens e acompanhamento para manter sua rotina mais organizada antes e depois das sessões.",
+    body: "Seu perfil pode aparecer para pessoas que estão explorando práticas e profissionais dentro do TES.​",
     icon: MessageCircle,
-    title: "Seja encontrada por quem procura você",
+    title: "Seja encontrada por quem busca o que você oferece​",
     variant: "community",
   },
   {
-    body: "Métricas e sinais de descoberta para acompanhar sua evolução sem prometer resultado financeiro.",
+    body: "Veja sinais e informações sobre sua presença na plataforma para entender melhor como seu perfil está sendo encontrado e acessado.​",
     icon: ChartNoAxesColumnIncreasing,
-    title: "Acompanhe sua evolução",
+    title: "Acompanhe sua presença no TES​",
     variant: "growth",
   },
   {
-    body: "Converse, organize atendimentos online e acompanhe sua agenda de qualquer lugar com segurança.",
+    body: "Converse, organize seus encontros online e acompanhe sua agenda pela plataforma, de onde estiver.​",
     icon: Sparkles,
     title: "Atenda de onde estiver",
     variant: "remote",

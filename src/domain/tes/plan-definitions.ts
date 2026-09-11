@@ -45,6 +45,7 @@ export type PlanDefinition = {
   code: TherapistPlan;
   ctaLabel: string;
   description: string;
+  featuredFeatures: PlanFeatureCode[];
   features: PlanFeatureCode[];
   highlight?: boolean;
   monthlyPriceCents: number;
@@ -239,6 +240,11 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     ctaLabel: "Começar gratuitamente",
     description:
       "Operação essencial para publicar sua presença e organizar o início.",
+    featuredFeatures: [
+      "agenda_days_blocks",
+      "profile_focus_cover_bio",
+      "shareable_public_profile",
+    ],
     features: therapistPlanFeatureDefinitions
       .filter((feature) => feature.minimumPlan === TherapistPlan.Free)
       .map((feature) => feature.code),
@@ -258,7 +264,12 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     code: TherapistPlan.Premium,
     ctaLabel: "Escolher Premium",
     description:
-      "Métricas com leitura direcional, insights de agenda e solicitação de nova terapia.",
+      "Métricas, página com link individual, painel financeiro, destaque no TES e muito mais.​",
+    featuredFeatures: [
+      "username_url",
+      "premium_profile_themes",
+      "profile_metrics",
+    ],
     features: therapistPlanFeatureDefinitions
       .filter((feature) => feature.minimumPlan !== TherapistPlan.PremiumPlus)
       .map((feature) => feature.code),
@@ -280,13 +291,18 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     ctaLabel: "Escolher Premium Plus",
     description:
       "Mais recursos para acompanhar seu trabalho, seus recebimentos e suas escolhas.",
+    featuredFeatures: [
+      "aura",
+      "complete_financial_dashboard",
+      "journey_history_crm",
+    ],
     features: therapistPlanFeatureDefinitions.map((feature) => feature.code),
     limits: {
       services: undefined,
     },
-    monthlyPriceCents: 12990,
+    monthlyPriceCents: 11990,
     name: "Premium Plus",
-    priceLabel: "R$ 129,90/mês",
+    priceLabel: "R$ 119,90/mês",
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,

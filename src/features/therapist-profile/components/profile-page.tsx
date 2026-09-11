@@ -277,12 +277,12 @@ function IntroCards({
         </h2>
         <div
           aria-label="Caminhos pelos quais posso te guiar"
-          className="mt-6 grid grid-cols-1 gap-x-3 gap-y-4 min-[420px]:grid-cols-2 xl:grid-cols-3"
+          className="mt-6 grid grid-cols-1 gap-x-3 gap-y-4 min-[420px]:grid-cols-2"
           role="list"
         >
           {guideItems.map((item) => (
             <div
-              className="flex min-h-11 items-center gap-2 px-1 text-left xl:justify-center"
+              className="flex min-h-11 items-center gap-2 px-1 text-left"
               key={item.label}
               role="listitem"
             >
@@ -403,7 +403,7 @@ function Services({
               {service.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- imagem administrada pelo catálogo público.
                 <img
-                  alt={`Imagem da terapia ${service.therapyName}`}
+                  alt={`Imagem do atendimento ${service.title}`}
                   className="size-full object-cover"
                   src={service.imageUrl}
                 />
@@ -413,11 +413,11 @@ function Services({
             </div>
             <div className="min-w-0">
               <h3 className="break-words font-display text-[26px] font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
-                {service.therapyName}
+                {service.title}
               </h3>
               <PublicServiceDescription
                 description={service.description}
-                serviceName={service.therapyName}
+                serviceName={service.title}
               />
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-brand-deep">
                 <Clock className="size-4" />

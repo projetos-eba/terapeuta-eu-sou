@@ -107,7 +107,7 @@ export function PublicProfileSnapshot({
           </SnapshotCard>
           <SnapshotCard title="Como posso te guiar">
             {profile.content.guideItems.length ? (
-              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
                 {profile.content.guideItems
                   .slice(0, MAX_THERAPIST_PROFILE_GUIDE_ITEMS)
                   .map((item) => (

@@ -70,6 +70,9 @@ function FeaturedTherapistCard({
         <h3 className="min-h-[3.5rem] text-[1.45rem] font-extrabold leading-tight text-brand-deep min-[1360px]:text-[1.55rem] 2xl:text-[1.65rem]">
           {therapist.name}
         </h3>
+        <p className="mt-2 line-clamp-2 min-h-10 text-sm font-extrabold leading-5 text-brand-primary">
+          {therapist.serviceTitle}
+        </p>
         <div className="mt-3 min-h-[34px]">
           {therapyChips.length ? (
             <ul

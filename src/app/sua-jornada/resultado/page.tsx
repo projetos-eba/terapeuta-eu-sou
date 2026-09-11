@@ -26,8 +26,7 @@ export default function JourneyResultPage() {
             Caminhos que podem conversar com seu momento
           </h1>
           <p className="mt-4 text-base font-semibold leading-7 text-tesText-secondary">
-            Veja terapias sugeridas pelo Match determinístico do TES e conheça
-            cada caminho no seu tempo.
+            Com base nas suas escolhas, o Match apresenta técnicas relacionadas aos temas que você selecionou para você conhecer​
           </p>
         </div>
         <MatchingResultClient />

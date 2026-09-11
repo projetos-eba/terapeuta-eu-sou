@@ -160,7 +160,6 @@ function mapFavoriteTherapist(
     isAcceptingBookings: therapist.is_accepting_bookings,
     name: therapist.public_name,
     profileHref: routes.public.therapistProfile(therapist.slug),
-    reservationHref: `${routes.public.therapists}?therapist=${therapist.slug}`,
     reviewCount: details?.review_count ?? 0,
     summary: details?.short_intro ?? null,
     techniques: details?.tags?.filter(Boolean).slice(0, 5) ?? [],
@@ -181,7 +180,6 @@ function createDemoFavoriteTherapists(
         isAcceptingBookings: true,
         name: "Ana Oliveira",
         profileHref: routes.public.therapistProfile("ana-oliveira"),
-        reservationHref: `${routes.public.therapists}?therapist=ana-oliveira`,
         reviewCount: 38,
         summary:
           "Acompanho processos de reconexão e autocuidado com escuta acolhedora.",

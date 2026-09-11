@@ -75,7 +75,11 @@ Rules:
   state; do not complete the shelf with local profiles unless demo is explicitly
   enabled.
 - Featured therapist cards must not invent guide-theme chips. Show chips only from published `public_therapist_profile_content_v.guide_items`, with a minimum of 3 and maximum of 6 visible items. Therapists without published guide items should render without this chip row.
-- The small line under the therapist name should show public therapies/techniques from `public_therapist_profile_services_v`, with at most two names plus `e +N` when there are more.
+- The first small line under the therapist name must show `service_title`, the
+  registered name of the featured therapist offer. The following chips show
+  public canonical therapies/techniques from
+  `public_therapist_profile_services_v`, with at most two names plus `e +N`
+  when there are more; do not replace the service title with those categories.
 - Therapy preview cards should use editorial therapy photos, not generic icons. Use `image_url` from `public_therapies_v` when present and the stable local images for Reiki, Tarô and Constelação Familiar as fallback.
 - Do not add `@supabase/supabase-js` unless the user explicitly approves a dependency change.
 - If a public view changes, update docs and this skill in the same task.

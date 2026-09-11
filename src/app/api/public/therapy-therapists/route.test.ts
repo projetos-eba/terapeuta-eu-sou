@@ -6,8 +6,6 @@ const { getRelatedTherapists } = vi.hoisted(() => ({
 
 vi.mock("@/features/therapies/queries/get-related-therapists", () => ({
   getRelatedTherapists,
-  parseRelatedTherapistSort: (value?: string) =>
-    value === "rating" || value === "next_slot" ? value : "relevance",
 }));
 
 import { POST } from "./route";

@@ -68,7 +68,7 @@ function ThemePanel({
           active={!activeTheme}
           count={totalCount}
           href={buildHref(params, { theme: undefined, page: 1 })}
-          label="Todas as terapias"
+          label="Todas as práticas"
         />
         {themes.map((theme) => (
           <ThemeLink
@@ -128,7 +128,7 @@ export function buildHref(
 
   if (next.q) query.set("q", next.q);
   if (next.theme) query.set("theme", next.theme);
-  if (next.sort !== "relevance") query.set("sort", next.sort);
+  if (next.sort !== "most_searched") query.set("sort", next.sort);
   if (next.page > 1) query.set("page", String(next.page));
 
   const suffix = query.toString();

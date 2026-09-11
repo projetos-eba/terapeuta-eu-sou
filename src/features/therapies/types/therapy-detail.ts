@@ -42,10 +42,10 @@ export type RelatedTherapist = {
   reviewCount: number;
   serviceDescription: string;
   slug: string;
-  tags: string[];
+  guideThemes: string[];
 };
 
-export type RelatedTherapistSort = "relevance" | "rating" | "next_slot";
+export type RelatedTherapistSort = "relevance" | "rating" | "next_slot" | "az";
 
 export type PublicTherapyDetailRow = {
   approach_icon_key: string | null;

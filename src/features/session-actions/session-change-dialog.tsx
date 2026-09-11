@@ -374,10 +374,10 @@ function LockedServiceSummary({
         />
         <div>
           <p className="text-sm font-extrabold text-brand-deep">
-            {service.therapyName}
+            {service.title}
           </p>
           <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-            {service.title} · {service.durationMinutes} min ·{" "}
+            {service.therapyName} · {service.durationMinutes} min ·{" "}
             {formatCurrency(service.priceCents, service.currency)}
           </p>
           <p className="mt-1 text-xs font-semibold text-tesText-muted">

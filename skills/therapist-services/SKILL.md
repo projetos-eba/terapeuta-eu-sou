@@ -38,6 +38,11 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 
 - Terapia da plataforma e servico do terapeuta sao entidades diferentes.
 - Terapeuta nunca cria terapia por texto livre.
+- `title` é o nome de apresentação da oferta preenchido no campo “Nome do
+  atendimento”. Todo card ou detalhe que represente esse serviço específico
+  deve mostrá-lo como título principal, inclusive no perfil público e na
+  disponibilidade. O nome canônico da terapia permanece para catálogo,
+  classificação, filtros e Match; não o use para substituir `title`.
 - Criacao de servico exige `therapyId` valido, `requestId` UUID e validacao
   server-side.
 - A terapia precisa estar `published`, com ao menos um Tema do Match ativo e
