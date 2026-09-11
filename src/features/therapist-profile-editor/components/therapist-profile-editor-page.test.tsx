@@ -277,6 +277,29 @@ describe("TherapistProfileEditorPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("explains how the therapist name is represented in the public profile link", () => {
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    const informationButton = screen.getByRole("button", {
+      name: "Entenda como o nome aparece no link do perfil",
+    });
+    const tooltip = screen.getByText("Como seu nome aparece no link")
+      .parentElement as HTMLElement;
+    expect(tooltip).toHaveClass("hidden");
+
+    fireEvent.click(informationButton);
+
+    expect(informationButton).toHaveAttribute("aria-expanded", "true");
+    expect(tooltip).not.toHaveClass("hidden");
+    expect(tooltip).toHaveTextContent("/terapeutas/ana-oliveira");
+    expect(tooltip).toHaveTextContent(
+      "letras minúsculas e hífens no lugar de espaços ou acentos",
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(tooltip).toHaveClass("hidden");
+  });
+
   it("hides the managed reviews area for Free without changing other managed links", () => {
     render(
       <TherapistProfileEditorPage

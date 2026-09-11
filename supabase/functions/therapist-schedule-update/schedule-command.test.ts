@@ -34,6 +34,17 @@ Deno.test("schedule command rejects an invalid optimistic version", () => {
   assertEquals(error.status, 422);
 });
 
+Deno.test("schedule command rejects timezones other than Brasília", () => {
+  const error = assertThrows(
+    () =>
+      validateScheduleCommand(commandFixture({ timezone: "America/Manaus" })),
+    DomainError,
+  );
+
+  assertEquals(error.code, "invalid_schedule_timezone");
+  assertEquals(error.status, 422);
+});
+
 Deno.test("schedule command rejects reversed and out-of-range rules", () => {
   const reversed = commandFixture();
   reversed.rules = [
@@ -47,17 +58,11 @@ Deno.test("schedule command rejects reversed and out-of-range rules", () => {
   invalidDay.rules = [{ ...invalidDay.rules![0], dayOfWeek: 7 }];
 
   assertEquals(
-    assertThrows(
-      () => validateScheduleCommand(reversed),
-      DomainError,
-    ).code,
+    assertThrows(() => validateScheduleCommand(reversed), DomainError).code,
     "invalid_availability_range",
   );
   assertEquals(
-    assertThrows(
-      () => validateScheduleCommand(invalidDay),
-      DomainError,
-    ).code,
+    assertThrows(() => validateScheduleCommand(invalidDay), DomainError).code,
     "invalid_availability_range",
   );
 });
@@ -66,24 +71,16 @@ Deno.test("schedule command rejects duplicate rule identifiers", () => {
   const body = commandFixture();
   body.rules = [body.rules![0], { ...body.rules![0] }];
 
-  const error = assertThrows(
-    () => validateScheduleCommand(body),
-    DomainError,
-  );
+  const error = assertThrows(() => validateScheduleCommand(body), DomainError);
 
   assertEquals(error.code, "duplicate_schedule_rule");
 });
 
 Deno.test("schedule command rejects retired general availability rules", () => {
   const body = commandFixture();
-  body.rules = [
-    { ...body.rules![0], serviceId: null as unknown as string },
-  ];
+  body.rules = [{ ...body.rules![0], serviceId: null as unknown as string }];
 
-  const error = assertThrows(
-    () => validateScheduleCommand(body),
-    DomainError,
-  );
+  const error = assertThrows(() => validateScheduleCommand(body), DomainError);
 
   assertEquals(error.code, "invalid_availability_range");
 });
@@ -95,10 +92,7 @@ Deno.test("schedule command rejects duplicate service settings", () => {
     { ...body.serviceSettings![0] },
   ];
 
-  const error = assertThrows(
-    () => validateScheduleCommand(body),
-    DomainError,
-  );
+  const error = assertThrows(() => validateScheduleCommand(body), DomainError);
 
   assertEquals(error.code, "duplicate_service_settings");
 });
@@ -114,17 +108,12 @@ Deno.test("schedule command validates buffer and slot step boundaries", () => {
   ];
 
   assertEquals(
-    assertThrows(
-      () => validateScheduleCommand(negativeBuffer),
-      DomainError,
-    ).code,
+    assertThrows(() => validateScheduleCommand(negativeBuffer), DomainError)
+      .code,
     "invalid_service_booking_settings",
   );
   assertEquals(
-    assertThrows(
-      () => validateScheduleCommand(zeroStep),
-      DomainError,
-    ).code,
+    assertThrows(() => validateScheduleCommand(zeroStep), DomainError).code,
     "invalid_service_booking_settings",
   );
 });
@@ -137,7 +126,10 @@ Deno.test("schedule command maps safe database conflicts", () => {
     new SupabaseHttpError(400, "overlapping_availability_rule"),
   );
 
-  assertEquals((versionConflict as DomainError).code, "schedule_version_conflict");
+  assertEquals(
+    (versionConflict as DomainError).code,
+    "schedule_version_conflict",
+  );
   assertEquals((versionConflict as DomainError).status, 409);
   assertEquals((overlap as DomainError).code, "overlapping_availability_rule");
   assertEquals((overlap as DomainError).status, 409);

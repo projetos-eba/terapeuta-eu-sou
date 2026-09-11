@@ -247,26 +247,13 @@ describe("TherapistProfileOverviewPage", () => {
     expect(screen.queryByText(/documento/i)).not.toBeInTheDocument();
   });
 
-  it("switches to the registration flow while documents are still missing", () => {
+  it("marks the submission as 100% complete while documents are under review", () => {
     renderOverview(
       makeEditor({
         derived: {
           ...makeEditor().derived,
           verificationStatus: "submitted",
         },
-        privateDocuments: [
-          {
-            createdAt: "2026-07-28T11:00:00.000Z",
-            fileName: "rg.pdf",
-            fileSizeBytes: 1200,
-            id: "doc-identity",
-            kind: "identity_document",
-            mimeType: "application/pdf",
-            status: "uploaded",
-            updatedAt: "2026-07-28T11:00:00.000Z",
-            validationState: "not_scanned",
-          },
-        ],
         verificationSummary: {
           id: "verification-2",
           rejectionReason: null,
@@ -282,9 +269,66 @@ describe("TherapistProfileOverviewPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
     expect(screen.getAllByText("Dados e documentos").length).toBeGreaterThan(0);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    const documentsStep = screen
+      .getAllByText("Dados e documentos")[0]
+      .closest("li");
+    expect(documentsStep).not.toBeNull();
+    expect(within(documentsStep!).getByText("Concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Seu cadastro já entrou em análise. A equipe TES vai avisar você sobre o próximo passo.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Prévia do perfil publicado" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("returns documents to in-progress when the TES team requests resubmission", () => {
+    const editor = makeEditor({
+      derived: {
+        ...makeEditor().derived,
+        verificationStatus: "in_review",
+      },
+      privateDocuments: makeEditor().privateDocuments.map((document) =>
+        document.kind === "address_proof"
+          ? {
+              ...document,
+              status: "rejected" as const,
+              validationState: "failed" as const,
+            }
+          : document,
+      ),
+      verificationSummary: {
+        id: "verification-4",
+        rejectionReason: null,
+        reviewedAt: null,
+        status: "in_review",
+        submittedAt: "2026-07-28T11:10:00.000Z",
+      },
+    });
+
+    renderOverview(editor);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Reenvie seus documentos",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A equipe TES solicitou o reenvio dos documentos. Envie-os novamente para retomarmos a análise.",
+      ),
+    ).toBeInTheDocument();
+    const documentsStep = screen
+      .getAllByText("Dados e documentos")[0]
+      .closest("li");
+    expect(documentsStep).not.toBeNull();
+    expect(
+      within(documentsStep!).getByText("Em andamento"),
+    ).toBeInTheDocument();
   });
 
   it("shows the administrative correction reason in the registration flow", () => {

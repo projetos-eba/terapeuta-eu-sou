@@ -251,24 +251,31 @@ function ResultsHeader({
 function Rating({
   rating,
   ratingLabel,
+  reviewsLabel,
 }: {
   rating: number;
   ratingLabel: string;
+  reviewsLabel: string;
 }) {
   return (
-    <div className="flex items-center justify-end gap-2 text-[14px] font-extrabold text-brand-deep">
-      <span>{ratingLabel}</span>
-      <span
-        className="flex gap-[1px] text-status-warning"
-        aria-label={`${ratingLabel} de 5 estrelas`}
-      >
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Star
-            key={index}
-            className={`size-[13px] ${index + 1 <= Math.round(rating) ? "fill-current" : ""}`}
-          />
-        ))}
-      </span>
+    <div className="flex flex-col items-end gap-1 text-right">
+      <div className="flex items-center justify-end gap-2 text-[14px] font-extrabold text-brand-deep">
+        <span>{ratingLabel}</span>
+        <span
+          className="flex gap-[1px] text-status-warning"
+          aria-label={`${ratingLabel} de 5 estrelas`}
+        >
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Star
+              key={index}
+              className={`size-[13px] ${index + 1 <= Math.round(rating) ? "fill-current" : ""}`}
+            />
+          ))}
+        </span>
+      </div>
+      <p className="text-xs font-semibold leading-5 text-tesText-muted">
+        {reviewsLabel}
+      </p>
     </div>
   );
 }
@@ -324,6 +331,7 @@ function TherapistResultCard({
             <Rating
               rating={therapist.rating}
               ratingLabel={therapist.ratingLabel}
+              reviewsLabel={therapist.reviewsLabel}
             />
           </div>
 
@@ -346,9 +354,6 @@ function TherapistResultCard({
           <div>
             <p className="text-sm font-semibold leading-6 text-tesText-secondary">
               {therapist.description}
-            </p>
-            <p className="mt-4 text-xs font-semibold leading-5 text-tesText-muted">
-              {therapist.reviewsLabel}
             </p>
           </div>
 

@@ -70,7 +70,7 @@ export function ShellNotificationButton({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [toast, setToast] = useState<ShellNotification | null>(null);
 
-  const showBookingToast = useCallback((item: ShellNotification) => {
+  const showToast = useCallback((item: ShellNotification) => {
     if (typeof window === "undefined") return;
 
     const storageKey = `tes-shell-booking-toast:${item.id}`;
@@ -93,17 +93,21 @@ export function ShellNotificationButton({
       }
 
       const knownIds = knownIdsRef.current;
-      const bookingCandidate =
+      const toastCandidate =
         payload.toast ??
         payload.items.find(
-          (item) => item.kind === "booking_confirmed" && item.readAt === null,
+          (item) =>
+            item.readAt === null &&
+            (item.kind === "booking_confirmed" ||
+              (role === "therapist" &&
+                item.kind === "booking_rescheduled_therapist")),
         );
-      const incomingBooking =
-        bookingCandidate && (!knownIds || !knownIds.has(bookingCandidate.id))
-          ? bookingCandidate
+      const incomingToast =
+        toastCandidate && (!knownIds || !knownIds.has(toastCandidate.id))
+          ? toastCandidate
           : null;
 
-      if (incomingBooking) showBookingToast(incomingBooking);
+      if (incomingToast) showToast(incomingToast);
 
       knownIdsRef.current = new Set(payload.items.map((item) => item.id));
       setCount(payload.count);
@@ -111,7 +115,7 @@ export function ShellNotificationButton({
     } catch {
       // Keep the server-rendered count when a temporary poll fails.
     }
-  }, [role, showBookingToast]);
+  }, [role, showToast]);
 
   useEffect(() => {
     void refresh();
@@ -392,7 +396,7 @@ export function ShellNotificationButton({
               ) : null}
             </div>
             <button
-              aria-label="Fechar aviso de agendamento"
+              aria-label="Fechar aviso de notificação"
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
               onClick={() => setToast(null)}
               type="button"
@@ -452,7 +456,9 @@ const notificationIcons: Record<string, LucideIcon> = {
 };
 
 function NotificationIcon({ kind }: { kind: string }) {
-  const Icon = notificationIcons[kind] ?? Bell;
+  const Icon =
+    notificationIcons[kind] ??
+    (kind.startsWith("booking_reschedul") ? CalendarClock : Bell);
 
   return (
     <span
