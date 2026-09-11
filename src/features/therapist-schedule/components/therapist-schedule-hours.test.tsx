@@ -64,8 +64,12 @@ describe("TherapistScheduleHours", () => {
     const startTime = screen.getByLabelText("Início de Segunda-feira");
     expect(startTime).toHaveRole("combobox");
     expect(startTime).toHaveValue("02:59");
-    expect(within(startTime).getByRole("option", { name: "02:59" })).toBeInTheDocument();
-    expect(within(startTime).getByRole("option", { name: "02:45" })).toBeInTheDocument();
+    expect(
+      within(startTime).getByRole("option", { name: "02:59" }),
+    ).toBeInTheDocument();
+    expect(
+      within(startTime).getByRole("option", { name: "02:45" }),
+    ).toBeInTheDocument();
     expect(startTime).not.toHaveAttribute("type", "time");
   });
 
@@ -83,6 +87,23 @@ describe("TherapistScheduleHours", () => {
     );
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("locks the agenda to Brasília and explains how therapists must adjust", () => {
+    renderSchedule();
+
+    expect(
+      screen.getByText("São Paulo (Brasília, GMT-03)"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Fixo")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Fuso horário" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /converta seus horários para Brasília antes de cadastrá-los/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("explains the minimum notice rule with the scheduling examples", () => {
@@ -192,10 +213,9 @@ describe("TherapistScheduleHours", () => {
     });
     renderSchedule(initialSchedule);
 
-    fireEvent.change(
-      screen.getByLabelText("Intervalo das sessões"),
-      { target: { value: "45" } },
-    );
+    fireEvent.change(screen.getByLabelText("Intervalo das sessões"), {
+      target: { value: "45" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     expect(
@@ -269,10 +289,9 @@ describe("TherapistScheduleHours", () => {
     );
     renderSchedule();
 
-    fireEvent.change(
-      screen.getByLabelText("Intervalo das sessões"),
-      { target: { value: "45" } },
-    );
+    fireEvent.change(screen.getByLabelText("Intervalo das sessões"), {
+      target: { value: "45" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
