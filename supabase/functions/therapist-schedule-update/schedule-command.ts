@@ -1,6 +1,8 @@
 import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 
+const BRASILIA_TIMEZONE = "America/Sao_Paulo";
+
 export type ScheduleRule = {
   dayOfWeek: number;
   endTime: string;
@@ -54,6 +56,14 @@ export function validateScheduleCommand(
       "invalid_schedule_payload",
       422,
       "Revise os dados dos horarios.",
+    );
+  }
+
+  if (body.timezone !== BRASILIA_TIMEZONE) {
+    throw new DomainError(
+      "invalid_schedule_timezone",
+      422,
+      "A agenda usa exclusivamente o horário de Brasília.",
     );
   }
 

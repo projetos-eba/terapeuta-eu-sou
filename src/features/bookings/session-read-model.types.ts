@@ -221,6 +221,7 @@ export type SessionPresentation = {
   priority: "critical" | "high" | "low" | "medium";
   state:
     | "cancelled"
+    | "awaiting_confirmation"
     | "confirmed"
     | "in_progress"
     | "payment_pending"

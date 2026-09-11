@@ -92,19 +92,20 @@ describe("ShellNotificationButton", () => {
       configurable: true,
       value: 390,
     });
-    vi.spyOn(HTMLButtonElement.prototype, "getBoundingClientRect").mockReturnValue(
-      {
-        bottom: 92,
-        height: 44,
-        left: 286,
-        right: 330,
-        toJSON: () => ({}),
-        top: 48,
-        width: 44,
-        x: 286,
-        y: 48,
-      } as DOMRect,
-    );
+    vi.spyOn(
+      HTMLButtonElement.prototype,
+      "getBoundingClientRect",
+    ).mockReturnValue({
+      bottom: 92,
+      height: 44,
+      left: 286,
+      right: 330,
+      toJSON: () => ({}),
+      top: 48,
+      width: 44,
+      x: 286,
+      y: 48,
+    } as DOMRect);
 
     render(
       <ShellNotificationButton
@@ -121,7 +122,7 @@ describe("ShellNotificationButton", () => {
     expect(panel).toHaveStyle({ right: "22px", top: "104px" });
   });
 
-  it("shows a temporary toast only for a confirmed booking", async () => {
+  it("shows a temporary toast for a confirmed booking", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => bookingNotificationResponse()),
@@ -141,6 +142,29 @@ describe("ShellNotificationButton", () => {
     expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute(
       "href",
       "/terapeuta/sessoes/booking-1",
+    );
+  });
+
+  it("shows the therapist a temporary toast when a session is rescheduled", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => rescheduledSessionNotificationResponse()),
+    );
+
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Sessão reagendada",
+    );
+    expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute(
+      "href",
+      "/terapeuta/sessoes/booking-2",
     );
   });
 
@@ -196,6 +220,7 @@ function notificationResponse(
         title: "Nova mensagem",
       },
     ],
+    unreadMessagesCount: 1,
   });
 }
 
@@ -213,5 +238,24 @@ function bookingNotificationResponse() {
         title: "Novo agendamento confirmado",
       },
     ],
+    unreadMessagesCount: 0,
+  });
+}
+
+function rescheduledSessionNotificationResponse() {
+  return Response.json({
+    count: 1,
+    items: [
+      {
+        body: "O novo horário foi confirmado e sua agenda foi atualizada.",
+        createdAt: "2026-09-10T12:00:00.000Z",
+        href: "/terapeuta/sessoes/booking-2",
+        id: "30000000-0000-4000-8000-000000000001",
+        kind: "booking_rescheduled_therapist",
+        readAt: null,
+        title: "Sessão reagendada",
+      },
+    ],
+    unreadMessagesCount: 0,
   });
 }

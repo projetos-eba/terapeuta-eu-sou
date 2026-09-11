@@ -55,6 +55,7 @@ describe("ShellUserMenu", () => {
     );
 
     expect(screen.getByText("ana@example.test")).toBeVisible();
+    expect(screen.queryByText("Paciente")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Minha conta" })).toHaveAttribute(
       "href",
       "/app/configuracoes",

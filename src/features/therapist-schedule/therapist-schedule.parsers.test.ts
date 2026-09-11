@@ -61,6 +61,20 @@ describe("therapist schedule contracts", () => {
     );
   });
 
+  it("accepts only Brasília as the agenda timezone", () => {
+    const nonBrasiliaReadModel = readModelFixture();
+    nonBrasiliaReadModel.timezone = "America/Manaus";
+    const nonBrasiliaSaveInput = saveInputFixture();
+    nonBrasiliaSaveInput.timezone = "America/Manaus";
+
+    expect(() => parseTherapistScheduleReadModel(nonBrasiliaReadModel)).toThrow(
+      TherapistScheduleContractError,
+    );
+    expect(() => parseSaveTherapistScheduleInput(nonBrasiliaSaveInput)).toThrow(
+      TherapistScheduleContractError,
+    );
+  });
+
   it("rejects retired general availability rules", () => {
     const readModel = readModelFixture();
     readModel.rules[0].serviceId = null as unknown as string;

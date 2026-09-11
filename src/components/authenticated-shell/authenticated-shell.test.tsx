@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const navigationState = vi.hoisted(() => ({ pathname: "/terapeuta" }));
@@ -13,6 +19,7 @@ describe("AuthenticatedShell mobile", () => {
   afterEach(() => {
     cleanup();
     navigationState.pathname = "/terapeuta";
+    vi.unstubAllGlobals();
   });
 
   it("opens and closes the responsive drawer by keyboard-accessible controls", () => {
@@ -56,6 +63,38 @@ describe("AuthenticatedShell mobile", () => {
     expect(screen.getByRole("main")).toHaveClass("tes-authenticated-surface");
     expect(screen.queryByLabelText("Navegação principal")).toBeNull();
     expect(screen.queryByRole("button", { name: "Abrir menu" })).toBeNull();
+  });
+
+  it("refreshes the Mensagens sidebar badge from the shell notification poll", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          count: 1,
+          items: [],
+          unreadMessagesCount: 4,
+        }),
+      ),
+    );
+
+    render(
+      <AuthenticatedShell
+        navigation={[
+          {
+            badge: 0,
+            href: "/terapeuta/mensagens",
+            icon: "message",
+            label: "Mensagens",
+          },
+        ]}
+        user={{ name: "Ana", roleLabel: "Terapeuta" }}
+        variant="therapist"
+      >
+        <p>Conteúdo</p>
+      </AuthenticatedShell>,
+    );
+
+    await waitFor(() => expect(screen.getByText("4")).toBeVisible());
   });
 
   it.each([

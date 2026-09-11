@@ -40,6 +40,7 @@ type NotificationResponse = {
   count: number;
   items: ShellNotification[];
   toast?: ShellNotification | null;
+  unreadMessagesCount: number;
 };
 
 type PanelPosition = {
@@ -50,10 +51,12 @@ type PanelPosition = {
 export function ShellNotificationButton({
   count: initialCount = 0,
   href,
+  onUnreadMessagesCountChange,
   role,
 }: {
   count?: number;
   href: string;
+  onUnreadMessagesCountChange?: (count: number) => void;
   role: "admin" | "patient" | "therapist";
 }) {
   const panelId = useId();
@@ -70,7 +73,7 @@ export function ShellNotificationButton({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [toast, setToast] = useState<ShellNotification | null>(null);
 
-  const showBookingToast = useCallback((item: ShellNotification) => {
+  const showToast = useCallback((item: ShellNotification) => {
     if (typeof window === "undefined") return;
 
     const storageKey = `tes-shell-booking-toast:${item.id}`;
@@ -88,30 +91,39 @@ export function ShellNotificationButton({
       if (!response.ok) return;
 
       const payload = (await response.json()) as NotificationResponse;
-      if (!Array.isArray(payload.items) || typeof payload.count !== "number") {
+      if (
+        !Array.isArray(payload.items) ||
+        !isCount(payload.count) ||
+        !isCount(payload.unreadMessagesCount)
+      ) {
         return;
       }
 
       const knownIds = knownIdsRef.current;
-      const bookingCandidate =
+      const toastCandidate =
         payload.toast ??
         payload.items.find(
-          (item) => item.kind === "booking_confirmed" && item.readAt === null,
+          (item) =>
+            item.readAt === null &&
+            (item.kind === "booking_confirmed" ||
+              (role === "therapist" &&
+                item.kind === "booking_rescheduled_therapist")),
         );
-      const incomingBooking =
-        bookingCandidate && (!knownIds || !knownIds.has(bookingCandidate.id))
-          ? bookingCandidate
+      const incomingToast =
+        toastCandidate && (!knownIds || !knownIds.has(toastCandidate.id))
+          ? toastCandidate
           : null;
 
-      if (incomingBooking) showBookingToast(incomingBooking);
+      if (incomingToast) showToast(incomingToast);
 
       knownIdsRef.current = new Set(payload.items.map((item) => item.id));
       setCount(payload.count);
       setItems(payload.items);
+      onUnreadMessagesCountChange?.(payload.unreadMessagesCount);
     } catch {
       // Keep the server-rendered count when a temporary poll fails.
     }
-  }, [role, showBookingToast]);
+  }, [onUnreadMessagesCountChange, role, showToast]);
 
   useEffect(() => {
     void refresh();
@@ -392,7 +404,7 @@ export function ShellNotificationButton({
               ) : null}
             </div>
             <button
-              aria-label="Fechar aviso de agendamento"
+              aria-label="Fechar aviso de notificação"
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
               onClick={() => setToast(null)}
               type="button"
@@ -411,6 +423,10 @@ function notificationRowClassName(item: ShellNotification) {
     "block w-full border-b border-brand-lavender px-4 py-3 text-left outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-ring/20",
     item.readAt === null ? "bg-brand-lavenderSoft/40" : "bg-white",
   );
+}
+
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 function NotificationContent({ item }: { item: ShellNotification }) {
@@ -452,7 +468,9 @@ const notificationIcons: Record<string, LucideIcon> = {
 };
 
 function NotificationIcon({ kind }: { kind: string }) {
-  const Icon = notificationIcons[kind] ?? Bell;
+  const Icon =
+    notificationIcons[kind] ??
+    (kind.startsWith("booking_reschedul") ? CalendarClock : Bell);
 
   return (
     <span

@@ -1,7 +1,7 @@
 "use client";
 
-import { Link2, LoaderCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Info, Link2, LoaderCircle } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { TESButton } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
@@ -190,6 +190,7 @@ function SlugEditor({
         <h3 className="text-base font-extrabold text-brand-deep">
           Link do seu perfil
         </h3>
+        <ProfileLinkInfo />
       </div>
       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
         A alteração entra em vigor imediatamente. Endereços anteriores seguem
@@ -256,6 +257,72 @@ function SlugEditor({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ProfileLinkInfo() {
+  const [open, setOpen] = useState(false);
+  const tooltipId = useId();
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    function closeWhenClickingOutside(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeWhenClickingOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWhenClickingOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  return (
+    <span className="relative inline-flex" ref={containerRef}>
+      <button
+        aria-controls={tooltipId}
+        aria-describedby={open ? tooltipId : undefined}
+        aria-expanded={open}
+        aria-label="Entenda como o nome aparece no link do perfil"
+        className="grid size-8 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        onClick={() => setOpen((current) => !current)}
+        type="button"
+      >
+        <Info aria-hidden="true" size={16} />
+      </button>
+      <span
+        className={cn(
+          "absolute left-0 top-full z-30 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card",
+          open ? "block" : "hidden",
+        )}
+        id={tooltipId}
+        role="tooltip"
+      >
+        <span className="block font-extrabold text-brand-deep">
+          Como seu nome aparece no link
+        </span>
+        <span className="mt-2 flex overflow-hidden rounded-lg border border-brand-lavender bg-surface-mist text-xs font-bold">
+          <span className="bg-brand-lavenderSoft px-2.5 py-2 text-tesText-secondary">
+            /terapeutas/
+          </span>
+          <span className="px-2.5 py-2 text-brand-deep">ana-oliveira</span>
+        </span>
+        <span className="mt-3 block">
+          Por exemplo, “Ana Oliveira” aparece como{" "}
+          <strong className="text-brand-deep">ana-oliveira</strong>. O endereço
+          usa letras minúsculas e hífens no lugar de espaços ou acentos.
+        </span>
+        <span className="mt-2 block">
+          Você pode escolher a parte final do link; antes de salvar, verificamos
+          se ela está disponível.
+        </span>
+      </span>
+    </span>
   );
 }
 

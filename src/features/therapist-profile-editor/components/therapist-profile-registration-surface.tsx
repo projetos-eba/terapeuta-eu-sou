@@ -54,7 +54,18 @@ export function TherapistProfileRegistrationSurface({
       return Boolean(document && document.status !== "rejected");
     },
   );
-  const reviewStepState = reviewState(verificationStatus);
+  const documentsNeedResubmission = ["identity_document", "address_proof"].some(
+    (kind) => {
+      const document = documentsByKind.get(
+        kind as "identity_document" | "address_proof",
+      );
+      return document?.status === "rejected";
+    },
+  );
+  const reviewStepState = reviewState({
+    documentsNeedResubmission,
+    status: verificationStatus,
+  });
   const reviewReason = getTherapistProfileReviewReason(editor);
 
   const steps = [
@@ -80,18 +91,25 @@ export function TherapistProfileRegistrationSurface({
       state: availabilityStepComplete ? "complete" : "pending",
     },
     {
-      description: "Preencha seus dados e envie os documentos obrigatórios.",
+      description: documentsNeedResubmission
+        ? "A equipe TES pediu que você envie os documentos novamente."
+        : documentsStepComplete
+          ? "Documentos enviados e aguardando análise."
+          : "Preencha seus dados e envie os documentos obrigatórios.",
       href: routes.therapist.settings,
       key: "documents",
       label: "Dados e documentos",
-      state: documentsStepComplete
-        ? verificationStatus === "changes_requested"
-          ? "attention"
-          : "current"
-        : "pending",
+      state: documentsNeedResubmission
+        ? "current"
+        : documentsStepComplete
+          ? "complete"
+          : "pending",
     },
     {
-      description: reviewDescription(verificationStatus),
+      description: reviewDescription({
+        documentsNeedResubmission,
+        status: verificationStatus,
+      }),
       href: routes.therapist.profile,
       key: "review",
       label: "Revisão e envio",
@@ -100,11 +118,14 @@ export function TherapistProfileRegistrationSurface({
   ] as const;
 
   const completedStepCount = steps.filter(
-    (step) => step.state === "complete",
+    (step) =>
+      step.state === "complete" ||
+      (step.key === "review" && step.state === "current"),
   ).length;
   const progressPercent = Math.round((completedStepCount / steps.length) * 100);
   const pageMode = registrationMode({
     documentsComplete: documentsStepComplete,
+    documentsNeedResubmission,
     verificationStatus,
   });
 
@@ -146,6 +167,7 @@ export function TherapistProfileRegistrationSurface({
                 <p className="mt-4 text-center text-sm font-semibold leading-6 text-tesText-secondary">
                   {progressSummaryCopy({
                     documentsComplete: documentsStepComplete,
+                    documentsNeedResubmission,
                     verificationStatus,
                   })}
                 </p>
@@ -194,7 +216,9 @@ export function TherapistProfileRegistrationSurface({
               <p className="text-sm font-extrabold leading-6 text-brand-deep">
                 {documentsStepComplete
                   ? "Seus documentos foram recebidos."
-                  : "Ainda falta enviar documentos obrigatórios."}
+                  : documentsNeedResubmission
+                    ? "Reenvie os documentos solicitados pela equipe TES."
+                    : "Ainda falta enviar documentos obrigatórios."}
               </p>
               <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
                 Em Configurações, confirme também seus dados: só o conjunto de
@@ -395,11 +419,30 @@ function ProgressRing({ value }: { value: number }) {
 
 function registrationMode({
   documentsComplete,
+  documentsNeedResubmission,
   verificationStatus,
 }: {
   documentsComplete: boolean;
+  documentsNeedResubmission: boolean;
   verificationStatus: TherapistProfileVerificationStatus;
 }) {
+  if (documentsNeedResubmission) {
+    return {
+      asideTitle: "Documentos para reenviar",
+      banner: null,
+      checklist: [
+        "Leia a observação da equipe TES sobre os documentos enviados.",
+        "Envie novamente os documentos solicitados em Configurações.",
+        "Depois do novo envio, seu perfil volta para análise.",
+      ],
+      mode: "attention" as const,
+      subtitle:
+        "A equipe TES pediu o reenvio dos documentos para retomar a análise do seu perfil.",
+      supportCta: true,
+      title: "Reenvie seus documentos",
+    };
+  }
+
   if (
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
@@ -466,11 +509,17 @@ function registrationMode({
 
 function progressSummaryCopy({
   documentsComplete,
+  documentsNeedResubmission,
   verificationStatus,
 }: {
   documentsComplete: boolean;
+  documentsNeedResubmission: boolean;
   verificationStatus: TherapistProfileVerificationStatus;
 }) {
+  if (documentsNeedResubmission) {
+    return "A equipe TES solicitou o reenvio dos documentos. Envie-os novamente para retomarmos a análise.";
+  }
+
   if (
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
@@ -489,7 +538,14 @@ function progressSummaryCopy({
   return "Envie os documentos obrigatórios para concluir seu cadastro.";
 }
 
-function reviewState(status: TherapistProfileVerificationStatus) {
+function reviewState({
+  documentsNeedResubmission,
+  status,
+}: {
+  documentsNeedResubmission: boolean;
+  status: TherapistProfileVerificationStatus;
+}) {
+  if (documentsNeedResubmission) return "pending" as const;
   if (status === "approved") return "complete" as const;
   if (status === "submitted" || status === "in_review")
     return "current" as const;
@@ -499,7 +555,16 @@ function reviewState(status: TherapistProfileVerificationStatus) {
   return "pending" as const;
 }
 
-function reviewDescription(status: TherapistProfileVerificationStatus) {
+function reviewDescription({
+  documentsNeedResubmission,
+  status,
+}: {
+  documentsNeedResubmission: boolean;
+  status: TherapistProfileVerificationStatus;
+}) {
+  if (documentsNeedResubmission) {
+    return "A análise continua assim que os documentos solicitados forem reenviados.";
+  }
   if (status === "approved") return "Cadastro aprovado pela equipe TES.";
   if (status === "submitted" || status === "in_review") {
     return "Cadastro recebido e em análise.";

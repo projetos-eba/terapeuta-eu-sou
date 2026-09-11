@@ -75,9 +75,11 @@ somente o corpo e metadata resolvidos pelo servidor.
 marcação em massa ao `profile_id` do próprio usuário e nunca alterar avisos de
 outro perfil.
 
-`GET /api/notifications` lê somente itens do perfil autenticado por cookies
-HTTP-only. O shell consulta a cada três segundos enquanto a aba estiver visível;
-não expor token no navegador nem usar Realtime direto.
+`GET /api/notifications` lê somente notificações do perfil autenticado por
+cookies HTTP-only e retorna a contagem agregada de mensagens de participantes
+não lidas para sincronizar o badge da sidebar, sem devolver seu conteúdo. O
+shell consulta a cada três segundos enquanto a aba estiver visível; não expor
+token no navegador nem usar Realtime direto.
 
 `/api/support/tickets` aceita categoria controlada, assunto e descrição plain
 text em ticket autorizado. A identidade vem da sessão, o `bookingId` é

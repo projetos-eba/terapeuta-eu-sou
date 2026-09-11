@@ -11,6 +11,7 @@ export function ShellTopbar({
   notificationHref,
   notificationCount,
   onOpenNavigation,
+  onUnreadMessagesCountChange,
   planLabel,
   user,
   variant,
@@ -21,6 +22,7 @@ export function ShellTopbar({
   notificationHref: string;
   notificationCount: number;
   onOpenNavigation: () => void;
+  onUnreadMessagesCountChange?: (count: number) => void;
   planLabel?: string;
   user: ShellUser;
   variant: "admin" | "patient" | "therapist";
@@ -38,6 +40,7 @@ export function ShellTopbar({
         <ShellNotificationButton
           count={notificationCount}
           href={notificationHref}
+          onUnreadMessagesCountChange={onUnreadMessagesCountChange}
           role={variant}
         />
         <ShellUserMenu
