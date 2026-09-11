@@ -7,16 +7,18 @@ import {
   ArrowRight,
   Check,
   FileUp,
+  Flower2,
   Heart,
   Info,
   Leaf,
   Loader2,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
-import { TESDialog } from "@/components/tes";
+import { TESButton, TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 export type TherapyRequestTheme = {
@@ -128,9 +130,7 @@ export function TherapyCatalogRequestPage({
   const canResubmit = existingRequest?.status === "needs_information";
   const [screen, setScreen] = useState<
     "form" | "intro" | "confirmation" | "success"
-  >(
-    existingRequest ? "form" : "intro",
-  );
+  >(existingRequest ? "form" : "intro");
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<FormValues>(() =>
     existingRequest ? toFormValues(existingRequest) : defaultValues,
@@ -376,40 +376,93 @@ export function TherapyCatalogRequestPage({
 
 function Intro({ onStart }: { onStart: () => void }) {
   return (
-    <main className="mx-auto grid min-h-[620px] max-w-3xl place-items-center px-4 pb-10 text-center">
-      <section className="w-full rounded-panel border border-brand-lavender/60 bg-white px-6 py-10 shadow-card sm:px-12">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <Leaf aria-hidden="true" className="size-8" />
-        </span>
-        <h1 className="mt-6 font-display text-5xl italic leading-[0.95] text-brand-deep sm:text-6xl">
-          Sugerir uma nova prática
-        </h1>
-        <div className="mx-auto mt-6 max-w-xl space-y-4 text-sm leading-7 text-tesText-secondary sm:text-base">
-          <p>
-            Se você utiliza uma prática que ainda não está disponível no TES,
-            envie sua sugestão para análise.
-          </p>
-          <p>
-            Nossa equipe avaliará as informações, a compatibilidade com a
-            plataforma e os materiais compartilhados.
-          </p>
-        </div>
-        <button
-          className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-control bg-brand-primary px-6 text-sm font-semibold text-white hover:bg-brand-deep"
-          onClick={onStart}
-          type="button"
+    <main className="mx-auto flex w-full max-w-3xl justify-center px-4 pb-10 pt-2 text-center sm:px-6 sm:pb-12 sm:pt-4">
+      <section
+        aria-labelledby="therapy-request-intro-title"
+        className="relative isolate w-full max-w-[540px] overflow-hidden rounded-panel border border-brand-lavender/60 bg-white px-5 pb-5 pt-14 shadow-float sm:px-10 sm:pb-8 sm:pt-16"
+        data-testid="therapy-request-intro"
+      >
+        <Link
+          aria-label="Fechar solicitação"
+          className="absolute right-2 top-2 z-20 grid size-11 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 sm:right-3 sm:top-3"
+          href={routes.therapist.services}
         >
-          <Sparkles aria-hidden="true" className="size-4" />
-          Iniciar solicitação
-        </button>
-        <p className="mx-auto mt-7 flex max-w-xl items-start gap-3 rounded-card bg-brand-lavenderSoft/60 p-4 text-left text-sm leading-6 text-tesText-secondary">
-          <ShieldCheck
+          <X aria-hidden="true" className="size-5" />
+        </Link>
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-[radial-gradient(circle_at_50%_115%,var(--tes-color-brand-lavender-soft)_0%,transparent_70%)]"
+        />
+        <Leaf
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-10 -left-10 size-44 -rotate-[28deg] text-brand-lavender opacity-20"
+          strokeWidth={0.8}
+        />
+        <Leaf
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-12 -right-9 size-48 rotate-[34deg] -scale-x-100 text-brand-lavender opacity-20"
+          strokeWidth={0.8}
+        />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <span className="relative grid size-20 place-items-center rounded-full bg-[radial-gradient(circle,var(--tes-color-brand-lavender-soft)_0%,transparent_72%)] text-brand-primary">
+            <Flower2 aria-hidden="true" className="size-10" strokeWidth={1.5} />
+            <Sparkles
+              aria-hidden="true"
+              className="absolute -right-1 top-1 size-4 text-brand-lavender"
+            />
+          </span>
+
+          <h1
+            className="mt-4 max-w-md font-display text-[42px] italic leading-[0.96] text-brand-deep sm:text-[52px]"
+            id="therapy-request-intro-title"
+          >
+            Sugerir uma nova prática
+          </h1>
+          <span
             aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0 text-brand-primary"
+            className="mt-5 h-px w-12 bg-brand-lavender"
           />
-          Toda solicitação passa por análise. O envio não cria nem publica uma
-          terapia automaticamente.
-        </p>
+
+          <div className="mt-5 max-w-[430px] space-y-3 text-sm leading-6 text-tesText-secondary">
+            <p>
+              Acreditamos que o universo terapêutico está em constante evolução.
+            </p>
+            <p>
+              Se você utiliza uma prática que ainda não está disponível no TES,
+              envie sua sugestão.
+            </p>
+            <p>
+              Nossa equipe irá conhecê-la, analisá-la e verificar se ela faz
+              sentido para a plataforma.
+            </p>
+            <p>
+              Se aprovada, ela poderá ficar disponível para todos os terapeutas
+              da plataforma.
+            </p>
+          </div>
+
+          <TESButton
+            className="mt-7 w-full max-w-[380px] font-semibold"
+            onClick={onStart}
+            size="lg"
+            type="button"
+          >
+            <Sparkles aria-hidden="true" className="size-4" />
+            Iniciar solicitação
+          </TESButton>
+
+          <div className="mt-5 flex w-full max-w-[430px] items-start gap-3 rounded-card bg-brand-lavenderSoft/80 p-4 text-left text-sm leading-5 text-tesText-secondary">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full border border-brand-lavender bg-white/70 text-brand-primary">
+              <ShieldCheck aria-hidden="true" className="size-5" />
+            </span>
+            <p>
+              Todas as práticas passam por uma análise de alinhamento com os
+              princípios do TES antes de serem disponibilizadas.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
   );
@@ -506,7 +559,8 @@ function SubmissionConfirmationDialog({
           Li e estou de acordo com as informações acima e confirmo minha
           responsabilidade pela sugestão enviada.
           <span aria-hidden="true" className="text-state-danger">
-            {" "}*
+            {" "}
+            *
           </span>
         </span>
       </label>
@@ -549,8 +603,8 @@ function SubmissionConfirmationDialog({
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0 text-brand-primary"
         />
-        O envio da solicitação não garante que a prática será disponibilizada
-        no TES.
+        O envio da solicitação não garante que a prática será disponibilizada no
+        TES.
       </p>
     </TESDialog>
   );
@@ -583,9 +637,8 @@ function SuccessDialog({ onClose }: { onClose: () => void }) {
           aria-hidden="true"
           className="mt-0.5 size-5 shrink-0 text-brand-primary"
         />
-        Caso a prática seja aprovada, ela seguirá para as etapas
-        administrativas do catálogo. A aprovação não a disponibiliza
-        automaticamente.
+        Caso a prática seja aprovada, ela seguirá para as etapas administrativas
+        do catálogo. A aprovação não a disponibiliza automaticamente.
       </p>
 
       <div className="mt-6 grid divide-y divide-brand-lavender border-y border-brand-lavender sm:grid-cols-3 sm:divide-x sm:divide-y-0">
@@ -639,20 +692,40 @@ function SuccessDetail({
 
 function RequestAside() {
   return (
-    <aside className="hidden bg-brand-lavenderSoft/45 p-8 lg:block">
-      <Leaf aria-hidden="true" className="size-12 text-brand-primary" />
-      <h2 className="mt-8 font-display text-4xl italic leading-none text-brand-deep">
+    <aside
+      aria-label="Orientações sobre a solicitação"
+      className="relative hidden overflow-hidden border-r border-brand-lavender/50 bg-[linear-gradient(180deg,var(--tes-color-surface-soft)_0%,var(--tes-color-brand-lavender-soft)_100%)] px-6 py-12 lg:flex lg:flex-col lg:items-center lg:text-center"
+    >
+      <span className="relative grid size-16 place-items-center rounded-full bg-[radial-gradient(circle,var(--tes-color-brand-lavender-soft)_0%,transparent_72%)] text-brand-lavender">
+        <Flower2 aria-hidden="true" className="size-9" strokeWidth={1.45} />
+        <Sparkles
+          aria-hidden="true"
+          className="absolute -right-1 top-0 size-4 text-brand-lavender"
+        />
+      </span>
+
+      <h2 className="mt-7 max-w-[190px] font-display text-[32px] italic leading-[1.02] text-brand-deep">
         Sugerir uma nova prática
       </h2>
-      <p className="mt-6 text-sm leading-7 text-tesText-secondary">
-        Preencha as informações que ajudam nossa equipe a conhecer a prática com
-        cuidado e responsabilidade.
+
+      <div aria-hidden="true" className="mt-6 flex w-full items-center gap-3">
+        <span className="h-px flex-1 bg-brand-lavender" />
+        <Sparkles className="size-3.5 shrink-0 text-brand-primary/60" />
+        <span className="h-px flex-1 bg-brand-lavender" />
+      </div>
+
+      <p className="mt-6 max-w-[190px] text-sm font-semibold leading-6 text-tesText-secondary">
+        Preencha as informações sobre a prática que você utiliza. Nossa equipe
+        irá analisá-la com carinho.
       </p>
-      <div className="mt-10 rounded-card bg-white/75 p-4">
-        <ShieldCheck aria-hidden="true" className="size-6 text-brand-primary" />
-        <p className="mt-3 text-sm leading-6 text-tesText-secondary">
-          Materiais e informações ficam disponíveis apenas para a análise da
-          plataforma.
+
+      <div className="mt-12 w-full rounded-card bg-brand-lavenderSoft/90 p-5 shadow-soft">
+        <span className="mx-auto grid size-11 place-items-center rounded-full bg-white/70 text-brand-primary">
+          <ShieldCheck aria-hidden="true" className="size-6" />
+        </span>
+        <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
+          Todas as práticas passam por uma análise de alinhamento com os
+          princípios do TES antes de serem disponibilizadas.
         </p>
       </div>
     </aside>

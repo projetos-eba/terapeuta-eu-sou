@@ -417,7 +417,8 @@ function JourneyMemory({
           <div className="hidden lg:block">
             <table className="w-full table-auto text-left">
               <caption className="sr-only">
-                Memórias compartilhadas das sessões realizadas
+                Memórias compartilhadas das sessões realizadas ou aguardando
+                confirmação
               </caption>
               <thead>
                 <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
@@ -499,8 +500,8 @@ function JourneyMemory({
             Nenhuma memória compartilhada ainda
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
-            As memórias aparecerão aqui quando uma sessão realizada tiver um
-            resumo compartilhado.
+            As memórias aparecerão aqui quando uma sessão realizada ou
+            aguardando confirmação tiver um resumo compartilhado.
           </p>
         </div>
       )}

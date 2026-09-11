@@ -55,9 +55,7 @@ function openConfirmation() {
   for (let step = 1; step <= 4; step += 1)
     fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Enviar solicitação" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
 }
 
 describe("TherapyCatalogRequestPage", () => {
@@ -66,12 +64,69 @@ describe("TherapyCatalogRequestPage", () => {
     vi.unstubAllGlobals();
   });
 
+  it("presents the introductory guidance before starting a new request", () => {
+    render(
+      <TherapyCatalogRequestPage
+        initialRequestId={null}
+        requests={[]}
+        themes={[]}
+      />,
+    );
+
+    expect(screen.getByTestId("therapy-request-intro")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Acreditamos que o universo terapêutico está em constante evolução.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Nossa equipe irá conhecê-la, analisá-la e verificar se ela faz sentido para a plataforma.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Todas as práticas passam por uma análise de alinhamento com os princípios do TES antes de serem disponibilizadas.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Fechar solicitação" }),
+    ).toHaveAttribute("href", "/terapeuta/servicos");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Iniciar solicitação" }),
+    );
+
+    expect(
+      screen.getByRole("list", { name: "Etapas da solicitação" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("complementary", {
+        name: "Orientações sobre a solicitação",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Preencha as informações sobre a prática que você utiliza. Nossa equipe irá analisá-la com carinho.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Todas as práticas passam por uma análise de alinhamento com os princípios do TES antes de serem disponibilizadas.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByTestId("therapy-request-intro")).toBeNull();
+  });
+
   it("requires an explicit confirmation before sending and shows success only after a positive response", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ data: { requestId: request.id }, ok: true }), {
-        headers: { "Content-Type": "application/json" },
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ data: { requestId: request.id }, ok: true }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        },
+      ),
     );
     vi.stubGlobal("crypto", { randomUUID: () => "request-key" });
     vi.stubGlobal("fetch", fetchMock);
@@ -115,9 +170,7 @@ describe("TherapyCatalogRequestPage", () => {
     renderValidResubmission();
     openConfirmation();
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Confirmar e enviar" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e enviar" }));
 
     expect(
       await screen.findByText("Não foi possível enviar a solicitação agora."),

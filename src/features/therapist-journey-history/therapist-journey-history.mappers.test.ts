@@ -127,12 +127,13 @@ describe("therapist journey history", () => {
     expect(detail?.timeline[0].href).toContain("/terapeuta/sessoes/");
   });
 
-  it("keeps only completed historical sessions that have a shared summary in memory", () => {
+  it("keeps only realized historical sessions that have a shared summary in memory", () => {
     const rows = createRows();
     rows.bookings.push({
       completed_at: "2026-07-26T15:00:00-03:00",
       created_at: "2026-07-20T09:00:00-03:00",
       ends_at: "2026-07-26T15:00:00-03:00",
+      fulfillmentStatus: "confirmed_bilateral",
       id: "f2000000-0000-4000-8000-000000000005",
       patient_profile_id: "b1000000-0000-4000-8000-000000000001",
       payment_status: "paid",
@@ -163,6 +164,68 @@ describe("therapist journey history", () => {
     );
     expect(detail?.client.totalSharedMemories).toBe(1);
   });
+
+  it("includes past sessions awaiting confirmation and excludes non-performed sessions", () => {
+    const rows = createRows();
+    rows.bookings.push(
+      {
+        completed_at: null,
+        created_at: "2026-07-21T09:00:00-03:00",
+        ends_at: "2026-07-25T15:00:00-03:00",
+        fulfillmentStatus: "occurred_pending_confirmation",
+        id: "f2000000-0000-4000-8000-000000000006",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        payment_status: "paid",
+        service_id: "s1000000-0000-4000-8000-000000000001",
+        starts_at: "2026-07-25T14:00:00-03:00",
+        status: "confirmed",
+      },
+      {
+        completed_at: "2026-07-26T15:00:00-03:00",
+        created_at: "2026-07-22T09:00:00-03:00",
+        ends_at: "2026-07-26T15:00:00-03:00",
+        fulfillmentStatus: "not_performed",
+        id: "f2000000-0000-4000-8000-000000000007",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        payment_status: "paid",
+        service_id: "s1000000-0000-4000-8000-000000000001",
+        starts_at: "2026-07-26T14:00:00-03:00",
+        status: "completed",
+      },
+    );
+    rows.summaries.push(
+      {
+        booking_id: "f2000000-0000-4000-8000-000000000006",
+        created_at: "2026-07-25T15:10:00-03:00",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        summary: "Registro aguardando confirmação.",
+        title: "Continuidade",
+        visibility: "patient",
+      },
+      {
+        booking_id: "f2000000-0000-4000-8000-000000000007",
+        created_at: "2026-07-26T15:10:00-03:00",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        summary: "Não deve aparecer.",
+        title: "Não realizada",
+        visibility: "patient",
+      },
+    );
+
+    const detail = mapJourneyHistoryDetail({
+      ...rows,
+      now,
+      patientId: "b1000000-0000-4000-8000-000000000001",
+      source: "supabase",
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    });
+
+    expect(detail?.timeline.map((item) => item.bookingId)).toEqual([
+      "f2000000-0000-4000-8000-000000000006",
+      "f2000000-0000-4000-8000-000000000001",
+    ]);
+    expect(detail?.client.totalSharedMemories).toBe(2);
+  });
 });
 
 function createRows(): JourneyHistoryRows {
@@ -172,6 +235,7 @@ function createRows(): JourneyHistoryRows {
         completed_at: "2026-07-20T15:00:00-03:00",
         created_at: "2026-07-10T09:00:00-03:00",
         ends_at: "2026-07-20T15:00:00-03:00",
+        fulfillmentStatus: "confirmed_bilateral",
         id: "f2000000-0000-4000-8000-000000000001",
         patient_profile_id: "b1000000-0000-4000-8000-000000000001",
         payment_status: "paid",
@@ -183,6 +247,7 @@ function createRows(): JourneyHistoryRows {
         completed_at: null,
         created_at: "2026-07-20T09:00:00-03:00",
         ends_at: "2026-08-03T15:00:00-03:00",
+        fulfillmentStatus: "scheduled",
         id: "f2000000-0000-4000-8000-000000000002",
         patient_profile_id: "b1000000-0000-4000-8000-000000000001",
         payment_status: "paid",
@@ -194,6 +259,7 @@ function createRows(): JourneyHistoryRows {
         completed_at: "2026-04-01T11:00:00-03:00",
         created_at: "2026-03-25T09:00:00-03:00",
         ends_at: "2026-04-01T11:00:00-03:00",
+        fulfillmentStatus: "confirmed_by_patient_review",
         id: "f2000000-0000-4000-8000-000000000003",
         patient_profile_id: "b1000000-0000-4000-8000-000000000002",
         payment_status: "paid",
@@ -205,6 +271,7 @@ function createRows(): JourneyHistoryRows {
         completed_at: "2026-07-14T11:00:00-03:00",
         created_at: "2026-07-01T09:00:00-03:00",
         ends_at: "2026-07-14T11:00:00-03:00",
+        fulfillmentStatus: "auto_confirmed",
         id: "f2000000-0000-4000-8000-000000000004",
         patient_profile_id: "b1000000-0000-4000-8000-000000000003",
         payment_status: "paid",

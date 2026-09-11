@@ -32,6 +32,12 @@ description: Implementar e manter a página Minha conta do paciente TES, incluin
 ## UI e copy
 
 - Reusar `AppPageHeader`, `AppPageGrid`, `AppPageMain`, `AppPageAside`, `AppPageSection`, `TESButton` e `PasswordVisibilityToggle`.
+- A composição aprovada usa hero editorial compacto com paisagem suave e
+  legibilidade protegida por gradiente, perfil resumido na coluna principal e
+  cartões claros de conta, pagamentos e suporte em uma coluna lateral estreita.
+- O desktop preserva a hierarquia assimétrica entre conteúdo principal e
+  lateral; tablet e mobile reorganizam os cartões sem esconder dados, ações ou
+  estados.
 - Usar “encontro” para a linguagem do paciente e “pagamento” para o resumo financeiro.
 - Informações pessoais são editáveis; e-mail é exibido como dado de acesso e não pode ser alterado nesta página.
 - O endereço é opcional e a página não deve exigir dados além do necessário.
@@ -53,6 +59,7 @@ superfície de carregamento correspondente.
 ## Pendências
 
 - Homologação de upload no Storage e provisionamento remoto do bucket permanecem pendentes; esta alteração declara o bucket no `supabase/config.toml` para o ambiente local.
+
 ### Contrato de telefone
 
 `PhoneInput` mantém o número nacional em `phone` e o DDI em

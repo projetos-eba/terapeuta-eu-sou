@@ -214,6 +214,20 @@ export function mapSessionPresentation(
   }
 
   if (
+    session.fulfillmentStatus ===
+    FulfillmentStatus.OccurredPendingConfirmation
+  ) {
+    return presentation(
+      "awaiting_confirmation",
+      "Aguardando confirmação",
+      "A sessão foi realizada e aguarda a confirmação dos participantes.",
+      "medium",
+      "warning",
+      actions,
+    );
+  }
+
+  if (
     session.bookingStatus === BookingStatus.Completed ||
     (session.fulfillmentStatus !== null &&
       completedFulfillmentStatuses.has(session.fulfillmentStatus))

@@ -27,10 +27,10 @@ export function AppPageHeader({
   eyebrow,
   title,
   ...props
-}: HTMLAttributes<HTMLElement> & {
+}: Omit<HTMLAttributes<HTMLElement>, "title"> & {
   actions?: ReactNode;
   eyebrow?: string;
-  title: string;
+  title: ReactNode;
 }) {
   return (
     <header

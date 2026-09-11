@@ -36,7 +36,9 @@ describe("TherapistJourneyDetailPage", () => {
       screen.getByRole("heading", { name: "Memória das sessões" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Memórias compartilhadas das sessões realizadas"),
+      screen.getByText(
+        "Memórias compartilhadas das sessões realizadas ou aguardando confirmação",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "Abrir sessão" })[0],

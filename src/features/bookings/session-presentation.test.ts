@@ -146,6 +146,8 @@ describe("mapSessionPresentation", () => {
 
     expect(result.actions.canCancel).toBe(false);
     expect(result.actions.canReschedule).toBe(false);
+    expect(result.label).toBe("Não realizada");
+    expect(result.tone).toBe("danger");
     expect(getSessionOperationDisabledReason(session, "cancel")).toContain(
       "já foi encerrada",
     );
@@ -168,6 +170,23 @@ describe("mapSessionPresentation", () => {
 
     expect(result.state).toBe("room_preparing");
     expect(result.actions.primary.action).toBe("view_detail");
+  });
+
+  it("shows an occurred session without bilateral confirmation as pending", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        endsAt: "2026-07-26T12:00:00.000Z",
+        fulfillmentStatus: FulfillmentStatus.OccurredPendingConfirmation,
+        startsAt: "2026-07-26T11:00:00.000Z",
+      }),
+      now,
+    );
+
+    expect(result).toMatchObject({
+      label: "Aguardando confirmação",
+      state: "awaiting_confirmation",
+      tone: "warning",
+    });
   });
 
   it("maps fulfillment completion independently from booking payment", () => {
@@ -198,6 +217,7 @@ describe("mapSessionPresentation", () => {
 
     expect(result.state).toBe("completed");
     expect(result.label).toBe("Realizada");
+    expect(result.tone).toBe("success");
     expect(result.actions.canComplete).toBe(false);
   });
 });
