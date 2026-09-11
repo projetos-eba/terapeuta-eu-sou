@@ -3,14 +3,15 @@
 import {
   ArrowUpRight,
   Camera,
-  Check,
   CheckCircle2,
   CreditCard,
+  Heart,
   Home,
   Loader2,
   LockKeyhole,
   Mail,
   MapPin,
+  PencilLine,
   ShieldCheck,
   UserRound,
   type LucideIcon,
@@ -119,7 +120,7 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
   async function handleAvatar(file: File | undefined) {
     setAvatarFeedback(null);
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setAvatarFeedback({
         text: "Escolha uma imagem em JPG, PNG ou WebP.",
         tone: "error",
@@ -152,31 +153,41 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
   }
 
   return (
-    <AppPageContainer className="max-w-[1180px] gap-5 pb-12">
+    <AppPageContainer className="max-w-[1180px] gap-4 pb-12 sm:gap-5">
       <AppPageHeader
         actions={
           <AppPageActions>
             <TESButton
-              className="rounded-lg"
+              className="min-w-[154px] rounded-lg bg-white/85 backdrop-blur-sm"
               disabled={!hasChanges || profilePending}
               onClick={() => void saveProfile()}
+              size="sm"
               type="button"
+              variant="secondary"
             >
               {profilePending ? (
-                <Loader2 aria-hidden="true" className="animate-spin" size={18} />
+                <Loader2
+                  aria-hidden="true"
+                  className="animate-spin"
+                  size={18}
+                />
               ) : (
-                <Check aria-hidden="true" size={18} />
+                <PencilLine aria-hidden="true" size={16} />
               )}
               Salvar alterações
             </TESButton>
           </AppPageActions>
         }
+        className="relative min-h-[150px] overflow-hidden bg-[url('/patient/account/patient-account-path-hero.webp')] bg-cover bg-[position:68%_center] px-6 py-5 before:absolute before:inset-0 before:bg-gradient-to-r before:from-white before:from-[32%] before:via-white/90 before:via-[58%] before:to-white/15 before:content-[''] [&>div]:relative [&>div]:z-[1] sm:px-8 sm:py-6"
         eyebrow="Minha conta"
-        title="Um espaço só seu, do seu jeito."
+        title={
+          <>
+            Seu espaço, suas escolhas,{" "}
+            <span className="text-brand-primary">seu caminho.</span>
+          </>
+        }
       >
-        Mantenha seus dados atualizados para viver cada encontro com mais
-        tranquilidade. Você escolhe o que compartilhar e pode voltar aqui
-        sempre que precisar.
+        Tudo o que é seu, reunido em um só lugar.
       </AppPageHeader>
 
       {profileFeedback?.tone === "success" ? (
@@ -189,10 +200,9 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
         />
       ) : null}
 
-      <AppPageGrid>
-        <AppPageMain>
+      <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_300px]">
+        <AppPageMain className="gap-4 sm:gap-5">
           <IdentitySection
-            account={data.account}
             avatarFeedback={avatarFeedback}
             avatarInputRef={avatarInputRef}
             avatarPending={avatarPending}
@@ -204,16 +214,20 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
           <PersonalDataSection
             email={data.account.email}
             fields={fields}
-            onChange={(next) => setFields((current) => ({ ...current, ...next }))}
+            onChange={(next) =>
+              setFields((current) => ({ ...current, ...next }))
+            }
           />
           <AddressSection
             address={fields.address}
-            onChange={(address) => setFields((current) => ({ ...current, address }))}
+            onChange={(address) =>
+              setFields((current) => ({ ...current, address }))
+            }
           />
           <SecuritySection />
         </AppPageMain>
 
-        <AppPageAside>
+        <AppPageAside className="self-start gap-4 sm:gap-5">
           <AccountSummary account={data.account} />
           <PaymentSummary data={data} />
           <SupportCard />
@@ -224,7 +238,6 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
 }
 
 function IdentitySection({
-  account,
   avatarFeedback,
   avatarInputRef,
   avatarPending,
@@ -233,7 +246,6 @@ function IdentitySection({
   onAvatarFeedbackClose,
   onAvatarSelected,
 }: {
-  account: PatientAccountData["account"];
   avatarFeedback: Feedback;
   avatarInputRef: MutableRefObject<HTMLInputElement | null>;
   avatarPending: boolean;
@@ -243,10 +255,10 @@ function IdentitySection({
   onAvatarSelected: (file: File | undefined) => void;
 }) {
   return (
-    <AppPageSection className="overflow-hidden bg-brand-lavenderSoft p-0">
-      <div className="grid gap-6 p-5 sm:p-7 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
-        <div className="relative mx-auto md:mx-0">
-          <div className="relative grid size-32 place-items-center overflow-hidden rounded-full border-4 border-white bg-white text-brand-primary shadow-card sm:size-36">
+    <AppPageSection className="overflow-hidden p-0">
+      <div className="grid gap-5 p-5 sm:grid-cols-[104px_minmax(0,1fr)] sm:items-center sm:px-6 sm:py-5">
+        <div className="relative mx-auto sm:mx-0">
+          <div className="relative grid size-24 place-items-center overflow-hidden rounded-full border-4 border-brand-lavenderSoft bg-white text-brand-primary shadow-card sm:size-[104px]">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- avatar dinâmico retornado pelo Storage do perfil.
               <img
@@ -255,31 +267,38 @@ function IdentitySection({
                 src={avatarUrl}
               />
             ) : (
-              <span aria-hidden="true" className="font-display text-5xl font-light italic">
+              <span
+                aria-hidden="true"
+                className="font-display text-4xl font-light italic"
+              >
                 {getInitials(fields.name)}
               </span>
             )}
           </div>
-          <span className="absolute bottom-1 right-1 grid size-10 place-items-center rounded-full border-4 border-brand-lavenderSoft bg-brand-primary text-white">
-            <Camera aria-hidden="true" size={17} />
+          <span className="absolute bottom-0 right-0 grid size-8 place-items-center rounded-full border-[3px] border-white bg-brand-primary text-white">
+            <Camera aria-hidden="true" size={14} />
           </span>
         </div>
 
-        <div className="grid gap-4 text-center md:text-left">
+        <div className="grid gap-3 text-center sm:text-left">
           <div>
             <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-brand-primary">
               Seu perfil
             </p>
-            <h2 className="mt-2 font-display text-3xl font-light italic leading-tight text-brand-deep sm:text-4xl">
-              Olá, {fields.name || "Paciente"}
+            <h2 className="mt-1.5 flex items-center justify-center gap-2 font-display text-[28px] font-light italic leading-tight text-brand-deep sm:justify-start sm:text-[32px]">
+              Olá, {getFirstName(fields.name) || "Paciente"}
+              <Heart
+                aria-hidden="true"
+                className="fill-brand-primary text-brand-primary"
+                size={13}
+              />
             </h2>
-            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-              Uma foto ajuda a reconhecer sua conta com facilidade. Escolha uma
-              imagem leve, clara e que faça sentido para você.
+            <p className="mt-1 max-w-2xl text-sm font-semibold leading-5 text-tesText-secondary">
+              Esse é o espaço que vai acompanhar você por aqui.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:justify-start">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-start">
             <input
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -292,14 +311,19 @@ function IdentitySection({
               type="file"
             />
             <TESButton
-              className="rounded-lg"
+              className="rounded-lg shadow-none"
               disabled={avatarPending}
               onClick={() => avatarInputRef.current?.click()}
               type="button"
               variant="secondary"
+              size="sm"
             >
               {avatarPending ? (
-                <Loader2 aria-hidden="true" className="animate-spin" size={18} />
+                <Loader2
+                  aria-hidden="true"
+                  className="animate-spin"
+                  size={18}
+                />
               ) : (
                 <Camera aria-hidden="true" size={18} />
               )}
@@ -321,8 +345,12 @@ function IdentitySection({
           ) : null}
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-brand-lavender bg-white/70 px-5 py-3 text-sm font-semibold text-tesText-secondary sm:px-7">
-        <ShieldCheck aria-hidden="true" className="shrink-0 text-status-success" size={18} />
+      <div className="flex items-center gap-3 border-t border-brand-lavender bg-brand-lavenderSoft px-5 py-3 text-sm font-semibold text-tesText-secondary sm:px-6">
+        <ShieldCheck
+          aria-hidden="true"
+          className="shrink-0 text-status-success"
+          size={18}
+        />
         Seus dados ficam associados somente à sua conta.
       </div>
     </AppPageSection>
@@ -526,8 +554,13 @@ function AddressSection({
         />
       </div>
       <p className="mt-4 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
-        <Home aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={15} />
-        O preenchimento é opcional. Informe apenas o que fizer sentido para você.
+        <Home
+          aria-hidden="true"
+          className="mt-0.5 shrink-0 text-brand-primary"
+          size={15}
+        />
+        O preenchimento é opcional. Informe apenas o que fizer sentido para
+        você.
       </p>
     </AppPageSection>
   );
@@ -591,8 +624,15 @@ function SecuritySection() {
           <p className="text-xs font-semibold leading-5 text-tesText-secondary">
             Recomendamos uma senha única para o TES.
           </p>
-          <TESButton className="rounded-lg" disabled={pending} type="submit" variant="secondary">
-            {pending ? <Loader2 aria-hidden="true" className="animate-spin" size={18} /> : null}
+          <TESButton
+            className="rounded-lg"
+            disabled={pending}
+            type="submit"
+            variant="secondary"
+          >
+            {pending ? (
+              <Loader2 aria-hidden="true" className="animate-spin" size={18} />
+            ) : null}
             {pending ? "Alterando..." : "Alterar senha"}
           </TESButton>
         </div>
@@ -610,26 +650,36 @@ function SecuritySection() {
   );
 }
 
-function AccountSummary({ account }: { account: PatientAccountData["account"] }) {
+function AccountSummary({
+  account,
+}: {
+  account: PatientAccountData["account"];
+}) {
   return (
-    <AppPageSection className="bg-brand-deep text-white">
-      <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-brand-cyan">
-        Conta protegida
+    <AppPageSection className="bg-white">
+      <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-brand-primary">
+        Sua conta
       </p>
-      <h2 className="mt-3 font-display text-3xl font-light italic leading-tight">
-        Tudo certo por aqui?
+      <h2 className="mt-2 font-display text-[28px] font-light italic leading-tight text-brand-deep">
+        Tudo certo por aqui!
       </h2>
-      <p className="mt-3 text-sm font-semibold leading-6 text-white/80">
+      <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
         Seus dados principais ficam reunidos neste espaço para você revisar com
         calma.
       </p>
-      <div className="mt-6 grid gap-3 border-t border-white/20 pt-5 text-sm">
+      <div className="mt-5 grid gap-3 border-t border-brand-lavender pt-4 text-sm text-brand-deep">
         <div className="flex items-center gap-3">
-          <Mail aria-hidden="true" className="text-brand-cyan" size={17} />
-          <span className="truncate">{account.email || "E-mail não informado"}</span>
+          <Mail aria-hidden="true" className="text-brand-primary" size={17} />
+          <span className="truncate">
+            {account.email || "E-mail não informado"}
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <CheckCircle2 aria-hidden="true" className="text-brand-mint" size={17} />
+          <CheckCircle2
+            aria-hidden="true"
+            className="text-status-success"
+            size={17}
+          />
           <span>Acesso de paciente ativo</span>
         </div>
       </div>
@@ -641,11 +691,17 @@ function PaymentSummary({ data }: { data: PatientAccountData }) {
   return (
     <AppPageSection>
       <div className="flex items-start justify-between gap-4">
-        <SectionHeading
-          description="Um resumo dos pagamentos mais recentes dos seus encontros."
-          icon={CreditCard}
-          title="Pagamentos"
-        />
+        <div className="min-w-0">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">
+            Pagamentos
+          </p>
+          <h2 className="mt-1.5 font-display text-2xl font-light italic leading-tight text-brand-deep">
+            Seus pagamentos
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            Um resumo dos pagamentos mais recentes dos seus encontros.
+          </p>
+        </div>
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <CreditCard aria-hidden="true" size={19} />
         </span>
@@ -653,12 +709,15 @@ function PaymentSummary({ data }: { data: PatientAccountData }) {
 
       {data.payments.length > 0 ? (
         <div className="mt-5 grid gap-4">
-          <div className="rounded-md bg-surface-soft p-4">
+          <div className="rounded-md bg-brand-lavenderSoft/55 p-4">
             <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">
               Total confirmado
             </p>
             <p className="mt-1 font-display text-3xl font-light italic text-brand-deep">
-              {formatCurrency(data.paymentSummary.totalPaidCents, data.payments[0].currency)}
+              {formatCurrency(
+                data.paymentSummary.totalPaidCents,
+                data.payments[0].currency,
+              )}
             </p>
             <p className="mt-1 text-xs font-semibold text-tesText-secondary">
               {data.paymentSummary.count === 1
@@ -674,7 +733,9 @@ function PaymentSummary({ data }: { data: PatientAccountData }) {
         </div>
       ) : (
         <div className="mt-5 rounded-md border border-dashed border-brand-lavender bg-surface-soft p-5">
-          <p className="text-sm font-extrabold text-brand-deep">Nenhum pagamento ainda</p>
+          <p className="text-sm font-extrabold text-brand-deep">
+            Nenhum pagamento ainda
+          </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
             Quando você fizer um pagamento, este resumo mostrará o valor e a
             situação do encontro.
@@ -699,7 +760,9 @@ function PaymentRow({ payment }: { payment: PatientAccountPayment }) {
     <div className="grid gap-2 py-4 first:pt-0 last:pb-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-extrabold text-brand-deep">{payment.title}</p>
+          <p className="truncate text-sm font-extrabold text-brand-deep">
+            {payment.title}
+          </p>
           <p className="mt-1 text-xs font-semibold text-tesText-secondary">
             {payment.therapistName ? `${payment.therapistName} · ` : ""}
             {formatDate(payment.paidAt)}
@@ -709,7 +772,9 @@ function PaymentRow({ payment }: { payment: PatientAccountPayment }) {
           {formatCurrency(payment.amountCents, payment.currency)}
         </p>
       </div>
-      <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-extrabold ${statusClass}`}>
+      <span
+        className={`w-fit rounded-full px-2.5 py-1 text-xs font-extrabold ${statusClass}`}
+      >
         {payment.statusLabel}
       </span>
     </div>
@@ -718,7 +783,7 @@ function PaymentRow({ payment }: { payment: PatientAccountPayment }) {
 
 function SupportCard() {
   return (
-    <AppPageSection className="bg-surface-soft">
+    <AppPageSection className="bg-brand-lavenderSoft/35">
       <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         <ShieldCheck aria-hidden="true" size={21} />
       </span>
@@ -752,11 +817,11 @@ function SectionHeading({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-        <Icon aria-hidden="true" size={19} />
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+        <Icon aria-hidden="true" size={17} />
       </span>
       <div className="min-w-0">
-        <h2 className="font-display text-2xl font-light italic leading-tight text-brand-deep sm:text-[28px]">
+        <h2 className="font-display text-2xl font-light italic leading-tight text-brand-deep">
           {title}
         </h2>
         <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
@@ -807,7 +872,11 @@ function AccountField({
         required={required}
         value={value}
       />
-      {hint ? <span className="text-xs font-semibold text-tesText-secondary">{hint}</span> : null}
+      {hint ? (
+        <span className="text-xs font-semibold text-tesText-secondary">
+          {hint}
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -828,7 +897,10 @@ function PasswordField({
   visible: boolean;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-extrabold text-brand-deep" htmlFor={id}>
+    <label
+      className="grid gap-2 text-sm font-extrabold text-brand-deep"
+      htmlFor={id}
+    >
       <span>{label}</span>
       <span className="flex min-h-12 items-center rounded-md border border-border bg-white px-4 transition focus-within:border-brand-primary focus-within:ring-4 focus-within:ring-ring/20">
         <input
@@ -901,4 +973,8 @@ function getInitials(name: string) {
     .map((part) => part[0])
     .join("");
   return initials.toUpperCase() || "P";
+}
+
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/).filter(Boolean)[0] ?? "";
 }

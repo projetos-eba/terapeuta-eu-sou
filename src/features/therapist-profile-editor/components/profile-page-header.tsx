@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Loader2, Save, Send } from "lucide-react";
+import { Eye, Loader2, Send } from "lucide-react";
 
 import { AppPageActions, AppPageHeader } from "@/components/app-page";
 import { TESButton } from "@/components/tes";
@@ -12,7 +12,6 @@ export function ProfilePageHeader({
   onPrimaryAction,
   primaryDisabled,
   primaryLabel,
-  primaryMode,
   primaryLoading,
 }: {
   hasUnsavedChanges: boolean;
@@ -20,7 +19,6 @@ export function ProfilePageHeader({
   onPrimaryAction: () => void;
   primaryDisabled: boolean;
   primaryLabel: string;
-  primaryMode: "publish" | "save";
   primaryLoading: boolean;
 }) {
   return (
@@ -52,10 +50,8 @@ export function ProfilePageHeader({
           >
             {primaryLoading ? (
               <Loader2 aria-hidden="true" className="animate-spin" size={18} />
-            ) : primaryMode === "publish" ? (
-              <Send aria-hidden="true" size={18} />
             ) : (
-              <Save aria-hidden="true" size={18} />
+              <Send aria-hidden="true" size={18} />
             )}
             {primaryLabel}
           </TESButton>

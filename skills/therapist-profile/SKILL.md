@@ -62,15 +62,16 @@ que possível. A publicação continua sendo uma ação separada.
 
 ## Regras
 
-- Salvar rascunho não altera views públicas.
+- O salvamento automático do rascunho não altera views públicas.
 - Publicação é direta pelo terapeuta e pode levar 2 a 3 horas para propagar.
 - Na primeira configuração, a ação primária deve ser `Publicar alterações`.
   Antes de enviar ao backend, validar nome do perfil, sua apresentação/headline e
   minha essência/bio. Se houver alterações locais válidas, a UI deve salvar o
   rascunho e publicar com a versão retornada pelo servidor no mesmo fluxo
   confirmado.
-- Em perfis já publicados, a ação primária volta a ser `Salvar alterações`;
-  publicação posterior continua explícita sobre rascunho salvo.
+- Em perfis já publicados, as alterações editoriais são salvas automaticamente
+  como rascunho; a ação primária continua `Publicar alterações` e confirma a
+  atualização explícita do perfil público.
 - O terapeuta envia os documentos privados obrigatórios em
   `/terapeuta/configuracoes`; `/terapeuta/perfil` e
   `/terapeuta/perfil/editar` apenas mostram o que falta e orientam para essa
@@ -145,9 +146,10 @@ que possível. A publicação continua sendo uma ação separada.
   Quando a leitura pública falhar, estiver ausente ou não houver publicação,
   mostrar indisponibilidade/estado de publicação honesto; nunca reconstruir o
   perfil com dados do editor nem aceitar `demo` nessa superfície.
-- Em um perfil já publicado, `Salvar rascunho` não altera a prévia nem o
-  perfil público. A interface deve informar esse efeito, oferecer a publicação
-  como próximo passo e comunicar que a propagação pode levar até 2 a 3 horas.
+- Em um perfil já publicado, o salvamento automático do rascunho não altera a
+  prévia nem o perfil público. A interface deve informar esse efeito, oferecer
+  a publicação como próximo passo e comunicar que a propagação pode levar até
+  2 a 3 horas.
   Depois de publicar, limpar o cache de rotas do navegador antes de voltar a
   `/terapeuta/perfil`; a leitura autenticada da prévia usa o contrato público
   canônico em modo fresco para não reutilizar conteúdo editorial antigo.
@@ -182,8 +184,10 @@ que possível. A publicação continua sendo uma ação separada.
   progresso honesta, com etapas, pendências e orientação para
   `/terapeuta/configuracoes`.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
-  numerado, temas, link público, upload de mídia pública, módulos gerenciados,
-  aviso importante e save bar. Não deve conter upload de documento privado.
+  numerado, temas, link público, upload de mídia pública, módulos gerenciados
+  e save bar. O aviso importante, com atalho para documentos, aparece somente
+  enquanto a verificação não estiver aprovada. Não deve conter upload de
+  documento privado.
 - A seção de edição `Conteúdos / Reflexões` está temporariamente fora da
   superfície visível do editor. Os campos legados permanecem nos contratos para
   preservar dados já existentes, mas não há CTA para criar ou editar novos

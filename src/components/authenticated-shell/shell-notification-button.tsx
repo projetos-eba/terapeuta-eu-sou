@@ -40,6 +40,7 @@ type NotificationResponse = {
   count: number;
   items: ShellNotification[];
   toast?: ShellNotification | null;
+  unreadMessagesCount: number;
 };
 
 type PanelPosition = {
@@ -50,10 +51,12 @@ type PanelPosition = {
 export function ShellNotificationButton({
   count: initialCount = 0,
   href,
+  onUnreadMessagesCountChange,
   role,
 }: {
   count?: number;
   href: string;
+  onUnreadMessagesCountChange?: (count: number) => void;
   role: "admin" | "patient" | "therapist";
 }) {
   const panelId = useId();
@@ -88,7 +91,11 @@ export function ShellNotificationButton({
       if (!response.ok) return;
 
       const payload = (await response.json()) as NotificationResponse;
-      if (!Array.isArray(payload.items) || typeof payload.count !== "number") {
+      if (
+        !Array.isArray(payload.items) ||
+        !isCount(payload.count) ||
+        !isCount(payload.unreadMessagesCount)
+      ) {
         return;
       }
 
@@ -112,10 +119,11 @@ export function ShellNotificationButton({
       knownIdsRef.current = new Set(payload.items.map((item) => item.id));
       setCount(payload.count);
       setItems(payload.items);
+      onUnreadMessagesCountChange?.(payload.unreadMessagesCount);
     } catch {
       // Keep the server-rendered count when a temporary poll fails.
     }
-  }, [role, showToast]);
+  }, [onUnreadMessagesCountChange, role, showToast]);
 
   useEffect(() => {
     void refresh();
@@ -415,6 +423,10 @@ function notificationRowClassName(item: ShellNotification) {
     "block w-full border-b border-brand-lavender px-4 py-3 text-left outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-ring/20",
     item.readAt === null ? "bg-brand-lavenderSoft/40" : "bg-white",
   );
+}
+
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 function NotificationContent({ item }: { item: ShellNotification }) {

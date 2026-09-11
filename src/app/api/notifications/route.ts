@@ -35,7 +35,12 @@ export async function GET(request: Request) {
       "/auth/v1/user",
     );
     const profileFilter = `profile_id=eq.${encodeURIComponent(user.id)}`;
-    const [itemsResponse, countResponse, bookingResponse] = await Promise.all([
+    const [
+      itemsResponse,
+      countResponse,
+      bookingResponse,
+      unreadMessagesResponse,
+    ] = await Promise.all([
       fetch(
         `${config.url}/rest/v1/notifications?select=id,kind,title,body,href,read_at,created_at&${profileFilter}&order=created_at.desc&limit=${ITEM_LIMIT}`,
         {
@@ -68,9 +73,26 @@ export async function GET(request: Request) {
           },
         },
       ),
+      fetch(
+        `${config.url}/rest/v1/messages?select=id,conversations!inner(id)&sender_profile_id=neq.${encodeURIComponent(user.id)}&read_at=is.null`,
+        {
+          cache: "no-store",
+          headers: {
+            apikey: config.apiKey,
+            Authorization: `Bearer ${accessToken}`,
+            Prefer: "count=exact",
+            Range: "0-0",
+          },
+        },
+      ),
     ]);
 
-    if (!itemsResponse.ok || !countResponse.ok || !bookingResponse.ok) {
+    if (
+      !itemsResponse.ok ||
+      !countResponse.ok ||
+      !bookingResponse.ok ||
+      !unreadMessagesResponse.ok
+    ) {
       return failure("Não foi possível carregar notificações.", 503);
     }
 
@@ -84,6 +106,9 @@ export async function GET(request: Request) {
         count: getCount(countResponse.headers.get("content-range")),
         items: items.map(toNotificationItem),
         toast: bookingItems[0] ? toNotificationItem(bookingItems[0]) : null,
+        unreadMessagesCount: getCount(
+          unreadMessagesResponse.headers.get("content-range"),
+        ),
       },
       { headers: noStoreHeaders },
     );
