@@ -370,6 +370,8 @@ function TherapyDistribution({ data }: { data: TherapistSessionMetrics }) {
             name: item.therapyName,
             value: item.sessions,
           }))}
+          label="Sessões realizadas por terapia"
+          seriesLabel="Sessões realizadas"
         />
       ) : (
         <ProtectedBlock collection={data.therapyDistribution} />

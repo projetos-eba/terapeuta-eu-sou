@@ -323,6 +323,28 @@ export type TherapistInterestMetricsReady = Extract<
   { access: { status: "ready" } }
 >;
 
+export type TherapistMetricsTodayActivity = {
+  contractVersion: 1;
+  meta: {
+    computedAt: string;
+    freshThrough: string | null;
+    localDate: string;
+    timezone: string;
+  };
+  metricDefinitionVersion: 1;
+  profileFavoritesAdded: {
+    status: "empty" | "ready";
+    unit: "favorites";
+    value: number;
+  };
+  status: "ready";
+  therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistMetricsTodayActivityState =
+  | TherapistMetricsTodayActivity
+  | { status: "unavailable" };
+
 export type TherapistOccupancyPoint = {
   date: string;
   occupiedMinutes: number;

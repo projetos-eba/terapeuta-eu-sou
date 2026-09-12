@@ -58,7 +58,10 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - `reviews` permanece separado, usa outro comando e nunca altera confirmação,
   pagamento ou lote.
 - Depois de um feedback `completed` do terapeuta, Premium Plus pode abrir a
-  seção opcional “Temas da jornada”. Ela é um comando separado em
+  seção opcional “Quais foram os temas da sua sessão?” tanto no sucesso do
+  feedback quanto no detalhe `/terapeuta/sessoes/:bookingId`. A orientação é
+  “Registre até três temas para acompanhar essa jornada no seu histórico com o
+  cliente.” Ela é um comando separado em
   `booking_journey_theme_selections`: aceita de um a três chaves da taxonomia
   fechada `journey_topics_v1`, exige declaração explícita, não tem texto livre
   e é imutável por booking. Falha, ausência ou retry desses temas nunca bloqueia

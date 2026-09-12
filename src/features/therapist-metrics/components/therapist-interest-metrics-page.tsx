@@ -25,6 +25,7 @@ import type {
   TherapistInterestSegmentKey,
   TherapistMetricDirection,
   TherapistMetricProtectedCollection,
+  TherapistMetricsTodayActivityState,
 } from "../therapist-metrics.types";
 import { TherapistMetricsLayout } from "./therapist-metrics-layout";
 import {
@@ -45,8 +46,10 @@ const segmentLabels = {
 
 export function TherapistInterestMetricsPage({
   data,
+  todayActivity = { status: "unavailable" },
 }: {
   data: TherapistInterestMetrics;
+  todayActivity?: TherapistMetricsTodayActivityState;
 }) {
   if (!isReadyInterest(data)) {
     return (
@@ -72,15 +75,16 @@ export function TherapistInterestMetricsPage({
             Continuidade do acompanhamento
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Comparações feitas apenas com seu próprio histórico e mostradas
-            quando há pelo menos 10 registros.
+            Comparações feitas apenas com seu próprio histórico, usando dias
+            completos. Favoritos recebidos hoje aparecem separadamente.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           <SegmentSampledCard
             data={data}
             icon={UserCheck}
             label="Pessoas ativas"
+            sampleCaption="pessoas na base atual"
             segment="active"
             tone="primary"
           />
@@ -88,24 +92,29 @@ export function TherapistInterestMetricsPage({
             icon={Heart}
             label="Novos favoritos do perfil"
             metric={data.summary.profileFavorites}
+            sampleCaption="favoritos até ontem"
+            todayActivity={todayActivity}
             tone="danger"
           />
           <SampledCard
             icon={Repeat2}
             label="Pessoas que voltaram"
             metric={data.summary.peopleReturned}
+            sampleCaption="pessoas no período"
             tone="primary"
           />
           <SampledCard
             icon={UsersRound}
             label="Taxa de retorno"
             metric={data.summary.returnRate}
+            sampleCaption="pessoas no período"
             tone="mint"
           />
           <SegmentSampledCard
             data={data}
             icon={UserMinus}
             label="Pessoas inativas"
+            sampleCaption="pessoas na base atual"
             segment="inactive"
             tone="danger"
           />
@@ -113,6 +122,7 @@ export function TherapistInterestMetricsPage({
             icon={Sparkles}
             label="Sessões por pessoa"
             metric={data.summary.sessionsPerPerson}
+            sampleCaption="pessoas no período"
             tone="warning"
           />
         </div>
@@ -165,12 +175,14 @@ function SegmentSampledCard({
   data,
   icon,
   label,
+  sampleCaption,
   segment,
   tone,
 }: {
   data: TherapistInterestMetricsReady;
   icon: typeof Repeat2;
   label: string;
+  sampleCaption: string;
   segment: Extract<TherapistInterestSegmentKey, "active" | "inactive">;
   tone: Extract<MetricChartTone, "danger" | "primary">;
 }) {
@@ -217,6 +229,7 @@ function SegmentSampledCard({
       icon={icon}
       label={label}
       metric={metric}
+      sampleCaption={sampleCaption}
       tone={tone}
     />
   );
@@ -227,12 +240,16 @@ function SampledCard({
   icon: Icon,
   label,
   metric,
+  sampleCaption,
+  todayActivity,
   tone,
 }: {
   badge?: InterestCardBadge;
   icon: typeof Repeat2;
   label: string;
   metric: InterestSummaryCardMetric;
+  sampleCaption: string;
+  todayActivity?: TherapistMetricsTodayActivityState;
   tone: Extract<MetricChartTone, "danger" | "mint" | "primary" | "warning">;
 }) {
   const iconStyle = {
@@ -254,7 +271,7 @@ function SampledCard({
   return (
     <TESCard
       as="article"
-      className="relative flex min-h-[168px] min-w-0 flex-col overflow-hidden border-brand-lavender/55 bg-white p-4 shadow-[0_8px_22px_rgba(57,45,90,0.055)] sm:min-h-[176px]"
+      className="relative flex min-h-[190px] min-w-0 flex-col overflow-hidden border-brand-lavender/55 bg-white p-4 shadow-[0_8px_22px_rgba(57,45,90,0.055)] sm:min-h-[198px]"
       data-state={metric.status}
       data-tone={tone}
     >
@@ -293,18 +310,19 @@ function SampledCard({
           </p>
           <div className="mt-2 flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1">
             <span
-              aria-label={`${metric.observedSample} de ${metric.minimumSample} registros necessários`}
+              aria-label={`${metric.observedSample} de ${metric.minimumSample} ${sampleCaption}`}
               className="inline-flex min-h-6 items-center rounded-full bg-brand-lavenderSoft px-2 text-xs font-extrabold text-brand-primary"
             >
               {metric.observedSample} de {metric.minimumSample}
             </span>
             <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
-              registros no período
+              {sampleCaption}
             </span>
             <span className="sr-only">Ainda sem dados suficientes.</span>
           </div>
         </>
       )}
+      {todayActivity ? <TodayFavoritesStatus activity={todayActivity} /> : null}
       <div className="mt-auto pt-2.5">
         <MetricSparkline
           className="h-7"
@@ -315,6 +333,38 @@ function SampledCard({
         />
       </div>
     </TESCard>
+  );
+}
+
+function TodayFavoritesStatus({
+  activity,
+}: {
+  activity: TherapistMetricsTodayActivityState;
+}) {
+  if (activity.status === "unavailable") {
+    return (
+      <p className="mt-2 text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+        Não foi possível atualizar os favoritos de hoje.
+      </p>
+    );
+  }
+
+  const count = activity.profileFavoritesAdded.value;
+  if (count === 0) {
+    return (
+      <p className="mt-2 text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+        Nenhum novo favorito hoje.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-2 rounded-lg bg-status-dangerBg px-2.5 py-2 text-[11px] font-extrabold leading-4 text-status-danger">
+      +{count} {count === 1 ? "favorito" : "favoritos"} hoje
+      <span className="mt-0.5 block font-bold text-tesText-secondary">
+        Entra no comparativo amanhã.
+      </span>
+    </p>
   );
 }
 
@@ -497,6 +547,9 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
             name: item.therapyName,
             value: item.returnRate,
           }))}
+          label="Taxa de retorno por terapia"
+          seriesLabel="Taxa de retorno"
+          valueSuffix="%"
         />
       ) : (
         <ProtectedCollection collection={data.therapyReturn} />

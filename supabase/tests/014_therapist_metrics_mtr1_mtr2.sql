@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(41);
 
 -- The local stack intentionally preserves data between runs. Isolate the two
 -- fixture therapists inside this transaction so historical aggregates cannot
@@ -9,6 +9,19 @@ delete from public.therapist_metric_daily_aggregates
 where therapist_profile_id in (
   'c1000000-0000-4000-8000-000000000001',
   'c1000000-0000-4000-8000-000000000002'
+);
+
+insert into public.favorite_therapists (
+  id,
+  patient_profile_id,
+  therapist_profile_id,
+  created_at
+)
+values (
+  'f1140000-0000-4000-8000-000000000001',
+  'b1000000-0000-4000-8000-000000000010',
+  'c1000000-0000-4000-8000-000000000001',
+  now()
 );
 
 select ok(
@@ -27,6 +40,25 @@ select ok(
     'EXECUTE'
   ),
   'authenticated therapists can invoke the private overview read model'
+);
+
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.get_therapist_metrics_today_v1()',
+    'EXECUTE'
+  ),
+  'authenticated therapists can invoke the private current-day projection'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'public.get_therapist_metrics_today_v1()',
+    'EXECUTE'
+  ),
+  false,
+  'anonymous visitors cannot invoke the current-day projection'
 );
 
 select is(
@@ -287,6 +319,33 @@ select is(
   'each accepted booking flow start is aggregated once'
 );
 
+select is(
+  (
+    select count(*)
+    from public.therapist_metric_events
+    where event_id = 'f1140000-0000-4000-8000-000000000001'
+      and event_type = 'favorite_therapist_added'
+      and event_source = 'authoritative'
+  ),
+  1::bigint,
+  'favoriting a profile creates one authoritative metric event'
+);
+
+select is(
+  (
+    select favorites_added
+    from public.therapist_metric_daily_aggregates
+    where therapist_profile_id =
+      'c1000000-0000-4000-8000-000000000001'
+      and metric_date = (
+        now() at time zone 'America/Sao_Paulo'
+      )::date
+      and definition_version = 1
+  ),
+  1,
+  'favoriting a profile increments the current local-day aggregate'
+);
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -358,6 +417,30 @@ select is(
   'profile favorites use the canonical sample lock of ten'
 );
 
+select is(
+  (
+    public.get_therapist_metrics_today_v1()
+      #>> '{profileFavoritesAdded,value}'
+  )::integer,
+  1,
+  'current-day projection exposes the newly added favorite immediately'
+);
+
+select is(
+  public.get_therapist_metrics_today_v1()
+    #>> '{profileFavoritesAdded,status}',
+  'ready',
+  'current-day favorite projection reports a ready state when activity exists'
+);
+
+select ok(
+  position(
+    'patientProfileId'
+    in public.get_therapist_metrics_today_v1()::text
+  ) = 0,
+  'current-day projection does not expose patient identifiers'
+);
+
 select throws_ok(
   'select public.get_therapist_metrics_overview_v1(31)',
   '22023',
@@ -378,6 +461,13 @@ select is(
   ),
   0::bigint,
   'another therapist cannot read the owner aggregate'
+);
+
+select throws_ok(
+  'select public.get_therapist_metrics_today_v1()',
+  '42501',
+  'CAPABILITY_NOT_ALLOWED',
+  'Premium therapist cannot invoke the Premium Plus current-day projection'
 );
 
 select set_config(
@@ -411,6 +501,13 @@ select throws_ok(
   '42501',
   'CAPABILITY_NOT_ALLOWED',
   'Free therapist cannot bypass the advanced metrics capability'
+);
+
+select throws_ok(
+  'select public.get_therapist_metrics_today_v1()',
+  '42501',
+  'CAPABILITY_NOT_ALLOWED',
+  'Free therapist cannot bypass the current-day metrics capability'
 );
 
 select * from finish();

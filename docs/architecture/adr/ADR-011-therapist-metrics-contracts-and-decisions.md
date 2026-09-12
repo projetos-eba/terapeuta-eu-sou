@@ -691,6 +691,25 @@ Este adendo resolve os nomes físicos antes deixados em aberto sem alterar as
 decisões de produto da ADR. A implementação detalhada está em
 `docs/architecture/therapist-metrics-mtr1-mtr3.md`.
 
+## Adendo — atividade do dia atual
+
+Status: aceito e implementado em 2026-09-11.
+
+As comparações históricas continuam usando exclusivamente dias locais
+completos. Para evitar que um favorito recém-adicionado pareça ter sido
+ignorado, o Premium Plus recebe uma projeção pequena e separada do dia atual
+por `get_therapist_metrics_today_v1()`.
+
+- a projeção contém somente a contagem agregada de favoritos do perfil no dia
+  local e não altera `get_therapist_metrics_overview_v1`;
+- o valor do dia entra no comparativo somente após o encerramento desse dia;
+- identidade, plano e timezone são derivados no banco, sem parâmetros do
+  navegador;
+- nenhum identificador de paciente é retornado;
+- falha da projeção permanece indisponibilidade e nunca vira zero aparente;
+- Premium e Free não recebem essa leitura, porque ela pertence à aba Interesse
+  do Premium Plus.
+
 ## Consequências
 
 ### Positivas

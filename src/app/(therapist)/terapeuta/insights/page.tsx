@@ -45,7 +45,12 @@ export default async function TherapistInsightsPage({
   }
 
   if (result.tab === "interest") {
-    return <TherapistInterestMetricsPage data={result.data} />;
+    return (
+      <TherapistInterestMetricsPage
+        data={result.data}
+        todayActivity={result.todayActivity}
+      />
+    );
   }
 
   return <TherapistMetricsPage data={result.data} />;

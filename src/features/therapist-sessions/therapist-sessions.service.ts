@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { TherapistPlan } from "@/domain/tes";
 import {
   parseTherapistSessionDetailReadModel,
   parseTherapistPendingConfirmationsSummary,
@@ -42,6 +43,22 @@ export type TherapistSessionFeedbackStatus =
   | "eligible"
   | "submitted"
   | "unavailable";
+
+export type TherapistSessionFeedbackSummary = {
+  outcome: "completed" | "not_performed" | null;
+  status: TherapistSessionFeedbackStatus;
+};
+
+export function shouldShowTherapistSessionJourneyThemes(
+  plan: TherapistPlan,
+  feedback: TherapistSessionFeedbackSummary,
+) {
+  return (
+    plan === "premium_plus" &&
+    feedback.status === "submitted" &&
+    feedback.outcome === "completed"
+  );
+}
 
 export async function getTherapistSessionsPage(input: {
   accessToken: string;
@@ -125,20 +142,31 @@ export async function getTherapistSessionFeedbackStatus(input: {
   accessToken: string;
   bookingId: string;
 }): Promise<TherapistSessionFeedbackStatus> {
+  return (await getTherapistSessionFeedbackSummary(input)).status;
+}
+
+export async function getTherapistSessionFeedbackSummary(input: {
+  accessToken: string;
+  bookingId: string;
+}): Promise<TherapistSessionFeedbackSummary> {
   try {
     const payload = await queryTherapistSessionFeedback(
       input.accessToken,
       input.bookingId,
     );
     const status = getFeedbackStatus(payload);
+    const outcome = getFeedbackOutcome(payload);
 
-    if (status === "eligible") return status;
-    if (status === "submitted") return status;
-    if (status === "before_session") return status;
+    if (status === "eligible" || status === "before_session") {
+      return { outcome: null, status };
+    }
+    if (status === "submitted") {
+      return { outcome, status };
+    }
 
-    return "unavailable";
+    return { outcome: null, status: "unavailable" };
   } catch {
-    return "unavailable";
+    return { outcome: null, status: "unavailable" };
   }
 }
 
@@ -204,6 +232,18 @@ function getFeedbackStatus(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const status = Reflect.get(value, "status");
   return typeof status === "string" ? status : null;
+}
+
+function getFeedbackOutcome(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const feedback = Reflect.get(value, "feedback");
+  if (!feedback || typeof feedback !== "object" || Array.isArray(feedback)) {
+    return null;
+  }
+  const outcome = Reflect.get(feedback, "outcome");
+  return outcome === "completed" || outcome === "not_performed"
+    ? outcome
+    : null;
 }
 
 function getReadModelErrorCode(error: unknown): ReadModelErrorCode {

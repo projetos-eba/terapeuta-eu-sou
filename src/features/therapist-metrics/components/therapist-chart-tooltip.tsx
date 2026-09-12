@@ -14,6 +14,7 @@ export type TherapistChartTooltipProps = {
   label?: string | number;
   labelFormatter?: (value: string | number) => string;
   payload?: readonly TooltipPayloadItem[];
+  valueFormatter?: (value: TooltipValue) => ReactNode;
 };
 
 export function TherapistChartTooltip({
@@ -21,6 +22,7 @@ export function TherapistChartTooltip({
   label,
   labelFormatter = String,
   payload,
+  valueFormatter = formatTooltipValue,
 }: TherapistChartTooltipProps) {
   if (!active || !payload?.length) return null;
 
@@ -29,7 +31,7 @@ export function TherapistChartTooltip({
     .map((item) => ({
       color: item.color ?? "var(--tes-color-brand-primary)",
       label: chartItemLabel(item),
-      value: formatTooltipValue(item.value),
+      value: valueFormatter(item.value as TooltipValue),
     }));
 
   if (!items.length) return null;

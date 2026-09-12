@@ -97,14 +97,12 @@ describe("SessionFeedbackForm", () => {
   });
 
   it("requires a non-completion reason and preserves the 500 character limit", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse({
-          data: { feedback: null, status: "incident_only" },
-          ok: true,
-        }),
-      );
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: { feedback: null, status: "incident_only" },
+        ok: true,
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     render(
@@ -138,14 +136,12 @@ describe("SessionFeedbackForm", () => {
   it("renders an unavailable state without exposing the feedback form", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          jsonResponse({
-            data: { feedback: null, status: "unavailable" },
-            ok: true,
-          }),
-        ),
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: { feedback: null, status: "unavailable" },
+          ok: true,
+        }),
+      ),
     );
 
     render(
@@ -165,7 +161,92 @@ describe("SessionFeedbackForm", () => {
       screen.queryByRole("button", { name: /enviar feedback/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("shows journey themes after completed therapist feedback when enabled", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            feedback: completedTherapistFeedback(),
+            status: "submitted",
+          },
+          ok: true,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { selection: null }, ok: true }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <SessionFeedbackForm
+        actorRole="therapist"
+        bookingId={bookingId}
+        sessionLabel="Sua sessão foi encerrada"
+        showJourneyThemes
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Quais foram os temas da sua sessão?",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [false, completedTherapistFeedback()],
+    [
+      true,
+      {
+        ...completedTherapistFeedback(),
+        outcome: "not_performed",
+        rating: null,
+      },
+    ],
+  ] as const)(
+    "does not show journey themes when the plan gate is %s or the session was not completed",
+    async (showJourneyThemes, feedback) => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            jsonResponse({ data: { feedback, status: "submitted" }, ok: true }),
+          ),
+      );
+
+      render(
+        <SessionFeedbackForm
+          actorRole="therapist"
+          bookingId={bookingId}
+          sessionLabel="Sua sessão foi encerrada"
+          showJourneyThemes={showJourneyThemes}
+        />,
+      );
+
+      await screen.findByText("Sua confirmação foi registrada");
+      expect(
+        screen.queryByRole("heading", {
+          name: "Quais foram os temas da sua sessão?",
+        }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
+
+function completedTherapistFeedback() {
+  return {
+    authorRole: "therapist" as const,
+    comment: "",
+    createdAt: "2026-09-11T18:00:00.000Z",
+    id: "feedback-therapist-1",
+    notPerformedReason: null,
+    outcome: "completed" as const,
+    rating: 5,
+  };
+}
 
 function jsonResponse(payload: unknown) {
   return {

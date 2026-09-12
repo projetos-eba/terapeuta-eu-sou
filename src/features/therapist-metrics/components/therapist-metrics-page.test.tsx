@@ -155,7 +155,7 @@ describe("TherapistMetricsPage", () => {
     expect(screen.queryByText("Valor")).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", {
-        name: "Total de pessoas acompanhadas no período",
+        name: /Total de pessoas acompanhadas no período: Pessoas acompanhadas, 8/,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Total único no período")).toBeInTheDocument();

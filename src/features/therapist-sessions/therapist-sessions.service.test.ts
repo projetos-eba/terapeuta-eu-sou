@@ -5,14 +5,12 @@ const {
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
-} = vi.hoisted(
-  () => ({
-    queryTherapistPendingConfirmations: vi.fn(),
-    queryTherapistSessionDetail: vi.fn(),
-    queryTherapistSessionFeedback: vi.fn(),
-    queryTherapistSessions: vi.fn(),
-  }),
-);
+} = vi.hoisted(() => ({
+  queryTherapistPendingConfirmations: vi.fn(),
+  queryTherapistSessionDetail: vi.fn(),
+  queryTherapistSessionFeedback: vi.fn(),
+  queryTherapistSessions: vi.fn(),
+}));
 
 vi.mock("./therapist-sessions.queries", () => ({
   queryTherapistPendingConfirmations,
@@ -24,8 +22,10 @@ vi.mock("./therapist-sessions.queries", () => ({
 import {
   getTherapistPendingConfirmationsSummary,
   getTherapistSessionDetail,
+  getTherapistSessionFeedbackSummary,
   getTherapistSessionFeedbackStatus,
   getTherapistSessionsPage,
+  shouldShowTherapistSessionJourneyThemes,
 } from "./therapist-sessions.service";
 
 const therapistProfileId = "c1000000-0000-4000-8000-000000000001";
@@ -167,6 +167,50 @@ describe("therapist sessions service results", () => {
       }),
     ).resolves.toBe("unavailable");
   });
+
+  it("maps the therapist feedback outcome used by the journey themes gate", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      feedback: { outcome: "completed" },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toEqual({ outcome: "completed", status: "submitted" });
+  });
+
+  it("fails closed when a submitted feedback has no recognized outcome", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      feedback: { outcome: "internal" },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toEqual({ outcome: null, status: "submitted" });
+  });
+
+  it.each([
+    ["premium_plus", "submitted", "completed", true],
+    ["premium", "submitted", "completed", false],
+    ["free", "submitted", "completed", false],
+    ["premium_plus", "submitted", "not_performed", false],
+    ["premium_plus", "eligible", null, false],
+    ["premium_plus", "unavailable", null, false],
+  ] as const)(
+    "gates journey themes for plan %s with feedback %s/%s",
+    (plan, status, outcome, expected) => {
+      expect(
+        shouldShowTherapistSessionJourneyThemes(plan, { outcome, status }),
+      ).toBe(expected);
+    },
+  );
 });
 
 function sessionsResponse(profileId = therapistProfileId) {
