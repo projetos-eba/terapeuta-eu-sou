@@ -30,11 +30,13 @@ import {
   type TherapistSessionDetailReadModel,
 } from "@/features/bookings";
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
+import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
-  getTherapistSessionFeedbackStatus,
+  getTherapistSessionFeedbackSummary,
   getTherapistSessionPendingReschedule,
+  shouldShowTherapistSessionJourneyThemes,
   type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
 import { getTherapistPostSessionAction } from "@/features/therapist-sessions/session-feedback-action";
@@ -68,17 +70,18 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
-  const [pendingReschedule, feedbackStatus] = await Promise.all([
+  const [pendingReschedule, feedbackSummary] = await Promise.all([
     getTherapistSessionPendingReschedule({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
       userId: therapist.userId,
     }),
-    getTherapistSessionFeedbackStatus({
+    getTherapistSessionFeedbackSummary({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
     }),
   ]);
+  const feedbackStatus = feedbackSummary.status;
 
   return (
     <AppPageContainer className="max-w-[1146px] gap-5 pb-14 sm:gap-6 lg:gap-7">
@@ -107,6 +110,15 @@ export default async function TherapistSessionDetailPage({
             feedbackStatus={feedbackStatus}
             presentation={presentation}
           />
+          {shouldShowTherapistSessionJourneyThemes(
+            therapist.plan,
+            feedbackSummary,
+          ) ? (
+            <TherapistJourneyThemesForm
+              bookingId={booking.bookingId}
+              presentation="standalone"
+            />
+          ) : null}
           <SessionOperationActions
             actorRole="therapist"
             bookingId={booking.bookingId}

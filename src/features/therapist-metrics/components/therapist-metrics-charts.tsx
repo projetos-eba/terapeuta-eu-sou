@@ -64,10 +64,18 @@ export function MetricSparkline({
           value: 0,
         }))
       : data;
+  const accessibleLabel = empty
+    ? `${label}: ainda sem dados`
+    : `${label}: ${data
+        .map(
+          (point) =>
+            `${point.label}, ${new Intl.NumberFormat("pt-BR").format(point.value)}`,
+        )
+        .join("; ")}`;
 
   return (
     <div
-      aria-label={empty ? `${label}: ainda sem dados` : label}
+      aria-label={accessibleLabel}
       className={`${className} w-full`}
       data-point-count={visualData.length}
       role="img"
@@ -260,7 +268,7 @@ export function SessionsEvolutionChart({
         </ResponsiveContainer>
       </div>
       {!empty && points.length > 0 ? (
-        <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-brand-lavender/55 pt-4">
+        <dl className="mt-4 grid grid-cols-1 gap-2 border-t border-brand-lavender/55 pt-4 sm:grid-cols-3">
           <div className="rounded-card bg-brand-lavenderSoft/70 px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
               Sessões concluídas
@@ -281,10 +289,15 @@ export function SessionsEvolutionChart({
           </div>
           <div className="rounded-card bg-status-successBg px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Melhor dia
+              Pico diário
             </dt>
-            <dd className="mt-1 text-lg font-extrabold text-status-success">
-              {bestPoint?.sessionsCompleted ?? 0}
+            <dd className="mt-1 flex flex-wrap items-baseline gap-x-2 text-lg font-extrabold text-status-success">
+              <span>{bestPoint?.sessionsCompleted ?? 0}</span>
+              {bestPoint ? (
+                <span className="text-xs font-bold text-tesText-secondary">
+                  em {shortDate(bestPoint.date)}
+                </span>
+              ) : null}
             </dd>
           </div>
         </dl>
@@ -438,14 +451,25 @@ export function PeopleEvolutionChart({
 
 export function TherapyBarsChart({
   items,
+  label = "Ranking de terapias por sessões",
+  seriesLabel = "Sessões",
+  valueSuffix = "",
 }: {
   items: Array<{ name: string; value: number }>;
+  label?: string;
+  seriesLabel?: string;
+  valueSuffix?: string;
 }) {
+  const chartHeight = Math.max(240, items.length * 46 + 24);
+
   return (
     <div
-      aria-label="Ranking de terapias por sessões"
-      className="h-[260px] w-full"
+      aria-label={`${label}: ${items
+        .map((item) => `${item.name}, ${item.value}${valueSuffix}`)
+        .join("; ")}`}
+      className="w-full"
       role="img"
+      style={{ height: chartHeight }}
       tabIndex={0}
     >
       <ResponsiveContainer height="100%" width="100%">
@@ -463,14 +487,20 @@ export function TherapyBarsChart({
           <XAxis allowDecimals={false} type="number" />
           <YAxis dataKey="name" tickLine={false} type="category" width={112} />
           <Tooltip
-            content={<TherapistChartTooltip />}
+            content={
+              <TherapistChartTooltip
+                valueFormatter={(value) =>
+                  `${formatChartValue(value)}${valueSuffix}`
+                }
+              />
+            }
             cursor={{ fill: "var(--tes-color-surface-soft)" }}
             isAnimationActive={false}
           />
           <Bar
             dataKey="value"
             isAnimationActive={false}
-            name="Sessões"
+            name={seriesLabel}
             radius={[0, 8, 8, 0]}
           >
             {items.map((item, index) => (
@@ -530,6 +560,11 @@ export function DistributionDonut({
   const hasValues = items.some((item) => item.value > 0);
   const isReference = empty || !hasValues;
   const visualItems = isReference ? [{ label: "Sem dados", value: 1 }] : items;
+  const accessibleLabel = isReference
+    ? `${label}: ainda sem dados`
+    : `${label}: ${items
+        .map((item) => `${item.label}, ${item.value}${valueSuffix}`)
+        .join("; ")}`;
 
   return (
     <div
@@ -540,7 +575,7 @@ export function DistributionDonut({
       }
     >
       <div
-        aria-label={isReference ? `${label}: ainda sem dados` : label}
+        aria-label={accessibleLabel}
         className={`relative mx-auto w-full ${compact ? "h-[170px] max-w-[220px]" : "h-[190px] max-w-[260px]"}`}
         role="img"
         tabIndex={0}
@@ -569,7 +604,13 @@ export function DistributionDonut({
                 ))}
               </Pie>
               <Tooltip
-                content={<TherapistChartTooltip />}
+                content={
+                  <TherapistChartTooltip
+                    valueFormatter={(value) =>
+                      `${formatChartValue(value)}${valueSuffix}`
+                    }
+                  />
+                }
                 isAnimationActive={false}
                 wrapperStyle={{ zIndex: 20 }}
               />
@@ -699,16 +740,21 @@ export function MetricsHeatmap({
                 const opacity =
                   value === 0 ? 0.08 : 0.2 + (value / maximum) * 0.8;
                 return (
-                  <td key={day.value}>
+                  <td
+                    key={day.value}
+                    title={`${day.label}, ${String(hour).padStart(2, "0")}h–${String(hour + 2).padStart(2, "0")}h: ${value} ${valueLabel}`}
+                  >
                     <span
-                      aria-label={`${day.label}, ${hour}h: ${value} ${valueLabel}`}
+                      aria-hidden="true"
                       className="block h-7 rounded sm:h-8 sm:rounded-md"
                       style={{
                         background: `color-mix(in srgb, var(--tes-color-brand-primary) ${Math.round(opacity * 100)}%, white)`,
                       }}
-                      tabIndex={0}
-                      title={`${day.label}, ${String(hour).padStart(2, "0")}h–${String(hour + 2).padStart(2, "0")}h: ${value} ${valueLabel}`}
                     />
+                    <span className="sr-only">
+                      {day.label}, {String(hour).padStart(2, "0")}h a{" "}
+                      {String(hour + 2).padStart(2, "0")}h: {value} {valueLabel}
+                    </span>
                   </td>
                 );
               })}
@@ -743,11 +789,17 @@ export function MetricsFunnel({
   );
   const maximum = Math.max(1, ...numericValues);
   const isReference = stages.some((stage) => stage.value === null);
+  const accessibleSummary = stages
+    .map((stage) => `${stage.label}: ${stage.value ?? "indisponível"}`)
+    .join("; ");
   return (
-    <ol aria-label="Funil de conversão" className="grid gap-3">
+    <ol
+      aria-label={`Funil de conversão. ${accessibleSummary}`}
+      className="grid gap-3"
+    >
       {stages.map((stage, index) => (
         <li
-          className="grid grid-cols-[minmax(112px,0.8fr)_minmax(120px,1.35fr)_auto] items-center gap-3"
+          className="grid grid-cols-[minmax(112px,0.8fr)_minmax(120px,1.35fr)] items-center gap-3"
           key={stage.label}
         >
           <span>
@@ -781,11 +833,6 @@ export function MetricsFunnel({
               }}
             />
           </span>
-          <strong className="min-w-12 text-right text-sm text-tesText-secondary">
-            {isReference || stage.value === null
-              ? "—"
-              : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format((stage.value / maximum) * 100)}%`}
-          </strong>
         </li>
       ))}
     </ol>
@@ -813,4 +860,16 @@ function fullDate(value: string) {
     dateStyle: "long",
     timeZone: "UTC",
   }).format(new Date(`${value}T12:00:00Z`));
+}
+
+function formatChartValue(
+  value: number | string | readonly (number | string)[],
+) {
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "number") {
+    return new Intl.NumberFormat("pt-BR", {
+      maximumFractionDigits: 1,
+    }).format(value);
+  }
+  return String(value);
 }

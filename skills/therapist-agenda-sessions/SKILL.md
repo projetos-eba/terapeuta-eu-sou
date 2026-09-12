@@ -140,6 +140,10 @@ histórica.
   `submitted` e `unavailable` mostram somente o estado honesto. A autorização
   final permanece no backend e esta rota operacional continua disponível para
   Free, Premium e Premium Plus.
+- Para Premium Plus, `submitted` com feedback do terapeuta `completed` também
+  exibe no detalhe o registro opcional de um a três temas da sessão. Free,
+  Premium, feedback não realizado, confirmação pendente e falha de leitura não
+  exibem essa seção; a Edge Function e o banco continuam autoritativos.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados
   (incluindo pagamento cancelado, reembolso ou sessão não realizada),
   `SessionOperationActions` mantém cancelamento e reagendamento desabilitados e
@@ -335,7 +339,7 @@ the related demand tip is not rendered without `agenda_insights`.
   sessões canceladas ou reembolsadas quando ocuparem o mesmo intervalo; foco e
   hover podem elevar temporariamente qualquer cartão para permitir inspeção.
 - Na visão mensal, cada célula e cartão devem conter o conteúdo com `min-width:
-  0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
+0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
   invadir visualmente outro dia; o nome completo continua preservado no rótulo
   acessível.
 

@@ -5,7 +5,7 @@
 | Campo                 | Valor                                                              |
 | --------------------- | ------------------------------------------------------------------ |
 | Data da análise       | 2026-07-28                                                         |
-| Estado atual          | `prototyped` no Figma; rota funcional ainda não implementada       |
+| Estado atual          | `functional` em MTR-1 a MTR-5, MTR-7 CSV e MTR-8 dashboard         |
 | Rota executável atual | `/terapeuta/insights`                                              |
 | Alias atual           | `/terapeuta/metricas` redireciona para `/terapeuta/insights`       |
 | Capability atual      | `advanced_metrics`                                                 |
@@ -15,6 +15,13 @@
 | Fonte de agenda       | bookings, disponibilidade e slot engine autoritativo               |
 | Aura                  | mecanismo determinístico por regras; não é IA generativa           |
 | MTR-0                 | fechado por `ADR-011-therapist-metrics-contracts-and-decisions.md` |
+
+> Atualização de implementação — 2026-09-11:
+> MTR-1 a MTR-5 e o CSV agregado estão funcionais em
+> `/terapeuta/insights`, com períodos de 30/60/90/120 dias completos. A aba
+> Interesse do Premium Plus usa `get_therapist_metrics_today_v1()` para mostrar
+> separadamente os favoritos do dia local; essa projeção não altera o
+> comparativo histórico e não contém identificadores de pacientes.
 
 > Nota de implementação — 2026-07-31:
 > MTR-6/Aura MVP foi implementado na rota canônica

@@ -14856,6 +14856,7 @@ export type Database = {
         Args: { p_period_days?: number };
         Returns: Json;
       };
+      get_therapist_metrics_today_v1: { Args: never; Returns: Json };
       get_therapist_occupancy_metrics_v2: {
         Args: {
           p_period_days: number;
