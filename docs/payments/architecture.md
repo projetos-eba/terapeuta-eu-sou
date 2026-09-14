@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-26.
+Atualizado em 2026-09-14.
 
 ## Visao geral
 
@@ -388,6 +388,11 @@ Checkout: `stripe-create-session-payment` cria a Checkout Session server-side e
 retorna apenas o `clientSecret` necessário para montar o componente oficial da
 Stripe. O retorno visual da Stripe não confirma pagamento; somente webhook
 assinado atualiza `session_payments` e o booking.
+
+Na etapa de pagamento, a ação “Fale conosco” abre em nova aba uma conversa no
+WhatsApp com o suporte TES pelo número `+55 18 98105-8337` e uma mensagem de
+ajuda pré-preenchida. Essa saída preserva o Checkout aberto na aba original e
+não altera a tentativa, o booking nem qualquer estado financeiro.
 
 ## Shell financeiro do terapeuta
 

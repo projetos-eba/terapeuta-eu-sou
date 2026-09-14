@@ -1037,7 +1037,9 @@ Também é necessário aplicar no servidor:
 Decisão MTR-0:
 
 - suprimir métricas com trava, segmentações e coortes com menos de 10 pessoas;
-- favoritos exigem 10 favoritos, não 10 sessões;
+- comparações e tendências de favoritos exigem 10 favoritos, não 10 sessões;
+  a contagem agregada de favoritos recebidos pelo perfil na aba Interesse do
+  Premium Plus é imediata, sem percentuais, recortes ou identificadores;
 - não mostrar percentuais quando o denominador for menor que 10;
 - comparações qualitativas podem exigir guarda adicional acima de 10 conforme
   a definição versionada;
@@ -1210,7 +1212,7 @@ Premium Plus inclui o catálogo Premium e acrescenta:
 | Pessoas que voltaram                   | 10 atendimentos           |
 | Técnicas que mais geram agendamentos   | 10 + guarda de comparação |
 | Trajetória temporal                    | 10 atendimentos           |
-| Quantas vezes o perfil foi favoritado  | 10 favoritos              |
+| Favoritos recebidos no período         | imediato no Premium Plus; comparação 10 |
 | Favoritos que viraram encontro         | 10 favoritos              |
 | Técnicas em que as pessoas mais voltam | 10 + guarda de comparação |
 | Lacuna entre procura própria e agenda  | 10 eventos elegíveis      |
@@ -1531,7 +1533,8 @@ Status: `functional`, respeitando gates de dados.
 - ocupação retorna `unavailable` enquanto a oferta histórica não for
   versionada;
 - ranking das próprias terapias com trava de 10;
-- favoritos do perfil com trava de 10;
+- atividade agregada de favoritos do perfil imediata no Premium Plus e
+  comparação com trava de 10;
 - comparação de períodos de 30/60/90/120 dias;
 - estados vazios, em processamento, insuficientes e indisponíveis;
 - composição responsiva com `AppPageGrid` e equivalente textual para o gráfico.
@@ -1603,7 +1606,7 @@ Detalhes:
 | Aura Premium                             | Premium recebe copy direcional; Aura completa somente no Premium Plus           |
 | Exportação                               | CSV primeiro; impressão/PDF após homologação                                    |
 | Base legal e retenção                    | Tracking produtivo bloqueado até validação formal de privacidade                |
-| Amostra mínima                           | 10; favoritos exigem 10 favoritos                                               |
+| Amostra mínima                           | 10 para comparações; atividade agregada de favoritos imediata no Premium Plus  |
 | Lacuna de agenda                         | Procura própria sem disponibilidade menos oferta; distinta de ocupação          |
 | Favoritos                                | Métrica do perfil do terapeuta, nunca do serviço ou técnica                     |
 | Tendência do portal                      | Só-admin; proibida no shell e na Aura                                           |
@@ -1631,7 +1634,8 @@ Detalhes:
 - nenhum número aparece sem copy de direção;
 - zero, vazio, indisponível e amostra insuficiente são distintos;
 - fórmulas estão versionadas e documentadas;
-- trava de acúmulo usa 10 e favoritos usam 10 favoritos;
+- trava de acúmulo usa 10 para comparações; favoritos usam 10 para tendência,
+  mas sua atividade agregada no Premium Plus é imediata;
 - pagamento vem exclusivamente de `session_payments`;
 - funil usa eventos idempotentes e coortes;
 - agenda usa timezone e slot engine autoritativos;

@@ -268,11 +268,7 @@ export function mapTherapistInterestMetrics(
           "therapist_metrics.people_returned",
           "people",
         ),
-        profileFavorites: sampledMetric(
-          summary.profileFavorites,
-          "therapist_metrics.profile_favorites",
-          "favorites",
-        ),
+        profileFavorites: profileFavorites(summary.profileFavorites),
         returnRate: sampledMetric(
           summary.returnRate,
           "therapist_metrics.return_rate",
@@ -296,6 +292,24 @@ export function mapTherapistInterestMetrics(
     if (error instanceof TherapistMetricsError) throw error;
     throw new TherapistMetricsError("invalid_contract");
   }
+}
+
+function profileFavorites(input: unknown) {
+  const value = record(input);
+  const activity = record(value.activity);
+
+  return {
+    activity: {
+      status: emptyOrReady(activity.status),
+      unit: literal(activity.unit, "favorites"),
+      value: nonNegativeInteger(activity.value),
+    },
+    comparison: sampledMetric(
+      value.comparison,
+      "therapist_metrics.profile_favorites",
+      "favorites",
+    ),
+  } as const;
 }
 
 function commonMeta(input: unknown): TherapistMetricsCommonMeta {

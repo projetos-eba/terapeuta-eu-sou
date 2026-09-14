@@ -305,7 +305,14 @@ export type TherapistInterestMetrics =
       };
       summary: {
         peopleReturned: TherapistMetricSampledValue<"people">;
-        profileFavorites: TherapistMetricSampledValue<"favorites">;
+        profileFavorites: {
+          activity: {
+            status: "empty" | "ready";
+            unit: "favorites";
+            value: number;
+          };
+          comparison: TherapistMetricSampledValue<"favorites">;
+        };
         returnRate: TherapistMetricSampledValue<"percent">;
         sessionsPerPerson: TherapistMetricSampledValue<"ratio">;
       };

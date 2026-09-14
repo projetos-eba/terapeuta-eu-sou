@@ -152,7 +152,9 @@ um limiar percentual universal.
 **Origem:** `LEIAME`, confirmado pelo usuário.
 
 - Métricas marcadas com trava só aparecem a partir de 10 observações elegíveis.
-- Favoritos exigem 10 favoritos, não 10 sessões.
+- Comparações e tendências de favoritos exigem 10 favoritos, não 10 sessões.
+  A atividade agregada de favoritos do perfil na aba Interesse do Premium Plus
+  fica disponível desde o primeiro registro, sem percentuais ou identificadores.
 - Percentuais com denominador abaixo de 10 não são mostrados.
 - Coortes e segmentações abaixo de 10 são suprimidas.
 - Comparações qualitativas podem exigir guarda adicional maior que 10.
@@ -192,7 +194,7 @@ Premium Plus inclui o Premium e acrescenta:
 | Pessoas que voltaram                   | 10 atendimentos      |
 | Técnicas que mais geram agendamentos   | 10 + guarda          |
 | Trajetória temporal                    | 10 atendimentos      |
-| Quantas vezes o perfil foi favoritado  | 10 favoritos         |
+| Favoritos recebidos no período         | imediato no Premium Plus; comparação 10 |
 | Favoritos que viraram encontro         | 10 favoritos         |
 | Técnicas em que as pessoas mais voltam | 10 + guarda          |
 | Lacuna entre procura própria e agenda  | 10 eventos elegíveis |
@@ -437,7 +439,9 @@ Favorito é métrica do perfil do terapeuta.
   perfil;
 - “Favoritos que viraram encontro” usa pessoas que favoritaram o perfil e
   depois agendaram com aquele terapeuta;
-- a trava é 10 favoritos.
+- a contagem agregada de favoritos recebidos no período é imediata somente na
+  aba Interesse do Premium Plus; a trava de 10 favoritos permanece para
+  comparações, tendências e para “Favoritos que viraram encontro”.
 
 ### 19. Aura por plano
 
@@ -639,7 +643,7 @@ O primeiro corte foi implementado sem telemetria nova:
 | Abas Sessões e Interesse                  | `planned`                  | contratos MTR-4/MTR-5                               | não aplicável neste corte                     |
 | Aura                                      | `planned`                  | depende de MTR-6                                    | bloqueada contra dados simulados              |
 | Correção isolada de favoritos por serviço | `functional`               | `favorite_therapists` permanece associada ao perfil | pgTAP e regressão da gestão de serviços       |
-| KPI de favoritos no perfil                | `functional`               | `favorite_therapists`, com trava de 10              | pgTAP, mapper e componente                    |
+| KPI de favoritos no perfil                | `functional`               | atividade imediata no Premium Plus; comparação com trava de 10 | pgTAP, mapper e componente |
 
 ### Autoridade implementada
 
@@ -677,8 +681,10 @@ preservado.
   `record_public_therapist_metric_events_v1(uuid,jsonb)`;
 - o read model privado é `get_therapist_metrics_overview_v1(integer)`;
 - períodos permitidos são 30, 60, 90 e 120 dias locais completos;
-- favoritos entram como evento autoritativo do perfil e continuam protegidos
-  pela trava 10;
+- favoritos entram como evento autoritativo do perfil. A contagem agregada de
+  favoritos no período fica disponível desde o primeiro registro para o
+  Premium Plus; a tendência e a comparação entre períodos continuam
+  protegidas pela trava 10;
 - funil usa coorte pseudônima e nunca totais independentes;
 - ocupação permanece `unavailable` por ausência de histórico reproduzível da
   oferta;

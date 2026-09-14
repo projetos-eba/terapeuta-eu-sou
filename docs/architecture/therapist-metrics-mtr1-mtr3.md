@@ -78,7 +78,7 @@ Read models:
 - série diária de sessões concluídas;
 - estágios de descoberta;
 - conversões por coorte pseudônima;
-- favoritos do perfil com amostra mínima de 10;
+- comparações e tendências de favoritos do perfil com amostra mínima de 10;
 - ranking das próprias terapias com amostra mínima de 10;
 - ocupação explicitamente indisponível.
 
@@ -139,9 +139,13 @@ Com a telemetria desativada, o contrato retorna `unavailable` com
 
 ### Favoritos e ranking
 
-Valores abaixo de 10 não são expostos. O contrato retorna somente
-`minimumSample` e `observedSample`. Favoritos nunca são quebrados por serviço,
-terapia ou técnica.
+Valores abaixo de 10 não são expostos em comparações, tendências, percentuais
+ou rankings. Na aba Interesse do Premium Plus, a contagem agregada de favoritos
+do período é a exceção controlada: ela usa dias locais completos e fica visível
+desde o primeiro favorito, sem qualquer identificador ou recorte por serviço,
+terapia ou técnica. O contrato separa essa atividade (`empty` ou `ready`) da
+comparação protegida (`insufficient_sample` ou `ready`), que continua retornando
+somente `minimumSample` e `observedSample` antes da amostra mínima.
 
 Na aba Interesse, a comparação protegida continua terminando no dia anterior.
 Quando houver favoritos no dia atual, o card mostra `+N favorito(s) hoje` e

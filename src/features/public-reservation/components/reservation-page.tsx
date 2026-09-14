@@ -27,7 +27,6 @@ import {
   PromotionCodeField,
   type PromotionCheckoutAmounts,
 } from "@/features/payments";
-import { NewSupportTicketDialog } from "@/features/support/components/therapist-support-section";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +46,9 @@ import { CheckoutButton, ReservationLinkButton } from "./checkout-button";
 import { PrepareForm } from "./prepare-form";
 
 const reservationJourneyDraftHistoryKey = "tes.reservation.journey-draft.v1";
+const paymentSupportWhatsappHref = `https://wa.me/5518981058337?text=${encodeURIComponent(
+  "Olá, estou tentando realizar um pagamento na plataforma TES e preciso de ajuda.",
+)}`;
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -126,10 +128,6 @@ export function ReservationPage({
   const [checkoutReady, setCheckoutReady] = useState(false);
   const [isPatientConflictDialogOpen, setIsPatientConflictDialogOpen] =
     useState(context.selectedSlotHasPatientConflict);
-  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
-  const [supportTicketProtocol, setSupportTicketProtocol] = useState<
-    string | null
-  >(null);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
     isPaymentRetry || context.selectedSlotHasPatientConflict
@@ -459,44 +457,16 @@ export function ReservationPage({
               onAdvanceToPayment={() => goToStep("pagamento")}
             />
             {currentStep === "pagamento" ? (
-              <ShellHelpCard onClick={() => setIsSupportDialogOpen(true)} />
+              <ShellHelpCard
+                href={paymentSupportWhatsappHref}
+                target="_blank"
+              />
             ) : null}
             <PolicyCard />
           </aside>
         </div>
       </div>
       <ReservationFooter />
-      {isSupportDialogOpen ? (
-        <NewSupportTicketDialog
-          actorRole="patient"
-          onClose={() => setIsSupportDialogOpen(false)}
-          onTicketCreated={(ticket) => {
-            setIsSupportDialogOpen(false);
-            setSupportTicketProtocol(ticket.protocol);
-          }}
-        />
-      ) : null}
-      {supportTicketProtocol ? (
-        <TESDialog
-          onClose={() => setSupportTicketProtocol(null)}
-          title="Chamado aberto"
-        >
-          <div className="grid gap-5">
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Recebemos seu chamado. Seu protocolo é {supportTicketProtocol}.
-              Você pode continuar seu pagamento enquanto nossa equipe analisa a
-              solicitação.
-            </p>
-            <TESButton
-              className="min-h-11 rounded-lg"
-              onClick={() => setSupportTicketProtocol(null)}
-              type="button"
-            >
-              Voltar ao pagamento
-            </TESButton>
-          </div>
-        </TESDialog>
-      ) : null}
       {isPatientConflictDialogOpen ? (
         <TESDialog
           description="Para evitar dois atendimentos ao mesmo tempo, escolha outro horário disponível."

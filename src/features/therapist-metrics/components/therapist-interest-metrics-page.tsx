@@ -5,7 +5,6 @@ import {
   Sparkles,
   UserCheck,
   UserMinus,
-  UsersRound,
 } from "lucide-react";
 
 import {
@@ -79,7 +78,7 @@ export function TherapistInterestMetricsPage({
             completos. Favoritos recebidos hoje aparecem separadamente.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <SegmentSampledCard
             data={data}
             icon={UserCheck}
@@ -88,27 +87,13 @@ export function TherapistInterestMetricsPage({
             segment="active"
             tone="primary"
           />
-          <SampledCard
-            icon={Heart}
-            label="Novos favoritos do perfil"
-            metric={data.summary.profileFavorites}
-            sampleCaption="favoritos até ontem"
+          <FavoritesCard
+            favorites={data.summary.profileFavorites}
             todayActivity={todayActivity}
-            tone="danger"
           />
-          <SampledCard
-            icon={Repeat2}
-            label="Pessoas que voltaram"
-            metric={data.summary.peopleReturned}
-            sampleCaption="pessoas no período"
-            tone="primary"
-          />
-          <SampledCard
-            icon={UsersRound}
-            label="Taxa de retorno"
-            metric={data.summary.returnRate}
-            sampleCaption="pessoas no período"
-            tone="mint"
+          <ReturnSummaryCard
+            peopleReturned={data.summary.peopleReturned}
+            returnRate={data.summary.returnRate}
           />
           <SegmentSampledCard
             data={data}
@@ -141,6 +126,173 @@ export function TherapistInterestMetricsPage({
         </AppPageAside>
       </AppPageGrid>
     </TherapistMetricsLayout>
+  );
+}
+
+function FavoritesCard({
+  favorites,
+  todayActivity,
+}: {
+  favorites: TherapistInterestMetricsReady["summary"]["profileFavorites"];
+  todayActivity: TherapistMetricsTodayActivityState;
+}) {
+  const comparison = favorites.comparison;
+  const trend =
+    comparison.status === "ready" ? getMetricTrend(comparison) : null;
+  const sparkline =
+    comparison.status === "ready" && comparison.previousValue !== null
+      ? [
+          { label: "Período anterior", value: comparison.previousValue },
+          { label: "Período atual", value: comparison.value },
+        ]
+      : [];
+
+  return (
+    <TESCard
+      as="article"
+      className="relative flex min-h-[190px] min-w-0 flex-col overflow-hidden border-brand-lavender/55 bg-white p-4 shadow-[0_8px_22px_rgba(57,45,90,0.055)] sm:min-h-[198px]"
+      data-state={favorites.activity.status}
+      data-tone="danger"
+    >
+      <div className="flex min-h-10 items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-status-dangerBg text-status-danger">
+          <Heart aria-hidden="true" size={18} />
+        </span>
+        <h3 className="pt-0.5 text-sm font-extrabold leading-[18px] text-brand-deep">
+          Novos favoritos do perfil
+        </h3>
+      </div>
+      {favorites.activity.status === "ready" ? (
+        <>
+          <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
+            {formatCompactNumber(favorites.activity.value)}
+          </p>
+          <p className="mt-2 min-h-7 text-[11px] font-bold leading-4 text-tesText-muted">
+            favoritos até ontem
+            {comparison.status === "insufficient_sample"
+              ? " · comparação após 10 favoritos"
+              : null}
+          </p>
+          {trend ? (
+            <div className="mt-1 flex min-h-6 items-center gap-2">
+              <span
+                aria-label={trend.accessibleLabel}
+                className={`inline-flex min-h-6 items-center rounded-full px-2 text-xs font-extrabold ${trend.className}`}
+              >
+                {trend.label}
+              </span>
+              <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+                {trend.caption}
+              </span>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
+            <span className="sr-only">Nenhum favorito ainda.</span>
+            <span aria-hidden="true">—</span>
+          </p>
+          <p className="mt-2 min-h-7 text-[11px] font-bold leading-4 text-tesText-muted">
+            Ainda não há favoritos no período.
+          </p>
+        </>
+      )}
+      <TodayFavoritesStatus activity={todayActivity} />
+      <div className="mt-auto pt-2.5">
+        <MetricSparkline
+          className="h-7"
+          data={sparkline}
+          empty={sparkline.length < 2}
+          label="Tendência de novos favoritos do perfil"
+          tone="danger"
+        />
+      </div>
+    </TESCard>
+  );
+}
+
+function ReturnSummaryCard({
+  peopleReturned,
+  returnRate,
+}: {
+  peopleReturned: TherapistInterestMetricsReady["summary"]["peopleReturned"];
+  returnRate: TherapistInterestMetricsReady["summary"]["returnRate"];
+}) {
+  const isReady =
+    peopleReturned.status === "ready" && returnRate.status === "ready";
+  const trend = isReady ? getMetricTrend(returnRate) : null;
+  const sparkline =
+    isReady && returnRate.previousValue !== null
+      ? [
+          { label: "Período anterior", value: returnRate.previousValue },
+          { label: "Período atual", value: returnRate.value },
+        ]
+      : [];
+
+  return (
+    <TESCard
+      as="article"
+      className="relative flex min-h-[190px] min-w-0 flex-col overflow-hidden border-brand-lavender/55 bg-white p-4 shadow-[0_8px_22px_rgba(57,45,90,0.055)] sm:min-h-[198px]"
+      data-state={isReady ? "ready" : "insufficient_sample"}
+      data-tone="mint"
+    >
+      <div className="flex min-h-10 items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-status-successBg text-status-success">
+          <Repeat2 aria-hidden="true" size={18} />
+        </span>
+        <h3 className="pt-0.5 text-sm font-extrabold leading-[18px] text-brand-deep">
+          Retorno no período
+        </h3>
+      </div>
+      {isReady ? (
+        <>
+          <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
+            {formatCompactNumber(peopleReturned.value)} pessoas
+          </p>
+          <p className="mt-2 min-h-7 text-[11px] font-bold leading-4 text-tesText-muted">
+            {formatPercent(returnRate.value)} da base voltou para uma nova sessão
+          </p>
+          {trend ? (
+            <div className="mt-1 flex min-h-6 items-center gap-2">
+              <span
+                aria-label={trend.accessibleLabel}
+                className={`inline-flex min-h-6 items-center rounded-full px-2 text-xs font-extrabold ${trend.className}`}
+              >
+                {trend.label}
+              </span>
+              <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+                {trend.caption}
+              </span>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
+            <span className="sr-only">Valor ainda indisponível.</span>
+            <span aria-hidden="true">—</span>
+          </p>
+          <div className="mt-2 flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="inline-flex min-h-6 items-center rounded-full bg-brand-lavenderSoft px-2 text-xs font-extrabold text-brand-primary">
+              {peopleReturned.observedSample} de {peopleReturned.minimumSample}
+            </span>
+            <span className="text-[10px] font-bold leading-4 text-tesText-muted md:text-[11px]">
+              pessoas no período
+            </span>
+          </div>
+        </>
+      )}
+      <div className="mt-auto pt-2.5">
+        <MetricSparkline
+          className="h-7"
+          data={sparkline}
+          empty={sparkline.length < 2}
+          label="Tendência de retorno no período"
+          tone="mint"
+        />
+      </div>
+    </TESCard>
   );
 }
 

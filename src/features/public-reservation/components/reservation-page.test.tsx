@@ -91,7 +91,7 @@ describe("ReservationPage", () => {
     },
   );
 
-  it("keeps Stripe mounted when checkout readiness and support rerender the page", async () => {
+  it("keeps Stripe mounted while checkout support is available", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     const mount = vi.fn();
     const destroy = vi.fn();
@@ -134,10 +134,9 @@ describe("ReservationPage", () => {
     );
     await waitFor(() => expect(mount).toHaveBeenCalledOnce());
 
-    fireEvent.click(screen.getByRole("button", { name: "Fale conosco" }));
-    expect(
-      screen.getByRole("dialog", { name: "Novo chamado" }),
-    ).toBeInTheDocument();
+    const supportLink = screen.getByRole("link", { name: "Fale conosco" });
+    expect(supportLink).toHaveAttribute("target", "_blank");
+    expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
     expect(initEmbeddedCheckout).toHaveBeenCalledOnce();
     expect(
       fetchMock.mock.calls.filter(
@@ -481,7 +480,7 @@ describe("ReservationPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens support in the checkout and removes the redundant payment anchor", () => {
+  it("opens WhatsApp support from checkout and removes the redundant payment anchor", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,
       searchParams: {
@@ -506,17 +505,16 @@ describe("ReservationPage", () => {
       support.compareDocumentPosition(policy) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Fale conosco" }));
-    expect(
-      screen.getByRole("dialog", { name: "Novo chamado" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Categoria")).toHaveValue("outro");
-    expect(screen.getByLabelText("Assunto")).toBeInTheDocument();
-    expect(
-      screen
-        .getByRole("dialog", { name: "Novo chamado" })
-        .querySelector("textarea"),
-    ).not.toBeNull();
+    const supportLink = screen.getByRole("link", { name: "Fale conosco" });
+    const supportUrl = new URL(supportLink.getAttribute("href")!);
+    expect(`${supportUrl.origin}${supportUrl.pathname}`).toBe(
+      "https://wa.me/5518981058337",
+    );
+    expect(supportUrl.searchParams.get("text")).toBe(
+      "Olá, estou tentando realizar um pagamento na plataforma TES e preciso de ajuda.",
+    );
+    expect(supportLink).toHaveAttribute("target", "_blank");
+    expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
     expect(
       screen.queryByRole("link", { name: "Ir para pagamento seguro" }),
     ).toBeNull();
