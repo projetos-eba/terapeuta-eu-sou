@@ -5,6 +5,7 @@ import { cache } from "react";
 import {
   getSupabaseServerRestConfig,
   supabaseServerRestRequest,
+  supabaseServerRestRpc,
 } from "@/lib/supabase/server-rest";
 
 import {
@@ -92,6 +93,7 @@ export const getPatientSessionDetailPage = cache(
         cancellationDecisionRows,
         patientParticipationRows,
         patientWaitingRoomEvents,
+        chargeStatus,
       ] = await Promise.all([
         supabaseServerRestRequest<BookingDetailTherapistRow[]>(
           config,
@@ -111,7 +113,7 @@ export const getPatientSessionDetailPage = cache(
         ),
         supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
           config,
-          `/rest/v1/session_payments?select=id,financial_status,refund_pending&booking_id=eq.${booking.id}&limit=1`,
+          `/rest/v1/session_payments?select=id,financial_status,refund_pending,payment_flow_version&booking_id=eq.${booking.id}&limit=1`,
         ),
         supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
           config,
@@ -128,6 +130,11 @@ export const getPatientSessionDetailPage = cache(
         supabaseServerRestRequest<Array<{ payload: unknown }>>(
           config,
           `/rest/v1/booking_events?select=payload&booking_id=eq.${booking.id}&event_type=eq.zoom_waiting_room_entered&limit=20`,
+        ),
+        supabaseServerRestRpc<unknown>(
+          config,
+          "get_patient_session_charge_status_v10",
+          { p_booking_id: booking.id },
         ),
       ]);
       const therapist = therapists[0];
@@ -171,7 +178,7 @@ export const getPatientSessionDetailPage = cache(
             )
           : [];
 
-      return mapBookingDetail({
+      const detail = mapBookingDetail({
         booking,
         completedBookings,
         intake: intakeRows[0] ?? null,
@@ -198,6 +205,11 @@ export const getPatientSessionDetailPage = cache(
         therapist,
         therapy,
       });
+
+      return {
+        ...detail,
+        paymentRecovery: mapSessionChargeStatus(chargeStatus),
+      };
     } catch (error) {
       if (error instanceof BookingDetailDataError) throw error;
 
@@ -205,6 +217,19 @@ export const getPatientSessionDetailPage = cache(
     }
   },
 );
+
+function mapSessionChargeStatus(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { available: false, dueAt: null, status: null };
+  }
+
+  const row = value as Record<string, unknown>;
+  return {
+    available: row.recoveryAvailable === true,
+    dueAt: typeof row.dueAt === "string" ? row.dueAt : null,
+    status: typeof row.status === "string" ? row.status : null,
+  };
+}
 
 function isCurrentBookingArrival(
   value: unknown,

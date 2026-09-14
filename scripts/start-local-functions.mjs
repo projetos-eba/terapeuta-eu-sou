@@ -24,12 +24,18 @@ const runtimeOverrides = [
   "NEXT_PUBLIC_SITE_URL",
   "TES_CONNECT_PAYOUT_SCHEDULE_CHANGES_ENABLED",
   "TES_FINANCE_TEST_CONTROLS_ENABLED",
+  "TES_SESSION_FINANCIAL_FLOW_V10_ENABLED",
 ];
 
-const status = spawnSync(process.execPath, [supabaseCliPath, "status", "-o", "env"], {
-  cwd: root,
-  encoding: "utf8",
-});
+const status = spawnSync(
+  process.execPath,
+  [supabaseCliPath, "status", "-o", "env"],
+  {
+    cwd: root,
+    encoding: "utf8",
+    env: process.env,
+  },
+);
 if (status.status !== 0) {
   throw new Error(
     "Supabase local indisponível. Execute npx supabase start antes das funções.",

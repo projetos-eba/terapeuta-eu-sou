@@ -37,6 +37,8 @@ type CheckoutResponse =
         holdId?: string;
         mode: "initial_hold" | "payment_retry";
         originalAmountCents: number;
+        paymentFlowVersion: string;
+        paymentTiming: "immediate" | "scheduled";
         promotion: PromotionCheckoutAmounts["promotion"];
         sessionPaymentId: string;
         totalAmountCents: number;
@@ -111,6 +113,9 @@ export function CheckoutButton({
     expiresAt: string;
     serverNow: string;
   } | null>(null);
+  const [paymentTiming, setPaymentTiming] = useState<
+    "immediate" | "scheduled" | null
+  >(null);
 
   const expireReservation = useCallback(() => {
     const currentCheckout = currentCheckoutRef.current;
@@ -179,6 +184,7 @@ export function CheckoutButton({
         handledPromotionRequestRef.current = null;
         abandonmentStartedRef.current = false;
         setExpiredCheckout(null);
+        setPaymentTiming(null);
       }
       if (abandonmentStartedRef.current) {
         setIsSubmitting(false);
@@ -243,6 +249,7 @@ export function CheckoutButton({
           checkoutSessionId: data.checkout.checkoutSessionId,
           clientSecret: data.checkout.clientSecret,
         };
+        setPaymentTiming(data.checkout.paymentTiming);
         setReservationLease(
           data.checkout.mode === "initial_hold" &&
             data.checkout.reservationExpiresAt
@@ -401,6 +408,13 @@ export function CheckoutButton({
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
             O formulário abaixo é carregado pela Stripe. O TES não recebe número
             de cartão, CVC ou dados de autenticação bancária.
+            {paymentTiming === "scheduled" ? (
+              <span className="mt-2 block">
+                Seu cartão será salvo com segurança e a cobrança será realizada
+                24 horas antes do encontro. O banco poderá pedir uma confirmação
+                adicional.
+              </span>
+            ) : null}
           </p>
         </div>
       </div>

@@ -74,7 +74,7 @@ describe("JourneyMatchClient", () => {
       }),
     );
     const submitButton = screen.getByRole("button", {
-      name: "Ver caminhos para mim",
+      name: /Ver técnicas relacionadas/,
     });
     fireEvent.click(submitButton);
 
@@ -85,7 +85,7 @@ describe("JourneyMatchClient", () => {
 
     expect(submitButton).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: "Ver caminhos para mim" }),
+      screen.getByRole("button", { name: /Ver técnicas relacionadas/ }),
     ).toBeEnabled();
   });
 
@@ -101,7 +101,9 @@ describe("JourneyMatchClient", () => {
     expect(
       screen.getByRole("heading", { name: /Autoconhecimento e Transform/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ansiedade/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Ansiedade/ }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Ansiedade/ }));
     fireEvent.click(screen.getByRole("button", { name: /Estresse/ }));
@@ -110,7 +112,9 @@ describe("JourneyMatchClient", () => {
     expect(screen.getByText("3/3")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Medo/ })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ver caminhos para mim" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Ver técnicas relacionadas/ }),
+    );
 
     expect(sessionStorage.getItem(MATCHING_SESSION_KEY)).toContain(
       '"interestIds":["interest-1","interest-2","interest-3"]',
@@ -145,6 +149,8 @@ describe("JourneyMatchClient", () => {
     fireEvent.click(screen.getByRole("button", { name: /Ansiedade/ }));
     fireEvent.click(themeButton);
 
-    expect(screen.queryByRole("button", { name: /Ansiedade/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Ansiedade/ }),
+    ).not.toBeInTheDocument();
   });
 });

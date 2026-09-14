@@ -158,7 +158,7 @@ describe("SessionOperationActions", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Reagendar encontro" }));
-    expect(await screen.findByText("Reiki")).toBeInTheDocument();
+    expect(await screen.findByText(/Terapia contratada/)).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "10:00" }));
     expect(

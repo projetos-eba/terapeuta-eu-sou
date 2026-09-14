@@ -89,15 +89,14 @@ export function ReservationPage({
   const therapistProfileHref = buildReservationReturnHref(
     context.therapist.slug,
   );
-  const initialJourneyDraft = readReservationJourneyDraft(reservationKey);
-  const [acceptedTerms, setAcceptedTerms] = useState(
-    () => isPaymentRetry || initialJourneyDraft?.acceptedTerms === true,
-  );
+  // Keep the server and the first client render deterministic. Browser-only
+  // journey state is restored by the effect below after hydration.
+  const [acceptedTerms, setAcceptedTerms] = useState(isPaymentRetry);
   const [marketingConsent, setMarketingConsent] = useState(
-    () => initialJourneyDraft?.marketingConsent ?? context.marketingConsent,
+    context.marketingConsent,
   );
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(
-    () => initialJourneyDraft?.checkoutAttemptId ?? null,
+    null,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
     isPaymentRetry
@@ -105,12 +104,9 @@ export function ReservationPage({
       : context.selectedSlotHasPatientConflict
         ? "momento"
         : context.step === "pagamento"
-          ? context.hasRequiredCheckoutData &&
-            initialJourneyDraft?.acceptedTerms
-            ? "pagamento"
-            : context.hasRequiredCheckoutData
-              ? "preparar"
-              : "momento"
+          ? context.hasRequiredCheckoutData
+            ? "preparar"
+            : "momento"
           : context.step,
   );
   const [sharedNote, setSharedNote] = useState("");
@@ -134,8 +130,7 @@ export function ReservationPage({
   const [journeyError, setJourneyError] = useState<string | null>(
     isPaymentRetry || context.selectedSlotHasPatientConflict
       ? null
-      : context.step === "pagamento" &&
-          initialJourneyDraft?.acceptedTerms !== true
+      : context.step === "pagamento"
         ? "Aceite os termos antes de seguir para o pagamento."
         : null,
   );
@@ -1417,6 +1412,7 @@ export function ReservationSuccessPage() {
   const [status, setStatus] = useState<
     | "waiting_payment"
     | "authorizing"
+    | "scheduled"
     | "confirmed"
     | "expired"
     | "slot_conflict"
@@ -1462,6 +1458,7 @@ export function ReservationSuccessPage() {
         [
           "waiting_payment",
           "authorizing",
+          "scheduled",
           "confirmed",
           "expired",
           "slot_conflict",
@@ -1477,6 +1474,7 @@ export function ReservationSuccessPage() {
         }
         if (
           body.status === "confirmed" ||
+          body.status === "scheduled" ||
           body.status === "expired" ||
           body.status === "slot_conflict" ||
           body.status === "failed"
@@ -1515,6 +1513,12 @@ export function ReservationSuccessPage() {
       title: "Seu encontro está confirmado",
       description:
         "O pagamento foi confirmado e o encontro já está disponível na sua área de cliente.",
+    },
+    scheduled: {
+      eyebrow: "Reserva confirmada",
+      title: "Seu encontro está reservado",
+      description:
+        "Seu cartão foi salvo com segurança. A cobrança será realizada 24 horas antes do encontro e o banco poderá pedir uma confirmação adicional.",
     },
     expired: {
       eyebrow: "Prazo encerrado",

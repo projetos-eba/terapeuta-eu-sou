@@ -118,7 +118,7 @@ histórica.
   conteúdo e são empilhados em fluxo de bloco no desktop.
 - O detalhe `/terapeuta/sessoes/:bookingId` preserva o mesmo grid `AppPage*`:
   breadcrumb, título IvyPresto, resumo de identidade/estado, superfícies de
-  pagamento e sala, preparação e ContextRail compacto. A referência raster da
+  pagamento e sala, orientação “Antes de entrar” e ContextRail compacto. A referência raster da
   rotina de atendimento serve à composição, não para inventar dados ou ações.
 - O detalhe acompanha a anatomia do detalhe de encontro do paciente sem
   reproduzir seu domínio: cabeçalho aberto, hero com identidade / horário e
@@ -127,9 +127,9 @@ histórica.
   rail; em mobile, entram no fluxo após o contexto crítico.
 - O detalhe só renderiza o DTO de `get_therapist_session_detail_v1`. Não exibir
   objetivo clínico, observações, prontuário, URL da sala, credenciais ou
-  supostos resultados de teste técnico. A preparação pode orientar a pessoa
+  supostos resultados de teste. A seção “Antes de entrar” pode orientar a pessoa
   terapeuta, mas não pode afirmar que câmera, microfone ou conexão já foram
-  validados.
+  validados nem usar termos técnicos, de desenvolvimento ou de arquitetura.
 - Abrir a sala usa exclusivamente `/terapeuta/sessoes/:bookingId/video`; a
   janela, pagamento, perfil responsável e elegibilidade são revalidados no
   backend a cada acesso. Reagendar e cancelar reutilizam
@@ -148,6 +148,11 @@ histórica.
   (incluindo pagamento cancelado, reembolso ou sessão não realizada),
   `SessionOperationActions` mantém cancelamento e reagendamento desabilitados e
   informa o motivo em texto acessível; não repetir uma ação já concluída.
+- Sessões canceladas, integralmente reembolsadas ou bloqueadas por pagamento
+  não oferecem CTA ou link para a sala, não exibem preparação de entrada e
+  mostram apenas a situação encerrada e o caminho de suporte aplicável. A copy
+  deve ser clara para a pessoa terapeuta, sem termos técnicos, de
+  desenvolvimento, integração ou arquitetura.
 - No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.

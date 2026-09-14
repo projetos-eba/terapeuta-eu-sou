@@ -1,6 +1,6 @@
 begin;
 
-select plan(41);
+select plan(42);
 
 -- The local stack intentionally preserves data between runs. Isolate the two
 -- fixture therapists inside this transaction so historical aggregates cannot

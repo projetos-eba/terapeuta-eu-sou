@@ -53,7 +53,7 @@ export function FinancialConnectAccountTab({
             />
             <ConnectDetail label="Cadastro" value={state.statusLabel} />
             <ConnectDetail
-              label="Transferências"
+              label="Recebimentos"
               value={translateCapability(account.transferCapabilityStatus)}
             />
             <ConnectDetail

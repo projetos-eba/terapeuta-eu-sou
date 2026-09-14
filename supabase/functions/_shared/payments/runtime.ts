@@ -75,10 +75,27 @@ export function getPaymentsConfig(runtime: EdgeRuntime) {
     );
   }
 
+  const sessionFinancialFlowV10Value = runtime.env
+    .get("TES_SESSION_FINANCIAL_FLOW_V10_ENABLED")
+    ?.trim();
+
+  if (
+    sessionFinancialFlowV10Value &&
+    sessionFinancialFlowV10Value !== "true" &&
+    sessionFinancialFlowV10Value !== "false"
+  ) {
+    throw new DomainError(
+      "invalid_session_financial_flow_v10_flag",
+      503,
+      "Configuracao do fluxo financeiro de sessoes invalida.",
+    );
+  }
+
   return {
     environment: stripeMode,
     financeTestControlsEnabled:
       stripeMode === "test" && financeTestControlsValue === "true",
+    sessionFinancialFlowV10Enabled: sessionFinancialFlowV10Value === "true",
     serviceRoleKey,
     siteUrl: getSiteUrl(runtime),
     stripeApiKey,

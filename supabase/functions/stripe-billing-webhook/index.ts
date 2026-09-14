@@ -249,7 +249,7 @@ async function handleEvent(
       );
       return "processed";
     case "charge.refunded":
-      await handleChargeRefunded(client, dataObject);
+      await handleChargeRefunded(client, stripe, dataObject, eventId, eventTime);
       return "processed";
     case "refund.created":
     case "refund.updated":
@@ -269,7 +269,7 @@ async function handleEvent(
       return "processed";
     case "transfer.updated":
     case "transfer.reversed":
-      await handleTransferEvent(client, dataObject, eventTime);
+      await handleTransferEvent(client, stripe, dataObject, eventId, eventTime);
       return "processed";
     case "balance.available":
       await reconcileChargeSettlements({ client, stripe });
@@ -321,6 +321,18 @@ async function handleCheckoutEvent(
 
   const sessionPaymentId = stringOrNull(metadata.tes_session_payment_id);
   if (!sessionPaymentId) return;
+
+  if (session.mode === "setup") {
+    await handleSessionPaymentSetupCheckout(client, stripe, {
+      eventId,
+      eventTime,
+      eventType,
+      metadata,
+      session,
+      sessionPaymentId,
+    });
+    return;
+  }
 
   if (
     eventType === "checkout.session.async_payment_failed" ||
@@ -437,6 +449,103 @@ async function handleCheckoutEvent(
     paidCheckoutSessionId: stringOrNull(session.id),
     sessionPaymentId,
     stripe,
+  });
+}
+
+async function handleSessionPaymentSetupCheckout(
+  client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
+  input: {
+    eventId: string;
+    eventTime: string;
+    eventType: string;
+    metadata: Record<string, unknown>;
+    session: Record<string, unknown>;
+    sessionPaymentId: string;
+  },
+) {
+  const checkoutSessionId = stringOrNull(input.session.id);
+  if (!checkoutSessionId) return;
+
+  const isCurrent = await isCurrentSessionCheckout(
+    client,
+    input.sessionPaymentId,
+    checkoutSessionId,
+  );
+  if (!isCurrent) {
+    await updateAttemptStatus(client, checkoutSessionId, "superseded");
+    return;
+  }
+
+  if (input.eventType === "checkout.session.expired") {
+    await updateAttemptStatus(client, checkoutSessionId, "expired");
+    await applySessionPaymentState(client, {
+      checkoutSessionId,
+      eventId: input.eventId,
+      eventTime: input.eventTime,
+      sessionPaymentId: input.sessionPaymentId,
+      status: "canceled",
+    });
+    return;
+  }
+
+  if (input.eventType !== "checkout.session.completed") return;
+  if (
+    input.metadata.tes_payment_flow_version !== "v10" ||
+    input.metadata.tes_charge_timing !== "scheduled"
+  ) {
+    throw new Error("session_payment_setup_metadata_invalid");
+  }
+
+  const setupIntentReference = input.session.setup_intent;
+  const setupIntentId =
+    typeof setupIntentReference === "string"
+      ? setupIntentReference
+      : stringOrNull(asRecord(setupIntentReference).id);
+  if (!setupIntentId) {
+    throw new Error("session_payment_setup_intent_missing");
+  }
+  const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+  const setupMetadata = asRecord(setupIntent.metadata);
+  const paymentMethodId =
+    typeof setupIntent.payment_method === "string"
+      ? setupIntent.payment_method
+      : (setupIntent.payment_method?.id ?? null);
+  const customerId =
+    typeof setupIntent.customer === "string"
+      ? setupIntent.customer
+      : (setupIntent.customer?.id ?? null);
+  const checkoutCustomerId =
+    typeof input.session.customer === "string"
+      ? input.session.customer
+      : stringOrNull(asRecord(input.session.customer).id);
+  const bookingVersion = Number(input.metadata.tes_booking_version);
+
+  if (
+    setupIntent.status !== "succeeded" ||
+    setupIntent.usage !== "off_session" ||
+    !paymentMethodId ||
+    !customerId ||
+    customerId !== checkoutCustomerId ||
+    setupMetadata.tes_session_payment_id !== input.sessionPaymentId ||
+    setupMetadata.tes_session_id !== input.metadata.tes_session_id ||
+    !Number.isSafeInteger(bookingVersion) ||
+    bookingVersion <= 0
+  ) {
+    throw new Error("session_payment_setup_intent_invalid");
+  }
+
+  await client.rpc("complete_session_payment_setup_v10", {
+    p_booking_version: bookingVersion,
+    p_consent_version: String(input.metadata.tes_consent_version ?? ""),
+    p_session_payment_id: input.sessionPaymentId,
+    p_stripe_checkout_session_id: checkoutSessionId,
+    p_stripe_customer_id: customerId,
+    p_stripe_environment: getPaymentsConfig(runtime).environment,
+    p_stripe_event_created_at: input.eventTime,
+    p_stripe_event_id: input.eventId,
+    p_stripe_payment_method_id: paymentMethodId,
+    p_stripe_setup_intent_id: setupIntent.id,
   });
 }
 
@@ -577,6 +686,17 @@ async function applyPaymentIntentState(
   const sessionPaymentId = stringOrNull(metadata.tes_session_payment_id);
 
   if (!sessionPaymentId) return;
+  if (metadata.tes_checkout_mode === "t24_charge") {
+    await applyScheduledSessionPaymentIntentV10(
+      client,
+      stripe,
+      paymentIntent,
+      metadata,
+      eventId,
+      eventTime,
+    );
+    return;
+  }
   if (
     status === "processing" &&
     (metadata.tes_checkout_mode === "initial_hold" ||
@@ -633,6 +753,105 @@ async function applyPaymentIntentState(
   }
 }
 
+async function applyScheduledSessionPaymentIntentV10(
+  client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
+  paymentIntent: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+  eventId: string,
+  eventTime: string,
+) {
+  if (
+    metadata.tes_payment_flow_version !== "v10" ||
+    metadata.payment_type !== "therapy_session"
+  ) {
+    throw new Error("session_charge_event_metadata_invalid");
+  }
+  const scheduleId = stringOrNull(metadata.tes_schedule_id);
+  const sessionPaymentId = stringOrNull(metadata.tes_session_payment_id);
+  const bookingId = stringOrNull(metadata.tes_session_id);
+  const bookingVersion = Number(metadata.tes_booking_version);
+  const paymentIntentId = stringOrNull(paymentIntent.id);
+  const customerId =
+    typeof paymentIntent.customer === "string"
+      ? paymentIntent.customer
+      : stringOrNull(asRecord(paymentIntent.customer).id);
+  const paymentMethodId =
+    typeof paymentIntent.payment_method === "string"
+      ? paymentIntent.payment_method
+      : stringOrNull(asRecord(paymentIntent.payment_method).id);
+  const status = stringOrNull(paymentIntent.status);
+  const amount = numberOrNull(paymentIntent.amount);
+  const currency = stringOrNull(paymentIntent.currency);
+  const chargeId =
+    typeof paymentIntent.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : stringOrNull(asRecord(paymentIntent.latest_charge).id);
+  if (
+    !scheduleId ||
+    !sessionPaymentId ||
+    !bookingId ||
+    !Number.isSafeInteger(bookingVersion) ||
+    bookingVersion <= 0 ||
+    !paymentIntentId ||
+    !customerId ||
+    !status ||
+    amount === null ||
+    !currency
+  ) {
+    throw new Error("session_charge_event_incomplete");
+  }
+  const result = await client.rpc<{ scheduleStatus: string }>(
+    "record_session_payment_intent_v10",
+    {
+      p_schedule_id: scheduleId,
+      p_session_payment_id: sessionPaymentId,
+      p_booking_id: bookingId,
+      p_booking_version: bookingVersion,
+      p_stripe_environment: getPaymentsConfig(runtime).environment,
+      p_payment_intent_id: paymentIntentId,
+      p_status: status,
+      p_amount_cents: amount,
+      p_currency: currency,
+      p_stripe_customer_id: customerId,
+      p_stripe_payment_method_id: paymentMethodId,
+      p_stripe_charge_id: chargeId,
+      p_event_id: status === "succeeded" ? eventId : null,
+      p_event_created_at: status === "succeeded" ? eventTime : null,
+    },
+  );
+  if (status !== "succeeded" || result.scheduleStatus !== "paid") return;
+
+  if (chargeId) {
+    const reconciliation = await retrieveChargeReconciliation(stripe, chargeId);
+    await recordSessionPaymentReconciliation(client, {
+      chargeId,
+      eventId,
+      eventTime,
+      paymentMethodType: reconciliation?.paymentMethodType ?? null,
+      receiptUrl: reconciliation?.receiptUrl ?? null,
+      sessionPaymentId,
+      stripeBalanceAmountCents: reconciliation?.balanceAmountCents ?? null,
+      stripeBalanceAvailableOn: reconciliation?.balanceAvailableOn ?? null,
+      stripeBalanceCurrency: reconciliation?.balanceCurrency ?? null,
+      stripeBalanceSourceChargeId:
+        reconciliation?.balanceSourceChargeId ?? null,
+      stripeBalanceStatus: reconciliation?.balanceStatus ?? null,
+      stripeBalanceTransactionId: reconciliation?.balanceTransactionId ?? null,
+      stripeFeeAmountCents: reconciliation?.feeAmountCents ?? null,
+      stripeNetAmountCents: reconciliation?.netAmountCents ?? null,
+    });
+  }
+  const zoomEnvironment = getConfiguredZoomEnvironment();
+  if (zoomEnvironment) {
+    await ensureVideoSessionForPaidSessionPayment(client, {
+      sessionPaymentId,
+      source: "stripe-billing-webhook",
+      zoomEnvironment,
+    });
+  }
+}
+
 async function applySessionPaymentState(
   client: SupabaseRestClient,
   input: {
@@ -666,15 +885,44 @@ async function applySessionPaymentState(
     }
   }
 
-  await client.rpc("apply_session_payment_state_v1", {
-    p_financial_status: input.status,
-    p_session_payment_id: input.sessionPaymentId,
-    p_stripe_charge_id: input.chargeId ?? null,
-    p_stripe_checkout_session_id: input.checkoutSessionId ?? null,
-    p_stripe_event_created_at: input.eventTime,
-    p_stripe_event_id: input.eventId,
-    p_stripe_payment_intent_id: input.paymentIntentId ?? null,
-  });
+  const paymentContext = await getSessionPaymentFinancialContext(
+    client,
+    input.sessionPaymentId,
+  );
+  const isV10Paid =
+    input.status === "paid" && paymentContext?.paymentFlowVersion === "v10";
+
+  if (isV10Paid && paymentContext.grossAmountCents === 0) {
+    await client.rpc("confirm_zero_total_session_payment_v10", {
+      p_session_payment_id: input.sessionPaymentId,
+      p_stripe_checkout_session_id: input.checkoutSessionId,
+      p_stripe_event_created_at: input.eventTime,
+      p_stripe_event_id: input.eventId,
+    });
+  } else if (isV10Paid) {
+    if (!input.paymentIntentId || !input.chargeId) {
+      throw new Error("session_payment_v10_charge_reference_missing");
+    }
+    await client.rpc("confirm_session_payment_and_enqueue_transfer_v10", {
+      p_paid_at: input.eventTime,
+      p_session_payment_id: input.sessionPaymentId,
+      p_stripe_charge_id: input.chargeId,
+      p_stripe_environment: getPaymentsConfig(runtime).environment,
+      p_stripe_event_created_at: input.eventTime,
+      p_stripe_event_id: input.eventId,
+      p_stripe_payment_intent_id: input.paymentIntentId,
+    });
+  } else {
+    await client.rpc("apply_session_payment_state_v1", {
+      p_financial_status: input.status,
+      p_session_payment_id: input.sessionPaymentId,
+      p_stripe_charge_id: input.chargeId ?? null,
+      p_stripe_checkout_session_id: input.checkoutSessionId ?? null,
+      p_stripe_event_created_at: input.eventTime,
+      p_stripe_event_id: input.eventId,
+      p_stripe_payment_intent_id: input.paymentIntentId ?? null,
+    });
+  }
 
   if (input.status !== "paid") return;
 
@@ -798,10 +1046,11 @@ async function getSessionPaymentFinancialContext(
       currency: string | null;
       gross_amount_cents: number;
       metadata: Record<string, unknown> | null;
+      payment_flow_version: string;
       stripe_checkout_session_id: string | null;
     }>
   >(
-    `/rest/v1/session_payments?select=gross_amount_cents,currency,metadata,stripe_checkout_session_id&id=eq.${encodeURIComponent(
+    `/rest/v1/session_payments?select=gross_amount_cents,currency,metadata,payment_flow_version,stripe_checkout_session_id&id=eq.${encodeURIComponent(
       sessionPaymentId,
     )}&limit=1`,
   );
@@ -812,6 +1061,7 @@ async function getSessionPaymentFinancialContext(
     currency: payment.currency,
     grossAmountCents: payment.gross_amount_cents,
     metadata: payment.metadata ?? {},
+    paymentFlowVersion: payment.payment_flow_version,
     stripeCheckoutSessionId: payment.stripe_checkout_session_id,
   };
 }
@@ -942,17 +1192,41 @@ async function recordSessionPaymentReconciliation(
 
 async function handleChargeRefunded(
   client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
   charge: Record<string, unknown>,
+  eventId: string,
+  eventTime: string,
 ) {
   const paymentIntentId = stringOrNull(charge.payment_intent);
   if (!paymentIntentId) return;
 
-  const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/session_payments?select=id&stripe_payment_intent_id=eq.${encodeURIComponent(
+  const rows = await client.get<Array<{ id: string; payment_flow_version: string }>>(
+    `/rest/v1/session_payments?select=id,payment_flow_version&stripe_payment_intent_id=eq.${encodeURIComponent(
       paymentIntentId,
     )}&limit=1`,
   );
   if (!rows[0]) return;
+
+  if (rows[0].payment_flow_version === "v10") {
+    const chargeId = stringOrNull(charge.id);
+    if (!chargeId) return;
+    for await (const refund of stripe.refunds.list({ charge: chargeId, limit: 100 })) {
+      await client.rpc("reconcile_session_refund_event_v10", {
+        p_amount_cents: refund.amount,
+        p_currency: refund.currency,
+        p_occurred_at: new Date(refund.created * 1000).toISOString(),
+        p_reason: refund.reason ?? null,
+        p_session_payment_id: rows[0].id,
+        p_status: refund.status,
+        p_stripe_event_id: eventId,
+        p_stripe_refund_id: refund.id,
+      });
+    }
+    await client.rpc("reconcile_full_session_refund_debt_v10_v2", {
+      p_session_payment_id: rows[0].id,
+    });
+    return;
+  }
 
   await client.patch(
     `/rest/v1/session_payments?id=eq.${encodeURIComponent(rows[0].id)}`,
@@ -987,8 +1261,8 @@ async function handleRefundEvent(
     ? `stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntentId)}`
     : `stripe_charge_id=eq.${encodeURIComponent(chargeId ?? "")}`;
   const [payment] = await client.get<
-    Array<{ gross_amount_cents: number; id: string }>
-  >(`/rest/v1/session_payments?select=id,gross_amount_cents&${filter}&limit=1`);
+    Array<{ gross_amount_cents: number; id: string; payment_flow_version: string }>
+  >(`/rest/v1/session_payments?select=id,gross_amount_cents,payment_flow_version&${filter}&limit=1`);
 
   if (!payment) return;
 
@@ -997,6 +1271,23 @@ async function handleRefundEvent(
     eventType === "refund.failed"
       ? "failed"
       : String(refund.status ?? "pending");
+
+  if (payment.payment_flow_version === "v10") {
+    await client.rpc("reconcile_session_refund_event_v10", {
+      p_amount_cents: amountCents,
+      p_currency: String(refund.currency ?? "").toUpperCase(),
+      p_occurred_at: eventTime,
+      p_reason: stringOrNull(refund.reason),
+      p_session_payment_id: payment.id,
+      p_status: refundStatus,
+      p_stripe_event_id: eventId,
+      p_stripe_refund_id: refundId,
+    });
+    await client.rpc("reconcile_full_session_refund_debt_v10_v2", {
+      p_session_payment_id: payment.id,
+    });
+    return;
+  }
 
   await client.post(
     "/rest/v1/session_refunds?on_conflict=stripe_refund_id",
@@ -1162,21 +1453,57 @@ async function handleDispute(
 
 async function handleTransferEvent(
   client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
   transfer: Record<string, unknown>,
+  eventId: string,
   eventTime: string,
 ) {
   const transferId = stringOrNull(transfer.id);
   if (!transferId) return;
 
   const [localTransfer] = await client.get<
-    Array<{ id: string; session_payment_id: string }>
+    Array<{
+      amount_cents: number;
+      connect_account_id: string;
+      id: string;
+      session_payment_id: string;
+      stripe_source_charge_id: string | null;
+      transfer_origin: string;
+    }>
   >(
-    `/rest/v1/stripe_transfers?select=id,session_payment_id&stripe_transfer_id=eq.${encodeURIComponent(
+    `/rest/v1/stripe_transfers?select=id,session_payment_id,amount_cents,connect_account_id,stripe_source_charge_id,transfer_origin&stripe_transfer_id=eq.${encodeURIComponent(
       transferId,
     )}&limit=1`,
   );
 
   if (!localTransfer) return;
+
+  if (localTransfer.transfer_origin === "session_direct") {
+    const [account] = await client.get<Array<{ stripe_account_id: string }>>(
+      `/rest/v1/therapist_connect_accounts?select=stripe_account_id&id=eq.${encodeURIComponent(localTransfer.connect_account_id)}&limit=1`,
+    );
+    const providerTransfer = await stripe.transfers.retrieve(transferId);
+    if (!account || providerTransfer.amount !== localTransfer.amount_cents ||
+      providerTransfer.currency.toUpperCase() !== "BRL" ||
+      providerTransfer.destination !== account.stripe_account_id ||
+      providerTransfer.source_transaction !== localTransfer.stripe_source_charge_id) {
+      throw new Error("V10_TRANSFER_PROVIDER_BINDING_MISMATCH");
+    }
+    for await (const reversal of stripe.transfers.listReversals(transferId, { limit: 100 })) {
+      await client.rpc("reconcile_session_transfer_reversal_v10", {
+        p_amount_cents: reversal.amount,
+        p_currency: reversal.currency,
+        p_occurred_at: new Date(reversal.created * 1000).toISOString(),
+        p_stripe_event_id: eventId,
+        p_stripe_reversal_id: reversal.id,
+        p_stripe_transfer_id: transferId,
+      });
+    }
+    await client.rpc("reconcile_full_session_refund_debt_v10_v2", {
+      p_session_payment_id: localTransfer.session_payment_id,
+    });
+    return;
+  }
 
   if (transfer.reversed !== true) {
     await client.patch(
