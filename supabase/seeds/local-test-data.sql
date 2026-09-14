@@ -1068,7 +1068,7 @@ values
   ('94000000-0000-4000-8000-000000000012', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000012', '93000000-0000-4000-8000-000000000012', current_date + interval '1 day' + time '10:30', current_date + interval '1 day' + time '11:30', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/marcus', null),
   ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '16:00', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
   ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes'),
-  ('94000000-0000-4000-8000-000000000021', 'b1000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
+  ('94000000-0000-4000-8000-000000000021', 'b1000000-0000-4000-8000-000000000005', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
   ('94000000-0000-4000-8000-000000000022', 'b1000000-0000-4000-8000-000000000003', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() + interval '2 hours', now() + interval '3 hours', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia', null),
   ('94000000-0000-4000-8000-000000000023', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000016', '93000000-0000-4000-8000-000000000016', current_date + interval '1 day' + time '09:00', current_date + interval '1 day' + time '10:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/roberto', null),
   ('94000000-0000-4000-8000-000000000024', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', current_date + interval '3 days' + time '11:00', current_date + interval '3 days' + time '12:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-followup', null),
@@ -1510,8 +1510,8 @@ values
     'b1000000-0000-4000-8000-000000000003',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours') at time zone 'America/Sao_Paulo'),
-    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo'),
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') - interval '5 days' + interval '18 hours') at time zone 'America/Sao_Paulo'),
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') - interval '5 days' + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo'),
     'America/Sao_Paulo',
     'completed',
     'paid',
@@ -1519,7 +1519,7 @@ values
     'https://example.test/meeting/ana-today-3',
     null,
     null,
-    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo')
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') - interval '5 days' + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo')
   ),
   (
     'f2000000-0000-4000-8000-000000000004',
@@ -1910,15 +1910,21 @@ insert into public.booking_reschedule_requests (
   reason,
   status
 )
-values (
-  'e7000000-0000-4000-8000-000000000001',
-  'f2000000-0000-4000-8000-000000000004',
-  'bbbbbbbb-0000-4000-8000-000000000004',
-  now() + interval '3 days',
-  now() + interval '3 days 60 minutes',
+select
+  'e7000000-0000-4000-8000-000000000001'::uuid,
+  'f2000000-0000-4000-8000-000000000004'::uuid,
+  'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+  candidate.starts_at,
+  candidate.ends_at,
   'Preciso ajustar o horário desta semana.',
   'pending'
-)
+from public.list_booking_reschedule_candidates_v1(
+  'f2000000-0000-4000-8000-000000000004'::uuid,
+  now() + interval '2 days',
+  now() + interval '30 days',
+  now(),
+  1
+) as candidate
 on conflict (id) do update
 set
   proposed_starts_at = excluded.proposed_starts_at,

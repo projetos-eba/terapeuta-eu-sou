@@ -96,8 +96,9 @@ anotação.
 - Questions in "Informações úteis" open a local `TESDialog` with the canonical operational answer; they do not redirect to the message center.
 - No hero do detalhe, o próximo passo é a ação principal de entrada; os atalhos
   redundantes “Testar dispositivos” e “Falar com suporte” não devem ser
-  repetidos nesse bloco. A preparação técnica permanece na seção dedicada
-  quando existir.
+  repetidos nesse bloco. A orientação de entrada permanece na seção dedicada
+  “Antes de entrar” quando existir, sempre em linguagem simples e sem termos
+  técnicos, de desenvolvimento ou de arquitetura.
 - Quando o pagamento está confirmado e o horário está dentro da janela ativa,
   o CTA principal deve abrir a sala dedicada mesmo que a presença do terapeuta
   ainda não tenha sido confirmada. A sala de espera aplica o host-first e
@@ -135,6 +136,11 @@ anotação.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados, as
   ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
   mostram o motivo em texto acessível.
+- Quando o encontro estiver cancelado ou integralmente reembolsado, o detalhe
+  deve encerrar a sala e as ações de gestão, omitir qualquer preparação de
+  entrada e apresentar título, estado e explicação coerentes entre si. Um
+  reembolso integral confirmado nunca pode aparecer como pagamento ausente,
+  pendente ou parcial.
 - Quando um booking futuro estiver `cancelled_by_payment` com pagamento
   `failed` ou `canceled`, o hero substitui a entrada desabilitada por
   `Tentar pagamento novamente` e usa somente
@@ -168,3 +174,6 @@ anotação.
 - Do not mention implementation details in user-facing UI.
 - Payment, cancellation and access statuses must use human TES language; never
   expose terms such as backend, webhook or provider to the patient.
+- Também não expor nomes internos de etapas financeiras ou de integração. A
+  pessoa deve ler apenas o resultado e a próxima ação possível em linguagem
+  comum.

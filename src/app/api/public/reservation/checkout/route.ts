@@ -26,6 +26,8 @@ type CheckoutPayload = {
     holdId: string;
     mode: "initial_hold" | "payment_retry";
     originalAmountCents: number;
+    paymentFlowVersion: string;
+    paymentTiming: "immediate" | "scheduled";
     promotion: PromotionSummary | null;
     sessionPaymentId: string;
     totalAmountCents: number;
@@ -164,6 +166,8 @@ export async function POST(request: Request) {
         holdId: response.data.holdId,
         mode: response.data.mode,
         originalAmountCents: response.data.originalAmountCents,
+        paymentFlowVersion: response.data.paymentFlowVersion,
+        paymentTiming: response.data.paymentTiming,
         promotion: response.data.promotion,
         sessionPaymentId: response.data.sessionPaymentId,
         totalAmountCents: response.data.totalAmountCents,

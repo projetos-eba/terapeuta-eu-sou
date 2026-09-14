@@ -65,6 +65,8 @@ type CheckoutResponse = {
     currency: string;
     discountAmountCents: number;
     originalAmountCents: number;
+    paymentFlowVersion: string;
+    paymentTiming: "immediate" | "scheduled";
     promotion: PromotionSummary | null;
     sessionPaymentId: string;
     totalAmountCents: number;
@@ -273,6 +275,8 @@ runtime.serve(async (request) => {
         holdId: hold.id,
         mode: "initial_hold",
         originalAmountCents: checkout.data.originalAmountCents,
+        paymentFlowVersion: checkout.data.paymentFlowVersion,
+        paymentTiming: checkout.data.paymentTiming,
         promotion: checkout.data.promotion,
         sessionPaymentId: checkout.data.sessionPaymentId,
         totalAmountCents: checkout.data.totalAmountCents,

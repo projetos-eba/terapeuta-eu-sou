@@ -72,8 +72,8 @@ select is(
      'tes_premium_brl_monthly_v1',
      'tes_premium_plus_brl_monthly_v1'
    )),
-  3,
-  'previous public monthly Price history is preserved'
+  2,
+  'the two original public monthly Price records remain preserved as private history'
 );
 
 select ok(

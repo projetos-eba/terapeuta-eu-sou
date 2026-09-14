@@ -126,11 +126,11 @@ export function mapSessionPresentation(
 
   if (session.financialStatus === SessionFinancialStatus.PartiallyRefunded) {
     return presentation(
-      "refunded",
-      "Reembolso parcial",
-      "Há um reembolso parcial registrado para esta sessão.",
+      "requires_attention",
+      "Em análise",
+      "O pagamento desta sessão está em análise. Nossa equipe entrará em contato.",
       "medium",
-      "neutral",
+      "warning",
       actions,
     );
   }

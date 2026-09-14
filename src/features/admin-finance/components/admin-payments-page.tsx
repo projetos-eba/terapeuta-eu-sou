@@ -185,7 +185,7 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                         <th className="w-[25%] px-5 py-4">Referência</th>
                         <th className="w-[18%] px-4 py-4">Profissional</th>
                         <th className="w-[20%] px-4 py-4">Valores</th>
-                        <th className="w-[14%] px-4 py-4">Transferência</th>
+                        <th className="w-[14%] px-4 py-4">Repasse</th>
                         <th className="w-[13%] px-4 py-4">Status</th>
                         <th className="w-[10%] px-5 py-4 text-right">Ação</th>
                       </tr>
@@ -291,11 +291,11 @@ function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
           Repasse: {fields["Repasse terapeuta"] || "—"}
         </p>
         <p className="mt-1 text-xs font-semibold text-tesText-muted">
-          Comissão TES: {fields["Comissão TES"] || "—"}
+          Custos da plataforma: {fields["Custos da plataforma"] || "—"}
         </p>
       </td>
       <td className="px-4 py-4 text-sm font-semibold text-brand-deep">
-        {formatOperationalValue(fields["Transferência"]) || "Não informado"}
+        {formatOperationalValue(fields["Repasse"]) || "Não informado"}
       </td>
       <td className="px-4 py-4">
         <div className="flex flex-col items-start gap-2">

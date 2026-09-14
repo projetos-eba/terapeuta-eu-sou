@@ -13,6 +13,7 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import { assertLegacySessionFinancialCommand } from "../_shared/payments/session-flow-compatibility.ts";
 import {
   mapCancellationDatabaseError,
   resolveCancellationReason,
@@ -20,6 +21,7 @@ import {
   type CancellationCommandBody,
 } from "./cancellation-command.ts";
 import { finalizeAutomaticRefund } from "./automatic-refund-finalization.ts";
+import { cancelV10BeforeCharge } from "./v10-precharge-cancellation.ts";
 import {
   finalizeRetainedCancellation,
 } from "./retained-cancellation-finalization.ts";
@@ -61,6 +63,7 @@ type SessionPaymentRow = {
   gross_amount_cents: number;
   id: string;
   patient_profile_id: string;
+  payment_flow_version: string;
   stripe_payment_intent_id: string | null;
   therapist_profile_id: string;
   transfer_status: string;
@@ -98,7 +101,7 @@ runtime.serve(async (request) => {
     }
     const reason = resolveCancellationReason(command.reason, user.role);
     const [payment] = await client.get<SessionPaymentRow[]>(
-      `/rest/v1/session_payments?select=id,booking_id,patient_profile_id,therapist_profile_id,gross_amount_cents,financial_status,transfer_status,stripe_payment_intent_id&booking_id=eq.${encodeURIComponent(
+      `/rest/v1/session_payments?select=id,booking_id,patient_profile_id,therapist_profile_id,gross_amount_cents,financial_status,transfer_status,stripe_payment_intent_id,payment_flow_version&booking_id=eq.${encodeURIComponent(
         command.bookingId,
       )}&limit=1`,
     );
@@ -112,6 +115,21 @@ runtime.serve(async (request) => {
     }
 
     await assertCanCancel(client, payment, user);
+    if (payment.payment_flow_version === "v10" && user.role === "patient") {
+      const result = await cancelV10BeforeCharge(client, {
+        bookingId: command.bookingId,
+        patientUserId: user.id,
+        reason: command.userReason ?? "",
+        requestId: command.requestId,
+      });
+      return success({
+        decision: "canceled_before_charge",
+        refundAmountCents: 0,
+        requiresManualReview: false,
+        applied: result.applied,
+      });
+    }
+    assertLegacySessionFinancialCommand(payment.payment_flow_version);
 
     const [calculatedDecision] = await client.rpc<
       CalculatedCancellationDecision[]

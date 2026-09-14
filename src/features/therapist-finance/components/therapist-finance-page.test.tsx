@@ -123,9 +123,9 @@ describe("TherapistFinancePage", () => {
     expect(
       within(quickSummary).getByRole("heading", { name: "Ticket médio" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: "Ticket médio" })).toHaveLength(
-      1,
-    );
+    expect(
+      screen.getAllByRole("heading", { name: "Ticket médio" }),
+    ).toHaveLength(1);
     expect(
       within(quickSummary).getByRole("img", {
         name: "Tendência de Ticket médio: ainda sem dados",
@@ -241,7 +241,9 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getAllByText("Sem horários configurados para o restante do mês"),
     ).not.toHaveLength(0);
-    expect(screen.queryByText("Aguardando base suficiente")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Aguardando base suficiente"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the financial reading panels free of agenda and sessions shortcuts", () => {
@@ -437,6 +439,21 @@ describe("TherapistFinancePage", () => {
       expect(screen.getByText(copy.emptyDescription)).toBeInTheDocument();
     },
   );
+
+  it("keeps internal payment terminology out of receipt copy", () => {
+    const publicCopy = Object.values(financialReceiptCopyByStatus)
+      .flatMap((copy) => [
+        copy.description,
+        copy.emptyDescription,
+        copy.emptyTitle,
+        copy.title,
+      ])
+      .join(" ");
+
+    expect(publicCopy).not.toMatch(
+      /Transfer Reversal|Transfer|Payout|SetupIntent|PaymentIntent|source_transaction|off_session|T-24|webhook|RPC|cron/i,
+    );
+  });
 
   it("keeps the selected status copy while rendering matching receipts", () => {
     const baseReceipts = fixture().receipts;

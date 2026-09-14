@@ -20,6 +20,7 @@ export type TherapistReceiptStatus =
   | "bank_pending"
   | "blocked"
   | "canceled"
+  | "compensated"
   | "disputed"
   | "eligible"
   | "failed"

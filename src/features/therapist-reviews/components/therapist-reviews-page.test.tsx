@@ -108,7 +108,9 @@ describe("TherapistReviewsPage", () => {
 
     expect(screen.getByText("Sessão #26G000001")).toBeInTheDocument();
     expect(screen.getByText(/27 de ago\. de 2026/i)).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Confirmar sessão" })[0]).toHaveAttribute(
+    expect(
+      screen.getAllByRole("link", { name: "Confirmar sessão" })[0],
+    ).toHaveAttribute(
       "href",
       "/terapeuta/sessoes/a0000000-0000-4000-8000-000000000001/video?feedback=1",
     );
@@ -116,7 +118,7 @@ describe("TherapistReviewsPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Confirmações operacionais pendentes",
+        name: "Confirmações de atendimentos",
       }),
     ).toBeInTheDocument();
     expect(
@@ -151,7 +153,7 @@ describe("TherapistReviewsPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Confirmações operacionais pendentes",
+        name: "Confirmações de atendimentos",
       }),
     ).toBeInTheDocument();
     expect(

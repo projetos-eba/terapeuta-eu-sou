@@ -266,9 +266,14 @@ select set_config(
 );
 
 select is(
-  (select count(*)::integer from public.admin_audit_events),
+  (
+    select count(*)::integer
+    from public.admin_audit_events
+    where request_id = 'audit-test-request-1'
+      and action = 'professional.suspend.requested'
+  ),
   1,
-  'admin users can read admin audit events through RLS'
+  'admin users can read the fixture admin audit event through RLS'
 );
 
 select ok(

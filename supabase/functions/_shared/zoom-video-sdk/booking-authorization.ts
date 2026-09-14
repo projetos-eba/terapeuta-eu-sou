@@ -70,8 +70,12 @@ export async function getAuthorizedVideoBooking(input: {
     );
   }
 
-  const [payment] = await input.client.get<Array<{ financial_status: string }>>(
-    `/rest/v1/session_payments?select=financial_status&booking_id=eq.${encodeURIComponent(
+  const [payment] = await input.client.get<Array<{
+    financial_status: string;
+    refund_pending: boolean;
+    admin_blocked_at: string | null;
+  }>>(
+    `/rest/v1/session_payments?select=financial_status,refund_pending,admin_blocked_at&booking_id=eq.${encodeURIComponent(
       input.bookingId,
     )}&limit=1`,
   );
@@ -95,7 +99,8 @@ export async function getAuthorizedVideoBooking(input: {
     )}&limit=1`,
   );
 
-  if (!videoSession && payment?.financial_status === "paid") {
+  if (!videoSession && payment?.financial_status === "paid" &&
+    !payment.refund_pending && !payment.admin_blocked_at) {
     await input.client.rpc("ensure_video_session_for_paid_booking_v1", {
       p_booking_id: input.bookingId,
       p_environment: input.environment,
@@ -153,7 +158,9 @@ export async function getAuthorizedVideoBooking(input: {
   return {
     bookingStatus: booking.status,
     endsAt: booking.ends_at,
-    financialStatus: payment?.financial_status ?? null,
+    financialStatus: payment?.refund_pending || payment?.admin_blocked_at
+      ? "payment_under_review"
+      : payment?.financial_status ?? null,
     patientProfileId: booking.patient_profile_id,
     patientHasJoined: patientParticipation.length > 0,
     patientHasTimelyArrival,

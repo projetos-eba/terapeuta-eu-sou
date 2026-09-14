@@ -40,13 +40,30 @@ describe("admin finance mappers", () => {
     expect(row.fields.map((field) => field.label)).toEqual([
       "Profissional",
       "Atendimento",
-      "Transferência",
+      "Repasse",
       "Valor bruto",
       "Repasse terapeuta",
-      "Comissão TES",
+      "Custos da plataforma",
       "Reembolso pendente",
       "Atualizado",
     ]);
+  });
+
+  it("presents refunded sessions as closed without a stale transferred state", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          financial_status: "refunded",
+          id: "payment-refunded",
+          service_status: "scheduled",
+          transfer_status: "transferred",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({ label: "Atendimento", value: "Encerrado" });
+    expect(row.fields).toContainEqual({ label: "Repasse", value: "Valor a compensar" });
   });
 
   it("normalizes every transfer lifecycle status for administration", () => {

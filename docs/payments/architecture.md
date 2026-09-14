@@ -52,6 +52,74 @@ Stripe antes de novos cadastros de recebimento.
 
 Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 85% devidos ao terapeuta em novos pagamentos sob a política vigente.
 
+## Contratos versionados V9 e V10
+
+- `tes-payments-v9-settlement-only` continua sendo a unica politica ativa.
+  Reservas e pagamentos existentes preservam o fluxo semanal, suas
+  confirmacoes e todos os snapshots historicos.
+- `tes-payments-v10-setup-t24-immediate-transfer` tem o nucleo das Fases 1 a 4
+  implementado somente no ambiente local, mas seus gates ainda nao fecharam.
+  A flag de checkout V10 permanece
+  desligada por padrao; HML e producao continuam sem ativacao V10. Nenhum cron
+  V10 foi ativado. O rollout, os comandos de reembolso/reversao e as paginas
+  financeiras V10 completas ainda nao foram implantados.
+- A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
+  somente no ambiente local. Os webhooks verificam os objetos no provedor e
+  registram cada operacao por identificador Stripe em RPCs transacionais
+  `service_role`, incluindo eventos repetidos e valores parciais. Isso nao
+  autoriza um Refund ou Reversal, nem substitui o comando administrativo, o
+  controle de divida residual ou a ativacao da politica V10.
+- O cancelamento V10 anterior a cobranca e transacional somente para um
+  schedule intacto, com zero tentativas e sem PaymentIntent, Charge ou Transfer;
+  nesse caso nao existe Refund. O reagendamento V10 do paciente segue o mesmo
+  limite de integridade: exige a sessao original a mais de 24 horas, preserva o
+  SetupIntent e o PaymentMethod vinculados a reserva, marca o schedule anterior
+  como substituido e cria exatamente um schedule ativo em T-24 do novo horario,
+  associado a versao atual da reserva. Se o novo horario estiver dentro de 24
+  horas, o schedule nasce imediatamente reivindicavel pelo worker. Estados ja
+  reivindicados, ambiguos ou pagos continuam recusados apos validar o ator e
+  encaminham a pessoa ao suporte. Uma divida que consome integralmente a parte
+  do terapeuta ainda precisa de uma representacao financeira propria: nao ha
+  Transfer nem deposito bancario nesse caso.
+- V10 separa a preparacao do cartao (`SetupIntent`, `usage=off_session`) da
+  cobranca T-24 e registra atomicamente um job de Transfer direto assim que o
+  pagamento e confirmado. Confirmacao e avaliacao da sessao nao sao gates
+  financeiros desse contrato.
+- `payment_flow_version` e imutavel. Seletores semanais aceitam somente V9;
+  Transfer V10 usa `transfer_origin=session_direct`, Charge original em
+  `source_transaction` e nunca possui `payout_batch_item_id`.
+- As tabelas de setup, agendamento, promocao, outbox de Transfer e divida sao
+  privadas, sem acesso de navegador, e suas rotinas de escrita sao exclusivas
+  de `service_role`.
+- O worker local `process-session-charges` cria e confirma um PaymentIntent
+  off-session com chave idempotente por reserva/versao. `succeeded` confirma o
+  pagamento e grava uma unica obrigacao de Transfer; `requires_action` e
+  `requires_payment_method` interrompem retry automatico e liberam recuperacao
+  autenticada do mesmo PaymentIntent.
+- A recuperacao valida na Stripe ambiente, Customer, reserva, versao, schedule,
+  valor e moeda antes de entregar o client secret ao paciente. Uma troca de
+  cartao e aceita somente depois desse preflight e nunca cria uma segunda
+  cobranca logica.
+- No inicio da sessao, fechamento de pagamento incompleto consulta primeiro o
+  PaymentIntent na Stripe. Sucesso tardio e conciliado; estado ainda em
+  processamento abre incidente e continua bloqueando a sala; somente ausencia
+  comprovada de cobranca ou PaymentIntent cancelado libera o horario. O
+  fechamento e idempotente e notifica paciente e terapeuta sem termos internos.
+- O worker local `process-session-transfers` congela a conta Connect da reserva,
+  compensa dividas abertas antes da chamada e cria um unico Transfer com a
+  Charge original em `source_transaction`. Resposta ambigua exige conciliacao;
+  falha definitiva usa backoff, circuito e retomada manual autorizada.
+- A criacao do Transfer grava o debito financeiro uma unica vez, mas o estado
+  bancario continua pendente. O repasse direto so conclui depois de
+  `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
+- Quando a divida consome integralmente os 85%, o job termina como
+  `offset_only`, nenhum Transfer Stripe e criado e a interface apresenta
+  “Compensado” com valor bancario zero. Esse item nao integra os totais em
+  processamento nem o grafico de distribuicao.
+
+O plano completo e os gates de ativacao estao em
+`docs/payments/session-financial-flow-v10-implementation-plan.md`.
+
 ## Modelo financeiro inicial
 
 - Moeda: BRL.
@@ -442,6 +510,10 @@ Stripe pede sincronização e nunca marca onboarding como concluído.
 
 Documentos de contrato:
 
+- `docs/payments/session-financial-flow-v10-implementation-plan.md`: plano
+  aprovado; as Fases 1 e 2 estão implementadas somente no Docker/frontend
+  local, ainda sem ativação em HML ou produção. As fases posteriores incluem
+  cobrança em T-24 e execução do Transfer vinculado à Charge;
 - `docs/payments/therapist-finance-f0-f1.md`;
 - `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
 - `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;

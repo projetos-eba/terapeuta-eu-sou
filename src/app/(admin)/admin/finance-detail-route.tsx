@@ -7,6 +7,7 @@ import {
 } from "@/features/admin-finance";
 import type { AdminPermission } from "@/lib/auth/admin-permissions";
 import { requireAdminSession } from "@/lib/auth/admin-session";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 type AdminFinanceDetailModuleKey = Extract<
   AdminFinanceModuleKey,
@@ -62,5 +63,49 @@ export async function AdminFinanceDetailRoute({
     );
   }
 
+  if (module === "payments") {
+    const config = getSupabasePublicConfig();
+    if (config) {
+      try {
+        const response = await fetch(
+          `${config.url}/rest/v1/rpc/admin_get_full_session_refund_status_v11`,
+          { method: "POST", cache: "no-store", headers: {
+            apikey: config.apiKey,
+            Authorization: `Bearer ${session.accessToken}`,
+            "Content-Type": "application/json",
+          }, body: JSON.stringify({ p_session_payment_id: id }) },
+        );
+        if (response.ok) {
+          const status = await response.json() as { available?: boolean; state?: string };
+          result.data.fullRefundStatus = {
+            available: status.available === true,
+            state: status.state ?? "unavailable",
+          };
+          if (status.state === "in_review") {
+            const followupResponse = await fetch(
+              `${config.url}/rest/v1/rpc/admin_get_full_session_refund_followup_v10`,
+              { method: "POST", cache: "no-store", headers: {
+                apikey: config.apiKey,
+                Authorization: `Bearer ${session.accessToken}`,
+                "Content-Type": "application/json",
+              }, body: JSON.stringify({ p_session_payment_id: id }) },
+            );
+            if (followupResponse.ok) {
+              const followup = await followupResponse.json() as {
+                found?: boolean; requestId?: string; reason?: string;
+              };
+              if (followup.found && followup.requestId && followup.reason) {
+                result.data.fullRefundStatus.followup = {
+                  requestId: followup.requestId, reason: followup.reason,
+                };
+              }
+            }
+          }
+        }
+      } catch {
+        // The detail remains read-only if the protected status cannot load.
+      }
+    }
+  }
   return <AdminFinanceDetailPage data={result.data} />;
 }

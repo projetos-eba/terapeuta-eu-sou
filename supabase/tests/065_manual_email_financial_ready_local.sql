@@ -406,13 +406,14 @@ insert into public.payout_batch_therapists (
   total_amount_cents
 )
 select
-  'f9700000-0000-4000-8000-000000000001',
+  'f9700000-0000-4000-8000-000000000065',
   'f9600000-0000-4000-8000-000000000001',
   'c1000000-0000-4000-8000-000000000001',
   id,
   13600
 from public.therapist_connect_accounts
-where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and is_current;
 insert into public.payout_batch_items (
   id,
   payout_batch_id,
@@ -425,7 +426,7 @@ insert into public.payout_batch_items (
 values (
   'f9800000-0000-4000-8000-000000000001',
   'f9600000-0000-4000-8000-000000000001',
-  'f9700000-0000-4000-8000-000000000001',
+  'f9700000-0000-4000-8000-000000000065',
   'f9300000-0000-4000-8000-000000000003',
   'f9200000-0000-4000-8000-000000000003',
   'c1000000-0000-4000-8000-000000000001',
@@ -455,7 +456,8 @@ select
   'transferred',
   '2046-02-01T10:06:00Z'
 from public.therapist_connect_accounts
-where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and is_current;
 select is(
   (
     select count(*)::integer
@@ -482,19 +484,20 @@ insert into public.stripe_payouts (
   paid_at
 ) select
   'f9a00000-0000-4000-8000-000000000001',
-  'f9700000-0000-4000-8000-000000000001',
+  'f9700000-0000-4000-8000-000000000065',
   'f9600000-0000-4000-8000-000000000001',
   'c1000000-0000-4000-8000-000000000001',
   id,
   'po_manual_email_payout',
-  'tes:test:payout:f9700000-0000-4000-8000-000000000001:v1',
+  'tes:test:payout:f9700000-0000-4000-8000-000000000065:v1',
   'manual-email-payout-fingerprint',
   13600,
   'paid',
   'paid',
   '2046-02-01T10:07:00Z'
 from public.therapist_connect_accounts
-where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and is_current;
 
 select is(
   (

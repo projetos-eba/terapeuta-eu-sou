@@ -13,6 +13,7 @@ const toneByStatus: Record<string, string> = {
   batched: "bg-brand-lavenderSoft text-brand-primary",
   blocked: "bg-status-warningBg text-status-warning",
   canceled: "bg-tesSurface-subtle text-tesText-secondary",
+  compensated: "bg-tesSurface-subtle text-tesText-secondary",
   disputed: "bg-status-dangerBg text-status-danger",
   eligible: "bg-status-successBg text-status-success",
   failed: "bg-status-dangerBg text-status-danger",

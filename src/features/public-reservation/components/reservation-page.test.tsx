@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -70,6 +71,28 @@ describe("ReservationPage", () => {
     const view = render(<ReservationSuccessPage />);
     view.unmount();
     expect(signal?.aborted).toBe(true);
+  });
+
+  it("confirms a future reservation whose card was saved for later billing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: "scheduled" }),
+      }),
+    );
+    render(<ReservationSuccessPage />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Seu encontro está reservado",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("A cobrança será realizada 24 horas antes", {
+        exact: false,
+      }),
+    ).toBeInTheDocument();
   });
 
   it.each([
@@ -441,6 +464,34 @@ describe("ReservationPage", () => {
       checkoutAttemptId,
       reservationKey,
     });
+  });
+
+  it("keeps the first checkout render independent of browser-only journey state", () => {
+    const serviceId = "d1000000-0000-4000-8000-000000000001";
+    const slot = "2026-09-01T16:15:00.000Z";
+    const reservationKey = `${serviceId}:${slot}`;
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: { etapa: "pagamento", service: serviceId, slot },
+    });
+    window.history.replaceState({}, "", "/reserva?etapa=pagamento");
+    const withoutDraft = renderToString(<ReservationPage context={context} />);
+
+    window.history.replaceState(
+      {
+        "tes.reservation.journey-draft.v1": {
+          acceptedTerms: true,
+          checkoutAttemptId: "a1000000-0000-4000-8000-000000000001",
+          marketingConsent: false,
+          reservationKey,
+        },
+      },
+      "",
+      "/reserva?etapa=pagamento",
+    );
+    const withDraft = renderToString(<ReservationPage context={context} />);
+
+    expect(withDraft).toBe(withoutDraft);
   });
 
   it("restores the checkout journey from tab storage when Next replaces history state", async () => {

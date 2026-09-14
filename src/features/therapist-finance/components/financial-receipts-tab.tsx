@@ -68,7 +68,11 @@ export function FinancialReceiptsTab({
                     [TherapistReceiptStatus, string]
                   >
                 )
-                  .filter(([status]) => status !== "waiting_safety_period")
+                  .filter(
+                    ([status]) =>
+                      status !== "waiting_safety_period" &&
+                      status !== "compensated",
+                  )
                   .map(([status, label]) => (
                     <option key={status} value={status}>
                       {label}
@@ -140,7 +144,7 @@ export function FinancialReceiptsTab({
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <ReceiptMetricCard
-          description="Valor líquido depositado em Payouts pagos e integralmente conciliados."
+          description="Valor líquido já depositado e integralmente confirmado."
           icon={ReceiptText}
           label="Recebido no período"
           value={receipts.summary.receivedCents}
@@ -505,6 +509,7 @@ function buildStatusTotals(
     bank_pending: "var(--tes-color-status-info)",
     blocked: "var(--tes-color-status-warning)",
     canceled: "var(--tes-color-text-muted)",
+    compensated: "var(--tes-color-text-muted)",
     disputed: "var(--tes-color-brand-deep)",
     eligible: "var(--tes-color-brand-primary)",
     failed: "var(--tes-color-status-danger)",

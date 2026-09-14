@@ -143,7 +143,7 @@ export const financialReceiptCopyByStatus: Record<
 > = {
   bank_pending: receiptCopy(
     "A caminho do banco",
-    "O Transfer foi concluído e aguarda o Payout bancário.",
+    "O repasse foi concluído e aguarda o depósito no banco.",
   ),
   blocked: receiptCopy(
     "Recebimentos bloqueados",
@@ -157,6 +157,10 @@ export const financialReceiptCopyByStatus: Record<
     emptyTitle: "Nenhum recebimento cancelado encontrado",
     title: "Recebimentos cancelados",
   },
+  compensated: receiptCopy(
+    "Valores compensados",
+    "O valor destas sessões foi usado para quitar um saldo pendente. Não há depósito bancário para estes itens.",
+  ),
   disputed: {
     description:
       "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento está sendo analisado.",
@@ -174,8 +178,7 @@ export const financialReceiptCopyByStatus: Record<
     title: "Recebimentos com falha",
   },
   paid: {
-    description:
-      "Veja os valores já depositados por Payout pago e integralmente conciliado.",
+    description: "Veja os valores já depositados e integralmente confirmados.",
     emptyDescription:
       "Não há recebimentos pagos neste período. Tente outro período ou limpe os filtros.",
     emptyTitle: "Nenhum recebimento pago encontrado",
@@ -187,7 +190,7 @@ export const financialReceiptCopyByStatus: Record<
   ),
   payout_processing: receiptCopy(
     "Repasses em processamento",
-    "Estes valores já entraram em lote ou têm Transfer em andamento.",
+    "Estes valores já estão em processamento para o repasse.",
   ),
   receivable: receiptCopy(
     "Valores a receber",
@@ -203,7 +206,7 @@ export const financialReceiptCopyByStatus: Record<
   },
   reversed: receiptCopy(
     "Repasses revertidos",
-    "Estes valores tiveram o Transfer revertido e precisam de conferência.",
+    "Estes valores retornaram à etapa de conferência e precisam de análise.",
   ),
   waiting_confirmation: receiptCopy(
     "Aguardando confirmação",
@@ -232,6 +235,7 @@ export const receiptStatusLabels: Record<TherapistReceiptStatus, string> = {
   bank_pending: "A caminho do banco",
   blocked: "Bloqueado",
   canceled: "Cancelado",
+  compensated: "Compensado",
   disputed: "Contestado",
   eligible: "Elegível para o próximo repasse",
   failed: "Falhou",

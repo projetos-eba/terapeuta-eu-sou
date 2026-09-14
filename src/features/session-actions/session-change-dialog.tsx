@@ -148,7 +148,7 @@ export function SessionChangeDialog({
               : "Solicitar reagendamento";
   const description =
     screen === "cancel"
-      ? "A plataforma aplica a política financeira e registra o cancelamento com segurança."
+      ? "Confira as condições deste encontro antes de confirmar o cancelamento."
       : screen === "confirm"
         ? actorRole === "patient"
           ? "O novo horário será confirmado imediatamente após a validação final da agenda."

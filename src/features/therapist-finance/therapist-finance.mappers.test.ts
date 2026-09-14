@@ -376,12 +376,31 @@ describe("therapist finance mappers", () => {
           therapistNetAmountCents: 3000,
           therapyNameSnapshot: "Reiki",
         },
+        {
+          bookingId: "f6100000-0000-4000-8000-000000000002",
+          createdAt: "2026-07-28T12:05:00.000Z",
+          disputeStatus: null,
+          financialStatus: "paid",
+          grossAmountCents: 5000,
+          patientDisplayName: "Marina",
+          paymentMethodType: "card",
+          paymentOrigin: "stripe_checkout",
+          receiptUrl: null,
+          receiptStatus: "compensated",
+          receivedAt: null,
+          refundedAmountCents: 0,
+          sessionDate: "2026-07-28T14:00:00.000Z",
+          sessionPaymentId: "f6200000-0000-4000-8000-000000000002",
+          tesCommissionCents: 1000,
+          therapistNetAmountCents: 0,
+          therapyNameSnapshot: "Reiki",
+        },
       ],
       pagination: {
         hasNextPage: false,
         page: 1,
         pageSize: 12,
-        totalCount: 1,
+        totalCount: 2,
         totalPages: 1,
       },
       monthlyTrend: [
@@ -410,6 +429,10 @@ describe("therapist finance mappers", () => {
       paymentOrigin: "stripe_checkout",
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
+    });
+    expect(receipts.items[1]).toMatchObject({
+      receiptStatus: "compensated",
+      therapistNetAmountCents: 0,
     });
   });
 

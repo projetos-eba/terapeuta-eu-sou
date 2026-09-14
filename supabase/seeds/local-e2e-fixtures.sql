@@ -44,21 +44,26 @@ set
 update public.bookings
 set
   starts_at = case id
-    when 'f2000000-0000-4000-8000-000000000001'::uuid then now() + interval '10 minutes'
     when 'f2000000-0000-4000-8000-000000000002'::uuid then now() + interval '3 days'
     when 'f2000000-0000-4000-8000-000000000004'::uuid then now() + interval '4 days'
   end,
   ends_at = case id
-    when 'f2000000-0000-4000-8000-000000000001'::uuid then now() + interval '1 hour 10 minutes'
     when 'f2000000-0000-4000-8000-000000000002'::uuid then now() + interval '3 days 1 hour'
     when 'f2000000-0000-4000-8000-000000000004'::uuid then now() + interval '4 days 1 hour'
   end,
   updated_at = now()
 where id in (
-  'f2000000-0000-4000-8000-000000000001'::uuid,
   'f2000000-0000-4000-8000-000000000002'::uuid,
   'f2000000-0000-4000-8000-000000000004'::uuid
 )
+  and status = 'confirmed';
+
+update public.bookings
+set
+  starts_at = now() + interval '10 minutes',
+  ends_at = now() + interval '1 hour 10 minutes',
+  updated_at = now()
+where id = 'f2000000-0000-4000-8000-000000000001'::uuid
   and status = 'confirmed';
 
 -- Dedicated therapist metrics browser fixtures. These identities and their
@@ -539,3 +544,36 @@ on conflict (dedupe_key) do update
 set
   metric_date = excluded.metric_date,
   occurred_at = excluded.occurred_at;
+
+-- Local-only Connect readiness for the Ana Oliveira reservation checkout.
+-- Phase 2 freezes the account binding but does not create a Transfer yet, so
+-- this deliberately non-routable Test identifier is safe for browser fixtures.
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  is_current
+)
+values (
+  'b1150000-0000-4000-8000-000000000099',
+  'c1000000-0000-4000-8000-000000000001',
+  'acct_test_local_v10_browser',
+  'ready',
+  true,
+  true,
+  true,
+  'active',
+  'ready',
+  'enabled',
+  'daily',
+  true
+)
+on conflict (id) do nothing;

@@ -14,6 +14,9 @@
     "lint:migrations": "node scripts/validate-supabase-migration-versions.mjs",
     "lint:visual": "node scripts/validate-visual-policy.mjs",
     "dev:functions": "node scripts/start-local-functions.mjs",
+    "dev:functions:webhooks": "node scripts/payments/stripe-listen-functions-local.mjs",
+    "payments:v10:stripe-contract:test": "node --env-file=supabase/functions/.env scripts/payments/verify-session-v10-stripe-contract.mjs",
+    "payments:v10:admin-refund:local": "node --env-file=supabase/functions/.env scripts/payments/verify-admin-full-refund-local.mjs",
     "test:auth:ui": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-ui-test.ps1",
     "test:auth:flows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-flow-tests.ps1",
     "test:email:real": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-real-email-test.ps1",
@@ -70,7 +73,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email supabase/functions/_shared/payments supabase/functions/_shared/zoom-video-sdk supabase/functions/admin-email-management-command supabase/functions/admin-therapy-catalog-command supabase/functions/email-outbox-dispatch supabase/functions/therapy-catalog-request-command supabase/functions/therapist-schedule-update supabase/functions/therapist-blocks-update supabase/functions/therapist-services-command supabase/functions/therapist-profile-command supabase/functions/therapist-reviews-command supabase/functions/patient-reviews-command supabase/functions/session-booking-checkout supabase/functions/session-reschedule supabase/functions/request-session-cancellation supabase/functions/session-feedback-command supabase/functions/session-journey-themes-command supabase/functions/stripe-hml-preflight",
+    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email supabase/functions/_shared/payments supabase/functions/_shared/zoom-video-sdk supabase/functions/admin-email-management-command supabase/functions/admin-therapy-catalog-command supabase/functions/email-outbox-dispatch supabase/functions/therapy-catalog-request-command supabase/functions/therapist-schedule-update supabase/functions/therapist-blocks-update supabase/functions/therapist-services-command supabase/functions/therapist-profile-command supabase/functions/therapist-reviews-command supabase/functions/patient-reviews-command supabase/functions/session-booking-checkout supabase/functions/session-reschedule supabase/functions/request-session-cancellation supabase/functions/session-feedback-command supabase/functions/session-journey-themes-command supabase/functions/prepare-session-charge-recovery supabase/functions/process-session-charges supabase/functions/process-session-transfers supabase/functions/stripe-hml-preflight",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

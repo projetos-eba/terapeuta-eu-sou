@@ -44,6 +44,42 @@ describe("getPatientEncounterActionPolicy", () => {
     expect(result.reschedule.disabledReason).toContain("pagamento");
   });
 
+  it("allows a V10 patient to cancel an uncharged appointment before T-24 without claiming a refund", () => {
+    const result = getPatientEncounterActionPolicy({
+      bookingStatus: BookingStatus.Confirmed,
+      cancellationPolicy: policy,
+      endsAt: "2026-08-03T13:00:00.000Z",
+      financialStatus: SessionFinancialStatus.Pending,
+      paymentFlowVersion: "v10",
+      now,
+      startsAt: "2026-08-03T12:00:00.000Z",
+    });
+
+    expect(result.cancellation.allowed).toBe(true);
+    expect(result.cancellation.impactLabel).toContain("ainda não foi cobrado");
+    expect(result.reschedule.allowed).toBe(true);
+  });
+
+  it("keeps V10 cancellation behind support once the appointment is within 24 hours or paid", () => {
+    for (const input of [
+      { startsAt: "2026-08-02T10:00:00.000Z", financialStatus: SessionFinancialStatus.Pending },
+      { startsAt: "2026-08-03T12:00:00.000Z", financialStatus: SessionFinancialStatus.Paid },
+    ]) {
+      const result = getPatientEncounterActionPolicy({
+        bookingStatus: BookingStatus.Confirmed,
+        cancellationPolicy: policy,
+        endsAt: "2026-08-03T13:00:00.000Z",
+        paymentFlowVersion: "v10",
+        now,
+        ...input,
+      });
+      expect(result.cancellation.allowed).toBe(false);
+      expect(result.cancellation.disabledReason).toContain("suporte");
+      expect(result.reschedule.allowed).toBe(false);
+      expect(result.reschedule.disabledReason).toContain("suporte");
+    }
+  });
+
   it("explains late cancellation impact before the backend confirms it", () => {
     const result = getPatientEncounterActionPolicy({
       bookingStatus: BookingStatus.Confirmed,
@@ -81,6 +117,25 @@ describe("getPatientEncounterActionPolicy", () => {
     expect(result.cancellation.refundState).toBe("manual_review");
     expect(result.cancellation.title).toBe("Reembolso em análise");
     expect(result.cancellation.impactLabel).toContain("análise manual");
+  });
+
+  it("explains a completed full refund without denying the confirmed payment", () => {
+    const result = getPatientEncounterActionPolicy({
+      bookingStatus: BookingStatus.Refunded,
+      cancellationPolicy: policy,
+      endsAt: "2026-08-03T13:00:00.000Z",
+      financialStatus: SessionFinancialStatus.Refunded,
+      paymentFlowVersion: "v10",
+      now,
+      startsAt: "2026-08-03T12:00:00.000Z",
+    });
+
+    expect(result.cancellation.refundState).toBe("full");
+    expect(result.cancellation.title).toBe("Reembolso concluído");
+    expect(result.cancellation.impactLabel).toBe(
+      "O valor integral deste encontro já foi devolvido ao cliente.",
+    );
+    expect(result.cancellation.impactLabel).not.toContain("Sem pagamento");
   });
 
   it("allows rating only after a paid completed encounter has ended", () => {

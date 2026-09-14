@@ -172,6 +172,7 @@ export function mapRescheduleDatabaseError(error: unknown) {
     details.includes("BOOKING_CANNOT_BE_RESCHEDULED") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_PENDING") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED") ||
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT") ||
     details.includes("IDEMPOTENCY_KEY_REUSED")
   ) {
     return new DomainError(
@@ -183,6 +184,7 @@ export function mapRescheduleDatabaseError(error: unknown) {
   if (
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
     details.includes("BOOKING_ACTOR_NOT_PATIENT") ||
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_FORBIDDEN") ||
     details.includes("BOOKING_PROPOSAL_REQUIRES_THERAPIST") ||
     details.includes("BOOKING_NOT_FOUND") ||
     details.includes("BOOKING_RESCHEDULE_NOT_FOUND")
@@ -196,6 +198,7 @@ export function mapRescheduleDatabaseError(error: unknown) {
   if (
     details.includes("INVALID_IDEMPOTENCY_KEY") ||
     details.includes("INVALID_RESCHEDULE_RESOLUTION") ||
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_INVALID") ||
     details.includes("INVALID_TIMEZONE")
   ) {
     return new DomainError(
@@ -216,6 +219,14 @@ export function resolveParticipantActorRole(
   if (patientUserId === userId) return "patient" as const;
   if (therapistUserId === userId) return "therapist" as const;
   return null;
+}
+
+export function resolvePatientRescheduleRpc(
+  paymentFlowVersion: string | null | undefined,
+) {
+  return paymentFlowVersion === "v10"
+    ? "reschedule_uncharged_session_v10"
+    : "apply_patient_booking_reschedule_v1";
 }
 
 function invalid(): never {

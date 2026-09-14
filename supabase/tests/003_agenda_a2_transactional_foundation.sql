@@ -583,13 +583,30 @@ select isnt(
   'the paid booking receives a local Video SDK session for the test'
 );
 
+-- A fixed "now() + 25 days at 18:00" eventually falls outside the
+-- therapist's weekly availability. Select an actually offered future slot.
+create temporary table a2_reschedule_slot on commit drop as
+select
+  (slot.value ->> 'startsAt')::timestamptz as starts_at,
+  (slot.value ->> 'endsAt')::timestamptz as ends_at
+from pg_catalog.jsonb_array_elements(
+  public.get_booking_reschedule_availability_v1(
+    'f2000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    'next', null, 1000
+  ) -> 'slots'
+) as slot(value)
+where (slot.value ->> 'startsAt')::timestamptz > now() + interval '20 days'
+order by starts_at
+limit 1;
+
 select is(
   (
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
       'aaaaaaaa-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '25 days 18 hours',
-      date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
+      (select starts_at from a2_reschedule_slot),
+      (select ends_at from a2_reschedule_slot),
       'America/Sao_Paulo',
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',
@@ -610,8 +627,8 @@ select is(
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
       'aaaaaaaa-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '25 days 18 hours',
-      date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
+      (select starts_at from a2_reschedule_slot),
+      (select ends_at from a2_reschedule_slot),
       'America/Sao_Paulo',
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',
