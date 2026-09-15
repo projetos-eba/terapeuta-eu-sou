@@ -62,10 +62,12 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   homologadas localmente e o canario da Fase 7 ativo em HML para novas
   reservas. Os workers de cobranca e repasse estao ativos e uma reserva futura
   comprovou SetupIntent por reserva, webhook assinado e agenda T-24 sem cobranca
-  antecipada. A estabilizacao permanece aberta: a correcao da retomada de
-  Checkout expirado esta validada somente localmente e aguarda PR, enquanto a
-  cobranca T-24, o Transfer vinculado e o Payout ainda precisam de evidencia
-  completa em HML. O script de ativacao esta em
+  antecipada. No vencimento, a cobranca T-24 e o Transfer vinculado foram
+  executados uma unica vez; uma segunda reserva comprovou a cobranca imediata.
+  As correcoes de retomada de Checkout expirado e de precedencia do evento
+  assinado foram publicadas e revalidadas. A estabilizacao permanece aberta
+  enquanto o Payout bancario do canario e a drenagem V9 nao forem concluidos.
+  O script de ativacao esta em
   `supabase/schedules/session-financial-flow-v10.sql`.
 - A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
   somente no ambiente local. Os webhooks verificam os objetos no provedor e

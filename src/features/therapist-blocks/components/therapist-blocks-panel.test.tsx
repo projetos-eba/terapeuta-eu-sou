@@ -171,6 +171,81 @@ describe("TherapistBlocksPanel", () => {
     });
   });
 
+  it("uses the schedule version returned by the previous command", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            idempotentReplay: false,
+            impactedBookingCount: 0,
+            occurrenceCount: 1,
+            scheduleVersion: 3,
+          },
+          ok: true,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            cancelledCount: 1,
+            idempotentReplay: false,
+            scheduleVersion: 4,
+          },
+          ok: true,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Novo bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar bloqueio" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    const [, request] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      action: "cancel",
+      expectedScheduleVersion: 3,
+    });
+  });
+
+  it("refreshes stale agenda data after a schedule version conflict", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: "schedule_version_conflict",
+            message: "internal",
+          },
+          ok: false,
+        },
+        409,
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "",
+      }),
+    ).toHaveTextContent(
+      "Sua agenda mudou enquanto esta tela estava aberta. Atualizamos os horários; revise o bloqueio e tente novamente.",
+    );
+    expect(navigationMocks.refresh).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("schedule_version_conflict"),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps an impacted booking without changing the booking itself", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -207,6 +282,13 @@ function oneWeekFromToday() {
   const date = new Date();
   date.setDate(date.getDate() + 7);
   return date.toISOString().slice(0, 10);
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    headers: { "Content-Type": "application/json" },
+    status,
+  });
 }
 
 function renderPanel() {

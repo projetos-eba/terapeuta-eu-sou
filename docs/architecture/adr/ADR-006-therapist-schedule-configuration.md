@@ -81,6 +81,10 @@ snapshot imutável.
 - A RPC deriva o perfil a partir do usuário autenticado pela Edge Function.
 - Um advisory lock serializa gravações do mesmo terapeuta.
 - Versão divergente retorna `schedule_version_conflict`.
+- A interface mantém a versão devolvida pelo último comando. Se outra janela
+  alterar a agenda, a confirmação em curso é encerrada, o read model é
+  atualizado e o terapeuta recebe uma orientação funcional para revisar antes
+  de tentar novamente.
 - Repetir o mesmo `requestId` não reaplica a operação.
 - O evento auditado contém somente ator, versões, contagens e request ID.
 

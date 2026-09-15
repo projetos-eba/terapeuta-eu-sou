@@ -52,6 +52,9 @@ o access token autenticado para a Edge Function.
 - o advisory lock serializa comandos do mesmo terapeuta;
 - `expectedVersion` impede overwrite silencioso;
 - versão obsoleta retorna `schedule_version_conflict`;
+- a interface absorve imediatamente a versão devolvida por cada comando;
+- ao detectar uma alteração concorrente, a interface fecha a confirmação,
+  recarrega os dados e orienta uma nova revisão sem exibir o código interno;
 - o mesmo `requestId` retorna `idempotentReplay = true`;
 - replay não incrementa versão e não duplica evento;
 - cada regra exige uma terapia existente e não arquivada;
