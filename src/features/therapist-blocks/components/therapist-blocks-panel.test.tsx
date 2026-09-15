@@ -246,6 +246,35 @@ describe("TherapistBlocksPanel", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("ignores a duplicate command while the first request is still pending", async () => {
+    let resolveRequest!: (value: Response) => void;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveRequest = resolve;
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    const keepBooking = screen.getByRole("button", { name: "Manter sessão" });
+    fireEvent.click(keepBooking);
+    fireEvent.click(keepBooking);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    resolveRequest(
+      jsonResponse({
+        data: {
+          idempotentReplay: false,
+          resolution: "keep_booking",
+          status: "resolved",
+        },
+        ok: true,
+      }),
+    );
+    await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
+  });
+
   it("keeps an impacted booking without changing the booking itself", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

@@ -20,7 +20,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TESDialog } from "@/components/tes";
 import {
@@ -75,6 +75,7 @@ export function TherapistBlocksPanel({
   const [scheduleVersion, setScheduleVersion] = useState(
     initialData.scheduleVersion,
   );
+  const commandInFlightRef = useRef(false);
   const [paidConflicts, setPaidConflicts] = useState<
     TherapistPaidBlockConflict[]
   >([]);
@@ -136,6 +137,9 @@ export function TherapistBlocksPanel({
   }
 
   async function runCommand(body: Record<string, unknown>) {
+    if (commandInFlightRef.current) return false;
+
+    commandInFlightRef.current = true;
     setCommand({ status: "saving" });
 
     try {
@@ -205,6 +209,8 @@ export function TherapistBlocksPanel({
         status: "error",
       });
       return false;
+    } finally {
+      commandInFlightRef.current = false;
     }
   }
 

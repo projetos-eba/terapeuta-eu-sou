@@ -276,7 +276,7 @@ select throws_ok(
       'a3000000-0000-4000-8000-000000000002'
     )
   $$,
-  '40001',
+  'P0001',
   'schedule_version_conflict',
   'a stale version is rejected instead of overwriting a newer schedule'
 );

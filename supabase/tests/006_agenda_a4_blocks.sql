@@ -337,7 +337,7 @@ select throws_ok(
       1
     )
   $$,
-  '40001',
+  'P0001',
   'schedule_version_conflict',
   'stale cancellation versions are rejected'
 );
