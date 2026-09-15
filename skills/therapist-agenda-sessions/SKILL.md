@@ -252,12 +252,18 @@ the related demand tip is not rendered without `agenda_insights`.
   no read model editável. Regras órfãs de terapia arquivada não devem transformar
   um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
   continua no RPC.
-- Duração pertence ao serviço e `slotStepMinutes` controla o intervalo das sessões
-  na interface. O nome técnico permanece no contrato para compatibilidade.
-  `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
-  e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
-  O buffer anterior amplia a ocupação sem deslocar o primeiro slot da faixa; a
-  duração e o buffer posterior devem caber antes do fim configurado.
+- Duração pertence ao serviço; `slotStepMinutes` controla a grade fixa de
+  horários de início, ancorada no começo de cada faixa. A UI chama esse controle
+  de "Horários de início — Disponibilizar novos horários a cada".
+- `bufferAfterMinutes` é o "Intervalo da sessão — Tempo livre depois de cada
+  sessão", escolhido por terapia. Novas terapias começam em zero; valores
+  existentes são exibidos e só mudam por escolha do terapeuta. O intervalo
+  registrado em uma reserva ou hold permanece imutável após uma alteração.
+- `bufferBeforeMinutes` permanece no contrato para compatibilidade, mas é zero
+  nas configurações atuais e futuras. Snapshots históricos podem conter valor
+  anterior. A sessão precisa caber na faixa; o intervalo posterior pode
+  ultrapassar seu fim. Reservas e holds conflitam pelos intervalos ocupados
+  completos, sem deslocar a grade de inícios.
 - O resumo geral une faixas iguais ou parcialmente sobrepostas de terapias
   diferentes antes de somar minutos. O potencial financeiro F3 aplica
   bloqueios no escopo correto e desconta a ocupação global de bookings pagos
@@ -353,8 +359,11 @@ the related demand tip is not rendered without `agenda_insights`.
 - `reserve_booking_hold_v1`: cria hold somente via backend confiável.
 - `consume_booking_hold_v1`: converte hold em um booking `draft`.
 - `session-booking-checkout`: Edge Function autenticada para pessoa paciente;
-  seleciona slot por `get_service_available_slots_v1`, reserva hold
-  idempotente, consome hold em booking e inicia `stripe-create-session-payment`.
+  exige o slug do profissional, confere se ele é o proprietário exato do
+  serviço antes de criar hold, seleciona slot por
+  `get_service_available_slots_v1`, reserva hold idempotente, consome hold em
+  booking e inicia `stripe-create-session-payment`. A resposta devolve o
+  snapshot efetivamente reservado para revisão antes de exibir o pagamento.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
 - `apply_patient_booking_reschedule_v1`: aplica imediatamente, no mesmo booking,
   um horário escolhido pela pessoa após revalidação autoritativa; rejeita ator
@@ -381,7 +390,16 @@ the related demand tip is not rendered without `agenda_insights`.
   pagamento.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
-  serviço.
+  serviço. Links públicos antigos resolvem serviço por ID exato, substituem
+  duração e preço da URL pelos dados públicos atuais e avisam a pessoa. Se o
+  snapshot criado divergir do resumo anterior, o checkout fica oculto até nova
+  revisão; desistência cancela a tentativa pelo comando existente. Retomadas de
+  reservas anteriores usam os snapshots históricos.
+- Perfil, busca, oferta pública de horários e criação de hold exigem conta de
+  recebimento corrente, não encerrada e plenamente pronta para o fluxo V10.
+  Perda posterior de prontidão oculta essas superfícies, mas preserva publicação
+  armazenada e reservas existentes. O acesso privado da agenda mantém seu gate
+  operacional próprio durante processamento sem pendências atuais.
 - A confirmação de pagamento continua exclusivamente em webhook Stripe; retorno
   de Checkout e `session-booking-checkout` não confirmam pagamento, plano, Zoom
   ou repasse.

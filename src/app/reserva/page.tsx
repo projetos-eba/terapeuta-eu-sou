@@ -79,6 +79,15 @@ export default async function PublicReservationPage({
       therapist: retrySnapshot.therapist,
     };
   }
+  if (!retrySnapshot && context.serviceId && !context.therapist.slug) {
+    context = {
+      ...context,
+      canPrepareEncounter: false,
+      hasRequiredCheckoutData: false,
+      reservationUnavailable: true,
+      serviceId: null,
+    };
+  }
   let availabilityDays: AvailabilityDay[] = [];
 
   if (context.therapist.slug && !retrySnapshot) {
@@ -88,12 +97,13 @@ export default async function PublicReservationPage({
 
     if (profileResult.status === "success" || profileResult.status === "demo") {
       const { profile } = profileResult.data;
-      const selectedService =
-        profile.services.find((service) => service.id === context.serviceId) ??
-        profile.services.find(
-          (service) => service.therapySlug === context.therapySlug,
-        ) ??
-        profile.services[0];
+      const selectedService = context.reservationUnavailable
+        ? undefined
+        : context.serviceId
+          ? profile.services.find((service) => service.id === context.serviceId)
+          : (profile.services.find(
+              (service) => service.therapySlug === context.therapySlug,
+            ) ?? profile.services[0]);
 
       const serviceTimezone =
         selectedService?.availabilityTimezone ?? context.timezone;
@@ -150,6 +160,7 @@ export default async function PublicReservationPage({
         name: profile.name,
         service: selectedService
           ? {
+              id: selectedService.id,
               durationMinutes: selectedService.durationMinutes,
               priceCents: selectedService.priceCents,
               priceLabel: selectedService.priceLabel,
@@ -194,7 +205,12 @@ export default async function PublicReservationPage({
         availabilityDays,
       );
     } else {
-      context = reconcileReservationContextWithAvailability(context, []);
+      context = {
+        ...reconcileReservationContextWithAvailability(context, []),
+        hasRequiredCheckoutData: false,
+        reservationUnavailable: true,
+        serviceId: null,
+      };
     }
   }
 

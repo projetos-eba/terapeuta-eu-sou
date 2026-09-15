@@ -11,6 +11,7 @@ export type BookingCheckoutCommandBody = {
   serviceId?: string;
   sharedNote?: string | null;
   startsAt?: string;
+  therapistSlug?: string;
   termsAccepted?: boolean;
 };
 
@@ -21,9 +22,33 @@ export type ValidBookingCheckoutCommand = {
   serviceId: string;
   sharedNote: string | null;
   startsAt: string;
+  therapistSlug: string;
 };
 
 export const MAX_SHARED_NOTE_LENGTH = 600;
+export const BOOKING_SNAPSHOT_SELECT = [
+  "id",
+  "service_id",
+  "starts_at",
+  "ends_at",
+  "currency_snapshot",
+  "service_title_snapshot",
+  "service_duration_minutes_snapshot",
+  "service_price_cents_snapshot",
+].join(",");
+
+export function assertServiceTherapistMatch(
+  actualSlug: string | null | undefined,
+  requestedSlug: string,
+) {
+  if (actualSlug === requestedSlug) return;
+
+  throw new DomainError(
+    "service_therapist_mismatch",
+    422,
+    "A terapia escolhida não corresponde a este profissional.",
+  );
+}
 
 export type ServiceAvailableSlotsResponse = {
   contractVersion?: number;
@@ -109,6 +134,7 @@ export function validateBookingCheckoutCommand(
     !isUuid(body.requestId) ||
     !isUuid(body.serviceId) ||
     !isIsoInstant(body.startsAt) ||
+    !isSlug(body.therapistSlug) ||
     !Number.isInteger(ttl) ||
     ttl < 60 ||
     ttl > 900
@@ -135,7 +161,17 @@ export function validateBookingCheckoutCommand(
     serviceId: body.serviceId,
     sharedNote,
     startsAt: new Date(body.startsAt).toISOString(),
+    therapistSlug: body.therapistSlug,
   };
+}
+
+function isSlug(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length >= 1 &&
+    value.length <= 120 &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+  );
 }
 
 function normalizeReturnUrlBase(value: string | null | undefined) {

@@ -50,10 +50,10 @@ const blockedStatuses = new Set(["draft", "pending_payment", "confirmed"]);
 const DEFAULT_TIMEZONE = "America/Sao_Paulo";
 
 const defaultBookingSettings = {
-  bufferAfterMinutes: 10,
-  bufferBeforeMinutes: 10,
+  bufferAfterMinutes: 0,
+  bufferBeforeMinutes: 0,
   intervalMinutes: 30,
-  maxDaysAhead: 30,
+  maxDaysAhead: 90,
   minNoticeMinutes: 120,
 };
 
@@ -257,9 +257,7 @@ function buildSlotsForWindow({
 
   for (
     let cursor = new Date(window.start);
-    cursor.getTime() +
-      (serviceDurationMinutes + settings.bufferAfterMinutes) * 60_000 <=
-    window.end.getTime();
+    cursor.getTime() + serviceDurationMinutes * 60_000 <= window.end.getTime();
     cursor = new Date(cursor.getTime() + settings.intervalMinutes * 60_000)
   ) {
     const startsAt = new Date(cursor);

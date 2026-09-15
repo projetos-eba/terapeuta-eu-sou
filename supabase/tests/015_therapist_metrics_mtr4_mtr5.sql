@@ -275,6 +275,7 @@ select is(
 );
 
 reset role;
+
 insert into public.therapist_metric_daily_aggregates (
   therapist_profile_id,
   metric_date,
@@ -311,6 +312,7 @@ select is(
 );
 
 reset role;
+
 update public.therapist_metric_daily_aggregates
 set favorites_added = 10,
   fresh_through = now()

@@ -859,8 +859,8 @@ insert into public.therapist_service_booking_settings (
   interval_minutes
 )
 values
-  ('a2300000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', 10, 10, 120, 90, 30),
-  ('a2300000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000006', 15, 15, 180, 90, 30)
+  ('a2300000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', 0, 10, 120, 90, 30),
+  ('a2300000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000006', 0, 15, 180, 90, 30)
 on conflict (service_id) do update
 set
   buffer_before_minutes = excluded.buffer_before_minutes,
@@ -1066,7 +1066,7 @@ insert into public.bookings (id, patient_profile_id, therapist_profile_id, servi
 values
   ('94000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '30 minutes', now() + interval '30 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/juliane-live', null),
   ('94000000-0000-4000-8000-000000000012', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000012', '93000000-0000-4000-8000-000000000012', current_date + interval '1 day' + time '10:30', current_date + interval '1 day' + time '11:30', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/marcus', null),
-  ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '16:00', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
+  ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + case when ((9 - extract(dow from current_date)::integer) % 7) = 0 then 7 else ((9 - extract(dow from current_date)::integer) % 7) end + time '16:00', current_date + case when ((9 - extract(dow from current_date)::integer) % 7) = 0 then 7 else ((9 - extract(dow from current_date)::integer) % 7) end + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
   ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes'),
   ('94000000-0000-4000-8000-000000000021', 'b1000000-0000-4000-8000-000000000005', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
   ('94000000-0000-4000-8000-000000000022', 'b1000000-0000-4000-8000-000000000003', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() + interval '2 hours', now() + interval '3 hours', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia', null),
@@ -2429,3 +2429,75 @@ values
     'supabase/seed.sql'
   )
 on conflict (id) do nothing;
+
+-- Direct local seed inserts do not pass through the therapist service command.
+-- Complete their schedule settings with the same defaults as the product.
+insert into public.therapist_service_booking_settings (
+  service_id,
+  buffer_before_minutes,
+  buffer_after_minutes,
+  min_notice_minutes,
+  max_days_ahead,
+  interval_minutes
+)
+select service.id, 0, 0, 120, 90, 30
+from public.therapist_services as service
+where service.archived_at is null
+  and not exists (
+    select 1
+    from public.therapist_service_booking_settings as setting
+    where setting.service_id = service.id
+  )
+on conflict (service_id) do nothing;
+
+-- Explicit local-only receiving accounts keep published fixtures compatible
+-- with the fail-closed public reservation gate. These identifiers never leave
+-- the local Supabase project and are not valid Stripe accounts.
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  pending_requirements,
+  operational_status,
+  account_generation,
+  is_current,
+  payout_status,
+  payout_schedule_interval
+)
+select
+  md5('tes-local-connect-' || profile.id::text)::uuid,
+  profile.id,
+  'acct_local_' || left(md5(profile.id::text), 24),
+  'ready'::public.connect_onboarding_status,
+  true,
+  true,
+  true,
+  'active',
+  '{"currentlyDue":[]}'::jsonb,
+  'ready',
+  1,
+  true,
+  'enabled',
+  'daily'
+from public.therapist_profiles as profile
+where profile.status = 'approved'
+  and profile.is_public
+  and profile.id <> 'c1000000-0000-4000-8000-000000000001'
+on conflict (stripe_account_id) do update
+set onboarding_status = excluded.onboarding_status,
+    details_submitted = excluded.details_submitted,
+    charges_enabled = excluded.charges_enabled,
+    payouts_enabled = excluded.payouts_enabled,
+    stripe_transfers_status = excluded.stripe_transfers_status,
+    pending_requirements = excluded.pending_requirements,
+    operational_status = excluded.operational_status,
+    is_current = excluded.is_current,
+    closed_at = null,
+    payout_status = excluded.payout_status,
+    payout_schedule_interval = excluded.payout_schedule_interval,
+    updated_at = now();

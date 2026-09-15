@@ -101,7 +101,7 @@ export function validateScheduleCommand(
   for (const settings of body.serviceSettings) {
     if (
       !isUuid(settings.serviceId) ||
-      !isNonNegativeInteger(settings.bufferBeforeMinutes) ||
+      settings.bufferBeforeMinutes !== 0 ||
       !isNonNegativeInteger(settings.bufferAfterMinutes) ||
       !isNonNegativeInteger(settings.minimumNoticeMinutes) ||
       !isPositiveInteger(settings.bookingHorizonDays) ||

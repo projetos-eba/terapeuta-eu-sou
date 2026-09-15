@@ -17072,6 +17072,10 @@ export type Database = {
         Args: { p_therapist_profile_id: string };
         Returns: boolean;
       };
+      is_therapist_receiving_account_ready_v1: {
+        Args: { p_therapist_profile_id: string };
+        Returns: boolean;
+      };
       is_therapist_video_session_eligible_v1: {
         Args: { p_therapist_profile_id: string };
         Returns: boolean;

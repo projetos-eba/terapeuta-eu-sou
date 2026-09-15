@@ -78,12 +78,12 @@ describe("TherapistScheduleHours", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Saiba mais sobre Intervalo das sessões",
+        name: "Saiba mais sobre Horários de início — Disponibilizar novos horários a cada",
       }),
     );
 
     expect(screen.getByRole("tooltip")).toHaveTextContent(
-      "De quanto em quanto tempo",
+      "A grade de horários começa no início de cada faixa",
     );
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("TherapistScheduleHours", () => {
     );
 
     expect(screen.getByRole("tooltip")).toHaveTextContent(
-      "Por exemplo: com 2 horas de antecedência, uma sessão às 12h só poderá ser agendada com pelo menos 2 horas de antecedência, ou seja até às 09:59am.",
+      "Por exemplo: com 2 horas de antecedência, uma sessão às 12h poderá ser agendada até às 10:00.",
     );
     expect(screen.getByRole("tooltip")).toHaveTextContent(
       "Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento.",
@@ -213,9 +213,18 @@ describe("TherapistScheduleHours", () => {
     });
     renderSchedule(initialSchedule);
 
-    fireEvent.change(screen.getByLabelText("Intervalo das sessões"), {
-      target: { value: "45" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Disponibilizar novos horários a cada"),
+      {
+        target: { value: "45" },
+      },
+    );
+    fireEvent.change(
+      screen.getByLabelText("Tempo livre depois de cada sessão"),
+      {
+        target: { value: "0" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     expect(
@@ -237,12 +246,24 @@ describe("TherapistScheduleHours", () => {
     expect(payload.rules[0]?.serviceId).toBe(serviceId);
     expect(payload.serviceSettings[0]).toEqual(
       expect.objectContaining({
-        bufferAfterMinutes: 10,
-        bufferBeforeMinutes: 10,
+        bufferAfterMinutes: 0,
+        bufferBeforeMinutes: 0,
         slotStepMinutes: 45,
       }),
     );
     expect(navigationMocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a historical post-session interval visible until the therapist changes it", () => {
+    const initialSchedule = scheduleFixture();
+    initialSchedule.services[0]!.settings.bufferAfterMinutes = 7;
+
+    renderSchedule(initialSchedule);
+
+    expect(
+      screen.getByLabelText("Tempo livre depois de cada sessão"),
+    ).toHaveValue("7");
+    expect(screen.getByRole("option", { name: "7 min" })).toBeInTheDocument();
   });
 
   it("guides therapists without a therapy before showing schedule controls", () => {
@@ -289,9 +310,12 @@ describe("TherapistScheduleHours", () => {
     );
     renderSchedule();
 
-    fireEvent.change(screen.getByLabelText("Intervalo das sessões"), {
-      target: { value: "45" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Disponibilizar novos horários a cada"),
+      {
+        target: { value: "45" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

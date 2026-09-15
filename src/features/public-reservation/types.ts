@@ -30,6 +30,7 @@ export type ReservationContext = {
   paymentStepHref: string;
   priceCents: number | null;
   priceLabel: string;
+  reservationUnavailable: boolean;
   retryBookingId: string | null;
   patientScheduleIntervals: PatientScheduleInterval[];
   patientScheduleCheckStatus: PatientScheduleCheckStatus;
@@ -39,6 +40,7 @@ export type ReservationContext = {
   serviceId: string | null;
   serviceLabel: string;
   serviceSummary: string;
+  serviceDetailsUpdated: boolean;
   source: string | null;
   step: ReservationStep;
   therapist: {

@@ -106,10 +106,24 @@ Deno.test("schedule command validates buffer and slot step boundaries", () => {
   zeroStep.serviceSettings = [
     { ...zeroStep.serviceSettings![0], slotStepMinutes: 0 },
   ];
+  const hiddenPreSessionBuffer = commandFixture();
+  hiddenPreSessionBuffer.serviceSettings = [
+    {
+      ...hiddenPreSessionBuffer.serviceSettings![0],
+      bufferBeforeMinutes: 10,
+    },
+  ];
 
   assertEquals(
     assertThrows(() => validateScheduleCommand(negativeBuffer), DomainError)
       .code,
+    "invalid_service_booking_settings",
+  );
+  assertEquals(
+    assertThrows(
+      () => validateScheduleCommand(hiddenPreSessionBuffer),
+      DomainError,
+    ).code,
     "invalid_service_booking_settings",
   );
   assertEquals(
@@ -170,7 +184,7 @@ function commandFixture(
       {
         bookingHorizonDays: 30,
         bufferAfterMinutes: 10,
-        bufferBeforeMinutes: 10,
+        bufferBeforeMinutes: 0,
         minimumNoticeMinutes: 120,
         serviceId,
         slotStepMinutes: 30,

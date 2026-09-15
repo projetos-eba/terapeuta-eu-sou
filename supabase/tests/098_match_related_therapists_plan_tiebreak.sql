@@ -28,6 +28,43 @@ values
   ('f9810000-0000-4000-8000-000000000003', 'f9800000-0000-4000-8000-000000000003', 'match-premium-plus', 'Match Premium Plus', '9800003', 'premium_plus', 'approved', 'published', true, true, true),
   ('f9810000-0000-4000-8000-000000000004', 'f9800000-0000-4000-8000-000000000004', 'match-free-interesse', 'Match Free Interesse', '9800004', 'free', 'approved', 'published', true, true, true);
 
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  pending_requirements,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  is_current
+)
+select
+  account_id,
+  therapist_profile_id,
+  stripe_account_id,
+  'ready',
+  true,
+  true,
+  true,
+  'active',
+  '[]'::jsonb,
+  'ready',
+  'enabled',
+  'daily',
+  true
+from (
+  values
+    ('f9830000-0000-4000-8000-000000000001'::uuid, 'f9810000-0000-4000-8000-000000000001'::uuid, 'acct_test_match_free'),
+    ('f9830000-0000-4000-8000-000000000002'::uuid, 'f9810000-0000-4000-8000-000000000002'::uuid, 'acct_test_match_premium'),
+    ('f9830000-0000-4000-8000-000000000003'::uuid, 'f9810000-0000-4000-8000-000000000003'::uuid, 'acct_test_match_premium_plus'),
+    ('f9830000-0000-4000-8000-000000000004'::uuid, 'f9810000-0000-4000-8000-000000000004'::uuid, 'acct_test_match_interest')
+) as fixtures(account_id, therapist_profile_id, stripe_account_id);
+
 -- Isolate the ranking contract from the broad local seed. The fixtures below
 -- are the only public candidates considered by this test.
 update public.therapist_profiles profile

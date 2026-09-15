@@ -2,7 +2,7 @@
 
 Data: 2026-07-26
 
-Status: aceito e implementado; A3.0-A3.3 concluídos. Revisado em 2026-08-28.
+Status: aceito e implementado; A3.0-A3.3 concluídos. Revisado em 2026-09-15.
 
 ## Contexto
 
@@ -26,8 +26,11 @@ abas sobrescrevessem a configuração de horários simultaneamente.
 - `therapist_services.duration_minutes` continua sendo a fonte da duração.
 - `therapist_service_booking_settings.interval_minutes` permanece no banco por
   compatibilidade e é exposto no contrato como `slotStepMinutes`.
-- Descanso e ocupação ao redor da sessão continuam representados por
-  `buffer_before_minutes` e `buffer_after_minutes`.
+- O intervalo da sessão é a escolha de tempo livre **depois** do atendimento,
+  representada por `buffer_after_minutes`; é independente de `slotStepMinutes`.
+- `buffer_before_minutes` permanece apenas para compatibilidade histórica e é
+  fixo em zero nas configurações atuais e futuras. Snapshots de reservas já
+  existentes não são reescritos.
 - `availability_rules` continua armazenando as faixas semanais e exige
   `service_id`; não existe disponibilidade geral editável.
 - A migration de 2026-08-28 copia cada regra geral histórica para todas as
@@ -58,14 +61,16 @@ vazio com acesso a `/terapeuta/servicos`. A cópia implementada atua entre dias
 da mesma terapia; uma futura alteração em massa deverá usar uma ação explícita
 e não poderá reintroduzir regra geral implícita.
 
-O campo visual "Duração da sessão" é somente leitura. "Intervalo entre
-sessões" não é usado como sinônimo de `slotStepMinutes`; a interface usa
-"Intervalo de oferta". Os buffers continuam preservados no contrato e no motor
-de disponibilidade, mas não são expostos como controles na interface para
-reduzir complexidade operacional. `buffer_before_minutes` amplia a ocupação
-antes da sessão sem deslocar o primeiro início configurado; por exemplo, uma
-faixa 09:00-17:00 continua oferecendo 09:00. A sessão e o buffer posterior
-precisam caber até o fim da faixa.
+O campo visual "Duração da sessão" é somente leitura. "Horários de início —
+Disponibilizar novos horários a cada" controla a grade fixa, ancorada no início
+de cada faixa. "Intervalo da sessão — Tempo livre depois de cada sessão" controla
+separadamente o descanso posterior por terapia, com valor inicial de zero para
+novas terapias. Configurações anteriores exibem seu valor posterior atual e
+podem ser alteradas pelo terapeuta. A sessão precisa caber na faixa; o descanso
+posterior pode avançar além do fim dela. Um horário de início só é oferecido se
+não conflitar com o intervalo ocupado de reservas e holds, incluindo os valores
+posteriores registrados neles. Alterações do descanso valem para novas reservas;
+reservas existentes preservam os snapshots imutáveis.
 
 No resumo geral do terapeuta, faixas iguais ou parcialmente sobrepostas de
 terapias diferentes são unidas antes do cálculo de minutos semanais. A mesma

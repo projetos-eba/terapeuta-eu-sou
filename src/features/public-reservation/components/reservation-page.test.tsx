@@ -178,6 +178,38 @@ describe("ReservationPage", () => {
     expect(screen.queryByText(/Reserva por/i)).not.toBeInTheDocument();
   });
 
+  it("keeps an unavailable legacy link in the selection step", () => {
+    const context = {
+      ...resolveReservationContext({
+        isPatientAuthenticated: true,
+        searchParams: {
+          etapa: "pagamento",
+          service: "d1000000-0000-4000-8000-000000000001",
+          slot: "2026-09-09T14:00:00.000Z",
+          therapist: "ana-oliveira",
+        },
+      }),
+      hasRequiredCheckoutData: false,
+      reservationUnavailable: true,
+      serviceId: null,
+    };
+
+    render(<ReservationPage context={context} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Esta terapia não está disponível para reserva",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /confirme seus dados/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Resumo da reserva")).not.toBeInTheDocument();
+    expect(router.replace).toHaveBeenCalledWith(
+      expect.stringContaining("etapa=momento"),
+    );
+  });
+
   it("labels the agenda navigation as five-day jumps", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: false,

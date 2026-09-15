@@ -199,7 +199,7 @@ export function TherapistScheduleHours({
   }
 
   function updateServiceSetting(
-    field: "minimumNoticeMinutes" | "slotStepMinutes",
+    field: "bufferAfterMinutes" | "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) {
     if (!currentService) return;
@@ -287,6 +287,7 @@ export function TherapistScheduleHours({
         })),
       serviceSettings: schedulableServices.map((service) => ({
         ...service.settings,
+        bufferBeforeMinutes: 0,
         serviceId: service.id,
       })),
       timezone,
@@ -737,7 +738,7 @@ function SessionRulesCard({
   service,
 }: {
   onSettingChange: (
-    field: "minimumNoticeMinutes" | "slotStepMinutes",
+    field: "bufferAfterMinutes" | "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) => void;
   service: TherapistScheduleService | null;
@@ -764,16 +765,29 @@ function SessionRulesCard({
             </span>
           </RuleRow>
           <RuleRow
-            description="Frequência em que os inícios são oferecidos."
+            description="Define de quanto em quanto tempo um atendimento pode começar."
             icon={CalendarDays}
-            info="De quanto em quanto tempo uma nova sessão pode começar. Por exemplo: 30 minutos organiza os horários com início a cada 30 minutos."
-            label="Intervalo das sessões"
+            info="A grade de horários começa no início de cada faixa de disponibilidade. Um agendamento não desloca os próximos horários de início."
+            label="Horários de início — Disponibilizar novos horários a cada"
           >
             <MinutesSelect
-              ariaLabel="Intervalo das sessões"
+              ariaLabel="Disponibilizar novos horários a cada"
               onChange={(value) => onSettingChange("slotStepMinutes", value)}
               options={[15, 30, 45, 60]}
               value={service.settings.slotStepMinutes}
+            />
+          </RuleRow>
+          <RuleRow
+            description="É o tempo livre entre o fim desta sessão e o início da próxima. Alterações valem para novas reservas; sessões já reservadas mantêm o intervalo registrado."
+            icon={Clock3}
+            info="Uma sessão de 40 minutos iniciada às 10h termina às 10h40. Sem intervalo, uma grade de 15 minutos pode oferecer 10h45. Com 10 minutos de intervalo, o próximo início possível é 11h. Alterações no intervalo valem para novas reservas; sessões já reservadas mantêm o tempo registrado."
+            label="Intervalo da sessão — Tempo livre depois de cada sessão"
+          >
+            <MinutesSelect
+              ariaLabel="Tempo livre depois de cada sessão"
+              onChange={(value) => onSettingChange("bufferAfterMinutes", value)}
+              options={[0, 5, 10, 15, 20, 30, 45, 60]}
+              value={service.settings.bufferAfterMinutes}
             />
           </RuleRow>
           <RuleRow
@@ -800,7 +814,7 @@ function SessionRulesCard({
           <RuleRow
             description="É o tempo mínimo entre o momento do agendamento e o início da sessão."
             icon={CalendarDays}
-            info="Por exemplo: com 2 horas de antecedência, uma sessão às 12h só poderá ser agendada com pelo menos 2 horas de antecedência, ou seja até às 09:59am. Com 48 horas, o cliente só poderá agendar horários que estejam a pelo menos 48 horas do início da sessão. Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento."
+            info="Por exemplo: com 2 horas de antecedência, uma sessão às 12h poderá ser agendada até às 10:00. Com 48 horas, o cliente só poderá agendar horários que estejam a pelo menos 48 horas do início da sessão. Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento."
             label="Antecedência mínima"
           >
             <MinutesSelect
@@ -810,6 +824,7 @@ function SessionRulesCard({
               }
               options={[0, 60, 120, 360, 720, 1440, 2880]}
               value={service.settings.minimumNoticeMinutes}
+              zeroLabel="0 min — sem antecedência"
             />
           </RuleRow>
         </div>
@@ -855,7 +870,7 @@ function RuleRow({
             <span>{label}</span>
             {info ? <RuleInfoPopover label={label} text={info} /> : null}
           </h3>
-          <p className="mt-1 text-xs font-semibold leading-5 text-tesText-muted">
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-muted">
             {description}
           </p>
         </div>
@@ -1225,11 +1240,13 @@ function MinutesSelect({
   onChange,
   options,
   value,
+  zeroLabel,
 }: {
   ariaLabel: string;
   onChange: (value: number) => void;
   options: number[];
   value: number;
+  zeroLabel?: string;
 }) {
   return (
     <select
@@ -1238,11 +1255,13 @@ function MinutesSelect({
       onChange={(event) => onChange(Number(event.target.value))}
       value={value}
     >
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {formatMinutesOption(option)}
-        </option>
-      ))}
+      {Array.from(new Set([...options, value]))
+        .sort((left, right) => left - right)
+        .map((option) => (
+          <option key={option} value={option}>
+            {formatMinutesOption(option, zeroLabel)}
+          </option>
+        ))}
     </select>
   );
 }
@@ -1322,8 +1341,8 @@ function minutesToClock(totalMinutes: number) {
   ).padStart(2, "0")}`;
 }
 
-function formatMinutesOption(minutes: number) {
-  if (minutes === 0) return "Sem intervalo";
+function formatMinutesOption(minutes: number, zeroLabel?: string) {
+  if (minutes === 0) return zeroLabel ?? "0 min — sem intervalo";
   if (minutes < 60) return `${minutes} min`;
   if (minutes % 60 === 0) return `${minutes / 60}h`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;

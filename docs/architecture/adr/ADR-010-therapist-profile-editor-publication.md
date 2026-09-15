@@ -1,6 +1,6 @@
 # ADR-010 — Meu Perfil: rascunho privado e publicação pelo terapeuta
 
-Status: aceito em 2026-07-28; ampliado em 2026-08-18 e 2026-09-02.
+Status: aceito em 2026-07-28; ampliado em 2026-08-18, 2026-09-02 e 2026-09-15.
 
 ## Contexto
 
@@ -19,6 +19,14 @@ público existente já derivava de `therapist_profiles` e de
   publicada de conteúdo e invalida apenas superfícies públicas afetadas.
 - Administração continua responsável por verificação, suspensão, documentos,
   plano e bloqueios.
+- A publicação administrativa exige uma conta de recebimento corrente, não
+  encerrada e plenamente pronta para o fluxo financeiro V10: cadastro enviado
+  e pronto, nenhuma exigência atual, operação pronta, Transfers ativos e Payout
+  habilitado no intervalo diário. A verificação falha fechada.
+- Perder essa prontidão não altera o estado de publicação armazenado nem
+  cancela reservas existentes. O perfil, a busca, os serviços, novos horários e
+  novos holds ficam automaticamente indisponíveis até a conta voltar a estar
+  pronta.
 - A primeira publicação de um perfil ainda não aprovado entra na análise
   administrativa. Depois de `therapist_profiles.status = approved`, publicar
   uma nova versão editorial não reabre `therapist_verifications`, não remove a
@@ -44,6 +52,9 @@ público existente já derivava de `therapist_profiles` e de
 ## Consequências
 
 - A UI comunica que a propagação pública pode levar até 2 a 3 horas.
+- Publicação armazenada, visibilidade pública e prontidão financeira são
+  estados distintos. A área privada da agenda preserva seu gate operacional
+  próprio durante o processamento da conta.
 - Dados derivados como avaliações, preço inicial, disponibilidade e plano são
   somente leitura no editor.
 - Documentos privados usam tabela e bucket separados e não entram em DTOs
