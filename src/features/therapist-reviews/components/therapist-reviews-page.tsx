@@ -395,7 +395,7 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
               className="text-xl font-extrabold text-brand-deep"
               id="pending-session-confirmations"
             >
-              Confirmações operacionais pendentes
+              Confirmações de atendimentos
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
               Esta obrigação existe em todos os planos. Sem sua resposta, a
@@ -560,8 +560,8 @@ function ReviewsHero() {
               Avaliações
             </h1>
             <p className="mt-4 max-w-[540px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-              Acompanhe as avaliações das pessoas sobre as sessões realizadas e
-              fortaleça a confiança no seu trabalho.
+              Sua confirmação é essencial para que o ciclo de pagamento ocorra dentro do prazo estipulado. 
+              Sem sua resposta, a confirmação automática ocorre no vencimento de 30 dias.
             </p>
           </div>
         </div>

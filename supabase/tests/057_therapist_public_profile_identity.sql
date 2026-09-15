@@ -260,8 +260,8 @@ select results_eq(
        from public.therapist_profiles
        where id = 'c1000000-0000-4000-8000-000000000001'
      ) $$,
-  $$ values (0) $$,
-  'the public projection remains hidden until profile moderation approves the submission'
+  $$ values (1) $$,
+  'an approved profile keeps its public projection after publishing the identity update'
 );
 
 select * from finish();

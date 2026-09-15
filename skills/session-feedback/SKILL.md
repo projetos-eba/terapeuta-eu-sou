@@ -46,11 +46,19 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   confirmações, origens, vencimentos, estado bilateral e bloqueios. O fim
   programado/definitivo libera o formulário; joins do Zoom
   são evidência e sinal de risco, não uma trava para resposta ou automação.
+- No V10, os dois read models de confirmação usam as respostas dos
+  participantes para o estado bilateral: o envio do repasse não conclui a
+  confirmação e não há data de lote semanal no feedback. A reavaliação de
+  elegibilidade semanal é exclusiva do V9 e não pode reclassificar um pagamento
+  V10. Ocorrências negativas abrem análise e a decisão de suporte preserva o
+  estado autoritativo do repasse V10; esse contrato deve permanecer coberto por
+  pgTAP e validação autenticada antes do rollout.
 - `session_participant_confirmations` guarda uma confirmação independente por
   papel e snapshot da política. Paciente vence em +7 dias e terapeuta em +30;
   o automático grava o vencimento em `confirmed_at`. A segunda resposta
-  `completed` define `service_confirmed_at` e inicia a verificação da liquidação
-  Stripe, sem espera fixa adicional.
+  `completed` define `service_confirmed_at`. Somente no V9 ela inicia a
+  verificação da liquidação Stripe, sem espera fixa adicional; no V10 não
+  reprograma o repasse criado após o pagamento.
 - `session-feedback-command` valida o payload e chama o RPC service-role
   idempotente. O feedback realizado registra a confirmação do ator e pode
   finalizar o estado bilateral; `not_performed` bloqueia o pagamento e abre
@@ -58,7 +66,10 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - `reviews` permanece separado, usa outro comando e nunca altera confirmação,
   pagamento ou lote.
 - Depois de um feedback `completed` do terapeuta, Premium Plus pode abrir a
-  seção opcional “Temas da jornada”. Ela é um comando separado em
+  seção opcional “Quais foram os temas da sua sessão?” tanto no sucesso do
+  feedback quanto no detalhe `/terapeuta/sessoes/:bookingId`. A orientação é
+  “Registre até três temas para acompanhar essa jornada no seu histórico com o
+  cliente.” Ela é um comando separado em
   `booking_journey_theme_selections`: aceita de um a três chaves da taxonomia
   fechada `journey_topics_v1`, exige declaração explícita, não tem texto livre
   e é imutável por booking. Falha, ausência ou retry desses temas nunca bloqueia

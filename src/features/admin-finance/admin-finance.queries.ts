@@ -88,14 +88,70 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       "Visão financeira das sessões, reembolsos, contestações e repasses.",
     emptyMessage: "Nenhum pagamento de sessão disponível para esta consulta.",
     metrics: [
-      metric("pending-session-payments", "Pendentes", "Aguardando autoridade financeira.", "session_payments?financial_status=eq.pending", "session_payments", "warning"),
-      metric("paid-session-payments", "Pagos", "Pagamentos confirmados e conciliados.", "session_payments?financial_status=in.(paid,partially_refunded)", "session_payments", "success"),
-      metric("failed-session-payments", "Falhos", "Tentativas ou pagamentos recusados.", "session_payments?financial_status=eq.failed", "session_payments", "danger"),
-      metric("pending-refunds", "Reembolsos pendentes", "Reembolsos ainda não finalizados.", "session_refunds?status=eq.pending", "session_refunds", "warning"),
-      metric("open-disputes", "Disputas abertas", "Disputas sem fechamento.", "session_disputes?closed_at=is.null", "session_disputes", "danger"),
-      metric("open-payout-batches", "Repasses abertos", "Lotes de repasse em aberto/processamento.", "payout_batches?status=in.(draft,open,processing)", "payout_batches", "info"),
-      metric("ledger-entries", "Lançamentos", "Registros financeiros auditáveis.", "financial_ledger_entries", "financial_ledger_entries", "info"),
-      metric("stripe-transfers", "Transferências", "Transferências registradas com segurança.", "stripe_transfers", "stripe_transfers", "info"),
+      metric(
+        "pending-session-payments",
+        "Pendentes",
+        "Aguardando autoridade financeira.",
+        "session_payments?financial_status=eq.pending",
+        "session_payments",
+        "warning",
+      ),
+      metric(
+        "paid-session-payments",
+        "Pagos",
+        "Pagamentos confirmados e conciliados.",
+        "session_payments?financial_status=in.(paid,partially_refunded)",
+        "session_payments",
+        "success",
+      ),
+      metric(
+        "failed-session-payments",
+        "Falhos",
+        "Tentativas ou pagamentos recusados.",
+        "session_payments?financial_status=eq.failed",
+        "session_payments",
+        "danger",
+      ),
+      metric(
+        "pending-refunds",
+        "Reembolsos pendentes",
+        "Reembolsos ainda não finalizados.",
+        "session_refunds?status=eq.pending",
+        "session_refunds",
+        "warning",
+      ),
+      metric(
+        "open-disputes",
+        "Disputas abertas",
+        "Disputas sem fechamento.",
+        "session_disputes?closed_at=is.null",
+        "session_disputes",
+        "danger",
+      ),
+      metric(
+        "open-payout-batches",
+        "Repasses em andamento",
+        "Valores em preparação ou a caminho do banco.",
+        "payout_batches?status=in.(draft,open,processing)",
+        "payout_batches",
+        "info",
+      ),
+      metric(
+        "ledger-entries",
+        "Lançamentos",
+        "Registros financeiros auditáveis.",
+        "financial_ledger_entries",
+        "financial_ledger_entries",
+        "info",
+      ),
+      metric(
+        "stripe-transfers",
+        "Transferências",
+        "Transferências registradas com segurança.",
+        "stripe_transfers",
+        "stripe_transfers",
+        "info",
+      ),
     ],
     rowsTitle: "Pagamentos recentes",
     safetyNotes: [
@@ -121,12 +177,54 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       "Mapa de relatórios administrativos seguros, com geração controlada.",
     emptyMessage: "Nenhuma área de relatório configurada para esta fase.",
     metrics: [
-      metric("report-professionals", "Profissionais", "Base operacional de terapeutas.", "therapist_profiles", "therapist_profiles", "info"),
-      metric("report-patients", "Clientes", "Base de clientes sem dados clínicos.", "patient_profiles", "patient_profiles", "info"),
-      metric("report-sessions", "Sessões", "Reservas e estados operacionais.", "bookings", "bookings", "info"),
-      metric("report-payments", "Pagamentos", "Pagamentos de sessão.", "session_payments", "session_payments", "info"),
-      metric("report-subscriptions", "Assinaturas", "Assinaturas de terapeutas.", "therapist_subscriptions", "therapist_subscriptions", "info"),
-      metric("report-stripe-failures", "Falhas de pagamento", "Pagamentos que precisam de atenção.", "stripe_webhook_events?processing_status=eq.failed", "stripe_webhook_events", "danger"),
+      metric(
+        "report-professionals",
+        "Profissionais",
+        "Base operacional de terapeutas.",
+        "therapist_profiles",
+        "therapist_profiles",
+        "info",
+      ),
+      metric(
+        "report-patients",
+        "Clientes",
+        "Base de clientes sem dados clínicos.",
+        "patient_profiles",
+        "patient_profiles",
+        "info",
+      ),
+      metric(
+        "report-sessions",
+        "Sessões",
+        "Reservas e estados operacionais.",
+        "bookings",
+        "bookings",
+        "info",
+      ),
+      metric(
+        "report-payments",
+        "Pagamentos",
+        "Pagamentos de sessão.",
+        "session_payments",
+        "session_payments",
+        "info",
+      ),
+      metric(
+        "report-subscriptions",
+        "Assinaturas",
+        "Assinaturas de terapeutas.",
+        "therapist_subscriptions",
+        "therapist_subscriptions",
+        "info",
+      ),
+      metric(
+        "report-stripe-failures",
+        "Falhas de pagamento",
+        "Pagamentos que precisam de atenção.",
+        "stripe_webhook_events?processing_status=eq.failed",
+        "stripe_webhook_events",
+        "danger",
+      ),
     ],
     rowsTitle: "Relatórios disponíveis",
     safetyNotes: [
@@ -146,14 +244,57 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   subscriptions: {
     description:
       "Acompanhe as assinaturas de terapeutas sem alterar planos diretamente.",
-    emptyMessage: "Nenhuma assinatura acessível para a sessão administrativa atual.",
+    emptyMessage:
+      "Nenhuma assinatura acessível para a sessão administrativa atual.",
     metrics: [
-      metric("active-subscriptions", "Ativas", "Assinaturas active ou trialing.", "therapist_subscriptions?status=in.(trialing,active)", "therapist_subscriptions", "success"),
-      metric("attention-subscriptions", "Em atenção", "Cobrança incompleta, inadimplente ou sem pagamento.", "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)", "therapist_subscriptions", "warning"),
-      metric("ending-subscriptions", "Cancelam no fim", "Assinaturas marcadas para cancelamento futuro.", "therapist_subscriptions?cancel_at_period_end=eq.true", "therapist_subscriptions", "warning"),
-      metric("failed-invoices", "Faturas com falha", "Faturas que pedem revisão operacional.", "billing_invoices?status=in.(uncollectible,void,open)", "billing_invoices", "warning"),
-      metric("active-prices", "Preços ativos", "Preços ativos no catálogo de planos.", "billing_plan_prices?is_active=eq.true", "billing_plan_prices", "info"),
-      metric("stripe-customers", "Contas vinculadas", "Contas de recebimento vinculadas ao perfil.", "stripe_customers", "stripe_customers", "info"),
+      metric(
+        "active-subscriptions",
+        "Ativas",
+        "Assinaturas active ou trialing.",
+        "therapist_subscriptions?status=in.(trialing,active)",
+        "therapist_subscriptions",
+        "success",
+      ),
+      metric(
+        "attention-subscriptions",
+        "Em atenção",
+        "Cobrança incompleta, inadimplente ou sem pagamento.",
+        "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)",
+        "therapist_subscriptions",
+        "warning",
+      ),
+      metric(
+        "ending-subscriptions",
+        "Cancelam no fim",
+        "Assinaturas marcadas para cancelamento futuro.",
+        "therapist_subscriptions?cancel_at_period_end=eq.true",
+        "therapist_subscriptions",
+        "warning",
+      ),
+      metric(
+        "failed-invoices",
+        "Faturas com falha",
+        "Faturas que pedem revisão operacional.",
+        "billing_invoices?status=in.(uncollectible,void,open)",
+        "billing_invoices",
+        "warning",
+      ),
+      metric(
+        "active-prices",
+        "Preços ativos",
+        "Preços ativos no catálogo de planos.",
+        "billing_plan_prices?is_active=eq.true",
+        "billing_plan_prices",
+        "info",
+      ),
+      metric(
+        "stripe-customers",
+        "Contas vinculadas",
+        "Contas de recebimento vinculadas ao perfil.",
+        "stripe_customers",
+        "stripe_customers",
+        "info",
+      ),
     ],
     rowsTitle: "Assinaturas recentes",
     safetyNotes: [
@@ -198,7 +339,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
 
   if (!config) {
     return {
-        message: "Não foi possível carregar este módulo agora.",
+      message: "Não foi possível carregar este módulo agora.",
       status: "error",
     };
   }
@@ -477,7 +618,10 @@ async function fetchAdminFinanceDetailReadModel({
     }
 
     if (model.record === null) {
-      return { errorCode: "ADMIN_FINANCE_DETAIL_NOT_FOUND", status: "not_found" };
+      return {
+        errorCode: "ADMIN_FINANCE_DETAIL_NOT_FOUND",
+        status: "not_found",
+      };
     }
 
     return { model, status: "available" };

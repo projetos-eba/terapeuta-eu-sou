@@ -73,6 +73,22 @@ export function mapCancellationDatabaseError(error: unknown) {
     );
   }
 
+  if (details.includes("SESSION_PRECHARGE_CANCEL_V10_REQUIRES_SUPPORT")) {
+    return new DomainError(
+      "cancellation_requires_support",
+      409,
+      "Para alterar este encontro, fale com nossa equipe de suporte.",
+    );
+  }
+
+  if (details.includes("SESSION_PRECHARGE_CANCEL_V10_FORBIDDEN")) {
+    return new DomainError(
+      "cancellation_forbidden",
+      403,
+      "Você não pode cancelar este encontro.",
+    );
+  }
+
   if (
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
     details.includes("BOOKING_NOT_FOUND")

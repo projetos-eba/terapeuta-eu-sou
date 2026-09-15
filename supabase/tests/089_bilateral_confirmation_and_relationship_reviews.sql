@@ -67,12 +67,12 @@ select
   '92000000-0000-4000-8000-000000000011',
   '93000000-0000-4000-8000-000000000020',
   case when series in (2, 5, 6, 7, 8)
-    then now() - interval '32 days' + make_interval(hours => series * 2)
-    else now() - make_interval(days => series + 1, hours => 1)
+    then now() - interval '400 days' + make_interval(hours => series * 2)
+    else now() - interval '360 days' + make_interval(hours => series * 2)
   end,
   case when series in (2, 5, 6, 7, 8)
-    then now() - interval '32 days' + make_interval(hours => series * 2 + 1)
-    else now() - make_interval(days => series + 1)
+    then now() - interval '400 days' + make_interval(hours => series * 2 + 1)
+    else now() - interval '360 days' + make_interval(hours => series * 2 + 1)
   end,
   'America/Sao_Paulo', 'confirmed', 'paid'
 from generate_series(1, 9) series;

@@ -1886,6 +1886,132 @@ export type Database = {
           },
         ];
       };
+      booking_journey_theme_selections: {
+        Row: {
+          acknowledged_at: string;
+          booking_id: string;
+          created_at: string;
+          id: string;
+          patient_profile_id: string;
+          payload_hash: string;
+          request_id: string;
+          selected_by_profile_id: string;
+          source: string;
+          taxonomy_version: string;
+          theme_keys: string[];
+          therapist_profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          acknowledged_at?: string;
+          booking_id: string;
+          created_at?: string;
+          id?: string;
+          patient_profile_id: string;
+          payload_hash: string;
+          request_id: string;
+          selected_by_profile_id: string;
+          source?: string;
+          taxonomy_version?: string;
+          theme_keys: string[];
+          therapist_profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          acknowledged_at?: string;
+          booking_id?: string;
+          created_at?: string;
+          id?: string;
+          patient_profile_id?: string;
+          payload_hash?: string;
+          request_id?: string;
+          selected_by_profile_id?: string;
+          source?: string;
+          taxonomy_version?: string;
+          theme_keys?: string[];
+          therapist_profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_journey_theme_selections_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_patient_profile_id_fkey";
+            columns: ["patient_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_selected_by_profile_id_fkey";
+            columns: ["selected_by_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "booking_journey_theme_selections_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       booking_payment_receipts: {
         Row: {
           amount_cents: number;
@@ -3088,6 +3214,7 @@ export type Database = {
           currency: string;
           direction: Database["public"]["Enums"]["financial_ledger_direction"];
           entry_type: Database["public"]["Enums"]["financial_ledger_entry_type"];
+          financial_policy_version_id: string | null;
           id: string;
           metadata: Json;
           occurred_at: string;
@@ -3101,7 +3228,9 @@ export type Database = {
           source_table: string | null;
           stripe_event_id: string | null;
           stripe_transfer_id: string | null;
+          therapist_financial_debt_id: string | null;
           therapist_profile_id: string | null;
+          transfer_origin: string | null;
         };
         Insert: {
           amount_cents: number;
@@ -3109,6 +3238,7 @@ export type Database = {
           currency?: string;
           direction: Database["public"]["Enums"]["financial_ledger_direction"];
           entry_type: Database["public"]["Enums"]["financial_ledger_entry_type"];
+          financial_policy_version_id?: string | null;
           id?: string;
           metadata?: Json;
           occurred_at?: string;
@@ -3122,7 +3252,9 @@ export type Database = {
           source_table?: string | null;
           stripe_event_id?: string | null;
           stripe_transfer_id?: string | null;
+          therapist_financial_debt_id?: string | null;
           therapist_profile_id?: string | null;
+          transfer_origin?: string | null;
         };
         Update: {
           amount_cents?: number;
@@ -3130,6 +3262,7 @@ export type Database = {
           currency?: string;
           direction?: Database["public"]["Enums"]["financial_ledger_direction"];
           entry_type?: Database["public"]["Enums"]["financial_ledger_entry_type"];
+          financial_policy_version_id?: string | null;
           id?: string;
           metadata?: Json;
           occurred_at?: string;
@@ -3143,7 +3276,9 @@ export type Database = {
           source_table?: string | null;
           stripe_event_id?: string | null;
           stripe_transfer_id?: string | null;
+          therapist_financial_debt_id?: string | null;
           therapist_profile_id?: string | null;
+          transfer_origin?: string | null;
         };
         Relationships: [
           {
@@ -3161,6 +3296,13 @@ export type Database = {
             referencedColumns: ["bookingId"];
           },
           {
+            foreignKeyName: "financial_ledger_entries_debt_fkey";
+            columns: ["therapist_financial_debt_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_financial_debts";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "financial_ledger_entries_patient_profile_id_fkey";
             columns: ["patient_profile_id"];
             isOneToOne: false;
@@ -3175,10 +3317,38 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "financial_ledger_entries_policy_version_fkey";
+            columns: ["financial_policy_version_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_policy_versions";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "financial_ledger_entries_profile_id_fkey";
             columns: ["profile_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
             referencedColumns: ["id"];
           },
           {
@@ -3265,6 +3435,7 @@ export type Database = {
           patient_auto_confirmation_days: number;
           payout_batch_rule: string;
           platform_commission_bps: number;
+          policy_key: string;
           proration_policy_key: string;
           refund_policy_key: string;
           refund_processing_business_days: number;
@@ -3295,6 +3466,7 @@ export type Database = {
           patient_auto_confirmation_days?: number;
           payout_batch_rule?: string;
           platform_commission_bps?: number;
+          policy_key: string;
           proration_policy_key?: string;
           refund_policy_key?: string;
           refund_processing_business_days?: number;
@@ -3325,6 +3497,7 @@ export type Database = {
           patient_auto_confirmation_days?: number;
           payout_batch_rule?: string;
           platform_commission_bps?: number;
+          policy_key?: string;
           proration_policy_key?: string;
           refund_policy_key?: string;
           refund_processing_business_days?: number;
@@ -4482,6 +4655,27 @@ export type Database = {
             foreignKeyName: "payout_batch_items_session_payment_id_fkey";
             columns: ["session_payment_id"];
             isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payout_batch_items_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "payout_batch_items_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payout_batch_items_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
             referencedRelation: "session_payments";
             referencedColumns: ["id"];
           },
@@ -5563,7 +5757,142 @@ export type Database = {
             foreignKeyName: "session_cancellation_decisions_session_payment_id_fkey";
             columns: ["session_payment_id"];
             isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
             referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_charge_incidents_v10: {
+        Row: {
+          code: string;
+          id: string;
+          opened_at: string;
+          resolved_at: string | null;
+          schedule_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          code: string;
+          id?: string;
+          opened_at?: string;
+          resolved_at?: string | null;
+          schedule_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          code?: string;
+          id?: string;
+          opened_at?: string;
+          resolved_at?: string | null;
+          schedule_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_charge_incidents_v10_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: true;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["schedule_id"];
+          },
+          {
+            foreignKeyName: "session_charge_incidents_v10_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: true;
+            referencedRelation: "session_payment_schedules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_charge_recoveries_v10: {
+        Row: {
+          booking_id: string;
+          consumed_at: string | null;
+          id: string;
+          opened_at: string;
+          patient_profile_id: string;
+          schedule_id: string;
+          status: string;
+          stripe_payment_intent_id: string;
+        };
+        Insert: {
+          booking_id: string;
+          consumed_at?: string | null;
+          id?: string;
+          opened_at?: string;
+          patient_profile_id: string;
+          schedule_id: string;
+          status?: string;
+          stripe_payment_intent_id: string;
+        };
+        Update: {
+          booking_id?: string;
+          consumed_at?: string | null;
+          id?: string;
+          opened_at?: string;
+          patient_profile_id?: string;
+          schedule_id?: string;
+          status?: string;
+          stripe_payment_intent_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_charge_recoveries_v10_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_charge_recoveries_v10_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_charge_recoveries_v10_patient_profile_id_fkey";
+            columns: ["patient_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_charge_recoveries_v10_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: true;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["schedule_id"];
+          },
+          {
+            foreignKeyName: "session_charge_recoveries_v10_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: true;
+            referencedRelation: "session_payment_schedules";
             referencedColumns: ["id"];
           },
         ];
@@ -5638,6 +5967,27 @@ export type Database = {
             columns: ["resolved_by_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_confirmation_incidents_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_confirmation_incidents_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_confirmation_incidents_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
             referencedColumns: ["id"];
           },
           {
@@ -5745,6 +6095,27 @@ export type Database = {
             foreignKeyName: "session_disputes_session_payment_id_fkey";
             columns: ["session_payment_id"];
             isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_disputes_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_disputes_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_disputes_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
             referencedRelation: "session_payments";
             referencedColumns: ["id"];
           },
@@ -5824,6 +6195,7 @@ export type Database = {
           confirmed_by_profile_id: string | null;
           created_at: string;
           due_at: string;
+          expected_booking_version: number;
           id: string;
           outcome: string;
           participant_role: Database["public"]["Enums"]["user_role"];
@@ -5839,6 +6211,7 @@ export type Database = {
           confirmed_by_profile_id?: string | null;
           created_at?: string;
           due_at: string;
+          expected_booking_version?: number;
           id?: string;
           outcome: string;
           participant_role: Database["public"]["Enums"]["user_role"];
@@ -5854,6 +6227,7 @@ export type Database = {
           confirmed_by_profile_id?: string | null;
           created_at?: string;
           due_at?: string;
+          expected_booking_version?: number;
           id?: string;
           outcome?: string;
           participant_role?: Database["public"]["Enums"]["user_role"];
@@ -5906,10 +6280,12 @@ export type Database = {
           reservation_expires_at: string | null;
           response_metadata: Json;
           session_payment_id: string;
+          session_payment_schedule_id: string | null;
           slot_claimed_at: string | null;
           status: string;
           stripe_checkout_session_id: string | null;
           stripe_payment_intent_id: string | null;
+          stripe_setup_intent_id: string | null;
           terminal_reason: string | null;
           updated_at: string;
         };
@@ -5924,10 +6300,12 @@ export type Database = {
           reservation_expires_at?: string | null;
           response_metadata?: Json;
           session_payment_id: string;
+          session_payment_schedule_id?: string | null;
           slot_claimed_at?: string | null;
           status?: string;
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;
+          stripe_setup_intent_id?: string | null;
           terminal_reason?: string | null;
           updated_at?: string;
         };
@@ -5942,10 +6320,12 @@ export type Database = {
           reservation_expires_at?: string | null;
           response_metadata?: Json;
           session_payment_id?: string;
+          session_payment_schedule_id?: string | null;
           slot_claimed_at?: string | null;
           status?: string;
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;
+          stripe_setup_intent_id?: string | null;
           terminal_reason?: string | null;
           updated_at?: string;
         };
@@ -5958,7 +6338,277 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "session_payment_attempts_schedule_fkey";
+            columns: ["session_payment_schedule_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["schedule_id"];
+          },
+          {
+            foreignKeyName: "session_payment_attempts_schedule_fkey";
+            columns: ["session_payment_schedule_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payment_schedules";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "session_payment_attempts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_attempts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_payment_attempts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_attempts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_payment_schedules: {
+        Row: {
+          attempt_count: number;
+          booking_id: string;
+          booking_version: number;
+          canceled_at: string | null;
+          claimed_at: string | null;
+          created_at: string;
+          due_at: string;
+          id: string;
+          idempotency_key: string;
+          last_error_code: string | null;
+          last_failed_at: string | null;
+          lease_expires_at: string | null;
+          lease_owner: string | null;
+          next_retry_at: string | null;
+          request_fingerprint: string;
+          session_payment_id: string;
+          session_payment_setup_id: string;
+          status: string;
+          stripe_charge_id: string | null;
+          stripe_environment: string;
+          stripe_payment_intent_id: string | null;
+          succeeded_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          booking_id: string;
+          booking_version: number;
+          canceled_at?: string | null;
+          claimed_at?: string | null;
+          created_at?: string;
+          due_at: string;
+          id?: string;
+          idempotency_key: string;
+          last_error_code?: string | null;
+          last_failed_at?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          next_retry_at?: string | null;
+          request_fingerprint: string;
+          session_payment_id: string;
+          session_payment_setup_id: string;
+          status?: string;
+          stripe_charge_id?: string | null;
+          stripe_environment: string;
+          stripe_payment_intent_id?: string | null;
+          succeeded_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          attempt_count?: number;
+          booking_id?: string;
+          booking_version?: number;
+          canceled_at?: string | null;
+          claimed_at?: string | null;
+          created_at?: string;
+          due_at?: string;
+          id?: string;
+          idempotency_key?: string;
+          last_error_code?: string | null;
+          last_failed_at?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          next_retry_at?: string | null;
+          request_fingerprint?: string;
+          session_payment_id?: string;
+          session_payment_setup_id?: string;
+          status?: string;
+          stripe_charge_id?: string | null;
+          stripe_environment?: string;
+          stripe_payment_intent_id?: string | null;
+          succeeded_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_payment_schedules_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_setup_id_fkey";
+            columns: ["session_payment_setup_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["setup_id"];
+          },
+          {
+            foreignKeyName: "session_payment_schedules_session_payment_setup_id_fkey";
+            columns: ["session_payment_setup_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payment_setups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_payment_setups: {
+        Row: {
+          booking_id: string;
+          booking_version: number;
+          consent_version: string;
+          consented_at: string;
+          created_at: string;
+          failure_code: string | null;
+          id: string;
+          session_payment_id: string;
+          status: string;
+          stripe_customer_id: string;
+          stripe_environment: string;
+          stripe_payment_method_id: string | null;
+          stripe_setup_intent_id: string;
+          superseded_at: string | null;
+          updated_at: string;
+          usage: string;
+        };
+        Insert: {
+          booking_id: string;
+          booking_version: number;
+          consent_version: string;
+          consented_at: string;
+          created_at?: string;
+          failure_code?: string | null;
+          id?: string;
+          session_payment_id: string;
+          status?: string;
+          stripe_customer_id: string;
+          stripe_environment: string;
+          stripe_payment_method_id?: string | null;
+          stripe_setup_intent_id: string;
+          superseded_at?: string | null;
+          updated_at?: string;
+          usage?: string;
+        };
+        Update: {
+          booking_id?: string;
+          booking_version?: number;
+          consent_version?: string;
+          consented_at?: string;
+          created_at?: string;
+          failure_code?: string | null;
+          id?: string;
+          session_payment_id?: string;
+          status?: string;
+          stripe_customer_id?: string;
+          stripe_environment?: string;
+          stripe_payment_method_id?: string | null;
+          stripe_setup_intent_id?: string;
+          superseded_at?: string | null;
+          updated_at?: string;
+          usage?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_payment_setups_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_setups_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_payment_setups_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_setups_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_payment_setups_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payment_setups_session_payment_id_fkey";
             columns: ["session_payment_id"];
             isOneToOne: false;
             referencedRelation: "session_payments";
@@ -5971,6 +6621,7 @@ export type Database = {
           admin_blocked_at: string | null;
           booking_id: string;
           canceled_at: string | null;
+          connect_account_id_snapshot: string | null;
           created_at: string;
           currency: string;
           disputed_at: string | null;
@@ -5983,6 +6634,8 @@ export type Database = {
           metadata: Json;
           paid_at: string | null;
           patient_profile_id: string;
+          payment_due_at: string | null;
+          payment_flow_version: string;
           platform_commission_bps: number;
           platform_gross_commission_cents: number;
           policy_version_id: string;
@@ -5999,6 +6652,7 @@ export type Database = {
           stripe_balance_transaction_id: string | null;
           stripe_charge_id: string | null;
           stripe_checkout_session_id: string | null;
+          stripe_connect_account_id_snapshot: string | null;
           stripe_customer_id: string | null;
           stripe_event_created_at: string | null;
           stripe_event_id: string | null;
@@ -6015,6 +6669,7 @@ export type Database = {
           admin_blocked_at?: string | null;
           booking_id: string;
           canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
           created_at?: string;
           currency?: string;
           disputed_at?: string | null;
@@ -6027,6 +6682,8 @@ export type Database = {
           metadata?: Json;
           paid_at?: string | null;
           patient_profile_id: string;
+          payment_due_at?: string | null;
+          payment_flow_version?: string;
           platform_commission_bps: number;
           platform_gross_commission_cents: number;
           policy_version_id: string;
@@ -6043,6 +6700,7 @@ export type Database = {
           stripe_balance_transaction_id?: string | null;
           stripe_charge_id?: string | null;
           stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
           stripe_customer_id?: string | null;
           stripe_event_created_at?: string | null;
           stripe_event_id?: string | null;
@@ -6059,6 +6717,7 @@ export type Database = {
           admin_blocked_at?: string | null;
           booking_id?: string;
           canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
           created_at?: string;
           currency?: string;
           disputed_at?: string | null;
@@ -6071,6 +6730,8 @@ export type Database = {
           metadata?: Json;
           paid_at?: string | null;
           patient_profile_id?: string;
+          payment_due_at?: string | null;
+          payment_flow_version?: string;
           platform_commission_bps?: number;
           platform_gross_commission_cents?: number;
           policy_version_id?: string;
@@ -6087,6 +6748,7 @@ export type Database = {
           stripe_balance_transaction_id?: string | null;
           stripe_charge_id?: string | null;
           stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
           stripe_customer_id?: string | null;
           stripe_event_created_at?: string | null;
           stripe_event_id?: string | null;
@@ -6113,6 +6775,13 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: "therapist_session_read_model_v1";
             referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_payments_connect_account_snapshot_fkey";
+            columns: ["connect_account_id_snapshot"];
+            isOneToOne: false;
+            referencedRelation: "therapist_connect_accounts";
+            referencedColumns: ["id"];
           },
           {
             foreignKeyName: "session_payments_patient_profile_id_fkey";
@@ -6235,6 +6904,130 @@ export type Database = {
           },
         ];
       };
+      session_promotion_reservations: {
+        Row: {
+          booking_id: string;
+          booking_version: number;
+          consumed_at: string | null;
+          created_at: string;
+          currency: string;
+          discount_cents: number;
+          discount_type: string;
+          discount_value: number;
+          expires_at: string | null;
+          id: string;
+          idempotency_key: string;
+          metadata: Json;
+          promotion_code_snapshot: string;
+          released_at: string | null;
+          reserved_at: string;
+          scope: string;
+          session_payment_id: string | null;
+          status: string;
+          stripe_coupon_id: string | null;
+          stripe_environment: string;
+          stripe_promotion_code_id: string | null;
+          subtotal_cents: number;
+          total_cents: number;
+          updated_at: string;
+        };
+        Insert: {
+          booking_id: string;
+          booking_version: number;
+          consumed_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          discount_cents: number;
+          discount_type: string;
+          discount_value: number;
+          expires_at?: string | null;
+          id?: string;
+          idempotency_key: string;
+          metadata?: Json;
+          promotion_code_snapshot: string;
+          released_at?: string | null;
+          reserved_at?: string;
+          scope?: string;
+          session_payment_id?: string | null;
+          status?: string;
+          stripe_coupon_id?: string | null;
+          stripe_environment: string;
+          stripe_promotion_code_id?: string | null;
+          subtotal_cents: number;
+          total_cents: number;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string;
+          booking_version?: number;
+          consumed_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          discount_cents?: number;
+          discount_type?: string;
+          discount_value?: number;
+          expires_at?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          metadata?: Json;
+          promotion_code_snapshot?: string;
+          released_at?: string | null;
+          reserved_at?: string;
+          scope?: string;
+          session_payment_id?: string | null;
+          status?: string;
+          stripe_coupon_id?: string | null;
+          stripe_environment?: string;
+          stripe_promotion_code_id?: string | null;
+          subtotal_cents?: number;
+          total_cents?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_promotion_reservations_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_promotion_reservations_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_promotion_reservations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_promotion_reservations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_promotion_reservations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_promotion_reservations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       session_refunds: {
         Row: {
           amount_cents: number;
@@ -6284,6 +7077,27 @@ export type Database = {
             columns: ["requested_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_refunds_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_refunds_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_refunds_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
             referencedColumns: ["id"];
           },
           {
@@ -6402,7 +7216,173 @@ export type Database = {
             foreignKeyName: "session_service_confirmations_session_payment_id_fkey";
             columns: ["session_payment_id"];
             isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_service_confirmations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_service_confirmations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_service_confirmations_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
             referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_transfer_jobs: {
+        Row: {
+          attempt_count: number;
+          booking_id: string;
+          connect_account_id: string;
+          created_at: string;
+          debt_offset_amount_cents: number;
+          id: string;
+          idempotency_key: string;
+          last_error_code: string | null;
+          last_failed_at: string | null;
+          lease_expires_at: string | null;
+          lease_owner: string | null;
+          next_retry_at: string | null;
+          policy_version_id: string;
+          prepared_at: string | null;
+          request_fingerprint: string;
+          session_payment_id: string;
+          status: string;
+          stripe_environment: string;
+          stripe_source_charge_id: string;
+          stripe_transfer_id: string | null;
+          succeeded_at: string | null;
+          therapist_gross_amount_cents: number;
+          transfer_amount_cents: number;
+          updated_at: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          booking_id: string;
+          connect_account_id: string;
+          created_at?: string;
+          debt_offset_amount_cents?: number;
+          id?: string;
+          idempotency_key: string;
+          last_error_code?: string | null;
+          last_failed_at?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          next_retry_at?: string | null;
+          policy_version_id: string;
+          prepared_at?: string | null;
+          request_fingerprint: string;
+          session_payment_id: string;
+          status?: string;
+          stripe_environment: string;
+          stripe_source_charge_id: string;
+          stripe_transfer_id?: string | null;
+          succeeded_at?: string | null;
+          therapist_gross_amount_cents: number;
+          transfer_amount_cents: number;
+          updated_at?: string;
+        };
+        Update: {
+          attempt_count?: number;
+          booking_id?: string;
+          connect_account_id?: string;
+          created_at?: string;
+          debt_offset_amount_cents?: number;
+          id?: string;
+          idempotency_key?: string;
+          last_error_code?: string | null;
+          last_failed_at?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          next_retry_at?: string | null;
+          policy_version_id?: string;
+          prepared_at?: string | null;
+          request_fingerprint?: string;
+          session_payment_id?: string;
+          status?: string;
+          stripe_environment?: string;
+          stripe_source_charge_id?: string;
+          stripe_transfer_id?: string | null;
+          succeeded_at?: string | null;
+          therapist_gross_amount_cents?: number;
+          transfer_amount_cents?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_transfer_jobs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_connect_account_id_fkey";
+            columns: ["connect_account_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_connect_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_policy_version_id_fkey";
+            columns: ["policy_version_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_policy_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: true;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: true;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: true;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: true;
+            referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_transfer_jobs_stripe_transfer_id_fkey";
+            columns: ["stripe_transfer_id"];
+            isOneToOne: false;
+            referencedRelation: "stripe_transfers";
             referencedColumns: ["id"];
           },
         ];
@@ -6518,13 +7498,14 @@ export type Database = {
       };
       stripe_payout_transfer_allocations: {
         Row: {
+          allocation_origin: string;
           amount_cents: number;
           connected_balance_transaction_id: string;
           created_at: string;
           currency: string;
           id: string;
-          payout_batch_id: string;
-          payout_batch_therapist_id: string;
+          payout_batch_id: string | null;
+          payout_batch_therapist_id: string | null;
           reconciled_at: string;
           source_id: string;
           stripe_payout_id: string;
@@ -6532,13 +7513,14 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          allocation_origin?: string;
           amount_cents: number;
           connected_balance_transaction_id: string;
           created_at?: string;
           currency?: string;
           id?: string;
-          payout_batch_id: string;
-          payout_batch_therapist_id: string;
+          payout_batch_id?: string | null;
+          payout_batch_therapist_id?: string | null;
           reconciled_at?: string;
           source_id: string;
           stripe_payout_id: string;
@@ -6546,13 +7528,14 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          allocation_origin?: string;
           amount_cents?: number;
           connected_balance_transaction_id?: string;
           created_at?: string;
           currency?: string;
           id?: string;
-          payout_batch_id?: string;
-          payout_batch_therapist_id?: string;
+          payout_batch_id?: string | null;
+          payout_batch_therapist_id?: string | null;
           reconciled_at?: string;
           source_id?: string;
           stripe_payout_id?: string;
@@ -6824,6 +7807,7 @@ export type Database = {
           connected_balance_available_on: string | null;
           created_at: string;
           currency: string;
+          debt_offset_amount_cents: number;
           failure_code: string | null;
           failure_message: string | null;
           id: string;
@@ -6833,7 +7817,7 @@ export type Database = {
           lease_owner: string | null;
           metadata: Json;
           next_retry_at: string | null;
-          payout_batch_item_id: string;
+          payout_batch_item_id: string | null;
           request_fingerprint: string | null;
           retry_cycle: number;
           session_payment_id: string;
@@ -6842,7 +7826,9 @@ export type Database = {
           stripe_destination_payment_id: string | null;
           stripe_source_charge_id: string | null;
           stripe_transfer_id: string | null;
+          therapist_gross_amount_cents: number | null;
           therapist_profile_id: string;
+          transfer_origin: string;
           transferred_at: string | null;
           updated_at: string;
         };
@@ -6853,6 +7839,7 @@ export type Database = {
           connected_balance_available_on?: string | null;
           created_at?: string;
           currency?: string;
+          debt_offset_amount_cents?: number;
           failure_code?: string | null;
           failure_message?: string | null;
           id?: string;
@@ -6862,7 +7849,7 @@ export type Database = {
           lease_owner?: string | null;
           metadata?: Json;
           next_retry_at?: string | null;
-          payout_batch_item_id: string;
+          payout_batch_item_id?: string | null;
           request_fingerprint?: string | null;
           retry_cycle?: number;
           session_payment_id: string;
@@ -6871,7 +7858,9 @@ export type Database = {
           stripe_destination_payment_id?: string | null;
           stripe_source_charge_id?: string | null;
           stripe_transfer_id?: string | null;
+          therapist_gross_amount_cents?: number | null;
           therapist_profile_id: string;
+          transfer_origin?: string;
           transferred_at?: string | null;
           updated_at?: string;
         };
@@ -6882,6 +7871,7 @@ export type Database = {
           connected_balance_available_on?: string | null;
           created_at?: string;
           currency?: string;
+          debt_offset_amount_cents?: number;
           failure_code?: string | null;
           failure_message?: string | null;
           id?: string;
@@ -6891,7 +7881,7 @@ export type Database = {
           lease_owner?: string | null;
           metadata?: Json;
           next_retry_at?: string | null;
-          payout_batch_item_id?: string;
+          payout_batch_item_id?: string | null;
           request_fingerprint?: string | null;
           retry_cycle?: number;
           session_payment_id?: string;
@@ -6900,7 +7890,9 @@ export type Database = {
           stripe_destination_payment_id?: string | null;
           stripe_source_charge_id?: string | null;
           stripe_transfer_id?: string | null;
+          therapist_gross_amount_cents?: number | null;
           therapist_profile_id?: string;
+          transfer_origin?: string;
           transferred_at?: string | null;
           updated_at?: string;
         };
@@ -6917,6 +7909,27 @@ export type Database = {
             columns: ["payout_batch_item_id"];
             isOneToOne: true;
             referencedRelation: "payout_batch_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stripe_transfers_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stripe_transfers_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "stripe_transfers_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
             referencedColumns: ["id"];
           },
           {
@@ -7776,6 +8789,274 @@ export type Database = {
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_financial_debt_allocations: {
+        Row: {
+          allocated_at: string;
+          amount_cents: number;
+          created_at: string;
+          financial_ledger_entry_id: string | null;
+          id: string;
+          idempotency_key: string;
+          session_transfer_job_id: string | null;
+          stripe_transfer_id: string | null;
+          therapist_financial_debt_id: string;
+        };
+        Insert: {
+          allocated_at?: string;
+          amount_cents: number;
+          created_at?: string;
+          financial_ledger_entry_id?: string | null;
+          id?: string;
+          idempotency_key: string;
+          session_transfer_job_id?: string | null;
+          stripe_transfer_id?: string | null;
+          therapist_financial_debt_id: string;
+        };
+        Update: {
+          allocated_at?: string;
+          amount_cents?: number;
+          created_at?: string;
+          financial_ledger_entry_id?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          session_transfer_job_id?: string | null;
+          stripe_transfer_id?: string | null;
+          therapist_financial_debt_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_financial_debt_alloc_therapist_financial_debt_id_fkey";
+            columns: ["therapist_financial_debt_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_financial_debts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debt_allocat_financial_ledger_entry_id_fkey";
+            columns: ["financial_ledger_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_ledger_entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debt_allocatio_session_transfer_job_id_fkey";
+            columns: ["session_transfer_job_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["transfer_job_id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debt_allocatio_session_transfer_job_id_fkey";
+            columns: ["session_transfer_job_id"];
+            isOneToOne: false;
+            referencedRelation: "session_transfer_jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debt_allocations_stripe_transfer_id_fkey";
+            columns: ["stripe_transfer_id"];
+            isOneToOne: false;
+            referencedRelation: "stripe_transfers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_financial_debt_events: {
+        Row: {
+          amount_cents: number;
+          created_at: string;
+          direction: string;
+          event_type: string;
+          financial_ledger_entry_id: string | null;
+          id: string;
+          idempotency_key: string;
+          metadata: Json;
+          occurred_at: string;
+          therapist_financial_debt_id: string;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string;
+          direction: string;
+          event_type: string;
+          financial_ledger_entry_id?: string | null;
+          id?: string;
+          idempotency_key: string;
+          metadata?: Json;
+          occurred_at?: string;
+          therapist_financial_debt_id: string;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string;
+          direction?: string;
+          event_type?: string;
+          financial_ledger_entry_id?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          metadata?: Json;
+          occurred_at?: string;
+          therapist_financial_debt_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_financial_debt_event_therapist_financial_debt_id_fkey";
+            columns: ["therapist_financial_debt_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_financial_debts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debt_events_financial_ledger_entry_id_fkey";
+            columns: ["financial_ledger_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_ledger_entries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_financial_debts: {
+        Row: {
+          closed_at: string | null;
+          created_at: string;
+          currency: string;
+          id: string;
+          metadata: Json;
+          open_amount_cents: number;
+          opened_at: string;
+          origin: string;
+          principal_amount_cents: number;
+          reason_code: string;
+          recovered_amount_cents: number;
+          session_payment_id: string | null;
+          status: string;
+          stripe_transfer_id: string | null;
+          therapist_profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          closed_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          metadata?: Json;
+          open_amount_cents: number;
+          opened_at?: string;
+          origin: string;
+          principal_amount_cents: number;
+          reason_code: string;
+          recovered_amount_cents?: number;
+          session_payment_id?: string | null;
+          status?: string;
+          stripe_transfer_id?: string | null;
+          therapist_profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          closed_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          metadata?: Json;
+          open_amount_cents?: number;
+          opened_at?: string;
+          origin?: string;
+          principal_amount_cents?: number;
+          reason_code?: string;
+          recovered_amount_cents?: number;
+          session_payment_id?: string | null;
+          status?: string;
+          stripe_transfer_id?: string | null;
+          therapist_profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_financial_debts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_direct_transfer_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_session_financial_flow_v10_v1";
+            referencedColumns: ["session_payment_id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "private_weekly_payout_session_payments_v1";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_session_payment_id_fkey";
+            columns: ["session_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "session_payments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_stripe_transfer_id_fkey";
+            columns: ["stripe_transfer_id"];
+            isOneToOne: false;
+            referencedRelation: "stripe_transfers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
             isOneToOne: false;
             referencedRelation: "therapist_profiles";
@@ -12250,6 +13531,658 @@ export type Database = {
           },
         ];
       };
+      private_direct_transfer_session_payments_v1: {
+        Row: {
+          admin_blocked_at: string | null;
+          booking_id: string | null;
+          canceled_at: string | null;
+          connect_account_id_snapshot: string | null;
+          created_at: string | null;
+          currency: string | null;
+          disputed_at: string | null;
+          eligible_at: string | null;
+          failed_at: string | null;
+          financial_status:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents: number | null;
+          id: string | null;
+          internal_contested_at: string | null;
+          metadata: Json | null;
+          paid_at: string | null;
+          patient_profile_id: string | null;
+          payment_due_at: string | null;
+          payment_flow_version: string | null;
+          platform_commission_bps: number | null;
+          platform_gross_commission_cents: number | null;
+          policy_version_id: string | null;
+          refund_pending: boolean | null;
+          service_confirmation_source:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at: string | null;
+          service_id: string | null;
+          service_status:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on: string | null;
+          stripe_balance_checked_at: string | null;
+          stripe_balance_status: string | null;
+          stripe_balance_transaction_id: string | null;
+          stripe_charge_id: string | null;
+          stripe_checkout_session_id: string | null;
+          stripe_connect_account_id_snapshot: string | null;
+          stripe_customer_id: string | null;
+          stripe_event_created_at: string | null;
+          stripe_event_id: string | null;
+          stripe_fee_amount_cents: number | null;
+          stripe_net_amount_cents: number | null;
+          stripe_payment_intent_id: string | null;
+          therapist_amount_cents: number | null;
+          therapist_profile_id: string | null;
+          transfer_blocked_reason: string | null;
+          transfer_status:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          admin_blocked_at?: string | null;
+          booking_id?: string | null;
+          canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
+          created_at?: string | null;
+          currency?: string | null;
+          disputed_at?: string | null;
+          eligible_at?: string | null;
+          failed_at?: string | null;
+          financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents?: number | null;
+          id?: string | null;
+          internal_contested_at?: string | null;
+          metadata?: Json | null;
+          paid_at?: string | null;
+          patient_profile_id?: string | null;
+          payment_due_at?: string | null;
+          payment_flow_version?: string | null;
+          platform_commission_bps?: number | null;
+          platform_gross_commission_cents?: number | null;
+          policy_version_id?: string | null;
+          refund_pending?: boolean | null;
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at?: string | null;
+          service_id?: string | null;
+          service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on?: string | null;
+          stripe_balance_checked_at?: string | null;
+          stripe_balance_status?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_event_created_at?: string | null;
+          stripe_event_id?: string | null;
+          stripe_fee_amount_cents?: number | null;
+          stripe_net_amount_cents?: number | null;
+          stripe_payment_intent_id?: string | null;
+          therapist_amount_cents?: number | null;
+          therapist_profile_id?: string | null;
+          transfer_blocked_reason?: string | null;
+          transfer_status?:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          admin_blocked_at?: string | null;
+          booking_id?: string | null;
+          canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
+          created_at?: string | null;
+          currency?: string | null;
+          disputed_at?: string | null;
+          eligible_at?: string | null;
+          failed_at?: string | null;
+          financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents?: number | null;
+          id?: string | null;
+          internal_contested_at?: string | null;
+          metadata?: Json | null;
+          paid_at?: string | null;
+          patient_profile_id?: string | null;
+          payment_due_at?: string | null;
+          payment_flow_version?: string | null;
+          platform_commission_bps?: number | null;
+          platform_gross_commission_cents?: number | null;
+          policy_version_id?: string | null;
+          refund_pending?: boolean | null;
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at?: string | null;
+          service_id?: string | null;
+          service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on?: string | null;
+          stripe_balance_checked_at?: string | null;
+          stripe_balance_status?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_event_created_at?: string | null;
+          stripe_event_id?: string | null;
+          stripe_fee_amount_cents?: number | null;
+          stripe_net_amount_cents?: number | null;
+          stripe_payment_intent_id?: string | null;
+          therapist_amount_cents?: number | null;
+          therapist_profile_id?: string | null;
+          transfer_blocked_reason?: string | null;
+          transfer_status?:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_payments_connect_account_snapshot_fkey";
+            columns: ["connect_account_id_snapshot"];
+            isOneToOne: false;
+            referencedRelation: "therapist_connect_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_patient_profile_id_fkey";
+            columns: ["patient_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_policy_version_id_fkey";
+            columns: ["policy_version_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_policy_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_services_v";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_services_v_internal";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_private_services_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_service_metrics_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_services";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_stripe_customer_id_fkey";
+            columns: ["stripe_customer_id"];
+            isOneToOne: false;
+            referencedRelation: "stripe_customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      private_session_financial_flow_v10_v1: {
+        Row: {
+          booking_id: string | null;
+          created_at: string | null;
+          debt_offset_amount_cents: number | null;
+          due_at: string | null;
+          financial_status:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          payment_due_at: string | null;
+          schedule_id: string | null;
+          schedule_status: string | null;
+          session_payment_id: string | null;
+          setup_id: string | null;
+          setup_status: string | null;
+          transfer_amount_cents: number | null;
+          transfer_job_id: string | null;
+          transfer_job_status: string | null;
+          transfer_status:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+        ];
+      };
+      private_weekly_payout_session_payments_v1: {
+        Row: {
+          admin_blocked_at: string | null;
+          booking_id: string | null;
+          canceled_at: string | null;
+          connect_account_id_snapshot: string | null;
+          created_at: string | null;
+          currency: string | null;
+          disputed_at: string | null;
+          eligible_at: string | null;
+          failed_at: string | null;
+          financial_status:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents: number | null;
+          id: string | null;
+          internal_contested_at: string | null;
+          metadata: Json | null;
+          paid_at: string | null;
+          patient_profile_id: string | null;
+          payment_due_at: string | null;
+          payment_flow_version: string | null;
+          platform_commission_bps: number | null;
+          platform_gross_commission_cents: number | null;
+          policy_version_id: string | null;
+          refund_pending: boolean | null;
+          service_confirmation_source:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at: string | null;
+          service_id: string | null;
+          service_status:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on: string | null;
+          stripe_balance_checked_at: string | null;
+          stripe_balance_status: string | null;
+          stripe_balance_transaction_id: string | null;
+          stripe_charge_id: string | null;
+          stripe_checkout_session_id: string | null;
+          stripe_connect_account_id_snapshot: string | null;
+          stripe_customer_id: string | null;
+          stripe_event_created_at: string | null;
+          stripe_event_id: string | null;
+          stripe_fee_amount_cents: number | null;
+          stripe_net_amount_cents: number | null;
+          stripe_payment_intent_id: string | null;
+          therapist_amount_cents: number | null;
+          therapist_profile_id: string | null;
+          transfer_blocked_reason: string | null;
+          transfer_status:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          admin_blocked_at?: string | null;
+          booking_id?: string | null;
+          canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
+          created_at?: string | null;
+          currency?: string | null;
+          disputed_at?: string | null;
+          eligible_at?: string | null;
+          failed_at?: string | null;
+          financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents?: number | null;
+          id?: string | null;
+          internal_contested_at?: string | null;
+          metadata?: Json | null;
+          paid_at?: string | null;
+          patient_profile_id?: string | null;
+          payment_due_at?: string | null;
+          payment_flow_version?: string | null;
+          platform_commission_bps?: number | null;
+          platform_gross_commission_cents?: number | null;
+          policy_version_id?: string | null;
+          refund_pending?: boolean | null;
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at?: string | null;
+          service_id?: string | null;
+          service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on?: string | null;
+          stripe_balance_checked_at?: string | null;
+          stripe_balance_status?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_event_created_at?: string | null;
+          stripe_event_id?: string | null;
+          stripe_fee_amount_cents?: number | null;
+          stripe_net_amount_cents?: number | null;
+          stripe_payment_intent_id?: string | null;
+          therapist_amount_cents?: number | null;
+          therapist_profile_id?: string | null;
+          transfer_blocked_reason?: string | null;
+          transfer_status?:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          admin_blocked_at?: string | null;
+          booking_id?: string | null;
+          canceled_at?: string | null;
+          connect_account_id_snapshot?: string | null;
+          created_at?: string | null;
+          currency?: string | null;
+          disputed_at?: string | null;
+          eligible_at?: string | null;
+          failed_at?: string | null;
+          financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null;
+          gross_amount_cents?: number | null;
+          id?: string | null;
+          internal_contested_at?: string | null;
+          metadata?: Json | null;
+          paid_at?: string | null;
+          patient_profile_id?: string | null;
+          payment_due_at?: string | null;
+          payment_flow_version?: string | null;
+          platform_commission_bps?: number | null;
+          platform_gross_commission_cents?: number | null;
+          policy_version_id?: string | null;
+          refund_pending?: boolean | null;
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null;
+          service_confirmed_at?: string | null;
+          service_id?: string | null;
+          service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null;
+          stripe_balance_available_on?: string | null;
+          stripe_balance_checked_at?: string | null;
+          stripe_balance_status?: string | null;
+          stripe_balance_transaction_id?: string | null;
+          stripe_charge_id?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_connect_account_id_snapshot?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_event_created_at?: string | null;
+          stripe_event_id?: string | null;
+          stripe_fee_amount_cents?: number | null;
+          stripe_net_amount_cents?: number | null;
+          stripe_payment_intent_id?: string | null;
+          therapist_amount_cents?: number | null;
+          therapist_profile_id?: string | null;
+          transfer_blocked_reason?: string | null;
+          transfer_status?:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_payments_connect_account_snapshot_fkey";
+            columns: ["connect_account_id_snapshot"];
+            isOneToOne: false;
+            referencedRelation: "therapist_connect_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_patient_profile_id_fkey";
+            columns: ["patient_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "patient_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_policy_version_id_fkey";
+            columns: ["policy_version_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_policy_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_services_v";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_services_v_internal";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_private_services_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_service_metrics_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_services";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_stripe_customer_id_fkey";
+            columns: ["stripe_customer_id"];
+            isOneToOne: false;
+            referencedRelation: "stripe_customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       public_home_testimonials: {
         Row: {
           author_name: string | null;
@@ -13326,6 +15259,15 @@ export type Database = {
         Returns: undefined;
       };
       admin_audit_json_object_v1: { Args: { p_value: Json }; Returns: Json };
+      cancel_uncharged_session_v10: {
+        Args: {
+          p_booking_id: string;
+          p_patient_user_id: string;
+          p_reason: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       admin_decide_therapy_catalog_request_v1: {
         Args: {
           p_actor_user_id: string;
@@ -13784,6 +15726,25 @@ export type Database = {
         Returns: Json;
       };
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number };
+      begin_session_charge_recovery_v10: {
+        Args: {
+          p_booking_id: string;
+          p_patient_profile_id: string;
+          p_schedule_id: string;
+          p_stripe_payment_intent_id: string;
+        };
+        Returns: Json;
+      };
+      begin_session_payment_retry_v10: {
+        Args: { p_booking_id: string };
+        Returns: Json;
+      };
+      booking_journey_theme_selection_payload: {
+        Args: {
+          p_selection: Database["public"]["Tables"]["booking_journey_theme_selections"]["Row"];
+        };
+        Returns: Json;
+      };
       booking_session_reference_month_code_v1: {
         Args: { p_created_at: string };
         Returns: string;
@@ -13911,6 +15872,15 @@ export type Database = {
           recipient_role: Database["public"]["Enums"]["user_role"];
           user_id: string;
         }[];
+      };
+      claim_due_session_payment_schedules_v10: {
+        Args: {
+          p_lease_minutes?: number;
+          p_limit?: number;
+          p_now: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
       };
       claim_email_outbox_v1: {
         Args: { p_limit?: number; p_worker_id: string };
@@ -14040,8 +16010,26 @@ export type Database = {
         };
         Returns: Json;
       };
+      claim_session_transfer_jobs_v10: {
+        Args: {
+          p_lease_minutes?: number;
+          p_limit?: number;
+          p_now: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
+      };
       claim_weekly_payout_scheduler_run_v1: {
         Args: { p_lease_minutes?: number; p_now: string; p_worker_id: string };
+        Returns: Json;
+      };
+      close_unpaid_session_payment_v10: {
+        Args: {
+          p_booking_id: string;
+          p_now: string;
+          p_observed_stripe_status: string;
+          p_schedule_id: string;
+        };
         Returns: Json;
       };
       complete_email_outbox_v1: {
@@ -14106,6 +16094,33 @@ export type Database = {
         };
         Returns: boolean;
       };
+      complete_session_payment_setup_v10: {
+        Args: {
+          p_booking_version: number;
+          p_consent_version: string;
+          p_session_payment_id: string;
+          p_stripe_checkout_session_id: string;
+          p_stripe_customer_id: string;
+          p_stripe_environment: string;
+          p_stripe_event_created_at: string;
+          p_stripe_event_id: string;
+          p_stripe_payment_method_id: string;
+          p_stripe_setup_intent_id: string;
+        };
+        Returns: Json;
+      };
+      complete_session_transfer_job_v10: {
+        Args: {
+          p_connected_balance_available_on?: string;
+          p_connected_balance_transaction_id?: string;
+          p_destination_payment_id?: string;
+          p_job_id: string;
+          p_stripe_transfer_id: string;
+          p_transferred_at?: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
+      };
       complete_stripe_payout_creation_v1: {
         Args: {
           p_arrival_at?: string;
@@ -14127,6 +16142,18 @@ export type Database = {
         };
         Returns: undefined;
       };
+      confirm_session_payment_and_enqueue_transfer_v10: {
+        Args: {
+          p_paid_at: string;
+          p_session_payment_id: string;
+          p_stripe_charge_id: string;
+          p_stripe_environment: string;
+          p_stripe_event_created_at?: string;
+          p_stripe_event_id?: string;
+          p_stripe_payment_intent_id: string;
+        };
+        Returns: Json;
+      };
       confirm_session_service: {
         Args: {
           p_booking_id: string;
@@ -14136,6 +16163,15 @@ export type Database = {
           p_source: Database["public"]["Enums"]["session_confirmation_source"];
         };
         Returns: string;
+      };
+      confirm_zero_total_session_payment_v10: {
+        Args: {
+          p_session_payment_id: string;
+          p_stripe_checkout_session_id: string;
+          p_stripe_event_created_at: string;
+          p_stripe_event_id: string;
+        };
+        Returns: Json;
       };
       consume_auth_action_token: {
         Args: { p_claim_id: string; p_token_id: string };
@@ -14484,6 +16520,24 @@ export type Database = {
         };
         Returns: string;
       };
+      fail_session_payment_schedule_attempt_v10: {
+        Args: {
+          p_error_code: string;
+          p_now?: string;
+          p_schedule_id: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
+      };
+      fail_session_transfer_job_v10: {
+        Args: {
+          p_ambiguous: boolean;
+          p_error_code: string;
+          p_job_id: string;
+          p_worker_id: string;
+        };
+        Returns: Json;
+      };
       finalize_bilateral_session_confirmation_v1: {
         Args: { p_booking_id: string; p_now?: string };
         Returns: string;
@@ -14548,9 +16602,17 @@ export type Database = {
           starts_at: string;
         }[];
       };
+      get_patient_session_charge_status_v10: {
+        Args: { p_booking_id: string };
+        Returns: Json;
+      };
       get_patient_session_feedback_queue_v1: { Args: never; Returns: Json };
       get_patient_therapist_review_v1: {
         Args: { p_therapist_profile_id: string };
+        Returns: Json;
+      };
+      get_payout_transfer_liquidity_requirement_v1: {
+        Args: { p_payout_batch_id: string };
         Returns: Json;
       };
       get_private_therapist_advanced_financial_dashboard_v1: {
@@ -14712,10 +16774,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      get_payout_transfer_liquidity_requirement_v1: {
-        Args: { p_payout_batch_id: string };
-        Returns: Json;
-      };
       get_private_therapist_retention_analytics_v1: {
         Args: {
           p_period_end?: string;
@@ -14856,6 +16914,7 @@ export type Database = {
         Args: { p_period_days?: number };
         Returns: Json;
       };
+      get_therapist_metrics_today_v1: { Args: never; Returns: Json };
       get_therapist_occupancy_metrics_v2: {
         Args: {
           p_period_days: number;
@@ -14984,6 +17043,10 @@ export type Database = {
         Args: { candidate_id: string };
         Returns: boolean;
       };
+      is_fully_retained_cancellation_payment_v1: {
+        Args: { p_session_payment_id: string };
+        Returns: boolean;
+      };
       is_public_service_booking_eligible_v1: {
         Args: { p_service_id: string };
         Returns: boolean;
@@ -15013,6 +17076,7 @@ export type Database = {
         Args: { p_therapist_profile_id: string };
         Returns: boolean;
       };
+      is_unique_text_array: { Args: { p_values: string[] }; Returns: boolean };
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean };
       list_booking_reschedule_candidates_v1: {
         Args: {
@@ -15028,6 +17092,10 @@ export type Database = {
           starts_at: string;
           timezone: string;
         }[];
+      };
+      list_due_session_payment_closures_v10: {
+        Args: { p_limit?: number; p_now: string };
+        Returns: Json;
       };
       list_private_therapist_services_v1: {
         Args: { p_actor_user_id: string };
@@ -15102,6 +17170,10 @@ export type Database = {
         Args: { p_slug: string };
         Returns: string;
       };
+      open_session_charge_incident_v10: {
+        Args: { p_code: string; p_schedule_id: string };
+        Returns: Json;
+      };
       patient_has_schedule_conflict_v1: {
         Args: {
           p_ends_at: string;
@@ -15119,6 +17191,14 @@ export type Database = {
         Args: { p_booking_id: string };
         Returns: Json;
       };
+      prepare_session_payment_v10: {
+        Args: { p_booking_id: string; p_stripe_customer_id: string };
+        Returns: Json;
+      };
+      prepare_session_transfer_job_v10: {
+        Args: { p_job_id: string; p_worker_id: string };
+        Returns: Json;
+      };
       preview_structured_participant_message_v2: {
         Args: {
           p_booking_id?: string;
@@ -15126,6 +17206,14 @@ export type Database = {
           p_parameters?: Json;
           p_template_key: string;
         };
+        Returns: Json;
+      };
+      private_patient_session_feedback_queue_v1_with_safety_legacy: {
+        Args: never;
+        Returns: Json;
+      };
+      private_session_feedback_v2_with_safety_legacy: {
+        Args: { p_booking_id: string };
         Returns: Json;
       };
       private_therapist_agenda_capacity_v1: {
@@ -15242,6 +17330,10 @@ export type Database = {
         Args: { p_therapist_profile_id: string };
         Returns: undefined;
       };
+      rearm_definitive_payout_transfer_v1: {
+        Args: { p_expected_batch_id: string; p_transfer_id: string };
+        Returns: Json;
+      };
       recheck_connect_blocked_payments_v1: {
         Args: { p_now?: string; p_therapist_profile_id: string };
         Returns: number;
@@ -15254,6 +17346,10 @@ export type Database = {
           p_stripe_payout_id: string;
         };
         Returns: Json;
+      };
+      reconcile_legacy_retained_cancellations_v1: {
+        Args: { p_now?: string };
+        Returns: number;
       };
       reconcile_payout_transfer_v1: {
         Args: {
@@ -15303,10 +17399,6 @@ export type Database = {
           p_source: string;
         };
         Returns: string;
-      };
-      rearm_definitive_payout_transfer_v1: {
-        Args: { p_expected_batch_id: string; p_transfer_id: string };
-        Returns: Json;
       };
       record_automatic_stripe_payout_v1: {
         Args: {
@@ -15386,6 +17478,25 @@ export type Database = {
         };
         Returns: Json;
       };
+      record_session_payment_intent_v10: {
+        Args: {
+          p_amount_cents: number;
+          p_booking_id: string;
+          p_booking_version: number;
+          p_currency: string;
+          p_event_created_at?: string;
+          p_event_id?: string;
+          p_payment_intent_id: string;
+          p_schedule_id: string;
+          p_session_payment_id: string;
+          p_status: string;
+          p_stripe_charge_id?: string;
+          p_stripe_customer_id: string;
+          p_stripe_environment: string;
+          p_stripe_payment_method_id: string;
+        };
+        Returns: Json;
+      };
       record_session_payment_stripe_reconciliation_v1: {
         Args: {
           p_payment_method_type?: string;
@@ -15462,28 +17573,27 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      register_session_payment_setup_v10: {
+        Args: {
+          p_booking_version: number;
+          p_consent_version: string;
+          p_consented_at: string;
+          p_failure_code?: string;
+          p_session_payment_id: string;
+          p_status: string;
+          p_stripe_customer_id: string;
+          p_stripe_environment: string;
+          p_stripe_payment_method_id: string;
+          p_stripe_setup_intent_id: string;
+        };
+        Returns: Json;
+      };
       release_auth_action_token_claim: {
         Args: { p_claim_id: string; p_token_id: string };
         Returns: boolean;
       };
       release_expired_payout_leases_v1: {
         Args: { p_limit?: number };
-        Returns: Json;
-      };
-      resume_failed_payout_scheduler_run_v1: {
-        Args: {
-          p_expected_batch_id: string;
-          p_now?: string;
-          p_run_id: string;
-        };
-        Returns: Json;
-      };
-      resolve_payout_operational_incident_v1: {
-        Args: { p_incident_key: string; p_now?: string };
-        Returns: boolean;
-      };
-      set_weekly_payout_scheduler_active_v1: {
-        Args: { p_active: boolean };
         Returns: Json;
       };
       reorder_therapist_services_v1: {
@@ -15744,6 +17854,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      resolve_payout_operational_incident_v1: {
+        Args: { p_incident_key: string; p_now?: string };
+        Returns: boolean;
+      };
       resolve_structured_participant_message_v2: {
         Args: {
           p_booking_id?: string;
@@ -15769,6 +17883,27 @@ export type Database = {
           p_payload: Json;
           p_request_id: string;
         };
+        Returns: Json;
+      };
+      resume_failed_payout_scheduler_run_v1: {
+        Args: { p_expected_batch_id: string; p_now?: string; p_run_id: string };
+        Returns: Json;
+      };
+      reschedule_uncharged_session_v10: {
+        Args: {
+          p_booking_id: string;
+          p_expected_booking_version?: number;
+          p_patient_user_id: string;
+          p_proposed_ends_at: string;
+          p_proposed_starts_at: string;
+          p_proposed_timezone: string;
+          p_reason: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
+      resume_session_transfer_job_v10: {
+        Args: { p_expected_attempt_count: number; p_job_id: string };
         Returns: Json;
       };
       retire_therapist_connect_account_v1: {
@@ -15849,9 +17984,29 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_therapist_session_journey_themes_v1: {
+        Args: {
+          p_acknowledged: boolean;
+          p_actor_user_id: string;
+          p_booking_id: string;
+          p_request_id: string;
+          p_theme_keys: string[];
+        };
+        Returns: Json;
+      };
       schedule_booking_reminder_jobs_v1: {
         Args: { p_booking_id: string; p_now?: string };
         Returns: number;
+      };
+      schedule_session_payment_v10: {
+        Args: {
+          p_due_at: string;
+          p_idempotency_key: string;
+          p_request_fingerprint: string;
+          p_session_payment_id: string;
+          p_session_payment_setup_id: string;
+        };
+        Returns: Json;
       };
       send_structured_participant_message_v1: {
         Args: { p_conversation_id: string; p_template_key: string };
@@ -15966,6 +18121,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      set_weekly_payout_scheduler_active_v1: {
+        Args: { p_active: boolean };
+        Returns: Json;
+      };
       store_therapist_service_request_v1: {
         Args: {
           p_operation: string;
@@ -16029,6 +18188,26 @@ export type Database = {
           p_ticket_id: string;
         };
         Returns: undefined;
+      };
+      swap_session_payment_checkout_v10: {
+        Args: {
+          p_booking_version: number;
+          p_checkout_timing: string;
+          p_discount_amount_cents: number;
+          p_discount_type?: string;
+          p_discount_value?: number;
+          p_expected_checkout_session_id: string;
+          p_idempotency_key?: string;
+          p_new_checkout_session_id: string;
+          p_original_amount_cents: number;
+          p_promotion_code?: string;
+          p_session_payment_id: string;
+          p_stripe_coupon_id?: string;
+          p_stripe_environment: string;
+          p_stripe_promotion_code_id?: string;
+          p_total_amount_cents: number;
+        };
+        Returns: Json;
       };
       sync_booking_video_session_from_agenda_v1: {
         Args: {
@@ -16396,7 +18575,9 @@ export type Database = {
         | "dispute"
         | "loss"
         | "recovery"
-        | "subscription_revenue";
+        | "subscription_revenue"
+        | "therapist_debt"
+        | "therapist_debt_offset";
       match_source: "journey" | "therapy_page" | "therapist_search";
       matching_version_status: "draft" | "published" | "archived";
       message_context:
@@ -16742,6 +18923,8 @@ export const Constants = {
         "loss",
         "recovery",
         "subscription_revenue",
+        "therapist_debt",
+        "therapist_debt_offset",
       ],
       match_source: ["journey", "therapy_page", "therapist_search"],
       matching_version_status: ["draft", "published", "archived"],

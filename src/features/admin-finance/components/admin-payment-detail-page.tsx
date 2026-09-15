@@ -17,6 +17,7 @@ import {
 import { routes } from "@/lib/routes";
 
 import type { AdminFinanceDetailPageData } from "../admin-finance.types";
+import { AdminFullRefundAction } from "./admin-full-refund-action";
 
 export function AdminPaymentDetailPage({
   data,
@@ -37,8 +38,10 @@ export function AdminPaymentDetailPage({
 
   const stats = [
     statItem("Valor bruto", valueFields.get("Valor bruto")),
-    statItem("Repasse profissional", valueFields.get("Repasse terapeuta")),
-    statItem("Comissão TES", valueFields.get("Comissão TES")),
+    statItem("Repasse previsto", valueFields.get("Repasse terapeuta")),
+    statItem("Compensação", valueFields.get("Compensação")),
+    statItem("Valor encaminhado", valueFields.get("Valor encaminhado")),
+    statItem("Custos da plataforma", valueFields.get("Custos da plataforma")),
     statItem("Valor reembolsado", riskFields.get("Valor reembolsado")),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
@@ -68,10 +71,7 @@ export function AdminPaymentDetailPage({
               productField("Profissional", peopleFields.get("Terapeuta")),
               productField("Cliente", peopleFields.get("Cliente")),
               productField("Início da sessão", peopleFields.get("Início")),
-              productField(
-                "Situação da transferência",
-                formatFinanceStatus(paymentFields.get("Transferência")),
-              ),
+              productField("Situação do repasse", paymentFields.get("Repasse")),
             ].filter(Boolean) as Array<{ label: string; value: string }>
           }
           meta={
@@ -92,6 +92,13 @@ export function AdminPaymentDetailPage({
 
         <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           <AppPageMain className="space-y-5">
+            {data.fullRefundStatus ? (
+              <AdminFullRefundAction
+                paymentId={data.id}
+                amount={valueFields.get("Valor bruto") ?? "valor da sessão"}
+                status={data.fullRefundStatus}
+              />
+            ) : null}
             <DetailSectionCard
               description="Composição financeira registrada para esta sessão."
               fields={values?.fields ?? []}
@@ -126,14 +133,9 @@ export function AdminPaymentDetailPage({
                   productField("Pagamento", status),
                   productField(
                     "Atendimento",
-                    formatFinanceStatus(
-                      paymentFields.get("Status do atendimento"),
-                    ),
+                    paymentFields.get("Status do atendimento"),
                   ),
-                  productField(
-                    "Transferência",
-                    formatFinanceStatus(paymentFields.get("Transferência")),
-                  ),
+                  productField("Repasse", paymentFields.get("Repasse")),
                   productField(
                     "Elegível para repasse",
                     riskFields.get("Elegível em"),
@@ -248,10 +250,17 @@ function formatFinanceStatus(value?: string) {
     paid: "Confirmado",
     pending: "Pendente",
     refunded: "Reembolsado",
+    partially_refunded: "Em análise",
+    reconciliation_required: "Em análise",
+    offset_only: "Conferido",
+    reversed: "Revertido",
+    partially_reversed: "Em análise",
+    transferred: "Encaminhado",
+    processing: "Em andamento",
     scheduled: "Agendado",
     succeeded: "Confirmado",
   };
-  return labels[value.toLowerCase()] ?? value.replaceAll("_", " ");
+  return labels[value.toLowerCase()] ?? "Em análise";
 }
 
 function financeStatusTone(status: string) {

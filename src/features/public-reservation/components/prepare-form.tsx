@@ -111,7 +111,11 @@ export function PrepareForm({
                 Política de Privacidade
               </Link>{" "}
               do Terapeuta Eu Sou. Compreendo que cancelamentos próximos ao
-              horário seguem as políticas vigentes da plataforma.
+              horário seguem as políticas vigentes da plataforma. Também
+              autorizo o TES a salvar esta forma de pagamento e, quando indicado
+              no resumo, realizar a cobrança 24 horas antes do encontro sem uma
+              nova ação minha. O banco ainda poderá solicitar uma confirmação
+              adicional.
             </span>
           </label>
           <label className="flex items-start gap-4 text-sm font-semibold leading-7 text-tesText-secondary">

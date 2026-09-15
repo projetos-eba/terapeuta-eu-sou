@@ -201,10 +201,10 @@ Para Payout automático:
 5. remover da atribuição o débito agregado de tipo/categoria `payout` e usar
    somente as transações componentes;
 6. aguardar `reconciliation_status=completed`;
-6. paginar `balance_transactions?payout={payoutId}`;
-7. enviar ao RPC somente campos allowlisted;
-8. casar `source` com `destination_payment` ou o ID da Balance Transaction;
-9. falhar fechado se houver valor ou movimentação sem associação;
+7. paginar `balance_transactions?payout={payoutId}`;
+8. enviar ao RPC somente campos allowlisted;
+9. casar `source` com `destination_payment` ou o ID da Balance Transaction;
+10. falhar fechado se houver valor ou movimentação sem associação;
 11. concluir cada lote somente após todos os Transfers terem cobertura integral
     em Payouts reconciliados e `paid`.
 
@@ -242,6 +242,13 @@ Snapshot Connect, escopo `@accounts`:
 Accounts v2 thin permanece separado para os 11 eventos de conta definidos em
 `scripts/payments/stripe-webhook-events.mjs`. Billing/plataforma usa destino
 snapshot próprio. Nunca compartilhar signing secret entre destinos.
+
+Para auditar a configuração atual de HML sem alterá-la, executar
+`node --env-file=supabase/functions/.env.homolog scripts/payments/verify-stripe-webhook-destinations.mjs --target=test --project-ref=emzwqkmrryuqvqiohqnu`.
+O verificador exige os três destinos habilitados, a matriz completa, os
+escopos e formatos corretos, HTTPS e o host/caminho exatos das Functions do
+projeto. Não usar `configure-stripe-webhook-destinations.mjs` para inspeção:
+esse script pode modificar destinos e segredos.
 
 ## Alertas e read models
 

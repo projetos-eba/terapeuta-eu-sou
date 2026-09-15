@@ -30,11 +30,13 @@ import {
   type TherapistSessionDetailReadModel,
 } from "@/features/bookings";
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
+import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
-  getTherapistSessionFeedbackStatus,
+  getTherapistSessionFeedbackSummary,
   getTherapistSessionPendingReschedule,
+  shouldShowTherapistSessionJourneyThemes,
   type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
 import { getTherapistPostSessionAction } from "@/features/therapist-sessions/session-feedback-action";
@@ -68,17 +70,18 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
-  const [pendingReschedule, feedbackStatus] = await Promise.all([
+  const [pendingReschedule, feedbackSummary] = await Promise.all([
     getTherapistSessionPendingReschedule({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
       userId: therapist.userId,
     }),
-    getTherapistSessionFeedbackStatus({
+    getTherapistSessionFeedbackSummary({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
     }),
   ]);
+  const feedbackStatus = feedbackSummary.status;
 
   return (
     <AppPageContainer className="max-w-[1146px] gap-5 pb-14 sm:gap-6 lg:gap-7">
@@ -97,7 +100,7 @@ export default async function TherapistSessionDetailPage({
       <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_296px] xl:items-start xl:gap-6">
         <aside className="order-1 grid min-w-0 gap-5 lg:order-2 xl:col-start-2 xl:row-start-1 xl:sticky xl:top-28">
           <SessionSupportCard bookingId={booking.bookingId} />
-          <SessionGuidanceCard />
+          <SessionGuidanceCard presentation={presentation} />
         </aside>
 
         <AppPageMain className="order-2 gap-5 lg:order-1 xl:col-start-1 xl:row-span-2">
@@ -107,6 +110,15 @@ export default async function TherapistSessionDetailPage({
             feedbackStatus={feedbackStatus}
             presentation={presentation}
           />
+          {shouldShowTherapistSessionJourneyThemes(
+            therapist.plan,
+            feedbackSummary,
+          ) ? (
+            <TherapistJourneyThemesForm
+              bookingId={booking.bookingId}
+              presentation="standalone"
+            />
+          ) : null}
           <SessionOperationActions
             actorRole="therapist"
             bookingId={booking.bookingId}
@@ -130,7 +142,7 @@ export default async function TherapistSessionDetailPage({
         </AppPageMain>
 
         <div className="order-3 grid gap-5 lg:order-3 xl:col-start-2 xl:row-start-2">
-          <SessionPreparation />
+          {isRoomUnavailable(presentation) ? null : <SessionPreparation />}
         </div>
       </AppPageGrid>
     </AppPageContainer>
@@ -258,6 +270,7 @@ function SessionStatusStrip({
     endsAt: booking.endsAt,
     feedbackStatus,
   });
+  const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
   return (
     <section
@@ -273,9 +286,11 @@ function SessionStatusStrip({
       />
       <StatusStripItem
         description={
-          sessionEnded
-            ? "O horário agendado foi encerrado. A confirmação da sessão segue disponível conforme o seu estado atual."
-            : "O acesso é avaliado novamente ao abrir a sala."
+          roomUnavailable
+            ? "Esta sessão foi encerrada e a sala não está disponível."
+            : sessionEnded
+              ? "O horário agendado foi encerrado. A confirmação da sessão segue disponível conforme o seu estado atual."
+              : "O acesso é avaliado novamente ao abrir a sala."
         }
         icon={Video}
         label="Sala de atendimento"
@@ -287,9 +302,11 @@ function SessionStatusStrip({
               : "brand"
         }
         value={
-          sessionEnded
-            ? "Horário encerrado"
-            : getZoomAccessLabel(booking.zoomAccess)
+          roomUnavailable
+            ? "Sala encerrada"
+            : sessionEnded
+              ? "Horário encerrado"
+              : getZoomAccessLabel(booking.zoomAccess)
         }
       />
       <StatusStripItem
@@ -333,7 +350,7 @@ function SessionAbout({
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
-            Contexto operacional
+            Sobre o atendimento
           </p>
           <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
             Esta sessão está reservada para o acompanhamento com{" "}
@@ -489,7 +506,12 @@ function SessionSupportCard({ bookingId }: { bookingId: string }) {
   );
 }
 
-function SessionGuidanceCard() {
+function SessionGuidanceCard({
+  presentation,
+}: {
+  presentation: SessionPresentation;
+}) {
+  const roomUnavailable = isRoomUnavailable(presentation);
   return (
     <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-6">
       <div className="flex items-center gap-3">
@@ -501,8 +523,21 @@ function SessionGuidanceCard() {
         </h2>
       </div>
       <ul className="mt-5 space-y-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        <li>O acesso à sala é revalidado sempre que ela é aberta.</li>
-        <li>Reagendamentos e cancelamentos seguem as regras desta sessão.</li>
+        {roomUnavailable ? (
+          <>
+            <li>Esta sessão foi encerrada e a sala não está disponível.</li>
+            <li>Se precisar de ajuda, entre em contato com nossa equipe.</li>
+          </>
+        ) : (
+          <>
+            <li>
+              Confira se a sala está disponível ao se preparar para entrar.
+            </li>
+            <li>
+              Reagendamentos e cancelamentos seguem as regras desta sessão.
+            </li>
+          </>
+        )}
       </ul>
       <Link
         className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline"
@@ -573,7 +608,26 @@ function SessionOnlineAccess({
     endsAt: booking.endsAt,
     feedbackStatus,
   });
+  const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
+
+  if (roomUnavailable) {
+    return (
+      <section className="grid gap-6 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <Video aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+            Sala de atendimento
+          </h2>
+        </div>
+        <p className="rounded-[22px] bg-surface-soft px-5 py-4 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+          Esta sessão foi encerrada e a sala não está disponível.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="grid gap-6 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
@@ -594,7 +648,7 @@ function SessionOnlineAccess({
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
               {sessionEnded
                 ? feedbackStatusDescription(postSessionAction)
-                : "A entrada é avaliada novamente ao abrir a sala."}
+                : "Confira a disponibilidade da sala ao se preparar para entrar."}
             </p>
           </div>
           <SessionPrimaryAction
@@ -605,7 +659,7 @@ function SessionOnlineAccess({
         </div>
         <div className="grid gap-3 border-t border-border pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
           <p className="text-base font-extrabold text-brand-deep sm:text-lg">
-            Preparação técnica
+            Antes de entrar
           </p>
           <ul className="grid gap-2">
             <li className="flex gap-2 text-sm font-semibold leading-6 text-tesText-secondary">
@@ -620,7 +674,7 @@ function SessionOnlineAccess({
                 aria-hidden="true"
                 className="mt-1 size-4 shrink-0 text-status-success"
               />
-              A sala não exibe nem compartilha credenciais de acesso.
+              Acesse a sala somente por esta página.
             </li>
           </ul>
         </div>
@@ -631,8 +685,8 @@ function SessionOnlineAccess({
             aria-hidden="true"
             className="mt-0.5 size-5 shrink-0 text-brand-primary"
           />
-          A abertura da sala depende da janela da sessão, do pagamento e das
-          permissões válidas naquele momento.
+          A entrada fica disponível no horário previsto quando a sessão e o
+          pagamento estiverem confirmados.
         </p>
       </div>
     </section>
@@ -652,6 +706,14 @@ function SessionPrimaryAction({
     endsAt: booking.endsAt,
     feedbackStatus,
   });
+
+  if (isRoomUnavailable(presentation)) {
+    return (
+      <p className="rounded-[22px] bg-surface-soft px-4 py-3 text-center text-sm font-semibold leading-5 text-tesText-secondary">
+        A sala não está disponível para esta sessão.
+      </p>
+    );
+  }
 
   if (postSessionAction === "confirm") {
     return (
@@ -681,6 +743,15 @@ function SessionPrimaryAction({
       <Video aria-hidden="true" className="size-5" />
       {presentation.actions.canAccessZoom ? "Abrir sala" : "Acompanhar a sala"}
     </Link>
+  );
+}
+
+function isRoomUnavailable(presentation: SessionPresentation) {
+  return (
+    presentation.state === "cancelled" ||
+    presentation.state === "refunded" ||
+    presentation.state === "payment_pending" ||
+    presentation.state === "requires_attention"
   );
 }
 

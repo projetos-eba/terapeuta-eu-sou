@@ -100,6 +100,7 @@ export type BookingDetailSessionPaymentRow = {
   id: string;
   refund_pending: boolean | null;
   financial_status: SessionFinancialStatusValue;
+  payment_flow_version?: string;
 };
 
 export type BookingDetailVideoParticipationRow = {
@@ -215,6 +216,7 @@ export function mapBookingDetail(
       cancellationPolicy,
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       startsAt: input.booking.starts_at,
     }),
     booking: {
@@ -232,6 +234,7 @@ export function mapBookingDetail(
       minutesUntilStart: getMinutesUntilStart(input.booking.starts_at),
       operationalVersion: input.booking.version,
       paymentStatus: input.sessionPayment?.financial_status ?? null,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       startsAt: input.booking.starts_at,
       status,
       statusLabel: getBookingDetailStatusLabel(status),

@@ -214,14 +214,14 @@ select ok(
 
 select is(
   (select count(*)::integer from public.public_therapist_profiles_v where slug = 'ana-oliveira'),
-  0,
-  'published profile remains hidden until administrative moderation'
+  1,
+  'an already approved therapist keeps the public profile available after an editorial publication'
 );
 
 select is(
   (select status::text from public.therapist_verifications where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001' order by submitted_at desc nulls last, created_at desc limit 1),
-  'submitted',
-  'publishing creates a submitted moderation review'
+  'approved',
+  'an editorial publication preserves the existing administrative approval'
 );
 
 select throws_ok(

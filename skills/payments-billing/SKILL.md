@@ -23,10 +23,53 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   required by Stripe; this does not change the TES separate charges and
   transfers model.
 - Payment confirmed is not service performed.
-- Eligibility requires paid payment, bilateral service confirmation, an
-  available and recently verified source Charge Balance Transaction, Connect
-  readiness, and no refund/dispute/block. There is no additional local safety
-  waiting period after confirmation.
+- Under legacy V9, eligibility requires paid payment, bilateral service
+  confirmation, an available and recently verified source Charge Balance
+  Transaction, Connect readiness, and no refund/dispute/block. There is no
+  additional local safety waiting period after confirmation.
+- V10 is a separate, initially inactive contract: reserve with SetupIntent
+  `usage=off_session`, charge at T-24 (or immediately at 24 hours or less), and
+  enqueue the therapist Transfer as soon as Stripe confirms payment. Session
+  confirmation and evaluation remain auditable product signals but are not a
+  V10 financial gate.
+- The local-only Phase 2 and Phase 3 flows are behind an explicit flag and default to
+  V9. A successful future SetupIntent is bound to the exact booking version,
+  Customer and PaymentMethod only by the signed `checkout.session.completed`
+  webhook; it schedules T-24 without marking the card payment paid. The draft
+  booking's legacy payment projection can advance its version during V10
+  preparation, so always use the persisted version returned after that insert.
+  The local T-24 worker creates one off-session PaymentIntent with the schedule
+  idempotency key. Customer action reuses that exact PaymentIntent through an
+  authenticated recovery preflight; a replacement card must never create a
+  second PaymentIntent. No V10 cron is active. The local direct Transfer worker
+  creates a source-linked obligation against the frozen Connect account and
+  compensates existing therapist debt before it calls Stripe.
+  A full debt offset creates no Stripe Transfer and must be projected to users
+  as `Compensado`, with zero bank-bound net amount and no contribution to
+  processing totals or status charts.
+- Local V10 Refund and Transfer Reversal webhooks reconcile each provider
+  object by its Stripe ID through service-role transactional RPCs. Preserve
+  partial amounts, source-Charge and frozen Connect bindings, ledger
+  idempotency, and the separate V9 path. These project observed provider
+  events only. The local V10 support command accepts only a full-session
+  refund, records one audited decision and blocks room/transfer access before
+  calling Stripe. Recovery is attempted once against the frozen Transfer; a
+  definite insufficient-balance result becomes internal therapist debt after
+  the full customer refund succeeds. Ambiguous provider outcomes require
+  reconciliation, never a blind retry. Provider-originated partial refunds
+  remain observable for manual analysis but are not offered by TES. The real
+  Stripe Test, signed webhook delivery and authenticated admin-browser gates
+  for the local full-refund path were exercised in Phase 5. Phase 6 is also
+  closed locally: therapist and admin projections merge V9/V10 without
+  duplication, show contractual amount, debt compensation and bank-bound
+  amount separately, and reserve `Pago` for a fully reconciled bank payout.
+  This does not authorize HML or production activation.
+  Payment-recovery messages must cover both bank confirmation and card
+  replacement without claiming a definitive decline. Never expose provider
+  object names, policy nicknames, scheduler names or architecture terms in
+  customer, therapist or administrator UI and e-mail copy.
+  Never infer authorization to issue a Refund from a webhook or treat a
+  partial reversal as a fully reversed Transfer.
 - The TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
 
 ## Invariants
@@ -39,10 +82,33 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Preserve policy snapshots through `financial_policy_versions`; commission
   changes create a new policy version and never rewrite existing payments,
   ledger entries, payout batches or transfers.
-- Use Separate Charges and Transfers; never transfer at charge time.
+- Use Separate Charges and Transfers. V9 keeps its weekly Transfer gate. When
+  V10 is explicitly activated, create the 85% direct Transfer obligation
+  immediately after confirmed payment, with the original Charge as
+  `source_transaction`; never wait for session confirmation or settlement to
+  enqueue it.
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- For a V10 charge incomplete at session start, retrieve Stripe state before
+  releasing the booking. Reconcile a late success, keep `processing` fail-closed
+  with an incident, and close only a never-created or canceled PaymentIntent.
+  The closure must be idempotent, release the occupied interval, keep Zoom
+  blocked, create no Transfer obligation, and notify both participants in
+  end-user language.
+- V10 self-service cancellation is allowed only when the T-24 schedule is still
+  `scheduled`, has zero attempts and no PaymentIntent, Charge, lease, Transfer
+  job or Transfer. The transaction cancels the schedule and setup, releases a
+  reserved promotion, closes the payment without Refund and cancels the
+  booking. Claimed, retried, ambiguous or paid states go to support.
+- A V10 patient reschedule before charging must reuse the SetupIntent and
+  PaymentMethod bound to that booking; never create or replace a global default
+  card. It supersedes the old schedule and leaves exactly one active schedule
+  whose `expected_booking_version` matches the current booking version. T-24 is
+  recalculated from the new start; a due time at or before now is immediately
+  claimable by the charge worker. A claimed schedule, PaymentIntent, Charge or
+  Transfer must fail closed and go to support. Never apply a V9 refund decision
+  or reschedule mutation to V10.
 - Coupon defines the financial benefit; Promotion Code is resolved server-side
   and must carry `tes_checkout_scope`. Subscription Coupons must explicitly
   list eligible Stripe Products. Never maintain a parallel local coupon list.
@@ -51,7 +117,7 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   a real paid older attempt remains authoritative and closes siblings.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
-- Session Checkout uses `capture_method=manual`. For `initial_hold`, the
+- Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
   database deadline is five minutes; for `payment_retry`, no slot is occupied
   before authorization. On `payment_intent.amount_capturable_updated`, the
   service-role claim RPC locks therapist then patient, revalidates the current
@@ -78,7 +144,7 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `cancel_at_period_end` and can be reversed without removing already-paid
   benefits.
 - Separate transfers require the session Charge as `source_transaction`.
-- Do not mark a session payment `eligible` until its source Charge Balance
+- Under V9, do not mark a session payment `eligible` until its source Charge Balance
   Transaction is `available`, `available_on` has passed, and the Stripe snapshot
   is recent. Use `waiting_settlement` before that gate; reconcile hourly and
   again at the weekly cutoff.
@@ -98,7 +164,7 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 ## Architecture Map
 
-Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `stripe_transfer_reversals`, `stripe_payouts`, `stripe_payout_transfer_allocations`, `payout_scheduler_runs`, `payout_operational_incidents`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
+Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_payment_setups`, `session_payment_schedules`, `session_promotion_reservations`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `session_transfer_jobs`, `stripe_transfer_reversals`, `stripe_payouts`, `stripe_payout_transfer_allocations`, `therapist_financial_debts`, `therapist_financial_debt_events`, `therapist_financial_debt_allocations`, `payout_scheduler_runs`, `payout_operational_incidents`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
 
 Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `promotion-codes.ts`, `session-attempt-policy.ts`, `subscription-sync.ts`.
 
@@ -109,12 +175,15 @@ Edge Functions:
 - Sessions and payouts: `stripe-create-session-payment`, `reservation-checkout-maintenance`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`, `weekly-payout-scheduler`, `stripe-connect-payout-schedule`.
 - Read `docs/payments/weekly-payouts.md` before changing weekly batches, Balance Settings, Transfer/Payout states, retry, reconciliation or alerts.
 - `payouts_enabled` comes from Balance Settings, never from the Transfer capability. Scheduler must not auto-correct the payout schedule.
-- ADR-018 is authoritative for BR: weekly TES Transfers followed by Stripe
-  automatic daily Payouts. Persist `destination_payment`, import Payouts without
+- ADR-018 remains authoritative for legacy V9: weekly TES Transfers followed
+  by Stripe automatic daily Payouts. The approved V10 implementation contract
+  is `docs/payments/session-financial-flow-v10-implementation-plan.md`; its
+  policy must remain inactive until the rollout gate. Persist
+  `destination_payment`, import Payouts without
   TES metadata and reconcile `balance_transactions?payout=...` into the
   allocation table. Each Transfer belongs to one Payout; batches and Payouts
-derive the many-to-many relation. Exclude the aggregate Payout debit from the
-component list and require full Transfer allocation before bank-paid status.
+  derive the many-to-many relation. Exclude the aggregate Payout debit from the
+  component list and require full Transfer allocation before bank-paid status.
 - A Transfer creates the ledger debit; the Payout is a separate bank-delivery state and must not create a second ledger debit.
 - Only `payout.paid` queues payout success. Accept and escalate a later `payout.failed`.
 
@@ -133,10 +202,18 @@ Never expose, log, screenshot, or write real secret values.
 
 1. Start Supabase: `npx supabase start`.
 2. Apply migrations: `npx supabase db reset`.
-3. Start functions: `npm run dev:functions`.
+3. Start functions: `npm run dev:functions`. For signed Stripe Test webhook
+   homologation, use `npm run dev:functions:webhooks` instead; it starts the
+   listener and Functions with one ephemeral, redacted signing secret.
 4. Start Next: `npm run dev`.
-5. Start Stripe listener: `npm run payments:webhooks:listen`.
+5. Start Stripe listener: `npm run payments:webhooks:listen` only when the
+   combined command from step 3 is not already running.
 6. Validate Test Mode destinations: `npm run payments:webhooks:verify:test`.
+   For the linked HML project, use the read-only verifier with
+   `--target=test --project-ref=emzwqkmrryuqvqiohqnu` and load
+   `supabase/functions/.env.homolog` only in that process. Matching the event
+   names alone is insufficient: require the exact HTTPS Supabase host and
+   Function path. Never run the configuration script as an audit.
 7. Validate env: `npm run payments:env`.
 8. Sync catalog: `npm run payments:catalog:sync`.
 9. Verify catalog: `npm run payments:catalog:verify`.
@@ -182,7 +259,9 @@ Never expose, log, screenshot, or write real secret values.
 - Plan activation by redirect query string.
 - Return URLs hardcoded to `/basico/*`, `/pro/*`, or `/plus/*`; use canonical
   `/terapeuta/*` destinations.
-- Automatic transfer on payment.
+- Transfer based only on a browser redirect or unverified payment. V10 must
+  enqueue the direct Transfer after the signed, reconciled paid event, without
+  waiting for service confirmation; V9 keeps its own eligibility gate.
 - Logs of secrets, client secrets, raw Stripe payloads, card data, documents, or bank data.
 - Custom TES forms for Connect bank/KYC data.
 - Deleting financial history instead of compensating.

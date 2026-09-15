@@ -30,8 +30,7 @@ O read model privado `get_therapist_interest_metrics_v1` é exclusivo do
 Premium Plus. Premium recebe `capability_locked`, sem dados parcialmente
 expostos.
 
-- pessoas que voltaram;
-- taxa de retorno;
+- retorno no período, que reúne pessoas que voltaram e taxa de retorno;
 - sessões por pessoa;
 - novos favoritos do perfil;
 - segmentos exclusivos de continuidade;
@@ -118,6 +117,12 @@ Diferenças intencionais:
 - temas, motivos de saída e sentimento não usam texto clínico;
 - Premium recebe bloqueio explícito da aba Interesse;
 - percentuais protegidos não aparecem abaixo de 10;
+- na aba Interesse do Premium Plus, a contagem agregada de favoritos do perfil
+  aparece desde o primeiro registro em dias locais completos; a tendência e a
+  comparação entre períodos continuam protegidas por uma amostra de 10;
+- “Retorno no período” reúne a quantidade de pessoas que voltaram e a taxa
+  correspondente em um único indicador; o percentual e a comparação só são
+  mostrados quando a base elegível alcança 10 pessoas;
 - exportação inicial é CSV, não PDF;
 - MTR-6/Aura permanece fora deste corte.
 

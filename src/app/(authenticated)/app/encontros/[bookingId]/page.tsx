@@ -22,7 +22,14 @@ export default async function PatientEncounterDetailRoute({
       profileId: session.profileId,
     });
 
-    return <PatientSessionDetailPage data={data} />;
+    return (
+      <PatientSessionDetailPage
+        data={data}
+        stripePublishableKey={
+          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? ""
+        }
+      />
+    );
   } catch (error) {
     if (error instanceof BookingDetailDataError && error.code === "not_found") {
       notFound();

@@ -120,13 +120,12 @@ function EmailManagementContent({ data }: { data: Result }) {
   return (
     <AppPageContainer className="max-w-[1166px] py-5 lg:py-6">
       <AppPageHeader eyebrow="Configurações" title="E-mails">
-        Configure remetentes, eventos transacionais, templates e acompanhe os
-        envios da plataforma.
+        Configure remetentes e mensagens e acompanhe os envios da plataforma.
       </AppPageHeader>
 
       <AppPageSection aria-labelledby="email-senders-heading">
         <SectionHeading
-          description="O envio é operado pela infraestrutura segura da plataforma. Credenciais privadas não ficam disponíveis nesta área."
+          description="O envio é protegido pela plataforma. Credenciais privadas não ficam disponíveis nesta área."
           icon={Send}
           title="Remetente da plataforma"
         />
@@ -160,9 +159,9 @@ function EmailManagementContent({ data }: { data: Result }) {
               className="mt-0.5 size-5 shrink-0 text-status-warning"
             />
             <p>
-              Nenhum remetente ativo está disponível. Os eventos continuam
+              Nenhum remetente ativo está disponível. As mensagens continuam
               protegidos, mas não poderão ser enviados até a configuração ser
-              sincronizada com o provider.
+              sincronizada com o serviço de envio.
             </p>
           </div>
         )}
@@ -170,7 +169,7 @@ function EmailManagementContent({ data }: { data: Result }) {
         {data.senders.filter((sender) => sender.active && !sender.is_default)
           .length ? (
           <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-            Outros remetentes ativos podem ser selecionados nos eventos que já
+            Outros remetentes ativos podem ser selecionados nas mensagens que já
             possuem essa capacidade configurada.
           </p>
         ) : null}
@@ -187,15 +186,17 @@ function EmailManagementContent({ data }: { data: Result }) {
                 className="text-2xl font-extrabold text-brand-deep"
                 id="email-events-heading"
               >
-                Eventos de e-mail
+                Mensagens de e-mail
               </h2>
             </div>
             <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Cada evento usa destinatários definidos pelo domínio do TES e
-              apenas os conteúdos e tokens permitidos para aquele fluxo.
+              Cada mensagem usa destinatários definidos pelo TES e apenas as
+              informações previstas para aquele fluxo.
             </p>
           </div>
-          <StatusPill tone="neutral">{data.actions.length} eventos</StatusPill>
+          <StatusPill tone="neutral">
+            {data.actions.length} mensagens
+          </StatusPill>
         </div>
 
         {data.actions.length ? (
@@ -214,7 +215,7 @@ function EmailManagementContent({ data }: { data: Result }) {
                   </h3>
                   <span className="text-sm font-semibold text-tesText-muted">
                     {actions.length}{" "}
-                    {actions.length === 1 ? "evento" : "eventos"}
+                    {actions.length === 1 ? "mensagem" : "mensagens"}
                   </span>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
@@ -237,7 +238,7 @@ function EmailManagementContent({ data }: { data: Result }) {
 
       <AppPageSection aria-labelledby="email-history-heading">
         <SectionHeading
-          description="Os dados exibidos são reduzidos ao necessário para acompanhamento. Reenvios seguem a recuperação controlada da outbox; não há disparo manual por esta tela."
+          description="Os dados exibidos são reduzidos ao necessário para acompanhamento. Reenvios seguem a fila segura da plataforma; não há disparo manual por esta tela."
           icon={Clock3}
           title="Envios recentes"
         />
@@ -250,7 +251,7 @@ function EmailManagementContent({ data }: { data: Result }) {
                   actionLabel={
                     data.actions.find(
                       (action) => action.actionKey === log.action_key,
-                    )?.label ?? "Evento transacional"
+                    )?.label ?? "Comunicação"
                   }
                   key={`${log.correlation_id}-${index}`}
                   log={log}
@@ -308,7 +309,7 @@ function EventCard({
         className="mt-6 inline-flex min-h-11 items-center gap-2 self-start rounded-full px-1 text-sm font-extrabold text-brand-primary outline-none transition hover:text-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20"
         href={routes.admin.emailEvent(action.actionKey)}
       >
-        Configurar evento
+        Configurar mensagem
         <ArrowRight aria-hidden="true" className="size-4" />
       </Link>
     </article>
@@ -400,7 +401,7 @@ function LoadError({ message }: { message: string }) {
 function EmptyEvents() {
   return (
     <div className="mt-6 rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-5 text-sm font-semibold leading-6 text-tesText-secondary">
-      Não há eventos disponíveis para configuração neste momento.
+      Não há mensagens disponíveis para configuração neste momento.
     </div>
   );
 }
@@ -454,7 +455,7 @@ function StatusPill({
 function providerLabel(provider: ProviderKey) {
   return provider === "hostinger_mail_api"
     ? "Hostinger Mail"
-    : "Provider configurado";
+    : "Serviço de envio configurado";
 }
 
 function lastTestLabel(sender: Sender) {

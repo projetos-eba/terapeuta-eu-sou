@@ -5,6 +5,7 @@ import { cache } from "react";
 import { mapTherapistMetricsDashboard } from "./therapist-metrics.dashboard-mappers";
 import {
   mapTherapistInterestMetrics,
+  mapTherapistMetricsTodayActivity,
   mapTherapistSessionEvolutionComparison,
   mapTherapistSessionMetrics,
 } from "./therapist-metrics.detail-mappers";
@@ -17,6 +18,7 @@ import {
   queryTherapistInterestMetrics,
   queryTherapistMetricsDashboard,
   queryTherapistMetricsOverview,
+  queryTherapistMetricsTodayActivity,
   queryTherapistSessionEvolutionComparison,
   queryTherapistSessionMetrics,
 } from "./therapist-metrics.queries";
@@ -26,6 +28,7 @@ import type {
   TherapistMetricsOverview,
   TherapistMetricsPeriodDays,
   TherapistMetricsTab,
+  TherapistMetricsTodayActivityState,
   TherapistSessionMetricsView,
 } from "./therapist-metrics.types";
 
@@ -91,6 +94,7 @@ export type TherapistMetricsViewResult =
       data: TherapistInterestMetrics;
       status: "success";
       tab: "interest";
+      todayActivity: TherapistMetricsTodayActivityState;
     }
   | {
       code: TherapistMetricsError["code"];
@@ -129,11 +133,30 @@ export const getTherapistMetricsView = cache(
       }
 
       if (tab === "interest") {
-        const data = mapTherapistInterestMetrics(
-          await queryTherapistInterestMetrics(accessToken, periodDays),
+        const rawMetrics = await queryTherapistInterestMetrics(
+          accessToken,
+          periodDays,
         );
+        const data = mapTherapistInterestMetrics(rawMetrics);
         enforceProfile(data.therapist.profileId, profileId);
-        return { data, status: "success", tab };
+        if (data.access.status !== "ready") {
+          return {
+            data,
+            status: "success",
+            tab,
+            todayActivity: { status: "unavailable" },
+          };
+        }
+
+        const rawTodayActivity = await queryTodayActivitySafely(accessToken);
+        const todayActivity =
+          rawTodayActivity === null
+            ? ({ status: "unavailable" } as const)
+            : mapTherapistMetricsTodayActivity(rawTodayActivity);
+        if (todayActivity.status !== "unavailable") {
+          enforceProfile(todayActivity.therapist.profileId, profileId);
+        }
+        return { data, status: "success", tab, todayActivity };
       }
 
       const [rawDashboard, rawComparison] = await Promise.all([
@@ -166,5 +189,19 @@ export const getTherapistMetricsView = cache(
 function enforceProfile(actualProfileId: string, expectedProfileId: string) {
   if (actualProfileId !== expectedProfileId) {
     throw new TherapistMetricsError("forbidden");
+  }
+}
+
+async function queryTodayActivitySafely(accessToken: string) {
+  try {
+    return await queryTherapistMetricsTodayActivity(accessToken);
+  } catch (error) {
+    if (
+      error instanceof TherapistMetricsError &&
+      error.code === "unavailable"
+    ) {
+      return null;
+    }
+    throw error;
   }
 }

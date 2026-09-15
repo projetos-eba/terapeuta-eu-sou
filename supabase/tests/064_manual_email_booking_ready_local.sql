@@ -188,6 +188,74 @@ values (
   'paid'
 );
 
+-- Lifecycle notifications resolve the requester from the persisted proposal.
+-- Keep these event fixtures aligned with the current reschedule audit contract.
+-- The test exercises persisted e-mail events rather than availability; bypass
+-- proposal validation only while materializing the already-resolved fixtures.
+set local session_replication_role = replica;
+insert into public.booking_reschedule_requests (
+  id,
+  booking_id,
+  requested_by_profile_id,
+  original_starts_at,
+  original_ends_at,
+  original_timezone,
+  proposed_starts_at,
+  proposed_ends_at,
+  proposed_timezone,
+  status,
+  request_id,
+  booking_version_at_request,
+  expires_at
+)
+values
+  (
+    'e9200000-0000-4000-8000-000000000001',
+    'f9100000-0000-4000-8000-000000000002',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    '2045-02-21T13:00:00Z',
+    '2045-02-21T13:50:00Z',
+    'America/Sao_Paulo',
+    '2045-02-22T13:00:00Z',
+    '2045-02-22T13:50:00Z',
+    'America/Sao_Paulo',
+    'rejected',
+    'booking-email-rejected-request',
+    (select version from public.bookings where id = 'f9100000-0000-4000-8000-000000000002'),
+    '2045-02-20T13:00:00Z'
+  ),
+  (
+    'e9200000-0000-4000-8000-000000000002',
+    'f9100000-0000-4000-8000-000000000002',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    '2045-02-21T13:00:00Z',
+    '2045-02-21T13:50:00Z',
+    'America/Sao_Paulo',
+    '2045-02-23T13:00:00Z',
+    '2045-02-23T13:50:00Z',
+    'America/Sao_Paulo',
+    'applied',
+    'booking-email-applied-request',
+    (select version from public.bookings where id = 'f9100000-0000-4000-8000-000000000002'),
+    '2045-02-20T13:00:00Z'
+  ),
+  (
+    'e9200000-0000-4000-8000-000000000003',
+    'f9100000-0000-4000-8000-000000000002',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    '2045-02-21T13:00:00Z',
+    '2045-02-21T13:50:00Z',
+    'America/Sao_Paulo',
+    '2045-02-24T13:00:00Z',
+    '2045-02-24T13:50:00Z',
+    'America/Sao_Paulo',
+    'applied',
+    'booking-email-automatic-disabled-request',
+    (select version from public.bookings where id = 'f9100000-0000-4000-8000-000000000002'),
+    '2045-02-20T13:00:00Z'
+  );
+set local session_replication_role = origin;
+
 insert into public.booking_events (
   id,
   booking_id,
@@ -206,7 +274,7 @@ values (
   'agenda_a2',
   'confirmed',
   'confirmed',
-  '{"status":"rejected"}'::jsonb
+  '{"status":"rejected","rescheduleRequestId":"e9200000-0000-4000-8000-000000000001"}'::jsonb
 );
 
 select is(
@@ -238,7 +306,7 @@ values (
   'agenda_a2',
   'confirmed',
   'confirmed',
-  '{"status":"applied"}'::jsonb
+  '{"status":"applied","rescheduleRequestId":"e9200000-0000-4000-8000-000000000002"}'::jsonb
 );
 
 select is(
@@ -277,7 +345,7 @@ values (
   'agenda_a2',
   'confirmed',
   'confirmed',
-  '{"status":"applied"}'::jsonb
+  '{"status":"applied","rescheduleRequestId":"e9200000-0000-4000-8000-000000000003"}'::jsonb
 );
 
 select is(

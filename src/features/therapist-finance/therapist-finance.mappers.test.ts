@@ -376,12 +376,31 @@ describe("therapist finance mappers", () => {
           therapistNetAmountCents: 3000,
           therapyNameSnapshot: "Reiki",
         },
+        {
+          bookingId: "f6100000-0000-4000-8000-000000000002",
+          createdAt: "2026-07-28T12:05:00.000Z",
+          disputeStatus: null,
+          financialStatus: "paid",
+          grossAmountCents: 5000,
+          patientDisplayName: "Marina",
+          paymentMethodType: "card",
+          paymentOrigin: "stripe_checkout",
+          receiptUrl: null,
+          receiptStatus: "compensated",
+          receivedAt: null,
+          refundedAmountCents: 0,
+          sessionDate: "2026-07-28T14:00:00.000Z",
+          sessionPaymentId: "f6200000-0000-4000-8000-000000000002",
+          tesCommissionCents: 1000,
+          therapistNetAmountCents: 0,
+          therapyNameSnapshot: "Reiki",
+        },
       ],
       pagination: {
         hasNextPage: false,
         page: 1,
         pageSize: 12,
-        totalCount: 1,
+        totalCount: 2,
         totalPages: 1,
       },
       monthlyTrend: [
@@ -411,6 +430,10 @@ describe("therapist finance mappers", () => {
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
     });
+    expect(receipts.items[1]).toMatchObject({
+      receiptStatus: "compensated",
+      therapistNetAmountCents: 0,
+    });
   });
 
   it("maps payout batches with authoritative net cents and refund visibility", () => {
@@ -426,10 +449,12 @@ describe("therapist finance mappers", () => {
       items: [
         {
           blockedReason: null,
+          debtOffsetAmountCents: 0,
           expectedTransferAt: "2026-07-30T12:00:00.000Z",
           failedReason: null,
           grossAmountCents: 10000,
           payoutBatchId: "batch-1",
+          payoutItemId: "batch-1",
           periodEnd: "2026-07-05",
           periodStart: "2026-07-01",
           reconciliationStatus: "paid",
@@ -438,6 +463,7 @@ describe("therapist finance mappers", () => {
           sessionCount: 1,
           stripeSourceChargeId: "ch_test",
           stripeTransferId: "tr_test",
+          sourceKind: "weekly_batch",
           tesCommissionCents: 2000,
           therapistNetAmountCents: 8000,
           transferredAt: "2026-07-30T13:00:00.000Z",
@@ -467,6 +493,7 @@ describe("therapist finance mappers", () => {
     expect(payouts.items[0]?.therapistNetAmountCents).toBe(8000);
     expect(payouts.items[0]?.refundedAmountCents).toBe(0);
     expect(payouts.items[0]?.reconciliationStatus).toBe("paid");
+    expect(payouts.items[0]?.sourceKind).toBe("weekly_batch");
     expect(payouts.summary.blockedReasonCodes).toEqual(["account", "refund"]);
   });
 

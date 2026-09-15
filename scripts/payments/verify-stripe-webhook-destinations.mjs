@@ -13,8 +13,15 @@ const targetArgument = process.argv.find((value) =>
   value.startsWith("--target="),
 );
 const target = targetArgument?.split("=")[1];
+const projectRefArgument = process.argv.find((value) =>
+  value.startsWith("--project-ref="),
+);
+const projectRef = projectRefArgument?.split("=")[1];
 if (target !== "test" && target !== "live") {
   throw new Error("Use --target=test or --target=live.");
+}
+if (projectRef !== undefined && !/^[a-z0-9]{20}$/.test(projectRef)) {
+  throw new Error("Invalid Supabase project reference.");
 }
 
 const stripeKey = getStripeSecretKey();
@@ -27,6 +34,9 @@ const page = await stripe.v2.core.eventDestinations.list({
   include: ["webhook_endpoint.url"],
   limit: 100,
 });
+if (page.has_more || page.next_page) {
+  throw new Error("Destination listing is incomplete; verification stopped.");
+}
 const suffix = target === "test" ? "homolog" : "live";
 const contracts = [
   {
@@ -75,7 +85,7 @@ const checks = contracts.map((contract) => {
       destination.name === contract.name &&
       destination.event_payload === contract.payload &&
       destination.events_from?.includes(contract.scope) &&
-      destination.webhook_endpoint?.url?.endsWith(contract.path),
+      matchesEndpoint(destination.webhook_endpoint?.url, contract.path),
   );
   if (matches.length !== 1) {
     throw new Error(`Expected one canonical destination: ${contract.name}.`);
@@ -97,6 +107,7 @@ console.log(
   JSON.stringify({
     destinations: checks,
     relevantRemoteDestinationCount: relevantEnabled.length,
+    ...(projectRef ? { projectRef } : {}),
     target,
     verified: true,
   }),
@@ -106,6 +117,22 @@ function isRemoteUrl(value) {
   if (!value) return false;
   try {
     return !["127.0.0.1", "localhost", "::1"].includes(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function matchesEndpoint(value, path) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.pathname === path &&
+      !url.search &&
+      !url.hash &&
+      (!projectRef || url.hostname === `${projectRef}.supabase.co`)
+    );
   } catch {
     return false;
   }

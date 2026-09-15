@@ -16,6 +16,7 @@ export type BookingDetailPageData = {
     minutesUntilStart: number | null;
     operationalVersion: number;
     paymentStatus: SessionFinancialStatus | null;
+    paymentFlowVersion?: string;
     startsAt: string;
     status: BookingDetailStatus;
     statusLabel: string;
@@ -46,6 +47,11 @@ export type BookingDetailPageData = {
     meetingUrl: string | null;
     provider: "zoom" | "google_meet" | "external";
     securityNote: string;
+  };
+  paymentRecovery?: {
+    available: boolean;
+    dueAt: string | null;
+    status: string | null;
   };
   patient: {
     avatarUrl: string | null;

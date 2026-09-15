@@ -2,6 +2,13 @@ begin;
 
 select plan(34);
 
+-- This seed review represents the current, still-open calendar day. Normalize
+-- it inside the rolled-back test transaction so a long-lived local database
+-- does not start counting it after crossing midnight.
+update public.reviews
+set published_at = now()
+where id = 'e8000000-0000-4000-8000-000000000001';
+
 insert into public.aura_recommendations (
   id,
   therapist_profile_id,

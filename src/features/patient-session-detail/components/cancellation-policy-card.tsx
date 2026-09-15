@@ -4,8 +4,10 @@ import type { PatientSessionDetailPageData } from "../patient-session-detail.typ
 
 export function CancellationPolicyCard({
   policy,
+  paymentFlowVersion,
 }: {
   policy: PatientSessionDetailPageData["cancellationPolicy"];
+  paymentFlowVersion?: string;
 }) {
   return (
     <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
@@ -19,6 +21,29 @@ export function CancellationPolicyCard({
       </div>
 
       <div className="mt-6 rounded-[24px] bg-surface-soft p-5 sm:p-6">
+        {paymentFlowVersion === "v10" ? (
+          <div className="space-y-5">
+            <PolicyLine
+              icon={CheckCircle2}
+              text="Se o cartão ainda não foi cobrado, você pode cancelar sem precisar solicitar reembolso."
+              title="Mais de 24 horas de antecedência"
+              tone="success"
+            />
+            <PolicyLine
+              icon={Info}
+              text="Para solicitar uma alteração depois da cobrança, fale com nossa equipe de suporte."
+              title="Após a cobrança"
+              tone="warning"
+            />
+            <PolicyLine
+              icon={OctagonX}
+              text="A ausência do cliente não gera reembolso automático. Casos excepcionais podem ser analisados."
+              title="Não comparecimento"
+              tone="danger"
+            />
+          </div>
+        ) : (
+          <>
         <div className="space-y-5">
           <PolicyLine
             icon={CheckCircle2}
@@ -44,6 +69,8 @@ export function CancellationPolicyCard({
           Após aprovação, o processamento do reembolso começa em até 7 dias
           úteis. O prazo de crédito depende do meio de pagamento.
         </p>
+          </>
+        )}
       </div>
     </section>
   );

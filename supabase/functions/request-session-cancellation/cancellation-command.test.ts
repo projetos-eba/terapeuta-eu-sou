@@ -60,3 +60,20 @@ Deno.test("maps divergent replay errors to a safe conflict", () => {
   assertEquals((error as DomainError).code, "cancellation_conflict");
   assertEquals((error as DomainError).status, 409);
 });
+
+Deno.test("maps a non-pristine V10 cancellation to a support message", () => {
+  const error = mapCancellationDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "SESSION_PRECHARGE_CANCEL_V10_REQUIRES_SUPPORT",
+    ),
+  );
+
+  assertEquals(error instanceof DomainError, true);
+  assertEquals((error as DomainError).code, "cancellation_requires_support");
+  assertEquals((error as DomainError).status, 409);
+  assertEquals(
+    (error as DomainError).message,
+    "Para alterar este encontro, fale com nossa equipe de suporte.",
+  );
+});
