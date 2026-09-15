@@ -156,6 +156,28 @@ describe("getPatientEncounterPresentationState", () => {
     expect(expired.payment.slotState).toBe("released");
   });
 
+  it("presents a future V10 charge as scheduled instead of processing", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Pending,
+      now: new Date("2026-07-30T13:00:00.000Z"),
+      paymentFlowVersion: "v10",
+    });
+
+    expect(state.payment).toEqual({
+      kind: "scheduled",
+      message:
+        "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
+      retryAllowed: false,
+      slotState: "confirmed",
+      title: "Cobrança programada",
+    });
+    expect(state.preparation.title).toBe("Prepare seu encontro");
+    expect(state.waitingRoom.message).toBe(
+      "A sala será liberada quando o pagamento for confirmado.",
+    );
+  });
+
   it("blocks Zoom access for failed payments and exposes retry only before start", () => {
     const state = getPatientEncounterPresentationState({
       ...baseInput,

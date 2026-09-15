@@ -90,6 +90,12 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- When a worker persists a Stripe object before the signed webhook arrives, it
+  must use the provider object's own `created` instant as the event instant.
+  Never use the worker's local clock as Stripe event authority: doing so can
+  make the later signed event look stale and prevent enrichment of payment
+  method, receipt and balance-transaction evidence. A missing or invalid
+  provider instant must fail closed and enter the existing retry path.
 - For a V10 charge incomplete at session start, retrieve Stripe state before
   releasing the booking. Reconcile a late success, keep `processing` fail-closed
   with an incident, and close only a never-created or canceled PaymentIntent.

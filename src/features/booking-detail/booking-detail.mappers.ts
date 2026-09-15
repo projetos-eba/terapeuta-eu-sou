@@ -251,6 +251,7 @@ export function mapBookingDetail(
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
       patientHasJoined: input.patientHasJoined,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       provider,
       startsAt: input.booking.starts_at,
     }),

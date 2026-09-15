@@ -74,7 +74,7 @@ export async function runSessionChargeWorker(input: {
         input.client,
         claim,
         intent,
-        new Date().toISOString(),
+        stripeObjectCreatedAt(intent),
       );
       countState(result, state);
     } catch (error) {
@@ -84,7 +84,7 @@ export async function runSessionChargeWorker(input: {
           input.client,
           claim,
           intent,
-          new Date().toISOString(),
+          stripeObjectCreatedAt(intent),
         );
         countState(result, state);
         continue;
@@ -105,6 +105,19 @@ export async function runSessionChargeWorker(input: {
     }
   }
   return result;
+}
+
+function stripeObjectCreatedAt(intent: { created?: unknown }) {
+  // Use Stripe's own instant so the signed succeeded event can enrich the
+  // payment without being misclassified as older than a local worker clock.
+  if (
+    typeof intent.created !== "number" ||
+    !Number.isSafeInteger(intent.created) ||
+    intent.created <= 0
+  ) {
+    throw new Error("session_charge_intent_created_at_invalid");
+  }
+  return new Date(intent.created * 1000).toISOString();
 }
 
 function parseClaim(value: unknown): ClaimedSchedule {
@@ -158,7 +171,7 @@ async function recordIntent(
   client: ChargeClient,
   claim: ClaimedSchedule,
   intent: Awaited<ReturnType<StripeClient["paymentIntents"]["create"]>>,
-  now: string,
+  eventCreatedAt: string,
 ) {
   if (
     ![
@@ -197,7 +210,7 @@ async function recordIntent(
           : (intent.payment_method?.id ?? null),
       p_stripe_charge_id: chargeId,
       p_event_id: intent.status === "succeeded" ? `worker:${intent.id}` : null,
-      p_event_created_at: intent.status === "succeeded" ? now : null,
+      p_event_created_at: intent.status === "succeeded" ? eventCreatedAt : null,
     },
   );
   return result.scheduleStatus;

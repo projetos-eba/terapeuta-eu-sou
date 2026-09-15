@@ -50,6 +50,7 @@ export type BookingDetailPageData = {
   };
   paymentRecovery?: {
     available: boolean;
+    checkoutAvailable: boolean;
     dueAt: string | null;
     status: string | null;
   };
