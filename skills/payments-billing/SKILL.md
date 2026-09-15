@@ -115,7 +115,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `scheduled`, has zero attempts and no PaymentIntent, Charge, lease, Transfer
   job or Transfer. The transaction cancels the schedule and setup, releases a
   reserved promotion, closes the payment without Refund and cancels the
-  booking. Claimed, retried, ambiguous or paid states go to support.
+  booking. The confirmation command must lock and reread the payment, booking
+  and schedule instead of trusting the modal snapshot. If charging starts or
+  succeeds while the modal is open, fail closed with a user-safe conflict,
+  preserve the financial state and direct the patient to refresh or contact
+  support. Claimed, retried, ambiguous or paid states go to support.
 - A V10 patient reschedule before charging must reuse the SetupIntent and
   PaymentMethod bound to that booking; never create or replace a global default
   card. It supersedes the old schedule and leaves exactly one active schedule

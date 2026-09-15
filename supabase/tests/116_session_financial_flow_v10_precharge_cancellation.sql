@@ -1,5 +1,5 @@
 begin;
-select plan(17);
+select plan(19);
 
 select ok(has_function_privilege('service_role',
   'public.cancel_uncharged_session_v10(uuid,uuid,text,text)', 'EXECUTE'),
@@ -37,7 +37,11 @@ insert into public.stripe_customers (
   'bbbbbbbb-0000-4000-8000-000000000010',
   'b1000000-0000-4000-8000-000000000010',
   'patient', 'test', 'cus_test_v10_116', 'patient@example.test', false
-);
+) on conflict (profile_id, role, environment)
+do update set patient_profile_id = excluded.patient_profile_id,
+  stripe_customer_id = excluded.stripe_customer_id,
+  email = excluded.email,
+  livemode = excluded.livemode;
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -58,7 +62,11 @@ insert into public.bookings (
    'America/Sao_Paulo', 'draft', 'not_started', now());
 
 select public.prepare_session_payment_v10(id,
-  'b1160000-0000-4000-8000-000000000002')
+  (select id
+   from public.stripe_customers
+   where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010'
+     and role = 'patient'
+     and environment = 'test'))
 from public.bookings where id in (
   'b1160000-0000-4000-8000-000000000011',
   'b1160000-0000-4000-8000-000000000012');
@@ -153,11 +161,30 @@ select throws_ok($$select public.cancel_uncharged_session_v10(
   'b1160000-0000-4000-8000-000000000012',
   'bbbbbbbb-0000-4000-8000-000000000010',
   'tes:v10:cancel:116:claimed', 'Não poderei comparecer')$$,
-  '23514', 'SESSION_PRECHARGE_CANCEL_V10_REQUIRES_SUPPORT',
+  '23514', 'SESSION_PRECHARGE_CANCEL_V10_PAYMENT_CHANGED',
   'an already claimed charge is never canceled blindly');
 select is((select status from public.session_payment_schedules
   where booking_id='b1160000-0000-4000-8000-000000000012'),
   'claimed', 'a rejected cancellation preserves the worker lease');
+
+update public.session_payments
+set financial_status='paid', stripe_payment_intent_id='pi_test_v10_116_paid',
+  stripe_charge_id='ch_test_v10_116_paid', paid_at=now()
+where booking_id='b1160000-0000-4000-8000-000000000012';
+update public.session_payment_schedules
+set status='paid', stripe_payment_intent_id='pi_test_v10_116_paid',
+  stripe_charge_id='ch_test_v10_116_paid', lease_owner=null,
+  lease_expires_at=null
+where booking_id='b1160000-0000-4000-8000-000000000012';
+select throws_ok($$select public.cancel_uncharged_session_v10(
+  'b1160000-0000-4000-8000-000000000012',
+  'bbbbbbbb-0000-4000-8000-000000000010',
+  'tes:v10:cancel:116:stale-modal', 'Não poderei comparecer')$$,
+  '23514', 'SESSION_PRECHARGE_CANCEL_V10_PAYMENT_CHANGED',
+  'a modal opened before payment cannot cancel after the charge succeeds');
+select is((select financial_status::text from public.session_payments
+  where booking_id='b1160000-0000-4000-8000-000000000012'),
+  'paid', 'the stale cancellation preserves the confirmed payment');
 select is((select status::text from public.bookings
   where id='b1160000-0000-4000-8000-000000000012'),
   'confirmed', 'a rejected cancellation keeps the appointment intact');

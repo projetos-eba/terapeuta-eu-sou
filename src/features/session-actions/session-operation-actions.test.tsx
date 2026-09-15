@@ -89,6 +89,43 @@ describe("SessionOperationActions", () => {
     expect(firstPayload.requestId).toBe("a1000000-0000-4000-8000-000000000001");
   });
 
+  it("keeps the modal open when the server detects payment after it was opened", async () => {
+    const paymentChangedMessage =
+      "O pagamento desta sessão foi atualizado. Recarregue a página e, se ainda precisar cancelar, fale com nossa equipe de suporte.";
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      return Promise.resolve(
+        url.includes("/availability?")
+          ? jsonResponse({ ok: true, data: availability })
+          : jsonResponse(
+              { ok: false, error: { message: paymentChangedMessage } },
+              409,
+            ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderActions();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar encontro" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Continuar com o cancelamento",
+      }),
+    );
+    fireEvent.change(screen.getByLabelText(/Motivo\s+do cancelamento/), {
+      target: { value: "Minha rotina mudou." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar cancelamento" }),
+    );
+
+    expect(await screen.findByText(paymentChangedMessage)).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Cancelar encontro" }),
+    ).toBeVisible();
+    expect(navigationMocks.refresh).not.toHaveBeenCalled();
+  });
+
   it("keeps a completed cancellation unavailable and explains why", () => {
     render(
       <SessionOperationActions

@@ -56,7 +56,9 @@ describe("getPatientEncounterActionPolicy", () => {
     });
 
     expect(result.cancellation.allowed).toBe(true);
-    expect(result.cancellation.impactLabel).toContain("ainda não foi cobrado");
+    expect(result.cancellation.impactLabel).toBe(
+      "O pagamento dessa sessão ainda não ocorreu. Ao cancelar, a cobrança agendada também será cancelada.",
+    );
     expect(result.reschedule.allowed).toBe(true);
   });
 
