@@ -239,6 +239,25 @@ describe("OnlineSessionCard", () => {
     ).toBeNull();
   });
 
+  it("shows a saved future slot as reserved until payment is confirmed", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.Confirmed,
+    });
+    data.booking.statusLabel = "Reservado";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Reservado")).toBeInTheDocument();
+    expect(screen.getByText("Encontro reservado")).toBeInTheDocument();
+    expect(screen.queryByText("Encontro confirmado")).toBeNull();
+  });
+
   it("offers a new time instead of retrying an elapsed interrupted payment", () => {
     render(
       <SessionOverviewCard

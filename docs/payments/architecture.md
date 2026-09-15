@@ -104,6 +104,19 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   confirmação bancária, conciliação concluída e alocação integral. O catálogo
   e os e-mails financeiros usam linguagem de produto e não expõem nomes de
   objetos, rotinas ou estados internos.
+- Em reservas V10 acima de 24 horas, `bookings.status=confirmed` continua sendo
+  o estado operacional que ocupa o horário. Esse valor interno não autoriza a
+  interface nem as comunicações a dizer que o encontro está confirmado: até
+  `session_payments.financial_status=paid`, paciente e terapeuta veem
+  “Reservado”. No detalhe da terapeuta, a superfície financeira apresenta
+  `Pagamento` / `Agendado` e informa que a cobrança ocorrerá 24 horas antes da
+  sessão; ela não apresenta esse estado como uma pendência. O
+  salvamento do cartão gera uma comunicação de reserva para cada participante.
+  Quando a cobrança agendada é aprovada, o paciente recebe a
+  confirmação do pagamento e ambos recebem a confirmação do encontro. Uma
+  cobrança não aprovada envia ao paciente uma orientação para revisar o
+  pagamento no detalhe do encontro. Todas essas entregas usam outbox
+  idempotente e linguagem de produto.
 - `payment_flow_version` e imutavel. Seletores semanais aceitam somente V9;
   Transfer V10 usa `transfer_origin=session_direct`, Charge original em
   `source_transaction` e nunca possui `payout_batch_item_id`.

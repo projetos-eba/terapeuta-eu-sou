@@ -1,6 +1,6 @@
 begin;
 
-select plan(92);
+select plan(111);
 
 select ok(
   has_function_privilege(
@@ -105,6 +105,14 @@ values
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
     '2099-09-24 13:00:00+00', '2099-09-24 13:50:00+00',
+    'America/Sao_Paulo', 'draft', 'not_started', now()
+  ),
+  (
+    'b1150000-0000-4000-8000-000000000016',
+    'b1000000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    '2099-09-25 13:00:00+00', '2099-09-25 13:50:00+00',
     'America/Sao_Paulo', 'draft', 'not_started', now()
   );
 
@@ -271,7 +279,7 @@ select is(
 select is(
   (select status::text from public.bookings where id = 'b1150000-0000-4000-8000-000000000011'),
   'confirmed',
-  'the reserved session becomes visible as confirmed without pretending it is paid'
+  'the reserved session keeps its operational slot status without pretending it is paid'
 );
 select is(
   (select payment_status::text from public.bookings where id = 'b1150000-0000-4000-8000-000000000011'),
@@ -282,6 +290,34 @@ select is(
   (select status from public.session_payment_schedules where session_payment_id = (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000011')),
   'scheduled',
   'exactly one active charge schedule is bound to the matching setup'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_reserved_patient'
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  1,
+  'saving the card queues one reservation email for the patient'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_reserved_therapist'
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  1,
+  'saving the card queues one reservation email for the therapist'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key in ('booking_confirmed_patient', 'booking_confirmed_therapist')
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  0,
+  'a future unpaid reservation does not send encounter confirmation emails'
+);
+select is(
+  (select payload from public.email_outbox
+   where action_key = 'booking_reserved_patient'
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  '{}'::jsonb,
+  'reservation email work contains no payment or card payload'
 );
 
 select lives_ok(
@@ -402,6 +438,120 @@ select is(
   (select status::text from public.bookings where id = 'b1150000-0000-4000-8000-000000000013'),
   'confirmed',
   'the zero-total reservation is confirmed without a false Transfer state'
+);
+
+select lives_ok(
+  $$
+    select public.prepare_session_payment_v10(
+      'b1150000-0000-4000-8000-000000000016',
+      'b1150000-0000-4000-8000-000000000002'
+    )
+  $$,
+  'an immediate V10 checkout starts from the same frozen payment contract'
+);
+select is(
+  public.swap_session_payment_checkout_v10(
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000016'),
+    (select version from public.bookings where id = 'b1150000-0000-4000-8000-000000000016'),
+    'test', null, 'cs_test_v10_115_immediate',
+    17000, 0, 17000, 'immediate',
+    null, null, null, null, null, 'tes:v10:immediate:115'
+  ) ->> 'applied',
+  'true',
+  'the immediate checkout keeps the exact server-calculated amount'
+);
+select lives_ok(
+  $$
+    insert into public.session_payment_attempts (
+      session_payment_id, attempt_kind, idempotency_key, status,
+      stripe_checkout_session_id
+    ) values (
+      (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000016'),
+      'initial_hold', 'tes:v10:attempt:115:immediate', 'checkout_created',
+      'cs_test_v10_115_immediate'
+    )
+  $$,
+  'the immediate checkout attempt is persisted before its signed completion'
+);
+
+select * from public.reserve_stripe_webhook_event_v1(
+  'evt_test_v10_115_immediate',
+  'checkout.session.completed',
+  null,
+  false,
+  '2026-09-15',
+  'platform',
+  'test-hash-v10-115-immediate',
+  '2099-09-24 13:02:00+00',
+  'cs_test_v10_115_immediate'
+);
+
+select is(
+  public.confirm_session_payment_and_enqueue_transfer_v10(
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000016'),
+    'test', 'pi_test_v10_115_immediate', 'ch_test_v10_115_immediate',
+    '2099-09-24 13:02:00+00', 'evt_test_v10_115_immediate',
+    '2099-09-24 13:02:00+00'
+  ) ->> 'transferStatus',
+  'transfer_pending',
+  'an immediate paid checkout creates its single direct Transfer obligation'
+);
+select is(
+  (select status::text from public.bookings where id = 'b1150000-0000-4000-8000-000000000016'),
+  'confirmed',
+  'the immediate paid checkout confirms the encounter operationally'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'session_payment_approved'
+     and related_entity_id = (
+       select id from public.session_payments
+       where booking_id = 'b1150000-0000-4000-8000-000000000016'
+     )),
+  1,
+  'the immediate paid checkout queues one payment approval email for the patient'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key in ('booking_confirmed_patient', 'booking_confirmed_therapist')
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000016'),
+  2,
+  'the immediate paid checkout queues one encounter confirmation per participant'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key in ('booking_reserved_patient', 'booking_reserved_therapist')
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000016'),
+  0,
+  'an immediate paid checkout never queues a future-reservation message'
+);
+select lives_ok(
+  $$
+    select public.confirm_session_payment_and_enqueue_transfer_v10(
+      (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000016'),
+      'test', 'pi_test_v10_115_immediate', 'ch_test_v10_115_immediate',
+      '2099-09-24 13:02:00+00', 'evt_test_v10_115_immediate',
+      '2099-09-24 13:02:00+00'
+    )
+  $$,
+  'replaying the immediate paid event is idempotent'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key in (
+     'session_payment_approved',
+     'booking_confirmed_patient',
+     'booking_confirmed_therapist',
+     'booking_reserved_patient',
+     'booking_reserved_therapist'
+   )
+     and related_entity_id in (
+       'b1150000-0000-4000-8000-000000000016',
+       (select id from public.session_payments
+        where booking_id = 'b1150000-0000-4000-8000-000000000016')
+     )),
+  3,
+  'the immediate paid replay cannot duplicate any participant communication'
 );
 
 set local role authenticated;
@@ -539,6 +689,30 @@ select is(
   'one paid charge creates exactly one therapist Transfer obligation'
 );
 select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'session_payment_approved'
+     and related_entity_id = (
+       select id from public.session_payments
+       where booking_id = 'b1150000-0000-4000-8000-000000000011'
+     )),
+  1,
+  'worker-confirmed payment queues one approval email for the patient'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_confirmed_patient'
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  1,
+  'payment approval queues the final encounter confirmation for the patient'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_confirmed_therapist'
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  1,
+  'payment approval queues the final session confirmation for the therapist'
+);
+select is(
   public.record_session_payment_intent_v10(
     (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000011'),
     (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000011'),
@@ -556,6 +730,23 @@ select is(
    where booking_id = 'b1150000-0000-4000-8000-000000000011'),
   1,
   'replayed charge cannot duplicate the Transfer obligation'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'session_payment_approved'
+     and related_entity_id = (
+       select id from public.session_payments
+       where booking_id = 'b1150000-0000-4000-8000-000000000011'
+     )),
+  1,
+  'replayed charge cannot duplicate the payment approval email'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key in ('booking_confirmed_patient', 'booking_confirmed_therapist')
+     and related_entity_id = 'b1150000-0000-4000-8000-000000000011'),
+  2,
+  'replayed charge cannot duplicate either final encounter confirmation'
 );
 select throws_ok(
   $$select public.record_session_payment_intent_v10(
