@@ -183,6 +183,21 @@ export function mapSessionPresentation(
   }
 
   if (
+    session.bookingStatus === BookingStatus.Confirmed &&
+    (session.financialStatus === SessionFinancialStatus.Pending ||
+      session.financialStatus === SessionFinancialStatus.Processing)
+  ) {
+    return presentation(
+      "reserved",
+      "Reservada",
+      "O horário está reservado e aguarda a confirmação do pagamento.",
+      "low",
+      "info",
+      actions,
+    );
+  }
+
+  if (
     session.financialStatus === null ||
     session.financialStatus === SessionFinancialStatus.Pending ||
     session.financialStatus === SessionFinancialStatus.Processing ||
@@ -214,8 +229,7 @@ export function mapSessionPresentation(
   }
 
   if (
-    session.fulfillmentStatus ===
-    FulfillmentStatus.OccurredPendingConfirmation
+    session.fulfillmentStatus === FulfillmentStatus.OccurredPendingConfirmation
   ) {
     return presentation(
       "awaiting_confirmation",

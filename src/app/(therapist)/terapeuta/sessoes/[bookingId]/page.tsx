@@ -36,6 +36,7 @@ import {
   getTherapistSessionDetail,
   getTherapistSessionFeedbackSummary,
   getTherapistSessionPendingReschedule,
+  getTherapistSessionPaymentStatus,
   shouldShowTherapistSessionJourneyThemes,
   type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
@@ -272,17 +273,21 @@ function SessionStatusStrip({
   });
   const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
+  const paymentStatus = getTherapistSessionPaymentStatus({
+    financialStatus: booking.financialStatus,
+    sessionState: presentation.state,
+  });
   return (
     <section
       className="grid grid-cols-3 overflow-hidden rounded-card border border-border bg-white shadow-card"
       aria-label="Resumo do estado da sessão"
     >
       <StatusStripItem
-        description={getFinancialStatusDescription(booking.financialStatus)}
+        description={paymentStatus.description}
         icon={CreditCard}
         label="Pagamento"
-        tone={booking.financialStatus === "paid" ? "success" : "warning"}
-        value={formatFinancialStatus(booking.financialStatus)}
+        tone={paymentStatus.tone}
+        value={paymentStatus.label}
       />
       <StatusStripItem
         description={
@@ -920,39 +925,6 @@ function SessionDetailErrorState({
       </section>
     </AppPageContainer>
   );
-}
-
-function formatFinancialStatus(status: string | null) {
-  const labels: Record<string, string> = {
-    canceled: "Cancelado",
-    paid: "Confirmado",
-    pending: "Aguardando confirmação",
-    processing: "Em processamento",
-    failed: "Não confirmado",
-    refunded: "Reembolsado",
-    partially_refunded: "Reembolso parcial",
-    disputed: "Em análise",
-  };
-
-  return status ? labels[status] : "Aguardando confirmação";
-}
-
-function getFinancialStatusDescription(status: string | null) {
-  const descriptions: Record<string, string> = {
-    canceled: "Esta sessão foi cancelada.",
-    paid: "O pagamento desta sessão foi confirmado.",
-    pending: "A confirmação do pagamento ainda está em andamento.",
-    processing: "A confirmação do pagamento ainda está em andamento.",
-    failed: "Há uma pendência de pagamento para esta sessão.",
-    refunded: "Um reembolso foi registrado para esta sessão.",
-    partially_refunded: "Há um reembolso parcial registrado para esta sessão.",
-    disputed: "Há uma ocorrência de pagamento em análise.",
-  };
-
-  return status
-    ? (descriptions[status] ??
-        "A confirmação de pagamento ainda não está disponível.")
-    : "A confirmação de pagamento ainda não está disponível.";
 }
 
 function formatSessionDate(booking: TherapistSessionDetailReadModel) {

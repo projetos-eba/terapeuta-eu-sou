@@ -19,7 +19,10 @@ export function SessionStatusStrip({
     data.encounterState.waitingRoom.kind,
   );
   const encounterConfirmed =
-    data.booking.status === "confirmed" || data.booking.status === "live";
+    paymentConfirmed &&
+    (data.booking.status === "confirmed" || data.booking.status === "live");
+  const encounterReserved =
+    !encounterConfirmed && data.booking.status === "confirmed";
 
   return (
     <section
@@ -47,11 +50,17 @@ export function SessionStatusStrip({
         supporting={
           encounterConfirmed
             ? "Seu horário está reservado para você."
-            : data.booking.statusLabel
+            : encounterReserved
+              ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
+              : data.booking.statusLabel
         }
         tone={encounterConfirmed ? "success" : "neutral"}
         title={
-          encounterConfirmed ? "Encontro confirmado" : data.booking.statusLabel
+          encounterConfirmed
+            ? "Encontro confirmado"
+            : encounterReserved
+              ? "Encontro reservado"
+              : data.booking.statusLabel
         }
       />
     </section>

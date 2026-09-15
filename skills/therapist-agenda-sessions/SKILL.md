@@ -125,6 +125,11 @@ histórica.
   sala / estado e ação, faixa de três estados e sequência responsiva de
   contexto, sala, gestão e apoio. Em desktop, suporte e orientações ficam no
   rail; em mobile, entram no fluxo após o contexto crítico.
+- Na faixa de estados, uma reserva V10 que ainda aguarda a janela de cobrança
+  usa o título `Pagamento` com o estado `Agendado` e explica que a cobrança
+  ocorrerá 24 horas antes da sessão. `Aguardando confirmação` permanece
+  reservado a pagamentos que já estão em confirmação e não deve substituir o
+  estado agendado.
 - O detalhe só renderiza o DTO de `get_therapist_session_detail_v1`. Não exibir
   objetivo clínico, observações, prontuário, URL da sala, credenciais ou
   supostos resultados de teste. A seção “Antes de entrar” pode orientar a pessoa

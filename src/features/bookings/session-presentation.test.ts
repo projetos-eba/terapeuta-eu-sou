@@ -21,7 +21,7 @@ import {
 const now = new Date("2026-07-26T13:00:00.000Z");
 
 describe("mapSessionPresentation", () => {
-  it("uses canonical payment state even when the booking is confirmed", () => {
+  it("presents a confirmed slot awaiting payment as reserved", () => {
     const result = mapSessionPresentation(
       sessionFixture({
         bookingStatus: BookingStatus.Confirmed,
@@ -30,7 +30,8 @@ describe("mapSessionPresentation", () => {
       now,
     );
 
-    expect(result.state).toBe("payment_pending");
+    expect(result.state).toBe("reserved");
+    expect(result.label).toBe("Reservada");
     expect(result.actions.canAccessZoom).toBe(false);
   });
 

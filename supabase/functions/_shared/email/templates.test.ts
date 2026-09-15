@@ -101,6 +101,25 @@ Deno.test(
 Deno.test(
   "booking templates keep participant-specific CTAs and omit cancellation reasons",
   () => {
+    const patientReservation = renderEmailTemplate("booking_reserved_patient", {
+      counterparty_name: "Terapeuta de exemplo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      recipient_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+    });
+    const therapistReservation = renderEmailTemplate(
+      "booking_reserved_therapist",
+      {
+        counterparty_name: "Pessoa de exemplo",
+        encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Terapeuta de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
     const patientConfirmation = renderEmailTemplate(
       "booking_confirmed_patient",
       {
@@ -136,6 +155,14 @@ Deno.test(
     );
 
     assertEquals(patientConfirmation.subject, "Seu encontro foi confirmado");
+    assertEquals(patientReservation.subject, "Seu encontro foi reservado");
+    assert(patientReservation.text.includes("24 horas antes"));
+    assert(therapistReservation.text.includes("reservado para"));
+    assert(
+      !/SetupIntent|PaymentIntent|source_transaction|webhook|T-24|cron/i.test(
+        `${patientReservation.subject} ${patientReservation.text} ${therapistReservation.text}`,
+      ),
+    );
     assertEquals(
       therapistConfirmation.subject,
       "Confirmação da sua sessão no TES",

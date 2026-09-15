@@ -13,6 +13,8 @@ export type EmailActionKey =
   | "therapist_profile_rejected"
   | "therapist_profile_suspended"
   | "therapist_profile_reactivated"
+  | "booking_reserved_patient"
+  | "booking_reserved_therapist"
   | "booking_confirmed_patient"
   | "booking_confirmed_therapist"
   | "booking_reminder_24h_patient"
