@@ -54,15 +54,21 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 
 ## Contratos versionados V9 e V10
 
-- `tes-payments-v9-settlement-only` continua sendo a unica politica ativa.
-  Reservas e pagamentos existentes preservam o fluxo semanal, suas
-  confirmacoes e todos os snapshots historicos.
-- `tes-payments-v10-setup-t24-immediate-transfer` tem o nucleo das Fases 1 a 4
-  implementado somente no ambiente local, mas seus gates ainda nao fecharam.
-  A flag de checkout V10 permanece
-  desligada por padrao; HML e producao continuam sem ativacao V10. Nenhum cron
-  V10 foi ativado. O rollout, os comandos de reembolso/reversao e as paginas
-  financeiras V10 completas ainda nao foram implantados.
+- `tes-payments-v9-settlement-only` preserva reservas, pagamentos, lotes e
+  snapshots historicos. Em HML, a politica e o scheduler V9 estao inativos para
+  novas aquisicoes, mas as obrigacoes existentes continuam sob reconciliacao e
+  drenagem controlada. Producao nao foi alterada.
+- `tes-payments-v10-setup-t24-immediate-transfer` tem as Fases 1 a 6
+  homologadas localmente e o canario da Fase 7 ativo em HML para novas
+  reservas. Os workers de cobranca e repasse estao ativos e uma reserva futura
+  comprovou SetupIntent por reserva, webhook assinado e agenda T-24 sem cobranca
+  antecipada. No vencimento, a cobranca T-24 e o Transfer vinculado foram
+  executados uma unica vez; uma segunda reserva comprovou a cobranca imediata.
+  As correcoes de retomada de Checkout expirado e de precedencia do evento
+  assinado foram publicadas e revalidadas. A estabilizacao permanece aberta
+  enquanto o Payout bancario do canario e a drenagem V9 nao forem concluidos.
+  O script de ativacao esta em
+  `supabase/schedules/session-financial-flow-v10.sql`.
 - A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
   somente no ambiente local. Os webhooks verificam os objetos no provedor e
   registram cada operacao por identificador Stripe em RPCs transacionais
@@ -84,7 +90,20 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - V10 separa a preparacao do cartao (`SetupIntent`, `usage=off_session`) da
   cobranca T-24 e registra atomicamente um job de Transfer direto assim que o
   pagamento e confirmado. Confirmacao e avaliacao da sessao nao sao gates
-  financeiros desse contrato.
+  financeiros desse contrato. A projeção local de feedback V10 deriva o estado
+  bilateral das respostas dos participantes, e a rotina semanal de
+  elegibilidade V9 não reclassifica pagamentos V10. Relatos negativos abrem
+  análise sem reescrever o ciclo do repasse. O histórico local pagina lotes V9
+  e movimentações diretas V10 sem duplicidade, não envia IDs Stripe ao
+  navegador, não trata compensação total como depósito e só marca “Pago” após
+  conciliação bancária integral. Para movimentações V10, o resumo “Em
+  processamento” usa o valor líquido realmente encaminhado depois da
+  compensação; o cálculo V9 permanece inalterado.
+- A projeção administrativa local unifica V9 e V10: valores contratuais,
+  compensação e valor encaminhado são exibidos separadamente; “Pago” exige
+  confirmação bancária, conciliação concluída e alocação integral. O catálogo
+  e os e-mails financeiros usam linguagem de produto e não expõem nomes de
+  objetos, rotinas ou estados internos.
 - `payment_flow_version` e imutavel. Seletores semanais aceitam somente V9;
   Transfer V10 usa `transfer_origin=session_direct`, Charge original em
   `source_transaction` e nunca possui `payout_batch_item_id`.
@@ -511,9 +530,8 @@ Stripe pede sincronização e nunca marca onboarding como concluído.
 Documentos de contrato:
 
 - `docs/payments/session-financial-flow-v10-implementation-plan.md`: plano
-  aprovado; as Fases 1 e 2 estão implementadas somente no Docker/frontend
-  local, ainda sem ativação em HML ou produção. As fases posteriores incluem
-  cobrança em T-24 e execução do Transfer vinculado à Charge;
+  aprovado; Fases 1 a 6 homologadas localmente e canario da Fase 7 ativo em
+  HML, com estabilizacao ainda aberta. Producao nao foi alterada;
 - `docs/payments/therapist-finance-f0-f1.md`;
 - `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
 - `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;

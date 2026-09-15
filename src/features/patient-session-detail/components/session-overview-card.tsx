@@ -310,6 +310,10 @@ function getRoomLabel(data: PatientSessionDetailPageData) {
 }
 
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
+  if (data.paymentRecovery?.checkoutAvailable) {
+    return "O pagamento não foi concluído. Continue para tentar novamente e confirmar o horário.";
+  }
+
   const isRetryableInterruptedPayment =
     data.booking.status === BookingStatus.CancelledByPayment &&
     data.encounterState.payment.retryAllowed &&
@@ -330,6 +334,18 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
 function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   const supportHref =
     `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+  const paymentRetryHref =
+    `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>;
+
+  if (data.paymentRecovery?.checkoutAvailable) {
+    return {
+      href: paymentRetryHref,
+      kind: "retry_payment",
+      label: "Continuar pagamento",
+      variant: "primary",
+    };
+  }
+
   const isPaymentRecovery =
     data.booking.status === BookingStatus.CancelledByPayment &&
     (data.encounterState.payment.kind === "failed" ||
@@ -337,7 +353,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
 
   if (isPaymentRecovery && data.encounterState.payment.retryAllowed) {
     return {
-      href: `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>,
+      href: paymentRetryHref,
       kind: "retry_payment",
       label: "Tentar pagamento novamente",
       variant: "primary",

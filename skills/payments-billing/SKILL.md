@@ -58,7 +58,16 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   the full customer refund succeeds. Ambiguous provider outcomes require
   reconciliation, never a blind retry. Provider-originated partial refunds
   remain observable for manual analysis but are not offered by TES. The real
-  Stripe Test, webhook and authenticated admin-browser gates remain open.
+  Stripe Test, signed webhook delivery and authenticated admin-browser gates
+  for the local full-refund path were exercised in Phase 5. Phase 6 is also
+  closed locally: therapist and admin projections merge V9/V10 without
+  duplication, show contractual amount, debt compensation and bank-bound
+  amount separately, and reserve `Pago` for a fully reconciled bank payout.
+  This does not authorize HML or production activation.
+  Payment-recovery messages must cover both bank confirmation and card
+  replacement without claiming a definitive decline. Never expose provider
+  object names, policy nicknames, scheduler names or architecture terms in
+  customer, therapist or administrator UI and e-mail copy.
   Never infer authorization to issue a Refund from a webhook or treat a
   partial reversal as a fully reversed Transfer.
 - The TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
@@ -81,6 +90,12 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- When a worker persists a Stripe object before the signed webhook arrives, it
+  must use the provider object's own `created` instant as the event instant.
+  Never use the worker's local clock as Stripe event authority: doing so can
+  make the later signed event look stale and prevent enrichment of payment
+  method, receipt and balance-transaction evidence. A missing or invalid
+  provider instant must fail closed and enter the existing retry path.
 - For a V10 charge incomplete at session start, retrieve Stripe state before
   releasing the booking. Reconcile a late success, keep `processing` fail-closed
   with an incident, and close only a never-created or canceled PaymentIntent.
@@ -106,6 +121,14 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Applying or removing a code replaces the Checkout Session. Non-success
   events from superseded attempts cannot mutate the current session payment;
   a real paid older attempt remains authoritative and closes siblings.
+- An expired V10 Checkout retry must honor the explicit `payment_retry` mode;
+  never infer an initial hold merely because the booking was already reopened.
+  Replacing the terminal current Checkout is allowed only through the
+  idempotent V10 retry command. If that command reopened the booking before a
+  provider or persistence failure, a repeated call may resume only while the
+  current attempt is terminal and unclaimed and no succeeded setup, active
+  schedule, PaymentIntent, Charge, transfer job or Transfer exists. The
+  authenticated retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
@@ -200,6 +223,11 @@ Never expose, log, screenshot, or write real secret values.
 5. Start Stripe listener: `npm run payments:webhooks:listen` only when the
    combined command from step 3 is not already running.
 6. Validate Test Mode destinations: `npm run payments:webhooks:verify:test`.
+   For the linked HML project, use the read-only verifier with
+   `--target=test --project-ref=emzwqkmrryuqvqiohqnu` and load
+   `supabase/functions/.env.homolog` only in that process. Matching the event
+   names alone is insufficient: require the exact HTTPS Supabase host and
+   Function path. Never run the configuration script as an audit.
 7. Validate env: `npm run payments:env`.
 8. Sync catalog: `npm run payments:catalog:sync`.
 9. Verify catalog: `npm run payments:catalog:verify`.

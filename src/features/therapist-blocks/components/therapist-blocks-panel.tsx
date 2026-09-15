@@ -20,7 +20,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TESDialog } from "@/components/tes";
 import {
@@ -72,11 +72,19 @@ export function TherapistBlocksPanel({
   const [createOpen, setCreateOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<TherapistBlock | null>(null);
   const [command, setCommand] = useState<CommandState>({ status: "idle" });
+  const [scheduleVersion, setScheduleVersion] = useState(
+    initialData.scheduleVersion,
+  );
+  const commandInFlightRef = useRef(false);
   const [paidConflicts, setPaidConflicts] = useState<
     TherapistPaidBlockConflict[]
   >([]);
   const [search, setSearch] = useState(searchParams.get("busca") ?? "");
   const [viewType, setViewType] = useState<ViewType>("all");
+
+  useEffect(() => {
+    setScheduleVersion(initialData.scheduleVersion);
+  }, [initialData.scheduleVersion]);
 
   const activeServices = useMemo(
     () => services.filter((service) => service.status === "active"),
@@ -129,6 +137,9 @@ export function TherapistBlocksPanel({
   }
 
   async function runCommand(body: Record<string, unknown>) {
+    if (commandInFlightRef.current) return false;
+
+    commandInFlightRef.current = true;
     setCommand({ status: "saving" });
 
     try {
@@ -141,12 +152,28 @@ export function TherapistBlocksPanel({
         data?: {
           impactedBookingCount?: number;
           paidImpactedBookings?: TherapistPaidBlockConflict[];
+          scheduleVersion?: number;
         };
-        error?: { message?: string };
+        error?: { code?: string; message?: string };
         ok?: boolean;
       } | null;
 
       if (!response.ok || !payload?.ok) {
+        const scheduleChanged =
+          response.status === 409 ||
+          payload?.error?.code === "schedule_version_conflict";
+
+        if (scheduleChanged) {
+          setCancelTarget(null);
+          setCommand({
+            message:
+              "Sua agenda mudou enquanto esta tela estava aberta. Atualizamos os horários; revise o bloqueio e tente novamente.",
+            status: "error",
+          });
+          router.refresh();
+          return false;
+        }
+
         setCommand({
           message:
             payload?.error?.message ??
@@ -157,6 +184,13 @@ export function TherapistBlocksPanel({
       }
 
       const impacted = payload.data?.impactedBookingCount ?? 0;
+      const nextScheduleVersion = payload.data?.scheduleVersion;
+      if (
+        Number.isInteger(nextScheduleVersion) &&
+        Number(nextScheduleVersion) > 0
+      ) {
+        setScheduleVersion(Number(nextScheduleVersion));
+      }
       if (body.action === "create") {
         setPaidConflicts(payload.data?.paidImpactedBookings ?? []);
       }
@@ -175,6 +209,8 @@ export function TherapistBlocksPanel({
         status: "error",
       });
       return false;
+    } finally {
+      commandInFlightRef.current = false;
     }
   }
 
@@ -187,7 +223,7 @@ export function TherapistBlocksPanel({
             aria-label="Novo bloqueio"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 text-sm font-extrabold text-white shadow-float transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             onClick={() => {
-            setCommand({ status: "idle" });
+              setCommand({ status: "idle" });
               setPaidConflicts([]);
               setCreateOpen(true);
             }}
@@ -322,7 +358,7 @@ export function TherapistBlocksPanel({
             const saved = await runCommand({
               action: "cancel",
               blockId: cancelTarget.id,
-              expectedScheduleVersion: initialData.scheduleVersion,
+              expectedScheduleVersion: scheduleVersion,
               requestId: crypto.randomUUID(),
               scope,
             });
@@ -377,7 +413,10 @@ function PaidBlockConflictDialog({
       title="Atenção: há sessões pagas neste horário"
     >
       <div className="grid gap-5">
-        <div className="flex items-start gap-3 rounded-xl border-2 border-status-warning bg-status-warningBg p-4" role="alert">
+        <div
+          className="flex items-start gap-3 rounded-xl border-2 border-status-warning bg-status-warningBg p-4"
+          role="alert"
+        >
           <AlertTriangle
             aria-hidden="true"
             className="mt-0.5 shrink-0 text-status-warning"
@@ -402,7 +441,12 @@ function PaidBlockConflictDialog({
                 {conflict.serviceTitle}
               </p>
               <time className="mt-2 block text-sm font-extrabold text-brand-primary">
-                {formatBlockDate(conflict.startsAt, conflict.timezone)} · {formatBlockTime(conflict.startsAt, conflict.endsAt, conflict.timezone)}
+                {formatBlockDate(conflict.startsAt, conflict.timezone)} ·{" "}
+                {formatBlockTime(
+                  conflict.startsAt,
+                  conflict.endsAt,
+                  conflict.timezone,
+                )}
               </time>
             </li>
           ))}

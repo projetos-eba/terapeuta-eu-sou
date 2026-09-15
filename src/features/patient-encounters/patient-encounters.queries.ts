@@ -186,7 +186,7 @@ async function getSupabasePatientEncountersPage(
     getRowsByIds<SessionPaymentRecord>(
       config,
       "session_payments",
-      "booking_id,financial_status",
+      "booking_id,financial_status,payment_flow_version",
       bookingIds,
       "booking_id",
     ),

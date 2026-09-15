@@ -41,6 +41,7 @@ function makeInput(
       ) =>
         options.onCreate?.(params, opts.idempotencyKey) ?? {
           id: "pi_test_t24",
+          created: 1789437600,
           amount: 17000,
           currency: "brl",
           customer: "cus_test_patient",
@@ -97,6 +98,7 @@ Deno.test(
     assertEquals(calls[1].name, "record_session_payment_intent_v10");
     assertEquals(calls[1].body.p_session_payment_id, claim.sessionPaymentId);
     assertEquals(calls[1].body.p_booking_version, 2);
+    assertEquals(calls[1].body.p_event_created_at, "2026-09-15T02:00:00.000Z");
   },
 );
 
@@ -106,6 +108,7 @@ Deno.test(
     const { input, calls } = makeInput({
       onCreate: () => ({
         id: "pi_test_action",
+        created: 1789437600,
         amount: 17000,
         currency: "brl",
         customer: "cus_test_patient",
@@ -139,6 +142,30 @@ Deno.test(
     assertEquals(result.retryScheduled, 1);
     assertEquals(calls[1].name, "fail_session_payment_schedule_attempt_v10");
     assertEquals(calls[1].body.p_error_code, "stripe_state_unknown");
+  },
+);
+
+Deno.test(
+  "a successful intent without a provider creation instant fails closed",
+  async () => {
+    const { input } = makeInput({
+      onCreate: () => ({
+        id: "pi_test_missing_created",
+        amount: 17000,
+        currency: "brl",
+        customer: "cus_test_patient",
+        payment_method: "pm_test_booking_bound",
+        latest_charge: "ch_test_missing_created",
+        status: "succeeded",
+      }),
+      onRecord: (name) =>
+        name === "fail_session_payment_schedule_attempt_v10"
+          ? { status: "retry_scheduled" }
+          : { scheduleStatus: "paid" },
+    });
+    const result = await runSessionChargeWorker(input);
+    assertEquals(result.retryScheduled, 1);
+    assertEquals(result.paid, 0);
   },
 );
 

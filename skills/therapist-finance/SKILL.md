@@ -84,8 +84,19 @@ recebimento`; provider and reconciliation terminology stays in the service
   boundary and is translated into a clear next step.
 - Nunca expor no front-end explicações de arquitetura ou do fluxo interno,
   incluindo nomes de jobs, webhooks, read models, gates, Balance Transaction,
-  cutoff ou `source_transaction`. Mostrar apenas o status financeiro útil, seu
-  impacto e uma ação quando ela realmente existir.
+  cutoff, `source_transaction` ou identificadores Stripe de Transfer/Charge.
+  Mostrar apenas o status financeiro útil, seu impacto e uma ação quando ela
+  realmente existir. O histórico paginado deve unir lotes V9 e repasses
+  diretos V10 sem duplicar itens: uma lista de lotes vazia nunca prova ausência
+  de repasses V10. Compensação total não aparece como depósito; compensação
+  parcial mostra separadamente o valor compensado e o valor enviado. Nos cards
+  e na linha do tempo, o V10 em processamento deve somar o valor efetivamente
+  enviado depois da compensação, enquanto a posição V9 mantém sua regra
+  histórica.
+- O painel administrativo deve aplicar a mesma projeção bancária a V9 e V10:
+  mostrar separadamente valor previsto, compensação e valor encaminhado, usar
+  `A caminho do banco` antes da conciliação integral e não confundir a data de
+  confirmação do pagamento do cliente com a data do depósito ao terapeuta.
 - Sem base financeira deve aparecer como `Sem dados` em textos e `-` em
   números. Zero só deve ser mostrado quando houver movimentação real no
   período.

@@ -544,6 +544,7 @@ describe("TherapistProfileEditorPage", () => {
   });
 
   it("explains missing required fields before the first profile publication", async () => {
+    vi.useFakeTimers();
     render(
       <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
     );
@@ -562,9 +563,10 @@ describe("TherapistProfileEditorPage", () => {
       "Preencha sua essência antes de publicar.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
-    await waitFor(() =>
-      expect(screen.getByLabelText("Minha essência")).toHaveFocus(),
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByLabelText("Minha essência")).toHaveFocus();
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 

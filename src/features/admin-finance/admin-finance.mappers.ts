@@ -46,6 +46,11 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
         formatCurrency(row.therapist_amount_cents, row.currency),
       ),
       field(
+        "Compensação",
+        formatPositiveCurrency(row.debt_offset_amount_cents, row.currency),
+      ),
+      field("Valor encaminhado", formatEffectiveTransferAmount(row)),
+      field(
         "Custos da plataforma",
         formatCurrency(row.platform_gross_commission_cents, row.currency),
       ),
@@ -166,6 +171,14 @@ function getDetailSections(
           formatCurrency(record.therapist_amount_cents, record.currency),
         ),
         field(
+          "Compensação",
+          formatPositiveCurrency(
+            record.debt_offset_amount_cents,
+            record.currency,
+          ),
+        ),
+        field("Valor encaminhado", formatEffectiveTransferAmount(record)),
+        field(
           "Custos da plataforma",
           formatCurrency(
             record.platform_gross_commission_cents,
@@ -221,6 +234,7 @@ function getDetailSections(
         field("Transferências", formatCount(record.transfer_count)),
         field("Lançamentos", formatCount(record.ledger_entry_count)),
         field("Elegível em", formatDate(record.eligible_at)),
+        field("Pago ao banco em", formatDate(record.bank_paid_at)),
       ]),
       timestampSection(record),
     ];
@@ -299,7 +313,7 @@ function timestampSection(record: UnknownRecord) {
   return section("Rastreabilidade", [
     field("Criado em", formatDate(record.created_at)),
     field("Atualizado em", formatDate(record.updated_at)),
-    field("Pago em", formatDate(record.paid_at)),
+    field("Pagamento confirmado em", formatDate(record.paid_at)),
     field("Falhou em", formatDate(record.failed_at)),
     field("Cancelado em", formatDate(record.canceled_at)),
   ]);
@@ -342,7 +356,7 @@ export function formatTransferStatus(value: unknown) {
     not_eligible: "Ainda não elegível",
     reversed: "Repasse revertido",
     transfer_pending: "Em processamento",
-    transferred: "Transferido",
+    transferred: "A caminho do banco",
     waiting_confirmation: "Aguardando confirmação",
     waiting_safety_period: "Em liquidação",
     waiting_settlement: "Em liquidação",
@@ -354,6 +368,25 @@ export function formatTransferStatus(value: unknown) {
 function formatPaymentTransferStatus(record: UnknownRecord) {
   const financialStatus = asText(record.financial_status).trim().toLowerCase();
   const transferStatus = asText(record.transfer_status).trim().toLowerCase();
+  const payoutDisplayStatus = asText(record.payout_display_status)
+    .trim()
+    .toLowerCase();
+
+  const payoutLabels: Record<string, string> = {
+    bank_pending: "A caminho do banco",
+    compensated: "Compensado",
+    compensation_pending: "Valor a compensar",
+    failed: "Falhou",
+    needs_review: "Em análise",
+    paid: "Pago",
+    processing: "Em processamento",
+    refunded: "Repasse encerrado",
+    reversed: "Repasse revertido",
+  };
+
+  if (payoutDisplayStatus && payoutLabels[payoutDisplayStatus]) {
+    return payoutLabels[payoutDisplayStatus];
+  }
 
   if (financialStatus === "refunded") {
     if (transferStatus === "reversed") return "Repasse revertido";
@@ -405,6 +438,28 @@ function formatCurrency(amount: unknown, currency: unknown) {
     currency: currencyCode.toUpperCase(),
     style: "currency",
   }).format(amount / 100);
+}
+
+function formatPositiveCurrency(amount: unknown, currency: unknown) {
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
+    return "";
+  }
+
+  return formatCurrency(amount, currency);
+}
+
+function formatEffectiveTransferAmount(record: UnknownRecord) {
+  if (
+    typeof record.transfer_effective_amount_cents !== "number" ||
+    !Number.isFinite(record.transfer_effective_amount_cents)
+  ) {
+    return "";
+  }
+
+  return formatCurrency(
+    record.transfer_effective_amount_cents,
+    record.currency,
+  );
 }
 
 function formatPeriod(start: unknown, end: unknown) {
@@ -487,7 +542,10 @@ function mapFinanceEvent(
       createdAt: asText(event.occurred_at) || asText(event.recorded_at),
       id: asText(event.id),
       kind,
-      subtitle: asText(event.direction) === "credit" ? "Entrada registrada" : "Saída registrada",
+      subtitle:
+        asText(event.direction) === "credit"
+          ? "Entrada registrada"
+          : "Saída registrada",
       title: financialEventLabel(asText(event.entry_type)),
     };
   }

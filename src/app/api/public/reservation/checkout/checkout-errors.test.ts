@@ -18,4 +18,28 @@ describe("mapCheckoutError", () => {
       mapCheckoutError({ code: "booking_conflict", status: 409 }).code,
     ).toBe("SLOT_CONFLICT");
   });
+
+  it.each([
+    "booking_not_payable",
+    "checkout_already_confirming",
+    "checkout_replacement_conflict",
+    "checkout_replacement_forbidden",
+    "checkout_replacement_required",
+  ])("does not describe %s as an unavailable time", (code) => {
+    expect(mapCheckoutError({ code, status: 409 })).toEqual({
+      code: "PAYMENT_UPDATED",
+      message:
+        "O pagamento foi atualizado. Confira a situação antes de tentar novamente.",
+    });
+  });
+
+  it("describes an expired reservation without exposing implementation terms", () => {
+    expect(
+      mapCheckoutError({ code: "reservation_expired", status: 409 }),
+    ).toEqual({
+      code: "RESERVATION_EXPIRED",
+      message:
+        "O prazo desta reserva terminou. Verifique a situação para continuar.",
+    });
+  });
 });

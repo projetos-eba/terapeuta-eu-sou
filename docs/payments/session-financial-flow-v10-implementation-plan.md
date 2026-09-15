@@ -1,13 +1,13 @@
 # Plano de implementação do fluxo financeiro de sessões V10
 
-| Campo              | Valor                                                                                                                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status             | **Aprovado para implementação**                                                                                                                                                                       |
-| Política           | `tes-payments-v10-setup-t24-immediate-transfer`                                                                                                                                                       |
-| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 5 estão implementadas e homologadas somente no ambiente local; a Fase 6 está em andamento. Nenhuma etapa V10 está ativada em HML ou produção. |
-| Atualização        | Setembro de 2026                                                                                                                                                                                      |
-| Meios de pagamento | Cartões de crédito e débito aceitos pela Stripe para a conta TES no Brasil                                                                                                                            |
-| Modelo Connect     | Separate Charges and Transfers, em BRL                                                                                                                                                                |
+| Campo              | Valor                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status             | **Aprovado para implementação**                                                                                                                                                                                                                                                                                                                                                  |
+| Política           | `tes-payments-v10-setup-t24-immediate-transfer`                                                                                                                                                                                                                                                                                                                                  |
+| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 6 estão implementadas e homologadas localmente. Na Fase 7, os canários de cobrança agendada e imediata foram aprovados em HML, inclusive após as correções publicadas. A confirmação bancária do canário, a drenagem segura das obrigações V9 e a estabilização observada permanecem abertas. Produção não foi alterada. |
+| Atualização        | Setembro de 2026                                                                                                                                                                                                                                                                                                                                                                 |
+| Meios de pagamento | Cartões de crédito e débito aceitos pela Stripe para a conta TES no Brasil                                                                                                                                                                                                                                                                                                       |
+| Modelo Connect     | Separate Charges and Transfers, em BRL                                                                                                                                                                                                                                                                                                                                           |
 
 ## 1. Objetivo
 
@@ -37,19 +37,89 @@ representáveis para auditoria, mas o comando TES não os oferece. O gate local
 foi fechado com uma cobrança de cartão fora da sessão do navegador, repasse
 vinculado de 85%, recuperação integral do repasse, reembolso integral, entrega
 assinada dos eventos e navegação autenticada de administrador, paciente e
-terapeuta. A Fase 6 foi iniciada com a adequação dos estados terminais e da
-linguagem dessas páginas.
+terapeuta. A Fase 6 foi concluída localmente com a adequação dos estados
+terminais, dos read models V9/V10, das métricas, das páginas e da comunicação.
 A leitura local já distingue a compensação total de um depósito:
 o item aparece como “Compensado”, com líquido bancário zero, sem inflar os
-totais em processamento nem o gráfico. A consistência dos demais read models
-financeiros V9/V10 e de toda comunicação continua na Fase 6. As
+totais em processamento nem o gráfico. A migration local
+`20260914190000_merge_v10_direct_transfer_payout_history.sql` unifica lotes V9
+e repasses diretos V10 na paginação, sem duplicar valores, sem tratar
+compensação total como depósito e sem enviar identificadores da Stripe ao
+navegador. “Pago” continua exigindo a confirmação bancária integralmente
+conciliada; uma movimentação apenas criada permanece “A caminho do banco”. A
+migration local
+`20260914193000_fix_v10_payout_processing_after_offsets.sql` faz o card e a
+linha do tempo “Em processamento” usarem, no V10, o valor efetivamente enviado
+depois de compensações, sem alterar a posição histórica V9. A homologação no
+IAB confirmou um cenário determinístico de R$ 100,00 bruto, R$ 15,00 de custos
+da plataforma, R$ 10,00 de compensação e R$ 75,00 a caminho do banco; resumo,
+linha do tempo, filtro e histórico exibiram os mesmos R$ 75,00, sem
+identificadores do provedor nem linguagem interna.
+A migration local
+`20260914200000_session_financial_flow_v10_admin_projection.sql` incorpora ao
+painel administrativo o estado bancário, a compensação e o valor efetivamente
+encaminhado. A migration complementar
+`20260914201500_unify_admin_payout_projection_v9_v10.sql` aplica a mesma
+semântica segura ao histórico V9: “Pago” exige repasse bancário conciliado e
+alocado integralmente; uma movimentação criada permanece “A caminho do banco”.
+No IAB autenticado, lista e detalhe administrativos exibiram separadamente
+R$ 85,00 previstos, R$ 10,00 compensados e R$ 75,00 encaminhados. A data do
+pagamento do cliente ficou explicitamente separada da data de pagamento ao
+banco. O catálogo de e-mails, a recuperação de pagamento e os alertas
+financeiros foram revisados para usar somente linguagem de produto, inclusive
+quando o banco exige confirmação ou outro cartão.
+A
+migration local
+`20260914183000_session_financial_flow_v10_feedback_projection.sql` separa
+o estado das confirmações bilaterais do envio do repasse V10 e impede que a
+elegibilidade semanal V9 reclassifique um pagamento V10; a trilha de relato
+negativo e resolução administrativa está coberta por regressão de banco, mas
+os read models, métricas e comunicações correspondentes foram cobertos pelo
+gate local da Fase 6.
+Em 14/09/2026, os três destinos webhook ativos de HML foram conferidos na
+Stripe Test e apontam para o host exato do projeto de homologação, com matrizes
+de 27 eventos da plataforma, 8 eventos Connect snapshot e 11 eventos Accounts
+v2 thin. Na Fase 7, a entrega assinada do `checkout.session.completed` de uma
+reserva V10 futura foi observada, com SetupIntent vinculado à reserva e agenda
+de cobrança criada sem antecipação do pagamento. A configuração dos destinos,
+isoladamente, não substitui a evidência de cada evento crítico do fluxo.
+Em 15/09/2026, um segundo canário avançado de forma controlada comprovou uma
+cobrança de R$ 123,00, exatamente um Transfer de R$ 104,55, conta conectada
+congelada correta e vínculo com a Charge original. O evento assinado
+`payment_intent.succeeded` foi entregue sem pendência e registrado uma única
+vez no HML. A homologação também revelou que o worker persistia o horário local
+de execução como se fosse o horário do provedor; o evento assinado, criado
+antes, era então descartado como antigo e não completava meio de pagamento,
+recibo e evidência de liquidação. A correção usa o instante `created` do próprio
+PaymentIntent e falha fechado se ele estiver ausente ou inválido. A correção
+foi publicada e revalidada em HML: os dois canários passaram a projetar o meio
+de pagamento, processaram o evento assinado sem pendência e preservaram uma
+única cobrança e um único Transfer.
+O mesmo ciclo de homologação encontrou uma navegação circular no reingresso de
+um Checkout expirado: a tela de sucesso enviava para a área de encontros, mas a
+lista voltava à tela de sucesso e o detalhe não oferecia a ação já autorizada
+pela RPC. A correção faz a lista abrir o detalhe canônico e só mostra
+`Continuar pagamento` quando a resposta autenticada contém `canRetry=true` para
+o mesmo booking. Depois da publicação, o IAB autenticado confirmou em HML a
+ação, a mensagem simples e a URL correta, sem criar outra tentativa financeira
+durante a leitura.
+As
 rotas legadas de cancelamento e reagendamento delegam os casos V10 pré-cobrança
 aos comandos transacionais próprios e recusam as demais mutações V10 com
-orientação ao suporte. Nenhum
-cron V10 foi ativado. HML e produção continuam operando conforme a política V9
-até ativação explícita, testada e autorizada do V10.
+orientação ao suporte. Em HML, a política V10 e os workers de cobrança e repasse
+estão ativos para novas reservas. A política e o scheduler V9 foram desativados
+para novas aquisições, mas os registros e as obrigações históricas V9 permanecem
+preservados para reconciliação e drenagem controlada. Produção não foi alterada.
 A existência deste arquivo não autoriza deploy, alteração remota, execução de
 cron ou movimentação financeira.
+
+O artefato de ativação dos workers V10 está versionado em
+`supabase/schedules/session-financial-flow-v10.sql`. Ele registra, com
+pré-condições de Vault e política ativa, os jobs de um minuto para
+`process-session-charges` e `process-session-transfers`. O script não é uma
+migration e não é executado no reset do Docker. Em HML, sua execução foi
+autorizada e validada na Fase 7; produção continua condicionada a autorização
+operacional separada.
 
 ## 2. Decisão financeira aprovada
 
@@ -857,6 +927,14 @@ Evidências locais do gate:
 
 ### Fase 6 — Read models, métricas, páginas e comunicação
 
+Status local em setembro de 2026: concluída e homologada no Docker, nas suítes
+automatizadas e no IAB autenticado. O histórico financeiro do terapeuta e o
+painel administrativo conciliam V9 e V10 sem duplicidade, mostram compensação
+e valor bancário efetivo separadamente e só usam “Pago” após confirmação
+bancária integral. Comunicações de pagamento que exigem participação do
+cliente orientam a confirmação com o banco ou a troca do cartão sem expor
+nomes internos. Este fechamento é exclusivamente local.
+
 Entregas:
 
 - atualizar DTOs/RPCs de paciente, terapeuta e admin;
@@ -869,11 +947,60 @@ Entregas:
 Gate de saída:
 
 - nenhuma soma duplicada entre V9 e V10;
+- compensações V10 reduzem o valor em processamento pelo montante efetivamente
+  encaminhado, sem reescrever a posição V9;
 - páginas preservam layout e responsividade existentes;
 - nenhum termo técnico aparece para usuário final;
 - acessibilidade, estados vazios, loading e erros honestos validados.
 
 ### Fase 7 — Homologação, rollout e estabilização
+
+Status em setembro de 2026: canário V10 ativado em HML com autorização
+operacional. Migrations e bundles publicados foram comparados com o repositório,
+os workers V10 estão ativos, a aquisição V9 foi desativada e uma reserva futura
+com cartão de teste comprovou SetupIntent por reserva, entrega assinada do
+webhook e agenda de cobrança sem cobrança antecipada. No vencimento T-24, o
+cron criou uma única cobrança e o Transfer único de 85%, com destino congelado
+e vínculo com a Charge original. Uma segunda reserva a menos de 24 horas
+comprovou a cobrança imediata e o mesmo contrato de Transfer. As correções de
+reingresso de Checkout expirado e de precedência temporal do evento foram
+publicadas e revalidadas: o meio de pagamento é projetado, os eventos não têm
+pendências e a retomada aparece somente quando autorizada pelo servidor. O
+Payout bancário do canário, a drenagem das obrigações V9 e o período de
+estabilização continuam como gates abertos. Produção não foi alterada.
+
+Evidências do canário HML de 15/09/2026:
+
+- a cobrança e o Transfer foram criados uma única vez, sem duplicidade na
+  repetição do observador;
+- a divisão foi exata: R$ 123,00 bruto, R$ 18,45 de custos da plataforma e
+  R$ 104,55 encaminhados ao terapeuta;
+- o Transfer usou a conta conectada congelada e a Charge original;
+- a tela do paciente mostrou encontro confirmado, pagamento confirmado e sala
+  indisponível até a janela de entrada;
+- as telas do terapeuta e do administrador mostraram o valor como “A caminho
+  do banco”, sem marcar o repasse como pago antes do Payout;
+- o evento assinado de pagamento foi entregue e processado uma única vez; após
+  a correção publicada, o meio de pagamento e a cobrança aparecem na projeção
+  sem pendências;
+- a tentativa expirada abre o detalhe autenticado e oferece a opção de
+  continuar o pagamento somente quando o servidor autoriza a mesma reserva;
+- uma reserva a menos de 24 horas confirmou cobrança imediata, exatamente um
+  Transfer e os mesmos valores nas telas de cliente, terapeuta e administrador;
+- a tabela interna do `pg_cron` não ficou exposta à leitura remota, mas a
+  execução funcional no minuto exato do vencimento e no minuto seguinte
+  comprovou os dois jobs ativos na cadência de um minuto, sem duplicar cobrança
+  ou Transfer;
+- a Stripe Test informou disponibilidade do valor encaminhado em 22/09/2026;
+  até essa data, o canário permanece corretamente a caminho do banco. Um Payout
+  anterior ao canário não é aceito como evidência de sua conciliação.
+
+O observador somente leitura `npm run payments:v10:observe:hml --
+--booking-id=<uuid>` confirma, sem imprimir identificadores Stripe, o estado do
+booking, pagamento, Checkout, SetupIntent, agenda, jobs e Transfers de uma
+reserva canário. Antes de qualquer avanço temporal controlado, ele também exige
+evidência operacional de que o canário é o único item devido no instante e de
+que não existem outros fechamentos ou jobs de Transfer que seriam atingidos.
 
 Entregas:
 

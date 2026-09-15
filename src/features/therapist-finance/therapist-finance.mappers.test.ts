@@ -449,10 +449,12 @@ describe("therapist finance mappers", () => {
       items: [
         {
           blockedReason: null,
+          debtOffsetAmountCents: 0,
           expectedTransferAt: "2026-07-30T12:00:00.000Z",
           failedReason: null,
           grossAmountCents: 10000,
           payoutBatchId: "batch-1",
+          payoutItemId: "batch-1",
           periodEnd: "2026-07-05",
           periodStart: "2026-07-01",
           reconciliationStatus: "paid",
@@ -461,6 +463,7 @@ describe("therapist finance mappers", () => {
           sessionCount: 1,
           stripeSourceChargeId: "ch_test",
           stripeTransferId: "tr_test",
+          sourceKind: "weekly_batch",
           tesCommissionCents: 2000,
           therapistNetAmountCents: 8000,
           transferredAt: "2026-07-30T13:00:00.000Z",
@@ -490,6 +493,7 @@ describe("therapist finance mappers", () => {
     expect(payouts.items[0]?.therapistNetAmountCents).toBe(8000);
     expect(payouts.items[0]?.refundedAmountCents).toBe(0);
     expect(payouts.items[0]?.reconciliationStatus).toBe("paid");
+    expect(payouts.items[0]?.sourceKind).toBe("weekly_batch");
     expect(payouts.summary.blockedReasonCodes).toEqual(["account", "refund"]);
   });
 

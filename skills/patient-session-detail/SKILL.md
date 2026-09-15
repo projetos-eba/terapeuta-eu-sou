@@ -149,6 +149,14 @@ anotação.
   horário após a autorização e a revalidação autoritativa. Depois do início,
   o detalhe oferece `Escolher outro horário` no perfil do terapeuta em vez de
   tentar reutilizar o booking encerrado.
+- Quando uma tentativa V10 expirar, a lista de encontros deve abrir este
+  detalhe canônico, nunca retornar à tela de sucesso expirada. O detalhe exibe
+  `Continuar pagamento` somente se
+  `get_patient_reservation_retry_context_v1` devolver `canRetry=true` para o
+  mesmo booking autenticado; erro, ausência, divergência ou resposta
+  inconclusiva falham fechado. A ação usa exclusivamente
+  `/reserva?booking=<uuid>&etapa=pagamento` e a interface não expõe nomes
+  internos do fluxo.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados

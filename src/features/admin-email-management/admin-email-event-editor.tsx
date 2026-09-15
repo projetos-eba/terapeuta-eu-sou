@@ -262,11 +262,11 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
             </span>
             <div>
               <h2 className="text-xl font-extrabold text-brand-deep">
-                Configuração do evento
+                Configuração da mensagem
               </h2>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                A disponibilidade e o conteúdo são aplicados somente a este
-                evento transacional.
+                A disponibilidade e o conteúdo são aplicados somente a esta
+                mensagem.
               </p>
             </div>
           </div>
@@ -276,16 +276,16 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <SwitchRow
             checked={draft.enabled}
-            description="Ao desabilitar, nenhum e-mail deste evento será enviado."
-            label="Evento habilitado"
+            description="Ao desabilitar, esta mensagem não será enviada."
+            label="Mensagem habilitada"
             onChange={(checked) => updateDraft({ enabled: checked })}
           />
           <SwitchRow
             checked={data.supportsAutomaticDispatch && draft.automatic}
             description={
               data.supportsAutomaticDispatch
-                ? "O e-mail é iniciado pelo fluxo autorizado da plataforma."
-                : "Este evento não possui gatilho automático. Envios só podem ocorrer pelo fluxo autorizado."
+                ? "O e-mail é enviado quando a situação correspondente é confirmada pela plataforma."
+                : "Esta mensagem não possui envio automático."
             }
             disabled={!data.supportsAutomaticDispatch}
             label="Envio automático"
@@ -295,7 +295,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <label className="grid gap-2 rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-extrabold text-brand-deep">
-            Remetente do evento
+            Remetente da mensagem
             <select
               className="min-h-11 w-full rounded-xl border border-brand-lavender bg-white px-3 text-sm font-semibold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20"
               onChange={(event) =>
@@ -324,21 +324,16 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
               />
               <div>
                 <h3 className="text-sm font-extrabold text-brand-deep">
-                  Destinatário resolvido pelo evento
+                  Destinatário definido automaticamente
                 </h3>
                 <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                  O paciente, profissional ou pessoa correspondente é
-                  identificado com segurança pelo sistema. Não é possível
-                  transformar este evento em um envio arbitrário.
+                  O TES identifica com segurança a pessoa que deve receber esta
+                  mensagem. O destinatário não pode ser alterado nesta tela.
                 </p>
               </div>
             </div>
           </div>
         </div>
-
-        <p className="mt-4 text-xs font-bold text-tesText-muted">
-          Identificador do evento: {data.actionKey}
-        </p>
       </AppPageSection>
 
       <AppPageGrid className="items-start xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -350,11 +345,12 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                   Mensagem principal
                 </h2>
                 <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Use o padrão da plataforma ou personalize somente este evento.
+                  Use o padrão da plataforma ou personalize somente esta
+                  mensagem.
                 </p>
               </div>
               <div
-                aria-label="Modo do template"
+                aria-label="Modo da mensagem"
                 className="inline-flex rounded-full border border-brand-lavender/70 bg-surface-soft p-1"
                 role="group"
               >
@@ -375,12 +371,12 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
 
             {templateMode === "default" ? (
               <div className="mt-5 rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                O template padrão já é resolvido pelo TES. Escolha
+                A mensagem padrão já está pronta. Escolha
                 <strong className="font-extrabold text-brand-deep">
                   {" "}
                   Personalizado
                 </strong>{" "}
-                para criar substituições apenas para este evento.
+                para criar uma versão exclusiva desta mensagem.
               </div>
             ) : null}
 
@@ -456,7 +452,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                 Conteúdo dinâmico permitido
               </h3>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                Estes tokens são resolvidos somente no contexto deste evento.
+                Estes campos são preenchidos somente para esta mensagem.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {data.allowedTokens.map((token) => {
@@ -502,10 +498,10 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
             </span>
             <div>
               <h2 className="text-xl font-extrabold text-brand-deep">
-                Preview seguro
+                Visualização
               </h2>
               <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-                Dados fictícios controlados
+                Dados fictícios para conferência
               </p>
             </div>
           </div>
@@ -517,8 +513,8 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                 className="mt-0.5 size-5 shrink-0 text-status-warning"
               />
               <p>
-                O preview não está disponível no momento. O conteúdo ainda será
-                validado ao salvar.
+                A visualização não está disponível no momento. O conteúdo ainda
+                será validado ao salvar.
               </p>
             </div>
           ) : (
@@ -535,11 +531,11 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                 className="mt-4 min-h-[480px] w-full rounded-[20px] border border-brand-lavender bg-white"
                 sandbox=""
                 srcDoc={preview.html}
-                title="Preview seguro do e-mail"
+                title="Visualização do e-mail"
               />
               {previewState === "loading" ? (
                 <p className="mt-3 text-sm font-semibold text-tesText-muted">
-                  Atualizando preview…
+                  Atualizando visualização…
                 </p>
               ) : null}
             </>
@@ -630,7 +626,7 @@ function EventStatus({ enabled }: { enabled: boolean }) {
           : "border-status-warning/30 bg-status-warningBg text-status-warning"
       }`}
     >
-      {enabled ? "Evento habilitado" : "Evento desabilitado"}
+      {enabled ? "Mensagem habilitada" : "Mensagem desabilitada"}
     </span>
   );
 }
@@ -664,9 +660,9 @@ function EditorLoading() {
     <AppPageContainer aria-busy="true" className="max-w-[1166px] py-5 lg:py-6">
       <AppPageHeader
         eyebrow="Configurações · E-mails"
-        title="Carregando evento"
+        title="Carregando mensagem"
       >
-        Preparando uma configuração segura para este evento.
+        Preparando a configuração desta mensagem.
       </AppPageHeader>
       <div className="h-96 animate-pulse rounded-card border border-brand-lavender/60 bg-surface-soft" />
     </AppPageContainer>
@@ -684,7 +680,7 @@ function EditorError({ message }: { message: string }) {
           </TESButton>
         }
         eyebrow="Configurações · E-mails"
-        title="Evento indisponível"
+        title="Mensagem indisponível"
       >
         Não foi possível abrir esta configuração de e-mail.
       </AppPageHeader>
@@ -727,5 +723,5 @@ function pickOverrides(draft: Draft): Overrides {
 function providerLabel(provider: ProviderKey) {
   return provider === "hostinger_mail_api"
     ? "Hostinger Mail"
-    : "Provider configurado";
+    : "Serviço de envio configurado";
 }

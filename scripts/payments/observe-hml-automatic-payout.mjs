@@ -50,9 +50,11 @@ const [transfer] = await get(
 );
 if (!transfer?.stripe_transfer_id)
   throw new Error("Canonical Stripe Transfer is missing.");
-const [batchItem] = await get(
-  `/rest/v1/payout_batch_items?select=id,payout_batch_id,status&id=eq.${encodeURIComponent(transfer.payout_batch_item_id)}&limit=1`,
-);
+const [batchItem] = transfer.payout_batch_item_id
+  ? await get(
+      `/rest/v1/payout_batch_items?select=id,payout_batch_id,status&id=eq.${encodeURIComponent(transfer.payout_batch_item_id)}&limit=1`,
+    )
+  : [];
 const [batch] = batchItem
   ? await get(
       `/rest/v1/payout_batches?select=id,status,item_count,therapist_count&id=eq.${encodeURIComponent(batchItem.payout_batch_id)}&limit=1`,
@@ -98,6 +100,14 @@ const providerAvailableOn = balanceTransaction?.available_on
 const automaticPayouts = providerPayouts.data.filter(
   (payout) => payout.automatic === true && payout.livemode === false,
 );
+const availableOnMillis = providerAvailableOn
+  ? Date.parse(providerAvailableOn)
+  : Number.NaN;
+const automaticPayoutsAfterAvailability = Number.isFinite(availableOnMillis)
+  ? automaticPayouts.filter(
+      (payout) => payout.created * 1000 >= availableOnMillis,
+    )
+  : [];
 const brlAvailable = sumCurrency(providerBalance.available, "brl");
 const brlPending = sumCurrency(providerBalance.pending, "brl");
 
@@ -120,6 +130,8 @@ console.log(
       ok: true,
       provider: {
         automaticPayoutCountObserved: automaticPayouts.length,
+        automaticPayoutCountAfterTransferAvailability:
+          automaticPayoutsAfterAvailability.length,
         brlAvailableCents: brlAvailable,
         brlPendingCents: brlPending,
         latestAutomaticPayout: automaticPayouts[0]
@@ -135,9 +147,11 @@ console.log(
       state:
         allocations.length === 1
           ? "reconciled"
-          : automaticPayouts.length > 0
-            ? "provider_payout_observed_waiting_local_reconciliation"
-            : "waiting_provider_automatic_payout",
+          : Number.isFinite(availableOnMillis) && availableOnMillis > Date.now()
+            ? "waiting_transfer_availability"
+            : automaticPayoutsAfterAvailability.length > 0
+              ? "provider_payout_observed_waiting_local_reconciliation"
+              : "waiting_provider_automatic_payout",
     },
     null,
     2,

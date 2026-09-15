@@ -288,8 +288,18 @@ function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
           {fields["Valor bruto"] || "—"}
         </p>
         <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-          Repasse: {fields["Repasse terapeuta"] || "—"}
+          Repasse previsto: {fields["Repasse terapeuta"] || "—"}
         </p>
+        {fields["Compensação"] ? (
+          <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+            Compensação: {fields["Compensação"]}
+          </p>
+        ) : null}
+        {fields["Valor encaminhado"] ? (
+          <p className="mt-1 text-xs font-semibold text-brand-primary">
+            Valor encaminhado: {fields["Valor encaminhado"]}
+          </p>
+        ) : null}
         <p className="mt-1 text-xs font-semibold text-tesText-muted">
           Custos da plataforma: {fields["Custos da plataforma"] || "—"}
         </p>
@@ -521,7 +531,7 @@ function paymentMetricDescription(metric: AdminFinanceMetric) {
     "failed-session-payments": "Pagamentos que precisam de acompanhamento.",
     "ledger-entries": "Movimentações preservadas no histórico financeiro.",
     "open-disputes": "Contestações que ainda aguardam encerramento.",
-    "open-payout-batches": "Repasses em preparação ou processamento.",
+    "open-payout-batches": "Valores em preparação ou a caminho do banco.",
     "paid-session-payments": "Pagamentos confirmados com segurança.",
     "pending-refunds": "Reembolsos que ainda aguardam conclusão.",
     "pending-session-payments": "Pagamentos que aguardam confirmação.",
