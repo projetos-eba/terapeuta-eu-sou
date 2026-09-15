@@ -232,6 +232,13 @@ revalidada no servidor antes do checkout.
   e não envia novo slot, preço ou hold. Retomada não mostra contador nem banner
   adicional sobre disponibilidade. Nunca abrir retry automaticamente quando a resposta de
   expiração estiver ausente, recusada ou inconclusiva.
+- A retomada envia `payment_retry` explicitamente e a Edge Function deve honrar
+  esse modo mesmo depois de o booking ter sido reaberto. Se uma falha ocorrer
+  entre essa reabertura e a persistência do Checkout substituto, a mesma URL
+  deve poder retomar idempotentemente apenas quando o servidor comprovar que a
+  tentativa atual é terminal e que não existe autorização, cobrança, agenda ou
+  repasse ativo. A página aceita somente o `canRetry` derivado pela RPC
+  autenticada; o navegador não infere essa permissão.
 - Evento expirado/falhado de tentativa superseded não pode cancelar a reserva;
   um pagamento real anterior ainda deve ser aceito uma única vez.
 - Um slot `2026-08-24T12:10:00.000Z` no timezone `America/Sao_Paulo` deve ser

@@ -16,6 +16,7 @@
     "dev:functions": "node scripts/start-local-functions.mjs",
     "dev:functions:webhooks": "node scripts/payments/stripe-listen-functions-local.mjs",
     "payments:v10:stripe-contract:test": "node --env-file=supabase/functions/.env scripts/payments/verify-session-v10-stripe-contract.mjs",
+    "payments:v10:observe:hml": "node scripts/payments/observe-session-v10-hml.mjs",
     "payments:v10:admin-refund:local": "node --env-file=supabase/functions/.env scripts/payments/verify-admin-full-refund-local.mjs",
     "test:auth:ui": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-ui-test.ps1",
     "test:auth:flows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-flow-tests.ps1",

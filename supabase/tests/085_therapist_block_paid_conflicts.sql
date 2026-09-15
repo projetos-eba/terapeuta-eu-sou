@@ -11,8 +11,8 @@ select ok(
 
 update public.bookings
 set
-  starts_at = ((current_date + 1)::date + time '10:00') at time zone 'America/Sao_Paulo',
-  ends_at = ((current_date + 1)::date + time '11:00') at time zone 'America/Sao_Paulo',
+  starts_at = ((current_date + 3651)::date + time '10:00') at time zone 'America/Sao_Paulo',
+  ends_at = ((current_date + 3651)::date + time '11:00') at time zone 'America/Sao_Paulo',
   status = 'confirmed'
 where id = 'f2000000-0000-4000-8000-000000000004';
 
@@ -27,12 +27,12 @@ select public.create_therapist_block_v2(
   'aaaaaaaa-0000-4000-8000-000000000001',
   'a4500000-0000-4000-8000-000000000001',
   'America/Sao_Paulo',
-  (current_date + 1)::date,
+  (current_date + 3651)::date,
   null,
   null,
   true,
   'none',
-  (current_date + 1)::date,
+  (current_date + 3651)::date,
   null,
   'personal',
   'Paid conflict contract'

@@ -230,6 +230,9 @@ verify_jwt = false
 [functions.prepare-session-charge-recovery]
 verify_jwt = false
 
+[functions.admin-full-session-refund-v10]
+verify_jwt = false
+
 [functions.retry-failed-payout-items]
 verify_jwt = false
 

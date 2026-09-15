@@ -1,13 +1,13 @@
 # Plano de implementação do fluxo financeiro de sessões V10
 
-| Campo              | Valor                                                                                                                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status             | **Aprovado para implementação**                                                                                                                                                                       |
-| Política           | `tes-payments-v10-setup-t24-immediate-transfer`                                                                                                                                                       |
-| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 6 estão implementadas e homologadas somente no ambiente local; a preparação local da Fase 7 foi iniciada. Nenhuma etapa V10 está ativada em HML ou produção. |
-| Atualização        | Setembro de 2026                                                                                                                                                                                      |
-| Meios de pagamento | Cartões de crédito e débito aceitos pela Stripe para a conta TES no Brasil                                                                                                                            |
-| Modelo Connect     | Separate Charges and Transfers, em BRL                                                                                                                                                                |
+| Campo              | Valor                                                                                                                                                                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status             | **Aprovado para implementação**                                                                                                                                                                                                                                              |
+| Política           | `tes-payments-v10-setup-t24-immediate-transfer`                                                                                                                                                                                                                              |
+| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 6 estão implementadas e homologadas localmente. O canário da Fase 7 está ativo em HML para novas reservas; a estabilização e a drenagem segura das obrigações V9 permanecem em andamento. Produção não foi alterada. |
+| Atualização        | Setembro de 2026                                                                                                                                                                                                                                                             |
+| Meios de pagamento | Cartões de crédito e débito aceitos pela Stripe para a conta TES no Brasil                                                                                                                                                                                                   |
+| Modelo Connect     | Separate Charges and Transfers, em BRL                                                                                                                                                                                                                                       |
 
 ## 1. Objetivo
 
@@ -76,27 +76,30 @@ elegibilidade semanal V9 reclassifique um pagamento V10; a trilha de relato
 negativo e resolução administrativa está coberta por regressão de banco, mas
 os read models, métricas e comunicações correspondentes foram cobertos pelo
 gate local da Fase 6.
-Em 14/09/2026, a Stripe Test foi consultada apenas em
-leitura: os três destinos webhook ativos de HML apontam para o host exato do
-projeto `emzwqkmrryuqvqiohqnu`, com matrizes de 27 eventos da plataforma, 8
-eventos Connect snapshot e 11 eventos Accounts v2 thin. Essa configuração não
-comprova, sozinha, entrega de cada evento após o futuro rollout V10.
+Em 14/09/2026, os três destinos webhook ativos de HML foram conferidos na
+Stripe Test e apontam para o host exato do projeto de homologação, com matrizes
+de 27 eventos da plataforma, 8 eventos Connect snapshot e 11 eventos Accounts
+v2 thin. Na Fase 7, a entrega assinada do `checkout.session.completed` de uma
+reserva V10 futura foi observada, com SetupIntent vinculado à reserva e agenda
+de cobrança criada sem antecipação do pagamento. A configuração dos destinos,
+isoladamente, não substitui a evidência de cada evento crítico do fluxo.
 As
 rotas legadas de cancelamento e reagendamento delegam os casos V10 pré-cobrança
 aos comandos transacionais próprios e recusam as demais mutações V10 com
-orientação ao suporte. Nenhum
-cron V10 foi ativado. HML e produção continuam operando conforme a política V9
-até ativação explícita, testada e autorizada do V10.
+orientação ao suporte. Em HML, a política V10 e os workers de cobrança e repasse
+estão ativos para novas reservas. A política e o scheduler V9 foram desativados
+para novas aquisições, mas os registros e as obrigações históricas V9 permanecem
+preservados para reconciliação e drenagem controlada. Produção não foi alterada.
 A existência deste arquivo não autoriza deploy, alteração remota, execução de
 cron ou movimentação financeira.
 
-O artefato local de ativação dos workers V10 está versionado em
+O artefato de ativação dos workers V10 está versionado em
 `supabase/schedules/session-financial-flow-v10.sql`. Ele registra, com
 pré-condições de Vault e política ativa, os jobs de um minuto para
 `process-session-charges` e `process-session-transfers`. O script não é uma
-migration, não é executado no reset do Docker e não desativa os jobs V9; sua
-execução em HML permanece condicionada aos gates da Fase 7 e à autorização
-operacional específica.
+migration e não é executado no reset do Docker. Em HML, sua execução foi
+autorizada e validada na Fase 7; produção continua condicionada a autorização
+operacional separada.
 
 ## 2. Decisão financeira aprovada
 
@@ -932,11 +935,23 @@ Gate de saída:
 
 ### Fase 7 — Homologação, rollout e estabilização
 
-Status em setembro de 2026: somente a preparação local foi iniciada. O Docker,
-as migrations, os testes e a navegação autenticada compõem o preflight local.
-Apontar o frontend para HML, ativar a política V10, implantar Functions,
-registrar agendas ou executar qualquer mutação remota permanece proibido até
-autorização operacional específica após o PR manual.
+Status em setembro de 2026: canário V10 ativado em HML com autorização
+operacional. Migrations e bundles publicados foram comparados com o repositório,
+os workers V10 estão ativos, a aquisição V9 foi desativada e uma reserva futura
+com cartão de teste comprovou SetupIntent por reserva, entrega assinada do
+webhook e agenda de cobrança sem cobrança antecipada. A retomada de um Checkout
+expirado revelou uma janela de falha parcial; a correção e suas migrations estão
+validadas somente no Docker/frontend local e aguardam PR manual antes de nova
+implantação em HML. A observação completa de cobrança T-24, Transfer vinculado,
+Payout bancário e drenagem das obrigações V9 ainda é gate aberto. Produção não
+foi alterada.
+
+O observador somente leitura `npm run payments:v10:observe:hml --
+--booking-id=<uuid>` confirma, sem imprimir identificadores Stripe, o estado do
+booking, pagamento, Checkout, SetupIntent, agenda, jobs e Transfers de uma
+reserva canário. Antes de qualquer avanço temporal controlado, ele também exige
+evidência operacional de que o canário é o único item devido no instante e de
+que não existem outros fechamentos ou jobs de Transfer que seriam atingidos.
 
 Entregas:
 
