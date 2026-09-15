@@ -49,6 +49,9 @@ export function FinancialPayoutsTab({
   payouts: TherapistPayoutsContract;
 }) {
   const hasRefunds = payouts.items.some((item) => item.refundedAmountCents > 0);
+  const hasDebtOffsets = payouts.items.some(
+    (item) => item.debtOffsetAmountCents > 0,
+  );
   const blockedReasons = payouts.summary.blockedReasonCodes
     .map(
       (reason) =>
@@ -202,6 +205,11 @@ export function FinancialPayoutsTab({
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Custos da plataforma
                     </th>
+                    {hasDebtOffsets ? (
+                      <th className="border-b border-brand-lavender py-3 pr-3">
+                        Compensação
+                      </th>
+                    ) : null}
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Reembolso
                     </th>
@@ -226,7 +234,7 @@ export function FinancialPayoutsTab({
                   {payouts.items.map((item) => (
                     <tr
                       className="text-sm font-bold text-brand-deep"
-                      key={item.payoutBatchId}
+                      key={item.payoutItemId}
                     >
                       <td className="border-b border-brand-lavender/70 py-4 pr-3">
                         {formatDate(item.periodStart)} -{" "}
@@ -241,6 +249,13 @@ export function FinancialPayoutsTab({
                       <td className="border-b border-brand-lavender/70 py-4 pr-3">
                         {formatCurrency(item.tesCommissionCents)}
                       </td>
+                      {hasDebtOffsets ? (
+                        <td className="border-b border-brand-lavender/70 py-4 pr-3">
+                          {item.debtOffsetAmountCents > 0
+                            ? formatCurrency(item.debtOffsetAmountCents)
+                            : "Sem compensação"}
+                        </td>
+                      ) : null}
                       <td className="border-b border-brand-lavender/70 py-4 pr-3">
                         {item.refundedAmountCents > 0
                           ? formatCurrency(item.refundedAmountCents)
@@ -285,7 +300,7 @@ export function FinancialPayoutsTab({
               {payouts.items.map((item) => (
                 <article
                   className="rounded-card border border-brand-lavender bg-white p-4"
-                  key={item.payoutBatchId}
+                  key={item.payoutItemId}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -312,6 +327,12 @@ export function FinancialPayoutsTab({
                       label="Custos da plataforma"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
+                    {item.debtOffsetAmountCents > 0 ? (
+                      <PayoutDetail
+                        label="Compensação"
+                        value={formatCurrency(item.debtOffsetAmountCents)}
+                      />
+                    ) : null}
                     <PayoutDetail
                       label="Reembolso"
                       value={
@@ -410,9 +431,7 @@ export function FinancialPayoutsTab({
 }
 
 function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
-  const preparingCents =
-    payouts.summary.waitingConfirmationCents +
-    payouts.summary.waitingSettlementCents;
+  const preparingCents = payouts.summary.payoutProcessingCents;
   const steps = [
     {
       detail:
@@ -537,10 +556,6 @@ function PayoutReconciliation({
 }: {
   item: TherapistPayoutsContract["items"][number];
 }) {
-  const transferReference = item.stripeTransferId
-    ? maskStripeReference(item.stripeTransferId)
-    : null;
-
   return (
     <div className="grid gap-1 text-sm font-bold text-brand-deep">
       <span className="inline-flex items-center gap-2">
@@ -551,16 +566,6 @@ function PayoutReconciliation({
         />
         {reconciliationLabel(item.reconciliationStatus)}
       </span>
-      {transferReference ? (
-        <span className="text-xs font-bold text-tesText-secondary">
-          Transfer {transferReference}
-        </span>
-      ) : null}
-      {item.stripeSourceChargeId ? (
-        <span className="text-xs font-bold text-tesText-muted">
-          Registro do pagamento confirmado
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -578,12 +583,6 @@ function reconciliationLabel(
   } satisfies Record<typeof status, string>;
 
   return labels[status];
-}
-
-function maskStripeReference(value: string) {
-  if (value.length <= 10) return value;
-
-  return `${value.slice(0, 7)}...${value.slice(-4)}`;
 }
 
 function PayoutPagination({

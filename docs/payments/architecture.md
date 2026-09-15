@@ -57,12 +57,12 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - `tes-payments-v9-settlement-only` continua sendo a unica politica ativa.
   Reservas e pagamentos existentes preservam o fluxo semanal, suas
   confirmacoes e todos os snapshots historicos.
-- `tes-payments-v10-setup-t24-immediate-transfer` tem o nucleo das Fases 1 a 4
-  implementado somente no ambiente local, mas seus gates ainda nao fecharam.
-  A flag de checkout V10 permanece
-  desligada por padrao; HML e producao continuam sem ativacao V10. Nenhum cron
-  V10 foi ativado. O rollout, os comandos de reembolso/reversao e as paginas
-  financeiras V10 completas ainda nao foram implantados.
+- `tes-payments-v10-setup-t24-immediate-transfer` tem as Fases 1 a 6
+  implementadas e homologadas somente no ambiente local. A preparação local
+  da Fase 7 foi iniciada, sem conexão ou mutação em HML. A flag
+  de checkout V10 permanece desligada por padrao; HML e producao continuam
+  sem ativacao V10. Nenhum cron V10 foi ativado. Rollout remoto ainda nao foi
+  iniciado.
 - A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
   somente no ambiente local. Os webhooks verificam os objetos no provedor e
   registram cada operacao por identificador Stripe em RPCs transacionais
@@ -84,7 +84,20 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - V10 separa a preparacao do cartao (`SetupIntent`, `usage=off_session`) da
   cobranca T-24 e registra atomicamente um job de Transfer direto assim que o
   pagamento e confirmado. Confirmacao e avaliacao da sessao nao sao gates
-  financeiros desse contrato.
+  financeiros desse contrato. A projeção local de feedback V10 deriva o estado
+  bilateral das respostas dos participantes, e a rotina semanal de
+  elegibilidade V9 não reclassifica pagamentos V10. Relatos negativos abrem
+  análise sem reescrever o ciclo do repasse. O histórico local pagina lotes V9
+  e movimentações diretas V10 sem duplicidade, não envia IDs Stripe ao
+  navegador, não trata compensação total como depósito e só marca “Pago” após
+  conciliação bancária integral. Para movimentações V10, o resumo “Em
+  processamento” usa o valor líquido realmente encaminhado depois da
+  compensação; o cálculo V9 permanece inalterado.
+- A projeção administrativa local unifica V9 e V10: valores contratuais,
+  compensação e valor encaminhado são exibidos separadamente; “Pago” exige
+  confirmação bancária, conciliação concluída e alocação integral. O catálogo
+  e os e-mails financeiros usam linguagem de produto e não expõem nomes de
+  objetos, rotinas ou estados internos.
 - `payment_flow_version` e imutavel. Seletores semanais aceitam somente V9;
   Transfer V10 usa `transfer_origin=session_direct`, Charge original em
   `source_transaction` e nunca possui `payout_batch_item_id`.

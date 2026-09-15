@@ -4,7 +4,7 @@
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status             | **Aprovado para implementação**                                                                                                                                                                       |
 | Política           | `tes-payments-v10-setup-t24-immediate-transfer`                                                                                                                                                       |
-| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 5 estão implementadas e homologadas somente no ambiente local; a Fase 6 está em andamento. Nenhuma etapa V10 está ativada em HML ou produção. |
+| Escopo             | Plano do novo fluxo financeiro de sessões. As Fases 1 a 6 estão implementadas e homologadas somente no ambiente local; a preparação local da Fase 7 foi iniciada. Nenhuma etapa V10 está ativada em HML ou produção. |
 | Atualização        | Setembro de 2026                                                                                                                                                                                      |
 | Meios de pagamento | Cartões de crédito e débito aceitos pela Stripe para a conta TES no Brasil                                                                                                                            |
 | Modelo Connect     | Separate Charges and Transfers, em BRL                                                                                                                                                                |
@@ -37,12 +37,51 @@ representáveis para auditoria, mas o comando TES não os oferece. O gate local
 foi fechado com uma cobrança de cartão fora da sessão do navegador, repasse
 vinculado de 85%, recuperação integral do repasse, reembolso integral, entrega
 assinada dos eventos e navegação autenticada de administrador, paciente e
-terapeuta. A Fase 6 foi iniciada com a adequação dos estados terminais e da
-linguagem dessas páginas.
+terapeuta. A Fase 6 foi concluída localmente com a adequação dos estados
+terminais, dos read models V9/V10, das métricas, das páginas e da comunicação.
 A leitura local já distingue a compensação total de um depósito:
 o item aparece como “Compensado”, com líquido bancário zero, sem inflar os
-totais em processamento nem o gráfico. A consistência dos demais read models
-financeiros V9/V10 e de toda comunicação continua na Fase 6. As
+totais em processamento nem o gráfico. A migration local
+`20260914190000_merge_v10_direct_transfer_payout_history.sql` unifica lotes V9
+e repasses diretos V10 na paginação, sem duplicar valores, sem tratar
+compensação total como depósito e sem enviar identificadores da Stripe ao
+navegador. “Pago” continua exigindo a confirmação bancária integralmente
+conciliada; uma movimentação apenas criada permanece “A caminho do banco”. A
+migration local
+`20260914193000_fix_v10_payout_processing_after_offsets.sql` faz o card e a
+linha do tempo “Em processamento” usarem, no V10, o valor efetivamente enviado
+depois de compensações, sem alterar a posição histórica V9. A homologação no
+IAB confirmou um cenário determinístico de R$ 100,00 bruto, R$ 15,00 de custos
+da plataforma, R$ 10,00 de compensação e R$ 75,00 a caminho do banco; resumo,
+linha do tempo, filtro e histórico exibiram os mesmos R$ 75,00, sem
+identificadores do provedor nem linguagem interna.
+A migration local
+`20260914200000_session_financial_flow_v10_admin_projection.sql` incorpora ao
+painel administrativo o estado bancário, a compensação e o valor efetivamente
+encaminhado. A migration complementar
+`20260914201500_unify_admin_payout_projection_v9_v10.sql` aplica a mesma
+semântica segura ao histórico V9: “Pago” exige repasse bancário conciliado e
+alocado integralmente; uma movimentação criada permanece “A caminho do banco”.
+No IAB autenticado, lista e detalhe administrativos exibiram separadamente
+R$ 85,00 previstos, R$ 10,00 compensados e R$ 75,00 encaminhados. A data do
+pagamento do cliente ficou explicitamente separada da data de pagamento ao
+banco. O catálogo de e-mails, a recuperação de pagamento e os alertas
+financeiros foram revisados para usar somente linguagem de produto, inclusive
+quando o banco exige confirmação ou outro cartão.
+A
+migration local
+`20260914183000_session_financial_flow_v10_feedback_projection.sql` separa
+o estado das confirmações bilaterais do envio do repasse V10 e impede que a
+elegibilidade semanal V9 reclassifique um pagamento V10; a trilha de relato
+negativo e resolução administrativa está coberta por regressão de banco, mas
+os read models, métricas e comunicações correspondentes foram cobertos pelo
+gate local da Fase 6.
+Em 14/09/2026, a Stripe Test foi consultada apenas em
+leitura: os três destinos webhook ativos de HML apontam para o host exato do
+projeto `emzwqkmrryuqvqiohqnu`, com matrizes de 27 eventos da plataforma, 8
+eventos Connect snapshot e 11 eventos Accounts v2 thin. Essa configuração não
+comprova, sozinha, entrega de cada evento após o futuro rollout V10.
+As
 rotas legadas de cancelamento e reagendamento delegam os casos V10 pré-cobrança
 aos comandos transacionais próprios e recusam as demais mutações V10 com
 orientação ao suporte. Nenhum
@@ -857,6 +896,14 @@ Evidências locais do gate:
 
 ### Fase 6 — Read models, métricas, páginas e comunicação
 
+Status local em setembro de 2026: concluída e homologada no Docker, nas suítes
+automatizadas e no IAB autenticado. O histórico financeiro do terapeuta e o
+painel administrativo conciliam V9 e V10 sem duplicidade, mostram compensação
+e valor bancário efetivo separadamente e só usam “Pago” após confirmação
+bancária integral. Comunicações de pagamento que exigem participação do
+cliente orientam a confirmação com o banco ou a troca do cartão sem expor
+nomes internos. Este fechamento é exclusivamente local.
+
 Entregas:
 
 - atualizar DTOs/RPCs de paciente, terapeuta e admin;
@@ -869,11 +916,19 @@ Entregas:
 Gate de saída:
 
 - nenhuma soma duplicada entre V9 e V10;
+- compensações V10 reduzem o valor em processamento pelo montante efetivamente
+  encaminhado, sem reescrever a posição V9;
 - páginas preservam layout e responsividade existentes;
 - nenhum termo técnico aparece para usuário final;
 - acessibilidade, estados vazios, loading e erros honestos validados.
 
 ### Fase 7 — Homologação, rollout e estabilização
+
+Status em setembro de 2026: somente a preparação local foi iniciada. O Docker,
+as migrations, os testes e a navegação autenticada compõem o preflight local.
+Apontar o frontend para HML, ativar a política V10, implantar Functions,
+registrar agendas ou executar qualquer mutação remota permanece proibido até
+autorização operacional específica após o PR manual.
 
 Entregas:
 

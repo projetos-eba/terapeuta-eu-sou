@@ -274,6 +274,7 @@ select is(
   'empty favorite activity reports an honest zero'
 );
 
+reset role;
 insert into public.therapist_metric_daily_aggregates (
   therapist_profile_id,
   metric_date,
@@ -291,6 +292,7 @@ values (
 on conflict (therapist_profile_id, metric_date, definition_version)
 do update set favorites_added = excluded.favorites_added,
   fresh_through = excluded.fresh_through;
+set local role authenticated;
 
 select is(
   (
@@ -308,12 +310,14 @@ select is(
   'favorite comparison remains protected below ten'
 );
 
+reset role;
 update public.therapist_metric_daily_aggregates
 set favorites_added = 10,
   fresh_through = now()
 where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
   and metric_date = ((now() at time zone 'America/Sao_Paulo')::date - 1)
   and definition_version = 1;
+set local role authenticated;
 
 select is(
   (

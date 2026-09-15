@@ -666,6 +666,40 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps provider identifiers and internal transfer terms out of the payout history", () => {
+    const { container } = renderPage("payouts");
+
+    expect(container.textContent).toContain("Conferido");
+    expect(
+      container.textContent?.match(
+        /Transfer\s+tr_|tr_test|ch_test|source_transaction/i,
+      ),
+    ).toBeNull();
+  });
+
+  it("explains a debt offset as a compensation without provider terminology", () => {
+    const current = fixture();
+    const { container } = renderPage("payouts", {
+      payouts: {
+        ...current.payouts,
+        items: current.payouts.items.map((item) => ({
+          ...item,
+          debtOffsetAmountCents: 1000,
+          payoutBatchId: null,
+          payoutItemId: "direct-item-1",
+          sourceKind: "session_direct" as const,
+          therapistNetAmountCents: 7000,
+        })),
+      },
+    });
+
+    expect(screen.getAllByText("Compensação").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 10,00").length).toBeGreaterThan(0);
+    expect(
+      container.textContent?.match(/source_transaction|session_direct|offset/i),
+    ).toBeNull();
+  });
+
   it("does not promise a batch when the therapist has no eligible value", () => {
     renderPage("payouts");
 
@@ -716,6 +750,27 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.queryByText(/O TES organiza Transfers/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("uses the canonical processing total in the payout timeline", () => {
+    const current = fixture();
+    renderPage("payouts", {
+      payouts: {
+        ...current.payouts,
+        summary: {
+          ...current.payouts.summary,
+          payoutProcessingCents: 8500,
+          waitingConfirmationCents: 0,
+          waitingSettlementCents: 0,
+        },
+      },
+    });
+
+    const timeline = screen
+      .getByRole("heading", { name: "Próximos repasses" })
+      .closest("section");
+    expect(timeline).not.toBeNull();
+    expect(within(timeline!).getByText("R$ 85,00")).toBeInTheDocument();
   });
 
   it("puts processing first and explains its operational position", () => {
@@ -980,10 +1035,12 @@ function fixture(): TherapistFinancePageData {
       items: [
         {
           blockedReason: null,
+          debtOffsetAmountCents: 0,
           expectedTransferAt: "2026-07-30T12:00:00.000Z",
           failedReason: null,
           grossAmountCents: 10000,
           payoutBatchId: "batch-1",
+          payoutItemId: "batch-1",
           periodEnd: "2026-07-07",
           periodStart: "2026-07-01",
           reconciliationStatus: "matched",
@@ -992,6 +1049,7 @@ function fixture(): TherapistFinancePageData {
           sessionCount: 1,
           stripeSourceChargeId: "ch_test",
           stripeTransferId: "tr_test",
+          sourceKind: "weekly_batch",
           tesCommissionCents: 2000,
           therapistNetAmountCents: 8000,
           transferredAt: "2026-07-30T13:00:00.000Z",

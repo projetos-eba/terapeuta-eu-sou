@@ -18,14 +18,14 @@ select ok(
 
 select ok(
   position('account.is_current = true' in pg_get_functiondef(
-    'public.refresh_session_transfer_eligibility(uuid,timestamptz)'::regprocedure
+    'public.private_refresh_session_transfer_eligibility_v9_legacy(uuid,timestamptz)'::regprocedure
   )) > 0,
   'transfer eligibility only considers the current Connect account'
 );
 
 select ok(
   position('account.payout_schedule_interval = ''daily''' in pg_get_functiondef(
-    'public.refresh_session_transfer_eligibility(uuid,timestamptz)'::regprocedure
+    'public.private_refresh_session_transfer_eligibility_v9_legacy(uuid,timestamptz)'::regprocedure
   )) > 0,
   'transfer eligibility requires the Stripe automatic daily payout schedule'
 );

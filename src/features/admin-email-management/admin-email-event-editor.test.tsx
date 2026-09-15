@@ -95,8 +95,10 @@ describe("AdminEmailEventEditor", () => {
 
     render(<AdminEmailEventEditor actionKey="booking_reminder_24h_patient" />);
 
-    await screen.findByRole("switch", { name: "Evento habilitado" });
-    fireEvent.click(screen.getByRole("switch", { name: "Evento habilitado" }));
+    await screen.findByRole("switch", { name: "Mensagem habilitada" });
+    fireEvent.click(
+      screen.getByRole("switch", { name: "Mensagem habilitada" }),
+    );
     fireEvent.click(screen.getByRole("switch", { name: "Envio automático" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Salvar configuração" }),

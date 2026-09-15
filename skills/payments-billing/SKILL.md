@@ -58,7 +58,16 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   the full customer refund succeeds. Ambiguous provider outcomes require
   reconciliation, never a blind retry. Provider-originated partial refunds
   remain observable for manual analysis but are not offered by TES. The real
-  Stripe Test, webhook and authenticated admin-browser gates remain open.
+  Stripe Test, signed webhook delivery and authenticated admin-browser gates
+  for the local full-refund path were exercised in Phase 5. Phase 6 is also
+  closed locally: therapist and admin projections merge V9/V10 without
+  duplication, show contractual amount, debt compensation and bank-bound
+  amount separately, and reserve `Pago` for a fully reconciled bank payout.
+  This does not authorize HML or production activation.
+  Payment-recovery messages must cover both bank confirmation and card
+  replacement without claiming a definitive decline. Never expose provider
+  object names, policy nicknames, scheduler names or architecture terms in
+  customer, therapist or administrator UI and e-mail copy.
   Never infer authorization to issue a Refund from a webhook or treat a
   partial reversal as a fully reversed Transfer.
 - The TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
@@ -200,6 +209,11 @@ Never expose, log, screenshot, or write real secret values.
 5. Start Stripe listener: `npm run payments:webhooks:listen` only when the
    combined command from step 3 is not already running.
 6. Validate Test Mode destinations: `npm run payments:webhooks:verify:test`.
+   For the linked HML project, use the read-only verifier with
+   `--target=test --project-ref=emzwqkmrryuqvqiohqnu` and load
+   `supabase/functions/.env.homolog` only in that process. Matching the event
+   names alone is insufficient: require the exact HTTPS Supabase host and
+   Function path. Never run the configuration script as an audit.
 7. Validate env: `npm run payments:env`.
 8. Sync catalog: `npm run payments:catalog:sync`.
 9. Verify catalog: `npm run payments:catalog:verify`.

@@ -469,10 +469,12 @@ function payoutItem(input: unknown): TherapistPayoutItem {
 
   return {
     blockedReason: nullableString(value.blockedReason),
+    debtOffsetAmountCents: nonNegativeInteger(value.debtOffsetAmountCents),
     expectedTransferAt: nullableDateTime(value.expectedTransferAt),
     failedReason: nullableString(value.failedReason),
     grossAmountCents: nonNegativeInteger(value.grossAmountCents),
-    payoutBatchId: nonEmptyString(value.payoutBatchId),
+    payoutBatchId: nullableString(value.payoutBatchId),
+    payoutItemId: nonEmptyString(value.payoutItemId),
     periodEnd: dateString(value.periodEnd),
     periodStart: dateString(value.periodStart),
     reconciliationStatus: payoutReconciliationStatus(
@@ -483,6 +485,7 @@ function payoutItem(input: unknown): TherapistPayoutItem {
     sessionCount: nonNegativeInteger(value.sessionCount),
     stripeSourceChargeId: nullableString(value.stripeSourceChargeId),
     stripeTransferId: nullableString(value.stripeTransferId),
+    sourceKind: payoutSourceKind(value.sourceKind),
     tesCommissionCents: nonNegativeInteger(value.tesCommissionCents),
     therapistNetAmountCents: integer(value.therapistNetAmountCents),
     transferredAt: nullableDateTime(value.transferredAt),
@@ -812,6 +815,11 @@ function payoutReconciliationStatus(
     return value as TherapistPayoutItem["reconciliationStatus"];
   }
   throw new Error("Invalid payout reconciliation status.");
+}
+
+function payoutSourceKind(value: unknown): TherapistPayoutItem["sourceKind"] {
+  if (value === "session_direct" || value === "weekly_batch") return value;
+  throw new Error("Invalid payout source kind.");
 }
 
 function nullablePayoutStatus(value: unknown) {

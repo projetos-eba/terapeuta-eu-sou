@@ -38,7 +38,9 @@ export function AdminPaymentDetailPage({
 
   const stats = [
     statItem("Valor bruto", valueFields.get("Valor bruto")),
-    statItem("Repasse profissional", valueFields.get("Repasse terapeuta")),
+    statItem("Repasse previsto", valueFields.get("Repasse terapeuta")),
+    statItem("Compensação", valueFields.get("Compensação")),
+    statItem("Valor encaminhado", valueFields.get("Valor encaminhado")),
     statItem("Custos da plataforma", valueFields.get("Custos da plataforma")),
     statItem("Valor reembolsado", riskFields.get("Valor reembolsado")),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
@@ -69,10 +71,7 @@ export function AdminPaymentDetailPage({
               productField("Profissional", peopleFields.get("Terapeuta")),
               productField("Cliente", peopleFields.get("Cliente")),
               productField("Início da sessão", peopleFields.get("Início")),
-              productField(
-                "Situação do repasse",
-                paymentFields.get("Repasse"),
-              ),
+              productField("Situação do repasse", paymentFields.get("Repasse")),
             ].filter(Boolean) as Array<{ label: string; value: string }>
           }
           meta={
@@ -94,9 +93,11 @@ export function AdminPaymentDetailPage({
         <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           <AppPageMain className="space-y-5">
             {data.fullRefundStatus ? (
-              <AdminFullRefundAction paymentId={data.id}
+              <AdminFullRefundAction
+                paymentId={data.id}
                 amount={valueFields.get("Valor bruto") ?? "valor da sessão"}
-                status={data.fullRefundStatus} />
+                status={data.fullRefundStatus}
+              />
             ) : null}
             <DetailSectionCard
               description="Composição financeira registrada para esta sessão."
@@ -134,10 +135,7 @@ export function AdminPaymentDetailPage({
                     "Atendimento",
                     paymentFields.get("Status do atendimento"),
                   ),
-                  productField(
-                    "Repasse",
-                    paymentFields.get("Repasse"),
-                  ),
+                  productField("Repasse", paymentFields.get("Repasse")),
                   productField(
                     "Elegível para repasse",
                     riskFields.get("Elegível em"),

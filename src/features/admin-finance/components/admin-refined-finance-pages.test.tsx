@@ -45,6 +45,38 @@ describe("refined admin finance pages", () => {
     expect(html).not.toContain("technical_source");
   });
 
+  it("shows compensation and the effective bank-bound amount without internal wording", () => {
+    const html = renderToStaticMarkup(
+      <AdminPaymentsPage
+        data={financeData({
+          rows: [
+            {
+              id: "payment-v10",
+              fields: [
+                { label: "Valor bruto", value: "R$ 100,00" },
+                { label: "Repasse terapeuta", value: "R$ 85,00" },
+                { label: "Compensação", value: "R$ 10,00" },
+                { label: "Valor encaminhado", value: "R$ 75,00" },
+                { label: "Custos da plataforma", value: "R$ 15,00" },
+                { label: "Repasse", value: "A caminho do banco" },
+              ],
+              statusLabel: "paid",
+              title: "Reiki online",
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(html).toContain("Repasse previsto: R$ 85,00");
+    expect(html).toContain("Compensação: R$ 10,00");
+    expect(html).toContain("Valor encaminhado: R$ 75,00");
+    expect(html).toContain("A caminho do banco");
+    expect(html).not.toMatch(
+      /source_transaction|transfer reversal|payout_display_status/i,
+    );
+  });
+
   it("renders subscriptions with honest empty-state copy", () => {
     const html = renderToStaticMarkup(
       <AdminSubscriptionsPage
@@ -75,7 +107,12 @@ describe("refined admin finance pages", () => {
           title: "Pagamento",
         },
         {
-          fields: [{ label: "Valor bruto", value: "R$ 180,00" }],
+          fields: [
+            { label: "Valor bruto", value: "R$ 180,00" },
+            { label: "Repasse terapeuta", value: "R$ 153,00" },
+            { label: "Compensação", value: "R$ 10,00" },
+            { label: "Valor encaminhado", value: "R$ 143,00" },
+          ],
           title: "Valores",
         },
         {
@@ -97,6 +134,9 @@ describe("refined admin finance pages", () => {
 
     expect(html).toContain("Detalhes do financeiro");
     expect(html).toContain("Pagamento processado");
+    expect(html).toContain("Repasse previsto");
+    expect(html).toContain("Compensação");
+    expect(html).toContain("Valor encaminhado");
     expect(html).not.toContain("PaymentIntent");
     expect(html).not.toContain("Metadados internos");
   });
