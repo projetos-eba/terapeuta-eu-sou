@@ -9,6 +9,8 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import {
+  assertServiceTherapistMatch,
+  BOOKING_SNAPSHOT_SELECT,
   type BookingCheckoutCommandBody,
   type ExistingCheckoutHold,
   mapBookingCheckoutDatabaseError,
@@ -42,10 +44,27 @@ type BookingRow = {
   id: string;
 };
 
+type BookingSnapshotRow = {
+  currency_snapshot: string;
+  ends_at: string;
+  id: string;
+  service_duration_minutes_snapshot: number;
+  service_price_cents_snapshot: number;
+  service_title_snapshot: string;
+  service_id: string;
+  starts_at: string;
+};
+
 type ServiceIntakeContextRow = {
   description: string | null;
   id: string;
   therapist_profile_id: string;
+};
+
+type TherapistIntakeContextRow = {
+  id: string;
+  public_name: string;
+  slug: string;
 };
 
 type LegalAcceptanceRow = {
@@ -167,6 +186,22 @@ runtime.serve(async (request) => {
         );
       }
 
+      operation = "get_booking_therapist_context";
+      const therapistRows = await client.get<TherapistIntakeContextRow[]>(
+        `/rest/v1/therapist_profiles?select=id,slug,public_name&id=eq.${encodeURIComponent(
+          service.therapist_profile_id,
+        )}&limit=1`,
+      );
+      const therapist = therapistRows[0];
+      assertServiceTherapistMatch(therapist?.slug, command.therapistSlug);
+      if (!therapist) {
+        throw new DomainError(
+          "service_not_found",
+          404,
+          "Não foi possível confirmar o serviço escolhido.",
+        );
+      }
+
       let hold: BookingHoldRow;
       let booking: BookingRow;
       let bookingWasJustConsumed = false;
@@ -253,6 +288,21 @@ runtime.serve(async (request) => {
         service,
       });
 
+      operation = "get_booking_snapshot";
+      const bookingSnapshots = await client.get<BookingSnapshotRow[]>(
+        `/rest/v1/bookings?select=${BOOKING_SNAPSHOT_SELECT}&id=eq.${encodeURIComponent(
+          booking.id,
+        )}&limit=1`,
+      );
+      const bookingSnapshot = bookingSnapshots[0];
+      if (!bookingSnapshot) {
+        throw new DomainError(
+          "booking_snapshot_unavailable",
+          409,
+          "Não foi possível confirmar os detalhes da reserva.",
+        );
+      }
+
       operation = "stripe-create-session-payment";
       const checkout = await invokeSessionPaymentCheckout({
         bearerToken,
@@ -283,6 +333,20 @@ runtime.serve(async (request) => {
         url: checkout.data.url,
         reservationExpiresAt: hold.expires_at,
         serverNow: new Date().toISOString(),
+        snapshot: {
+          bookingId: bookingSnapshot.id,
+          currency: bookingSnapshot.currency_snapshot,
+          durationMinutes: bookingSnapshot.service_duration_minutes_snapshot,
+          endsAt: bookingSnapshot.ends_at,
+          priceCents: bookingSnapshot.service_price_cents_snapshot,
+          serviceId: bookingSnapshot.service_id,
+          serviceLabel: bookingSnapshot.service_title_snapshot,
+          startsAt: bookingSnapshot.starts_at,
+          therapist: {
+            name: therapist.public_name,
+            slug: therapist.slug,
+          },
+        },
       });
     } catch (error) {
       if (bootstrapBookingId && bootstrapHoldId) {

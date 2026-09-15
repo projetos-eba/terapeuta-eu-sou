@@ -101,15 +101,17 @@ export function ReservationPage({
     null,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
-    isPaymentRetry
-      ? "pagamento"
-      : context.selectedSlotHasPatientConflict
-        ? "momento"
-        : context.step === "pagamento"
-          ? context.hasRequiredCheckoutData
-            ? "preparar"
-            : "momento"
-          : context.step,
+    context.reservationUnavailable
+      ? "momento"
+      : isPaymentRetry
+        ? "pagamento"
+        : context.selectedSlotHasPatientConflict
+          ? "momento"
+          : context.step === "pagamento"
+            ? context.hasRequiredCheckoutData
+              ? "preparar"
+              : "momento"
+            : context.step,
   );
   const [sharedNote, setSharedNote] = useState("");
   const [promotionCode, setPromotionCode] = useState("");
@@ -155,16 +157,19 @@ export function ReservationPage({
           : null,
     );
     setCurrentStep(
-      context.selectedSlotHasPatientConflict
+      context.reservationUnavailable
         ? "momento"
-        : context.step === "pagamento"
-          ? context.hasRequiredCheckoutData
-            ? "preparar"
-            : "momento"
-          : context.step,
+        : context.selectedSlotHasPatientConflict
+          ? "momento"
+          : context.step === "pagamento"
+            ? context.hasRequiredCheckoutData
+              ? "preparar"
+              : "momento"
+            : context.step,
     );
   }, [
     context.hasRequiredCheckoutData,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     reservationKey,
@@ -173,6 +178,11 @@ export function ReservationPage({
   useEffect(() => {
     const restoreJourneyDraft = () => {
       if (isPaymentRetry) return;
+      if (context.reservationUnavailable) {
+        setJourneyError(null);
+        setCurrentStep("momento");
+        return;
+      }
       if (context.selectedSlotHasPatientConflict) {
         setJourneyError(null);
         setCurrentStep("momento");
@@ -208,12 +218,18 @@ export function ReservationPage({
   }, [
     context.hasRequiredCheckoutData,
     context.marketingConsent,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     isPaymentRetry,
     reservationKey,
   ]);
 
   useEffect(() => {
+    if (context.reservationUnavailable) {
+      setJourneyError(null);
+      setCurrentStep("momento");
+      return;
+    }
     if (context.selectedSlotHasPatientConflict) {
       setCurrentStep("momento");
       return;
@@ -227,12 +243,17 @@ export function ReservationPage({
   }, [
     acceptedTerms,
     context.hasRequiredCheckoutData,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     isPaymentRetry,
   ]);
 
   useEffect(() => {
+    if (context.reservationUnavailable) {
+      router.replace(momentStepHref);
+      return;
+    }
     if (context.selectedSlotHasPatientConflict) {
       setJourneyError(null);
       setIsPatientConflictDialogOpen(true);
@@ -244,6 +265,7 @@ export function ReservationPage({
     }
   }, [
     acceptedTerms,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     isPaymentRetry,
@@ -253,6 +275,7 @@ export function ReservationPage({
   ]);
 
   const canPrepare =
+    !context.reservationUnavailable &&
     (context.canPrepareEncounter || isPaymentRetry) &&
     context.isPatientAuthenticated;
   const canPay = canPrepare && acceptedTerms;
@@ -289,6 +312,11 @@ export function ReservationPage({
 
   const goToStep = useCallback(
     (step: ReservationStep) => {
+      if (context.reservationUnavailable) {
+        setCurrentStep("momento");
+        router.replace(momentStepHref);
+        return;
+      }
       if (step === "pagamento" && !canPay) {
         setJourneyError("Aceite os termos antes de seguir para o pagamento.");
         setCurrentStep("preparar");
@@ -335,6 +363,7 @@ export function ReservationPage({
       acceptedTerms,
       canPay,
       checkoutAttemptId,
+      context.reservationUnavailable,
       marketingConsent,
       momentStepHref,
       paymentStepHref,
@@ -359,6 +388,15 @@ export function ReservationPage({
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_520px] xl:gap-12">
           <section>
             <ReservationStepper current={currentStep} onNavigate={goToStep} />
+            {context.serviceDetailsUpdated ? (
+              <p
+                role="status"
+                className="mb-6 rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep"
+              >
+                Os detalhes desta terapia foram atualizados. Confira a duração e
+                o valor antes de continuar.
+              </p>
+            ) : null}
             {journeyError ? (
               <p
                 role="alert"
@@ -423,34 +461,36 @@ export function ReservationPage({
           </section>
 
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <ReservationSummary
-              acceptedTerms={acceptedTerms}
-              canPay={canPay}
-              context={activeContext}
-              checkoutReady={checkoutReady}
-              promotionAmounts={promotionAmounts}
-              promotionCode={promotionCode}
-              promotionError={promotionError}
-              promotionPending={promotionPending}
-              onApplyPromotion={() => {
-                setPromotionError(null);
-                setPromotionPending(true);
-                setPromotionRequest({
-                  code: promotionCode.trim(),
-                  requestId: crypto.randomUUID(),
-                });
-              }}
-              onPromotionCodeChange={setPromotionCode}
-              onRemovePromotion={() => {
-                setPromotionError(null);
-                setPromotionPending(true);
-                setPromotionRequest({
-                  code: null,
-                  requestId: crypto.randomUUID(),
-                });
-              }}
-              onAdvanceToPayment={() => goToStep("pagamento")}
-            />
+            {!context.reservationUnavailable ? (
+              <ReservationSummary
+                acceptedTerms={acceptedTerms}
+                canPay={canPay}
+                context={activeContext}
+                checkoutReady={checkoutReady}
+                promotionAmounts={promotionAmounts}
+                promotionCode={promotionCode}
+                promotionError={promotionError}
+                promotionPending={promotionPending}
+                onApplyPromotion={() => {
+                  setPromotionError(null);
+                  setPromotionPending(true);
+                  setPromotionRequest({
+                    code: promotionCode.trim(),
+                    requestId: crypto.randomUUID(),
+                  });
+                }}
+                onPromotionCodeChange={setPromotionCode}
+                onRemovePromotion={() => {
+                  setPromotionError(null);
+                  setPromotionPending(true);
+                  setPromotionRequest({
+                    code: null,
+                    requestId: crypto.randomUUID(),
+                  });
+                }}
+                onAdvanceToPayment={() => goToStep("pagamento")}
+              />
+            ) : null}
             {currentStep === "pagamento" ? (
               <ShellHelpCard
                 href={paymentSupportWhatsappHref}
@@ -662,6 +702,27 @@ function MomentStep({
   schedule: ReservationSchedule;
   signupHref: string;
 }) {
+  if (context.reservationUnavailable) {
+    return (
+      <div className="space-y-8">
+        <PageIntro
+          eyebrow="Reserva indisponível"
+          title="Esta terapia não está disponível para reserva"
+          description="Escolha novamente uma terapia e um profissional para consultar os horários atuais."
+        />
+        <TESCard as="section" className="rounded-[28px] p-6 sm:p-8">
+          <p className="text-base font-semibold leading-7 text-tesText-secondary">
+            O link usado não corresponde a uma terapia disponível deste
+            profissional.
+          </p>
+          <TESButton className="mt-6" href={routes.public.therapists}>
+            Ver terapeutas disponíveis
+          </TESButton>
+        </TESCard>
+      </div>
+    );
+  }
+
   const canContinue =
     context.canPrepareEncounter && context.isPatientAuthenticated;
   const hasVisibleSlots = schedule.days.some((day) => day.slots.length > 0);
@@ -952,9 +1013,16 @@ function PaymentStep({
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
               retryBookingId={context.retryBookingId}
+              reviewHref={buildReservationHref(
+                new URLSearchParams(context.currentPath.split("?")[1] ?? ""),
+                { etapa: "momento", slot: null },
+              )}
               serviceId={context.serviceId}
               sharedNote={sharedNote}
               startsAt={context.selectedSlot}
+              therapistSlug={context.therapist.slug}
+              expectedDurationMinutes={context.durationMinutes}
+              expectedPriceCents={context.priceCents}
             />
           </TESCard>
         </NumberedSection>

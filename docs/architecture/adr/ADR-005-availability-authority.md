@@ -23,9 +23,11 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 - Um reembolso integral na fonte financeira canônica sincroniza o booking para
   `refunded`, preservando o registro e liberando o intervalo protegido.
 - Reembolso parcial e disputa não liberam disponibilidade automaticamente.
-- Buffers fazem parte do intervalo ocupado. O buffer anterior não desloca o
-  primeiro início da faixa; duração e buffer posterior precisam caber até o
-  fim configurado.
+- O intervalo posterior escolhido pelo terapeuta faz parte do intervalo ocupado
+  por cada nova reserva. A grade de inícios é independente e ancorada no começo
+  da faixa. O bloqueio anterior das configurações atuais e futuras é zero;
+  snapshots históricos permanecem imutáveis. A duração precisa caber até o fim
+  da faixa, mas o intervalo posterior pode avançar além dela.
 - Cada faixa semanal exige `availability_rules.service_id`; disponibilidade
   geral histórica é migrada para regras explícitas de cada terapia.
 - Faixas inválidas ou sobrepostas falham com erro de domínio.

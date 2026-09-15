@@ -34,6 +34,17 @@ type CheckoutPayload = {
     url: string | null;
     reservationExpiresAt: string | null;
     serverNow: string;
+    snapshot: {
+      bookingId: string;
+      currency: string;
+      durationMinutes: number;
+      endsAt: string;
+      priceCents: number;
+      serviceId: string;
+      serviceLabel: string;
+      startsAt: string;
+      therapist: { name: string; slug: string };
+    };
   };
 };
 
@@ -71,7 +82,8 @@ export async function POST(request: Request) {
   if (
     !UUID.test(input.checkoutAttemptId) ||
     !UUID.test(input.serviceId) ||
-    !isIsoInstant(input.startsAt)
+    !isIsoInstant(input.startsAt) ||
+    !isSlug(input.therapistSlug)
   ) {
     return NextResponse.json(
       { ok: false, message: "Revise os dados da reserva." },
@@ -138,12 +150,16 @@ export async function POST(request: Request) {
           serviceId: input.serviceId,
           sharedNote: input.sharedNote,
           startsAt: new Date(input.startsAt).toISOString(),
+          therapistSlug: input.therapistSlug,
           termsAccepted: true,
         },
       },
     );
 
-    if (!response.data.clientSecret) {
+    if (
+      !response.data.clientSecret ||
+      !isBookingSnapshot(response.data.snapshot)
+    ) {
       return NextResponse.json(
         {
           code: "CHECKOUT_CLIENT_SECRET_MISSING",
@@ -173,6 +189,7 @@ export async function POST(request: Request) {
         totalAmountCents: response.data.totalAmountCents,
         reservationExpiresAt: response.data.reservationExpiresAt,
         serverNow: response.data.serverNow,
+        snapshot: response.data.snapshot,
       },
       ok: true,
     });
@@ -221,8 +238,42 @@ function toCheckoutInput(value: unknown) {
     serviceId: asString(record.serviceId),
     sharedNote: normalizeSharedNote(record.sharedNote),
     startsAt: asString(record.startsAt),
+    therapistSlug: asString(record.therapistSlug),
     termsAccepted: record.termsAccepted === true,
   };
+}
+
+function isSlug(value: string) {
+  return (
+    value.length >= 1 &&
+    value.length <= 120 &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+  );
+}
+
+function isBookingSnapshot(
+  value: CheckoutPayload["data"]["snapshot"] | null | undefined,
+) {
+  return Boolean(
+    value &&
+    UUID.test(value.bookingId) &&
+    UUID.test(value.serviceId) &&
+    Number.isInteger(value.durationMinutes) &&
+    value.durationMinutes > 0 &&
+    Number.isInteger(value.priceCents) &&
+    value.priceCents > 0 &&
+    isIsoInstant(value.startsAt) &&
+    isIsoInstant(value.endsAt) &&
+    typeof value.currency === "string" &&
+    value.currency.trim() &&
+    typeof value.serviceLabel === "string" &&
+    value.serviceLabel.trim() &&
+    value.therapist &&
+    typeof value.therapist.name === "string" &&
+    value.therapist.name.trim() &&
+    typeof value.therapist.slug === "string" &&
+    isSlug(value.therapist.slug),
+  );
 }
 
 function normalizeSharedNote(value: unknown) {

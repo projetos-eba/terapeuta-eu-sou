@@ -179,13 +179,38 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     });
     await expect(saveButton).toBeDisabled();
 
-    const slotStep = page.getByLabel("Intervalo das sessões", { exact: true });
+    const slotStep = page.getByLabel("Disponibilizar novos horários a cada", {
+      exact: true,
+    });
+    const sessionInterval = page.getByLabel(
+      "Tempo livre depois de cada sessão",
+      {
+        exact: true,
+      },
+    );
+    await expect(sessionInterval).toBeVisible();
+    await expect(
+      page.getByText(
+        "Alterações valem para novas reservas; sessões já reservadas mantêm o intervalo registrado.",
+      ),
+    ).toBeVisible();
     const originalSlotStep = await slotStep.inputValue();
     const temporarySlotStep = originalSlotStep === "45" ? "30" : "45";
     await slotStep.selectOption(temporarySlotStep);
     await saveButton.click();
     await expect(page.getByText("Horários salvos com sucesso.")).toBeVisible();
     await slotStep.selectOption(originalSlotStep);
+    await saveButton.click();
+    await expect(page.getByText("Horários salvos com sucesso.")).toBeVisible();
+
+    const originalInterval = await sessionInterval.inputValue();
+    const temporaryInterval = originalInterval === "0" ? "10" : "0";
+    await sessionInterval.selectOption(temporaryInterval);
+    await saveButton.click();
+    await expect(page.getByText("Horários salvos com sucesso.")).toBeVisible();
+    await page.reload();
+    await expect(sessionInterval).toHaveValue(temporaryInterval);
+    await sessionInterval.selectOption(originalInterval);
     await saveButton.click();
     await expect(page.getByText("Horários salvos com sucesso.")).toBeVisible();
 
@@ -203,6 +228,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       .click();
     await expect(saveButton).toBeEnabled();
 
+    await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-desktop.png"),
@@ -211,6 +237,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Minha agenda" }),
     ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-tablet.png"),
@@ -219,6 +246,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Minha agenda" }),
     ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-mobile.png"),

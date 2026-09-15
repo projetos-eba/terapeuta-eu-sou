@@ -47,7 +47,10 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
       field("Publicado", asBooleanLabel(row.is_public)),
       field("Reservas", asBooleanLabel(row.is_accepting_bookings)),
       field("Publicação", publicationLabel(row.publication_eligibility)),
-      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
+      field(
+        "Pendências de publicação",
+        publicationBlockers(row.publication_blockers),
+      ),
       field("Verificação", asText(row.verification_status)),
       field("Serviços", formatCount(row.service_count)),
       field("Conta de recebimento", asText(row.connect_status)),
@@ -76,7 +79,10 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
       field("Enviado", formatDate(row.submitted_at)),
       field("Revisado", formatDate(row.reviewed_at)),
       field("Publicação", publicationLabel(row.publication_eligibility)),
-      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
+      field(
+        "Pendências de publicação",
+        publicationBlockers(row.publication_blockers),
+      ),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
     id,
@@ -184,9 +190,13 @@ export function mapAdminOperationDetail({
   const row = mapAdminOperationRows({ module, rows: [record] })[0];
 
   const relatedProfessionalId =
-    module === "verifications" ? asText(record.therapist_profile_id) || null : null;
+    module === "verifications"
+      ? asText(record.therapist_profile_id) || null
+      : null;
   const relatedVerificationId =
-    module === "professionals" ? asText(record.latest_verification_id) || null : null;
+    module === "professionals"
+      ? asText(record.latest_verification_id) || null
+      : null;
 
   return {
     auditEvents: auditEvents.filter(isRecord).map(mapAuditEvent),
@@ -334,8 +344,14 @@ function getDetailSections(
           "Atendimento online",
           asBooleanLabel(record.accepts_online_sessions),
         ),
-        field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
-        field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
+        field(
+          "Elegibilidade pública",
+          publicationLabel(record.publication_eligibility),
+        ),
+        field(
+          "Bloqueadores reais",
+          publicationBlockers(record.publication_blockers),
+        ),
         field("Última verificação", asText(record.verification_status)),
       ]),
       section("Operação", [
@@ -343,7 +359,7 @@ function getDetailSections(
         field("Serviços ativos", formatCount(record.active_service_count)),
         field("Sessões totais", formatCount(record.total_booking_count)),
         field("Sessões futuras", formatCount(record.future_booking_count)),
-      field("Conta de recebimento", asText(record.connect_status)),
+        field("Conta de recebimento", asText(record.connect_status)),
         field("Próxima sessão", formatDate(record.next_session_at)),
       ]),
       timestampSection(record),
@@ -362,7 +378,7 @@ function getDetailSections(
       section("Atividade", [
         field("Reservas totais", formatCount(record.booking_count)),
         field("Reservas futuras", formatCount(record.future_booking_count)),
-      field("Chamados", formatCount(record.ticket_count)),
+        field("Chamados", formatCount(record.ticket_count)),
         field("Última atividade", formatDate(record.last_activity_at)),
       ]),
       timestampSection(record),
@@ -466,8 +482,14 @@ function getDetailSections(
       field("Enviado em", formatDate(record.submitted_at)),
       field("Revisado em", formatDate(record.reviewed_at)),
       field("Estado administrativo do perfil", asText(record.profile_status)),
-      field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
-      field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
+      field(
+        "Elegibilidade pública",
+        publicationLabel(record.publication_eligibility),
+      ),
+      field(
+        "Bloqueadores reais",
+        publicationBlockers(record.publication_blockers),
+      ),
     ]),
     timestampSection(record),
   ];
@@ -503,7 +525,9 @@ function field(label: string, value: string) {
 function canPublishAdministratively(record: UnknownRecord) {
   const eligibility = asRecordOrNull(record.publication_eligibility);
   const blockers = Array.isArray(eligibility?.blockers)
-    ? eligibility.blockers.filter((blocker): blocker is string => typeof blocker === "string")
+    ? eligibility.blockers.filter(
+        (blocker): blocker is string => typeof blocker === "string",
+      )
     : [];
   const publicationSwitchBlockers = new Set([
     "not_accepting_bookings",
@@ -562,6 +586,7 @@ function publicationBlockers(value: unknown) {
     online_sessions_disabled: "atendimento online desativado",
     profile_not_approved: "cadastro ainda não aprovado",
     profile_not_public: "perfil público desativado",
+    receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_category_inactive: "categoria da terapia inativa",
     therapy_not_public: "terapia não publicada ou não visível",
   };

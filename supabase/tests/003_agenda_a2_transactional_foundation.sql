@@ -20,7 +20,7 @@ insert into public.therapist_service_booking_settings (
 values (
   'a2300000-0000-4000-8000-000000000021',
   'd1000000-0000-4000-8000-000000000021',
-  15,
+  0,
   15,
   0,
   90,
@@ -203,8 +203,8 @@ select is(
     from public.booking_holds
     where idempotency_key = 'a2-hold-idempotency-0001'
   ),
-  70,
-  'the occupied interval includes both booking buffers'
+  60,
+  'the occupied interval includes the post-session interval'
 );
 
 select is(

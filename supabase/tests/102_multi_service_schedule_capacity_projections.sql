@@ -85,9 +85,9 @@ insert into public.therapist_service_booking_settings (
   interval_minutes
 )
 values
-  ('d1000000-0000-4000-8000-000000000001', 10, 10, 0, 90, 30),
-  ('d1000000-0000-4000-8000-000000000006', 10, 10, 0, 90, 30),
-  ('d1000000-0000-4000-8000-000000000021', 10, 10, 0, 90, 30)
+  ('d1000000-0000-4000-8000-000000000001', 0, 10, 0, 90, 30),
+  ('d1000000-0000-4000-8000-000000000006', 0, 10, 0, 90, 30),
+  ('d1000000-0000-4000-8000-000000000021', 0, 10, 0, 90, 30)
 on conflict (service_id) do update
 set buffer_before_minutes = excluded.buffer_before_minutes,
     buffer_after_minutes = excluded.buffer_after_minutes,
@@ -403,8 +403,8 @@ select is(
       'America/Sao_Paulo'
     )
   ),
-  50,
-  'paid booking occupancy includes immutable before and after buffer snapshots'
+  40,
+  'paid booking occupancy includes its immutable post-session interval snapshot'
 );
 
 select is(
@@ -417,8 +417,8 @@ select is(
       'America/Sao_Paulo'
     )
   ),
-  790,
-  'available capacity subtracts global blocks and paid booking buffers once'
+  800,
+  'available capacity subtracts global blocks and the paid booking interval once'
 );
 
 select ok(

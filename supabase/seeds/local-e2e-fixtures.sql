@@ -294,6 +294,31 @@ set
   is_bookable = excluded.is_bookable,
   updated_at = now();
 
+insert into public.therapist_service_booking_settings (
+  service_id,
+  buffer_before_minutes,
+  buffer_after_minutes,
+  min_notice_minutes,
+  max_days_ahead,
+  interval_minutes
+)
+values (
+  'dc000000-0000-4000-8000-000000000001',
+  0,
+  0,
+  120,
+  90,
+  30
+)
+on conflict (service_id) do update
+set
+  buffer_before_minutes = excluded.buffer_before_minutes,
+  buffer_after_minutes = excluded.buffer_after_minutes,
+  min_notice_minutes = excluded.min_notice_minutes,
+  max_days_ahead = excluded.max_days_ahead,
+  interval_minutes = excluded.interval_minutes,
+  updated_at = now();
+
 with generated_bookings as (
   select
     series.n,

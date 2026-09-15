@@ -196,7 +196,7 @@ select is(
       jsonb_build_array(
         jsonb_build_object(
           'serviceId', 'd1000000-0000-4000-8000-000000000001',
-          'bufferBeforeMinutes', 10,
+          'bufferBeforeMinutes', 0,
           'bufferAfterMinutes', 15,
           'minimumNoticeMinutes', 180,
           'bookingHorizonDays', 45,

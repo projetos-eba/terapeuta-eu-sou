@@ -33,6 +33,16 @@ describe("buildAvailabilityDays", () => {
     expect(result[0]?.slots[0]?.timeLabel).toBe("09:00");
   });
 
+  it("allows the final session to end at the availability boundary", () => {
+    const result = buildAvailabilityDays(
+      input({
+        rules: [weeklyRule("09:00", "10:00")],
+      }),
+    );
+
+    expect(result[0]?.slots.map((slot) => slot.timeLabel)).toContain("09:00");
+  });
+
   it("uses available exceptions when no weekly rule exists", () => {
     const result = buildAvailabilityDays(
       input({
@@ -107,7 +117,7 @@ function input(
     serviceDurationMinutes: 60,
     settings: {
       bufferAfterMinutes: 10,
-      bufferBeforeMinutes: 10,
+      bufferBeforeMinutes: 0,
       intervalMinutes: 30,
       maxDaysAhead: 1,
       minNoticeMinutes: 0,
