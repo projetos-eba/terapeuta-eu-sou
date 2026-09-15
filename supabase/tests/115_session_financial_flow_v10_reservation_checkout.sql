@@ -1,6 +1,6 @@
 begin;
 
-select plan(82);
+select plan(92);
 
 select ok(
   has_function_privilege(
@@ -97,6 +97,14 @@ values
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
     '2099-09-23 13:00:00+00', '2099-09-23 13:50:00+00',
+    'America/Sao_Paulo', 'draft', 'not_started', now()
+  ),
+  (
+    'b1150000-0000-4000-8000-000000000015',
+    'b1000000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    '2099-09-24 13:00:00+00', '2099-09-24 13:50:00+00',
     'America/Sao_Paulo', 'draft', 'not_started', now()
   );
 
@@ -814,6 +822,98 @@ select is(
   ) ->> 'paymentFlowVersion',
   'v10',
   'the reopened booking can create a replacement V10 Checkout session'
+);
+
+select lives_ok(
+  $$
+    select public.prepare_session_payment_v10(
+      'b1150000-0000-4000-8000-000000000015',
+      'b1150000-0000-4000-8000-000000000002'
+    )
+  $$,
+  'an initial V10 attempt can be prepared for the expiry-retry regression'
+);
+select is(
+  public.swap_session_payment_checkout_v10(
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+    (select version from public.bookings where id = 'b1150000-0000-4000-8000-000000000015'),
+    'test', null, 'cs_test_v10_115_expired',
+    17000, 0, 17000, 'scheduled',
+    null, null, null, null, null, 'tes:v10:expired:115'
+  ) ->> 'applied',
+  'true',
+  'the original Checkout remains the current V10 attempt before expiry'
+);
+select lives_ok(
+  $$
+    insert into public.session_payment_attempts (
+      session_payment_id, attempt_kind, idempotency_key, status,
+      stripe_checkout_session_id, reservation_expires_at
+    ) values (
+      (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+      'initial_hold', 'tes:v10:attempt:115:expired', 'checkout_created',
+      'cs_test_v10_115_expired', now() - interval '1 second'
+    )
+  $$,
+  'the expired initial attempt remains auditable before release'
+);
+select is(
+  public.cancel_reservation_checkout_attempt_v1(
+    'b1150000-0000-4000-8000-000000000015',
+    'cs_test_v10_115_expired',
+    'reservation_expired'
+  ) ->> 'released',
+  'true',
+  'the expired initial attempt is authoritatively released'
+);
+select is(
+  (select status::text from public.bookings
+   where id = 'b1150000-0000-4000-8000-000000000015'),
+  'cancelled_by_payment',
+  'releasing the expired attempt also releases its occupied interval'
+);
+select is(
+  public.begin_session_payment_retry_v10(
+    'b1150000-0000-4000-8000-000000000015'
+  ) ->> 'allowed',
+  'true',
+  'the same V10 booking can start a replacement payment attempt'
+);
+select is(
+  public.begin_session_payment_retry_v10(
+    'b1150000-0000-4000-8000-000000000015'
+  ) ->> 'reason',
+  'retry_already_started',
+  'a failure before persisting the replacement remains safely retryable'
+);
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object(
+    'sub', 'bbbbbbbb-0000-4000-8000-000000000010',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+select is(
+  public.get_patient_reservation_retry_context_v1(
+    'b1150000-0000-4000-8000-000000000015'
+  ) ->> 'canRetry',
+  'true',
+  'the patient can resume after a failure before the replacement is persisted'
+);
+reset role;
+select is(
+  (select status::text from public.bookings
+   where id = 'b1150000-0000-4000-8000-000000000015'),
+  'pending_payment',
+  'the replacement attempt restores the booking without a new initial hold'
+);
+select is(
+  (select financial_status::text from public.session_payments
+   where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+  'pending',
+  'the replacement attempt restores only the pending financial state'
 );
 
 select * from finish();

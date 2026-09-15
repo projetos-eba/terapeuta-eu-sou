@@ -5,6 +5,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 export type ReservationRetrySnapshot = {
   bookingId: string;
   bookingStatus: string;
+  canRetry: boolean;
   durationMinutes: number;
   financialStatus: string;
   priceCents: number;
@@ -46,8 +47,7 @@ export async function getReservationRetrySnapshot(input: {
   if (
     !value ||
     value.bookingId !== input.bookingId ||
-    value.bookingStatus !== "cancelled_by_payment" ||
-    !["failed", "canceled"].includes(value.financialStatus)
+    value.canRetry !== true
   ) {
     return null;
   }

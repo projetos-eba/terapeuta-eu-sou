@@ -32,6 +32,11 @@ import {
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import { resolveCheckoutReturnUrlBase } from "./checkout-return-url.ts";
+import {
+  requiresLegacyRetryPreflight,
+  resolveReservationCheckoutMode,
+  type ReservationCheckoutMode,
+} from "./checkout-mode.ts";
 
 type Body = {
   attemptKind?: "initial_hold" | "payment_retry";
@@ -43,8 +48,6 @@ type Body = {
   reservationExpiresAt?: string | null;
   returnUrlBase?: string | null;
 };
-
-type ReservationCheckoutMode = "initial_hold" | "payment_retry";
 
 type AttemptRow = {
   attempt_kind: string;
@@ -117,6 +120,10 @@ runtime.serve(async (request) => {
     );
     const checkoutUiMode = "embedded";
     const booking = await getBooking(client, bookingId);
+    const existingPayment = await getSessionPaymentByBooking(
+      client,
+      booking.id,
+    );
 
     if (booking.patient_profile_id !== patient.id) {
       throw new DomainError(
@@ -141,11 +148,11 @@ runtime.serve(async (request) => {
     const replacedAttempt = replaceCheckoutSessionId
       ? await getAttemptByCheckout(client, replaceCheckoutSessionId)
       : null;
-    const mode: ReservationCheckoutMode = replacedAttempt
-      ? requireAttemptKind(replacedAttempt.attempt_kind)
-      : booking.status === "cancelled_by_payment"
-        ? "payment_retry"
-        : "initial_hold";
+    const mode = resolveReservationCheckoutMode({
+      bookingStatus: booking.status,
+      replacedAttemptKind: replacedAttempt?.attempt_kind,
+      requestedAttemptKind: body.attemptKind,
+    });
     const bookingHoldId =
       replacedAttempt?.booking_hold_id ??
       optionalUuid(body.bookingHoldId, "booking_hold_id");
@@ -159,7 +166,12 @@ runtime.serve(async (request) => {
         bookingId,
         reservationExpiresAt,
       });
-    } else {
+    } else if (
+      requiresLegacyRetryPreflight({
+        mode,
+        paymentFlowVersion: existingPayment?.payment_flow_version,
+      })
+    ) {
       const preflight = await client.rpc<{
         allowed?: boolean;
         reason?: string;
@@ -210,10 +222,6 @@ runtime.serve(async (request) => {
       stripe,
       userId: user.id,
     });
-    const existingPayment = await getSessionPaymentByBooking(
-      client,
-      booking.id,
-    );
     const useV10 =
       existingPayment?.payment_flow_version === SESSION_FINANCIAL_FLOW_V10 ||
       (!existingPayment && config.sessionFinancialFlowV10Enabled);
@@ -303,7 +311,8 @@ runtime.serve(async (request) => {
     if (
       isV10 &&
       sessionPayment.stripe_checkout_session_id &&
-      !replaceCheckoutSessionId
+      !replaceCheckoutSessionId &&
+      mode !== "payment_retry"
     ) {
       const attempts = await client.get<
         Array<{
@@ -714,15 +723,6 @@ async function getAttemptByCheckout(
     );
   }
   return rows[0];
-}
-
-function requireAttemptKind(value: string): ReservationCheckoutMode {
-  if (value === "initial_hold" || value === "payment_retry") return value;
-  throw new DomainError(
-    "checkout_replacement_forbidden",
-    409,
-    "Este pagamento não pode mais ser atualizado.",
-  );
 }
 
 async function assertInitialHoldAttempt(

@@ -115,6 +115,14 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Applying or removing a code replaces the Checkout Session. Non-success
   events from superseded attempts cannot mutate the current session payment;
   a real paid older attempt remains authoritative and closes siblings.
+- An expired V10 Checkout retry must honor the explicit `payment_retry` mode;
+  never infer an initial hold merely because the booking was already reopened.
+  Replacing the terminal current Checkout is allowed only through the
+  idempotent V10 retry command. If that command reopened the booking before a
+  provider or persistence failure, a repeated call may resume only while the
+  current attempt is terminal and unclaimed and no succeeded setup, active
+  schedule, PaymentIntent, Charge, transfer job or Transfer exists. The
+  authenticated retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the

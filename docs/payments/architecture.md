@@ -54,17 +54,19 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 
 ## Contratos versionados V9 e V10
 
-- `tes-payments-v9-settlement-only` continua sendo a unica politica ativa.
-  Reservas e pagamentos existentes preservam o fluxo semanal, suas
-  confirmacoes e todos os snapshots historicos.
+- `tes-payments-v9-settlement-only` preserva reservas, pagamentos, lotes e
+  snapshots historicos. Em HML, a politica e o scheduler V9 estao inativos para
+  novas aquisicoes, mas as obrigacoes existentes continuam sob reconciliacao e
+  drenagem controlada. Producao nao foi alterada.
 - `tes-payments-v10-setup-t24-immediate-transfer` tem as Fases 1 a 6
-  implementadas e homologadas somente no ambiente local. A preparação local
-  da Fase 7 foi iniciada, sem conexão ou mutação em HML. A flag
-  de checkout V10 permanece desligada por padrao; HML e producao continuam
-  sem ativacao V10. Nenhum cron V10 foi ativado. Rollout remoto ainda nao foi
-  iniciado. O script local de ativacao dos workers esta em
-  `supabase/schedules/session-financial-flow-v10.sql`; ele permanece inerte
-  ate os gates da Fase 7 e nao desativa o scheduler V9.
+  homologadas localmente e o canario da Fase 7 ativo em HML para novas
+  reservas. Os workers de cobranca e repasse estao ativos e uma reserva futura
+  comprovou SetupIntent por reserva, webhook assinado e agenda T-24 sem cobranca
+  antecipada. A estabilizacao permanece aberta: a correcao da retomada de
+  Checkout expirado esta validada somente localmente e aguarda PR, enquanto a
+  cobranca T-24, o Transfer vinculado e o Payout ainda precisam de evidencia
+  completa em HML. O script de ativacao esta em
+  `supabase/schedules/session-financial-flow-v10.sql`.
 - A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
   somente no ambiente local. Os webhooks verificam os objetos no provedor e
   registram cada operacao por identificador Stripe em RPCs transacionais
@@ -526,9 +528,8 @@ Stripe pede sincronização e nunca marca onboarding como concluído.
 Documentos de contrato:
 
 - `docs/payments/session-financial-flow-v10-implementation-plan.md`: plano
-  aprovado; as Fases 1 e 2 estão implementadas somente no Docker/frontend
-  local, ainda sem ativação em HML ou produção. As fases posteriores incluem
-  cobrança em T-24 e execução do Transfer vinculado à Charge;
+  aprovado; Fases 1 a 6 homologadas localmente e canario da Fase 7 ativo em
+  HML, com estabilizacao ainda aberta. Producao nao foi alterada;
 - `docs/payments/therapist-finance-f0-f1.md`;
 - `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
 - `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;
