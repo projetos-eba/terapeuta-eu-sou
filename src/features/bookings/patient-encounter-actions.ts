@@ -219,7 +219,7 @@ function getCancellationImpactLabel({
 
   if (paymentFlowVersion === "v10" &&
     financialStatus === SessionFinancialStatus.Pending) {
-    return "Seu cartão ainda não foi cobrado. Se cancelar agora, não haverá reembolso a solicitar.";
+    return "O pagamento dessa sessão ainda não ocorreu. Ao cancelar, a cobrança agendada também será cancelada.";
   }
 
   if (financialStatus === SessionFinancialStatus.Refunded) {

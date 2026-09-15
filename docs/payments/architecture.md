@@ -77,7 +77,11 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   controle de divida residual ou a ativacao da politica V10.
 - O cancelamento V10 anterior a cobranca e transacional somente para um
   schedule intacto, com zero tentativas e sem PaymentIntent, Charge ou Transfer;
-  nesse caso nao existe Refund. O reagendamento V10 do paciente segue o mesmo
+  nesse caso nao existe Refund. A confirmacao relê e bloqueia pagamento,
+  reserva e schedule no servidor: se a cobranca tiver sido reivindicada,
+  iniciada ou concluida enquanto o modal estava aberto, a operacao falha
+  fechada, preserva o encontro e orienta a pessoa a atualizar a pagina ou
+  procurar o suporte. O reagendamento V10 do paciente segue o mesmo
   limite de integridade: exige a sessao original a mais de 24 horas, preserva o
   SetupIntent e o PaymentMethod vinculados a reserva, marca o schedule anterior
   como substituido e cria exatamente um schedule ativo em T-24 do novo horario,

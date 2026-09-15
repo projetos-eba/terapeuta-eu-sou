@@ -411,6 +411,14 @@ definitivo de resposta ambígua e permite a conciliação independente do
 reembolso e da recuperação do terapeuta. Nenhum reembolso V10 é declarado
 concluído apenas pela resposta síncrona da API.
 
+No cancelamento V10 anterior à cobrança, o texto de produto informa que o
+pagamento ainda não ocorreu e que o agendamento da cobrança também será
+cancelado. A confirmação nunca confia no estado exibido quando o modal foi
+aberto: o servidor relê e bloqueia pagamento, reserva e agendamento. Se o worker
+tiver reivindicado a cobrança, criado a tentativa ou confirmado o pagamento
+nesse intervalo, o comando falha fechado, preserva o estado financeiro e orienta
+o cliente a atualizar a página e procurar o suporte.
+
 ### 8.3 Disputas
 
 Disputas debitam a plataforma no modelo Separate Charges and Transfers. O TES
