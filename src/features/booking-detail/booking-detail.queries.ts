@@ -94,6 +94,7 @@ export const getPatientSessionDetailPage = cache(
         patientParticipationRows,
         patientWaitingRoomEvents,
         chargeStatus,
+        checkoutRetryContext,
       ] = await Promise.all([
         supabaseServerRestRequest<BookingDetailTherapistRow[]>(
           config,
@@ -136,6 +137,11 @@ export const getPatientSessionDetailPage = cache(
           "get_patient_session_charge_status_v10",
           { p_booking_id: booking.id },
         ),
+        supabaseServerRestRpc<unknown>(
+          config,
+          "get_patient_reservation_retry_context_v1",
+          { p_booking_id: booking.id },
+        ).catch(() => null),
       ]);
       const therapist = therapists[0];
       const service = services[0] ?? createSnapshotService(booking);
@@ -208,7 +214,13 @@ export const getPatientSessionDetailPage = cache(
 
       return {
         ...detail,
-        paymentRecovery: mapSessionChargeStatus(chargeStatus),
+        paymentRecovery: {
+          ...mapSessionChargeStatus(chargeStatus),
+          checkoutAvailable: mapCheckoutRetryAvailability(
+            checkoutRetryContext,
+            booking.id,
+          ),
+        },
       };
     } catch (error) {
       if (error instanceof BookingDetailDataError) throw error;
@@ -229,6 +241,15 @@ function mapSessionChargeStatus(value: unknown) {
     dueAt: typeof row.dueAt === "string" ? row.dueAt : null,
     status: typeof row.status === "string" ? row.status : null,
   };
+}
+
+function mapCheckoutRetryAvailability(value: unknown, bookingId: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const row = value as Record<string, unknown>;
+  return row.bookingId === bookingId && row.canRetry === true;
 }
 
 function isCurrentBookingArrival(

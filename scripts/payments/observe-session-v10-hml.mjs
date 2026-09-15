@@ -22,7 +22,7 @@ const [booking] = await get(
   `/rest/v1/bookings?select=id,status,payment_status,starts_at&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
 );
 const [payment] = await get(
-  `/rest/v1/session_payments?select=id,payment_flow_version,financial_status,transfer_status,stripe_checkout_session_id,stripe_payment_intent_id,stripe_charge_id&booking_id=eq.${encodeURIComponent(bookingId)}&limit=1`,
+  `/rest/v1/session_payments?select=id,payment_flow_version,financial_status,transfer_status,stripe_checkout_session_id,stripe_payment_intent_id,stripe_charge_id,stripe_connect_account_id_snapshot,therapist_amount_cents,stripe_balance_status,stripe_balance_available_on,metadata&booking_id=eq.${encodeURIComponent(bookingId)}&limit=1`,
 );
 
 if (!booking || !payment) {
@@ -45,7 +45,7 @@ const [attempts, setups, schedules, transferJobs, transfers] =
       `/rest/v1/session_transfer_jobs?select=status,attempt_count,last_error_code,transfer_amount_cents&session_payment_id=eq.${paymentId}`,
     ),
     get(
-      `/rest/v1/stripe_transfers?select=status,amount_cents&session_payment_id=eq.${paymentId}`,
+      `/rest/v1/stripe_transfers?select=status,amount_cents,stripe_transfer_id,stripe_source_charge_id&session_payment_id=eq.${paymentId}`,
     ),
   ]);
 
@@ -70,6 +70,23 @@ const [dueCandidates, queuedTransferJobs, closureCandidates] =
         })
       : { items: [] },
   ]);
+const [videoSessions, activePolicies, cronJobs] = await Promise.all([
+  get(
+    `/rest/v1/video_sessions?select=status,environment,last_error_code&booking_id=eq.${encodeURIComponent(bookingId)}`,
+  ),
+  get(
+    "/rest/v1/financial_policy_versions?select=policy_key,is_active&policy_key=in.(tes-payments-v9-settlement-only,tes-payments-v10-setup-t24-immediate-transfer)",
+  ),
+  getFromProfile(
+    "cron",
+    "/rest/v1/job?select=jobname,active&jobname=in.(tes-session-financial-v10-charge-v1,tes-session-financial-v10-transfer-v1)",
+  ),
+]);
+const webhookEvents = payment.stripe_payment_intent_id
+  ? await get(
+      `/rest/v1/stripe_webhook_events?select=event_type,processing_status,attempts,error_code&object_id=eq.${encodeURIComponent(payment.stripe_payment_intent_id)}&order=received_at.asc`,
+    )
+  : [];
 const stripeCheckout = payment.stripe_checkout_session_id
   ? await getStripeObject(
       `/v1/checkout/sessions/${encodeURIComponent(payment.stripe_checkout_session_id)}`,
@@ -80,6 +97,42 @@ const stripeSetup = activeSetup?.stripe_setup_intent_id
       `/v1/setup_intents/${encodeURIComponent(activeSetup.stripe_setup_intent_id)}`,
     )
   : null;
+const stripeCharge = payment.stripe_charge_id
+  ? await getStripeObject(
+      `/v1/charges/${encodeURIComponent(payment.stripe_charge_id)}`,
+    )
+  : null;
+const providerTransfers = await Promise.all(
+  transfers.map((transfer) =>
+    transfer.stripe_transfer_id
+      ? getStripeObject(
+          `/v1/transfers/${encodeURIComponent(transfer.stripe_transfer_id)}`,
+        )
+      : Promise.resolve(null),
+  ),
+);
+const succeededEvents = payment.stripe_payment_intent_id
+  ? await getStripeList("/v1/events?type=payment_intent.succeeded&limit=100")
+  : [];
+const paymentSucceededEvent = succeededEvents.find(
+  (event) =>
+    providerObjectId(event.data?.object) === payment.stripe_payment_intent_id,
+);
+const transferContract = transfers.map((transfer, index) => {
+  const providerTransfer = providerTransfers[index];
+  return {
+    amountMatches:
+      transfer.amount_cents === payment.therapist_amount_cents &&
+      providerTransfer?.amount === payment.therapist_amount_cents,
+    destinationMatches:
+      providerObjectId(providerTransfer?.destination) ===
+      payment.stripe_connect_account_id_snapshot,
+    sourceChargeMatches:
+      transfer.stripe_source_charge_id === payment.stripe_charge_id &&
+      providerObjectId(providerTransfer?.source_transaction) ===
+        payment.stripe_charge_id,
+  };
+});
 
 console.log(
   JSON.stringify(
@@ -92,9 +145,20 @@ console.log(
         status: booking.status,
       },
       payment: {
+        balanceAvailabilityKnown: Boolean(payment.stripe_balance_available_on),
+        balanceStatus: payment.stripe_balance_status,
         chargePresent: Boolean(payment.stripe_charge_id),
         financialStatus: payment.financial_status,
         flow: payment.payment_flow_version,
+        paymentMethodProjected: Boolean(
+          payment.metadata?.paymentMethodType ??
+          payment.metadata?.payment_method_type,
+        ),
+        providerPaymentMethodType:
+          stripeCharge?.payment_method_details?.type ?? null,
+        succeededEventPresent: Boolean(paymentSucceededEvent),
+        succeededEventPendingWebhooks:
+          paymentSucceededEvent?.pending_webhooks ?? null,
         paymentIntentPresent: Boolean(payment.stripe_payment_intent_id),
         transferStatus: payment.transfer_status,
       },
@@ -126,8 +190,15 @@ console.log(
       },
       transfers: {
         count: transfers.length,
+        contract: transferContract,
         statuses: summarize(transfers, "status"),
       },
+      webhookEvents: webhookEvents.map((event) => ({
+        attempts: event.attempts,
+        errorCodePresent: Boolean(event.error_code),
+        status: event.processing_status,
+        type: event.event_type,
+      })),
       rolloutSafety: {
         canaryIsOnlyDueCandidate:
           dueCandidates.length === 1 &&
@@ -139,6 +210,15 @@ console.log(
         otherQueuedTransferJobs: queuedTransferJobs.filter(
           (job) => job.booking_id !== bookingId,
         ).length,
+      },
+      runtime: {
+        policies: activePolicies,
+        schedules: cronJobs,
+        videoSessions: videoSessions.map((session) => ({
+          environment: session.environment,
+          errorPresent: Boolean(session.last_error_code),
+          status: session.status,
+        })),
       },
     },
     null,
@@ -157,6 +237,18 @@ async function get(path) {
     throw new Error(`HML read failed with status ${response.status}.`);
   }
   return response.json();
+}
+
+async function getFromProfile(profile, path) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    headers: {
+      "accept-profile": profile,
+      apikey: serviceKey,
+      authorization: `Bearer ${serviceKey}`,
+    },
+  });
+  if (!response.ok) return { observable: false };
+  return { observable: true, rows: await response.json() };
 }
 
 async function rpc(name, body) {
@@ -185,12 +277,25 @@ async function getStripeObject(path) {
   return response.json();
 }
 
+async function getStripeList(path) {
+  const result = await getStripeObject(path);
+  return Array.isArray(result?.data) ? result.data : [];
+}
+
 function summarize(rows, field) {
   return rows.reduce((result, row) => {
     const value = String(row[field] ?? "unknown");
     result[value] = (result[value] ?? 0) + 1;
     return result;
   }, {});
+}
+
+function providerObjectId(value) {
+  return typeof value === "string"
+    ? value
+    : value && typeof value === "object" && "id" in value
+      ? String(value.id)
+      : null;
 }
 
 function readHmlServiceRoleKey() {

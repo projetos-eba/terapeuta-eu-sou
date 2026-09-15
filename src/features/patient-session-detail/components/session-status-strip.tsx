@@ -8,11 +8,13 @@ export function SessionStatusStrip({
   data: PatientSessionDetailPageData;
 }) {
   const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
-  const paymentSupporting = data.encounterState.actions.includes(
-    "retry_payment",
-  )
-    ? undefined
-    : data.encounterState.payment.message;
+  const checkoutRetryAvailable =
+    data.paymentRecovery?.checkoutAvailable === true;
+  const paymentSupporting = checkoutRetryAvailable
+    ? "Continue o pagamento para confirmar este horário."
+    : data.encounterState.actions.includes("retry_payment")
+      ? undefined
+      : data.encounterState.payment.message;
   const roomAvailable = ["entry_available", "therapist_present"].includes(
     data.encounterState.waitingRoom.kind,
   );
@@ -28,7 +30,11 @@ export function SessionStatusStrip({
         icon={CreditCard}
         supporting={paymentSupporting}
         tone={paymentConfirmed ? "success" : "warning"}
-        title={data.encounterState.payment.title}
+        title={
+          checkoutRetryAvailable
+            ? "Pagamento não concluído"
+            : data.encounterState.payment.title
+        }
       />
       <StatusItem
         icon={roomAvailable ? CheckCircle2 : Clock3}

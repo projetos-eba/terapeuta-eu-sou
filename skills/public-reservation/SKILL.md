@@ -89,6 +89,11 @@ revalidada no servidor antes do checkout.
   rota autenticada de retomada do mesmo booking. Não exigir nova seleção por
   mera expiração. O novo formulário continua sujeito a conflitos e pode exigir
   redigitar dados na Stripe; o TES não os copia entre tentativas.
+- A tela de sucesso expirada deve encaminhar a pessoa para a área de encontros.
+  Na lista, o estado pendente abre o detalhe canônico do encontro; o detalhe só
+  oferece `Continuar pagamento` quando a RPC autenticada devolver `canRetry`
+  para o mesmo booking. Nunca criar um ciclo entre lista e tela de sucesso nem
+  apresentar a retomada a partir de inferência do navegador.
 - Se a liberação for recusada (por pagamento em confirmação ou tentativa
   substituída), encaminhar para acompanhar o pagamento, sem abrir outro
   Checkout. Falha de rede oferece `Verificar novamente`, sem afirmar liberação.
@@ -142,6 +147,10 @@ revalidada no servidor antes do checkout.
 - `/reserva/sucesso` consulta o status autenticado por no máximo 30 segundos e
   só mostra confirmação quando `session_payments.financial_status=paid` e o
   booking está `confirmed`; expiração, conflito e falha têm estados honestos.
+- Em uma reserva V10 futura com cartão salvo e cobrança ainda agendada, as
+  áreas autenticadas devem comunicar `Cobrança programada` e explicar apenas
+  que ela ocorrerá 24 horas antes do encontro. Não apresentar esse estado como
+  falha ou pagamento atrasado e não expor nomes de objetos, jobs ou políticas.
 - Falhas de autenticação, resposta inválida e indisponibilidade de consulta não
   são falhas financeiras. O polling é cancelável, limitado a 30 segundos e não
   aceita status desconhecido. A origem local de retorno deve preservar o host
