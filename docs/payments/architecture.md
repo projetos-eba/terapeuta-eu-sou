@@ -62,7 +62,9 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   da Fase 7 foi iniciada, sem conexão ou mutação em HML. A flag
   de checkout V10 permanece desligada por padrao; HML e producao continuam
   sem ativacao V10. Nenhum cron V10 foi ativado. Rollout remoto ainda nao foi
-  iniciado.
+  iniciado. O script local de ativacao dos workers esta em
+  `supabase/schedules/session-financial-flow-v10.sql`; ele permanece inerte
+  ate os gates da Fase 7 e nao desativa o scheduler V9.
 - A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
   somente no ambiente local. Os webhooks verificam os objetos no provedor e
   registram cada operacao por identificador Stripe em RPCs transacionais

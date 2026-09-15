@@ -90,6 +90,14 @@ até ativação explícita, testada e autorizada do V10.
 A existência deste arquivo não autoriza deploy, alteração remota, execução de
 cron ou movimentação financeira.
 
+O artefato local de ativação dos workers V10 está versionado em
+`supabase/schedules/session-financial-flow-v10.sql`. Ele registra, com
+pré-condições de Vault e política ativa, os jobs de um minuto para
+`process-session-charges` e `process-session-transfers`. O script não é uma
+migration, não é executado no reset do Docker e não desativa os jobs V9; sua
+execução em HML permanece condicionada aos gates da Fase 7 e à autorização
+operacional específica.
+
 ## 2. Decisão financeira aprovada
 
 O fluxo V10 será:
