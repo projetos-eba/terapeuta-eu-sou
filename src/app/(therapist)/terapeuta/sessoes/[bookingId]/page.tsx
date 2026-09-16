@@ -30,6 +30,7 @@ import {
   type TherapistSessionDetailReadModel,
 } from "@/features/bookings";
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
+import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
@@ -71,7 +72,7 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
-  const [pendingReschedule, feedbackSummary] = await Promise.all([
+  const [pendingReschedule, feedbackSummary, delayNotice] = await Promise.all([
     getTherapistSessionPendingReschedule({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
@@ -80,6 +81,13 @@ export default async function TherapistSessionDetailPage({
     getTherapistSessionFeedbackSummary({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
+    }),
+    getSessionDelayNoticeState({
+      accessToken: therapist.accessToken,
+      actorRole: "therapist",
+      bookingId: booking.bookingId,
+      bookingVersion: booking.bookingVersion,
+      userId: therapist.userId,
     }),
   ]);
   const feedbackStatus = feedbackSummary.status;
@@ -124,6 +132,9 @@ export default async function TherapistSessionDetailPage({
             actorRole="therapist"
             bookingId={booking.bookingId}
             bookingVersion={booking.bookingVersion}
+            bookingConfirmed={booking.bookingStatus === "confirmed"}
+            delayNotice={delayNotice}
+            scheduledStartsAt={booking.startsAt}
             canCancel={presentation.actions.canCancel}
             canRequestReschedule={presentation.actions.canReschedule}
             cancelDisabledReason={
@@ -503,9 +514,9 @@ function SessionSupportCard({ bookingId }: { bookingId: string }) {
       </p>
       <Link
         className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
-        href={`${routes.therapist.messages}?context=suporte&booking=${bookingId}`}
+        href={`${routes.therapist.support}?context=suporte&booking=${bookingId}`}
       >
-        Abrir Mensagens
+        Abrir Suporte
       </Link>
     </section>
   );

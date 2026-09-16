@@ -8,8 +8,8 @@ O Terapeuta Eu Sou é uma plataforma digital para aproximar pessoas de terapeuta
 
 O produto atua em duas frentes:
 
-- Para pacientes: descoberta guiada, busca de terapeutas, exploração de terapias, reserva, acompanhamento de sessões, favoritos, mensagens, pagamentos e suporte.
-- Para terapeutas: presença pública, agenda, sessões, mensagens, serviços, pagamentos, avaliações, métricas, insights e apoio por IA, conforme o plano contratado.
+- Para pacientes: descoberta guiada, busca de terapeutas, exploração de terapias, reserva, acompanhamento de encontros, favoritos, pagamentos e suporte.
+- Para terapeutas: presença pública, agenda, sessões, serviços, pagamentos, avaliações, métricas, insights e apoio por IA, conforme o plano contratado.
 
 O TES usa uma experiência clara, acolhedora e premium. A interface evita linguagem fria de crescimento e troca termos como "conversão" por frases humanas, como "Pessoas que seguiram para agendar".
 
@@ -29,7 +29,7 @@ Para terapeutas, o produto organiza a operação profissional:
 1. Cadastro e aprovação do perfil.
 2. Publicação da presença pública.
 3. Configuração de agenda e serviços.
-4. Atendimento por sessões e mensagens.
+4. Atendimento por sessões e suporte operacional.
 5. Acompanhamento de pagamentos e relacionamento.
 6. Evolução por plano, quando fizer sentido.
 
@@ -52,7 +52,7 @@ Valor entregue:
 - Jornada guiada com linguagem acolhedora.
 - Perfil público de terapeuta com informações claras.
 - Reserva online com serviço, horário, conta e pagamento em um fluxo único.
-- Área logada para sessões, mensagens, favoritos, pagamentos e suporte.
+- Área logada para encontros, favoritos, pagamentos e suporte.
 - Favoritos separados entre terapeutas e terapias.
 
 ### Para Terapeutas
@@ -62,7 +62,7 @@ O TES ajuda terapeutas a construir presença digital, organizar agenda e acompan
 Valor entregue:
 
 - Perfil público estruturado.
-- Agenda, pacientes, sessões, mensagens e serviços.
+- Agenda, pacientes, sessões, serviços e suporte operacional.
 - Pagamentos e repasses conforme o plano.
 - Avaliações e métricas para planos superiores.
 - Insights e Assessora Aura no Premium Plus.
@@ -177,7 +177,7 @@ Objetivos:
 
 - Ver próximas sessões.
 - Acessar detalhes e link da sessão.
-- Conversar com terapeuta ou suporte.
+- Abrir chamado com o Suporte TES.
 - Retomar terapeutas e terapias favoritos.
 - Gerenciar pagamentos.
 - Ajustar perfil, notificações, privacidade e segurança.
@@ -194,7 +194,7 @@ Objetivos:
 - Criar disponibilidade.
 - Acompanhar pacientes.
 - Controlar sessões.
-- Responder mensagens.
+- Acompanhar chamados e avisos da plataforma.
 - Cadastrar quantos serviços precisar, sem limite por plano.
 - Acompanhar financeiro operacional.
 - Evoluir de plano quando fizer sentido.
@@ -215,7 +215,7 @@ Objetivos:
 
 - Gerir agenda avançada.
 - Acompanhar pacientes e sessões.
-- Responder mensagens com mais agilidade.
+- Acompanhar chamados prioritários conforme o plano.
 - Gerir serviços completos.
 - Acompanhar financeiro.
 - Ver métricas e avaliações.
@@ -233,7 +233,7 @@ Profissional no plano premium, com inteligência avançada, IA, histórico opera
 
 Objetivos:
 
-- Operar agenda, sessões, mensagens e serviços com mais contexto.
+- Operar agenda, sessões, serviços e suporte com mais contexto.
 - Acompanhar pacientes e histórico operacional.
 - Usar a Assessora Aura para revisar perfil, serviços e presença.
 - Ver insights avançados.
@@ -263,7 +263,7 @@ Objetivos:
 
 | Plano        | Papel                 | Valor principal                | Recursos centrais                                                                                              | Não inclui                                                              |
 | ------------ | --------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços sem limite por plano, financeiro operacional, suporte. | Avaliações, métricas intermediárias, IA, insights avançados.            |
+| Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, serviços sem limite por plano, financeiro operacional e suporte. | Avaliações, métricas intermediárias, IA, insights avançados.            |
 | Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.                | Assessora Aura, insights Premium Plus, histórico operacional avançado. |
 | Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assessora Aura, histórico operacional do paciente e suporte prioritário.       | —                                                                       |
 
@@ -297,7 +297,7 @@ as capabilities definem a experiência dentro do namespace único;
 
 ### Operação do Terapeuta
 
-Dashboard do plano -> agenda -> serviços -> sessões -> mensagens -> pagamentos ou financeiro -> perfil -> suporte
+Dashboard do plano -> agenda -> serviços -> sessões -> pagamentos ou financeiro -> perfil -> suporte
 
 ### Governança Admin
 

@@ -177,6 +177,15 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   again at the weekly cutoff.
 - Ledger is append-only; use compensating entries.
 - Refunds, disputes, internal contests, and admin blocks prevent payout.
+- O novo cancelamento solicitado pelo terapeuta sem resolução não executa
+  Stripe automaticamente: deve entrar em revisão explícita Admin TES,
+  bloquear sala, falta e repasse e preservar decisão/auditoria/idempotência.
+  A regra de sete dias e refund automático por silêncio foram adiados. Este
+  workflow não está liberado para produção até os gates de banco e
+  homologação. O comando V10 de reembolso integral reconhece a revisão e
+  reconcilia o Transfer Reversal aplicável antes de confirmar o reembolso;
+  nunca acrescente uma chamada Stripe automática ao prazo ou à decisão do
+  participante.
 - A session cancellation must claim exactly one local financial decision before
   it calls Stripe. `session_cancellation_decisions.request_id` is the command
   idempotency key and `claim_session_cancellation_decision_v1` is service-role

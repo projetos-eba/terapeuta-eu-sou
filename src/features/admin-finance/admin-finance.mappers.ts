@@ -55,6 +55,7 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
         formatCurrency(row.platform_gross_commission_cents, row.currency),
       ),
       field("Reembolso pendente", asBooleanLabel(row.refund_pending)),
+      field("Revisão TES", formatFinancialReview(row.financial_review_status)),
       field("Disputa", formatDate(row.disputed_at)),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
@@ -65,6 +66,12 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
       : "Reserva não vinculada na listagem.",
     title: asText(row.service_title) || "Pagamento de sessão",
   } satisfies AdminFinanceRow;
+}
+
+function formatFinancialReview(value: unknown) {
+  return asText(value) === "therapist_change_refund_review"
+    ? "Reembolso em análise"
+    : "";
 }
 
 function mapSubscriptionRow(row: UnknownRecord, index: number) {

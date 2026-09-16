@@ -90,7 +90,7 @@ export function AuthenticatedShell({
     setCurrentNavigation(navigation);
   }, [navigation]);
 
-  const handleUnreadMessagesCountChange = useCallback((count: number) => {
+  const handleOpenSupportTicketsCountChange = useCallback((count: number) => {
     setCurrentNavigation((current) =>
       current.map((item) =>
         item.icon === "message" ? { ...item, badge: count } : item,
@@ -148,7 +148,7 @@ export function AuthenticatedShell({
               notificationHref ?? getDefaultNotificationHref(variant)
             }
             notificationCount={notificationCount}
-            onUnreadMessagesCountChange={handleUnreadMessagesCountChange}
+            onOpenSupportTicketsCountChange={handleOpenSupportTicketsCountChange}
             planLabel={planLabel}
             user={user}
             variant={variant}
@@ -181,10 +181,10 @@ function getDefaultNotificationHref(
   variant: NonNullable<AuthenticatedShellProps["variant"]>,
 ) {
   if (variant === "therapist")
-    return "/terapeuta/mensagens?context=notificacoes";
+    return `${routes.therapist.support}?context=notificacoes`;
   if (variant === "admin") return "/admin/suporte";
 
-  return "/app/mensagens?context=notificacoes";
+  return `${routes.patient.support}?context=notificacoes`;
 }
 
 function getDefaultAccountHref(

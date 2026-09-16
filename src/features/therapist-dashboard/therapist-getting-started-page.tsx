@@ -293,7 +293,7 @@ export function TherapistGettingStartedPage({
             </p>
             <TESButton
               className="mt-5 min-h-11 w-full rounded-lg"
-              href={`${routes.therapist.messages}?context=suporte`}
+              href={`${routes.therapist.support}?context=suporte`}
               variant="secondary"
             >
               Falar com o suporte

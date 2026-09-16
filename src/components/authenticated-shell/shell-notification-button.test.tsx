@@ -220,7 +220,7 @@ function notificationResponse(
         title: "Nova mensagem",
       },
     ],
-    unreadMessagesCount: 1,
+    openSupportTicketsCount: 1,
   });
 }
 
@@ -238,7 +238,7 @@ function bookingNotificationResponse() {
         title: "Novo agendamento confirmado",
       },
     ],
-    unreadMessagesCount: 0,
+    openSupportTicketsCount: 0,
   });
 }
 
@@ -256,6 +256,6 @@ function rescheduledSessionNotificationResponse() {
         title: "Sessão reagendada",
       },
     ],
-    unreadMessagesCount: 0,
+    openSupportTicketsCount: 0,
   });
 }

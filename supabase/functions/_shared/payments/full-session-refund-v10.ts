@@ -156,8 +156,15 @@ export async function runFullSessionRefundV10(input: {
     const reconciliation = await client.rpc<{ status: string }>(
       "reconcile_full_session_refund_debt_v10_v2", { p_session_payment_id: paymentId },
     );
-    return { status: reconciliation.status === "reconciled" && !recoveryUncertain
-      ? "completed" : "needs_review", decisionId: decision.decisionId };
+    const completed = reconciliation.status === "reconciled" && !recoveryUncertain;
+    if (completed) {
+      await client.rpc("complete_therapist_change_refund_v1", {
+        p_actor_user_id: input.actorUserId,
+        p_request_id: input.requestId,
+        p_session_payment_id: paymentId,
+      });
+    }
+    return { status: completed ? "completed" : "needs_review", decisionId: decision.decisionId };
   }
   if (decision.refundState === "attempting" || decision.refundState === "not_attempted") {
     await transition(client, decision.decisionId, "refund",

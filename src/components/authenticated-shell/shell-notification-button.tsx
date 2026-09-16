@@ -40,7 +40,7 @@ type NotificationResponse = {
   count: number;
   items: ShellNotification[];
   toast?: ShellNotification | null;
-  unreadMessagesCount: number;
+  openSupportTicketsCount: number;
 };
 
 type PanelPosition = {
@@ -51,12 +51,12 @@ type PanelPosition = {
 export function ShellNotificationButton({
   count: initialCount = 0,
   href,
-  onUnreadMessagesCountChange,
+  onOpenSupportTicketsCountChange,
   role,
 }: {
   count?: number;
   href: string;
-  onUnreadMessagesCountChange?: (count: number) => void;
+  onOpenSupportTicketsCountChange?: (count: number) => void;
   role: "admin" | "patient" | "therapist";
 }) {
   const panelId = useId();
@@ -94,7 +94,7 @@ export function ShellNotificationButton({
       if (
         !Array.isArray(payload.items) ||
         !isCount(payload.count) ||
-        !isCount(payload.unreadMessagesCount)
+        !isCount(payload.openSupportTicketsCount)
       ) {
         return;
       }
@@ -119,11 +119,11 @@ export function ShellNotificationButton({
       knownIdsRef.current = new Set(payload.items.map((item) => item.id));
       setCount(payload.count);
       setItems(payload.items);
-      onUnreadMessagesCountChange?.(payload.unreadMessagesCount);
+      onOpenSupportTicketsCountChange?.(payload.openSupportTicketsCount);
     } catch {
       // Keep the server-rendered count when a temporary poll fails.
     }
-  }, [onUnreadMessagesCountChange, role, showToast]);
+  }, [onOpenSupportTicketsCountChange, role, showToast]);
 
   useEffect(() => {
     void refresh();
@@ -366,7 +366,7 @@ export function ShellNotificationButton({
                 >
                   {href.startsWith("/admin")
                     ? "Abrir suporte"
-                    : "Abrir Central de mensagens"}
+                    : "Abrir Suporte"}
                 </Link>
               </section>,
               document.body,

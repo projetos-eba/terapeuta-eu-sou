@@ -125,6 +125,17 @@ anotação.
   transacional, sem proposta nem hold; o horário original permanece ocupado até
   o commit. Propostas pendentes exibidas à pessoa são exclusivamente as
   iniciadas pela terapeuta e mantêm as ações de aceitar ou recusar.
+- `Vou me atrasar` fica disponível de T−60 a T+10 no detalhe confirmado:
+  confirmar em `TESDialog`, criar um aviso por pessoa e versão e deixar
+  explícito que a tolerância de entrada não muda. O estado “Aviso enviado”
+  desaparece após entrada confiável ou fim da janela.
+- O reagendamento normal do paciente exige pelo menos 24 horas também no
+  banco; abaixo disso, a UI orienta o fluxo de cancelamento. Uma alteração
+  aberta pela terapeuta usa `booking_reschedule_requests` sem horário prévio:
+  a pessoa escolhe um slot autoritativo do mesmo profissional ou solicita
+  reembolso integral. A segunda escolha move o caso para análise financeira
+  do TES; não apresentar reembolso automático nem acesso à sala enquanto a
+  revisão estiver pendente.
 - O cancelamento da pessoa começa com o mesmo componente completo de próximos
   horários do reagendamento: até cinco opções por dia nos três próximos dias
   disponíveis e acesso a “Ver agenda completa e mais horários”. A disponibilidade

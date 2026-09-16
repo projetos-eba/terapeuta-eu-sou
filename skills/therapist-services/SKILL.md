@@ -53,7 +53,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   reservável.
 - `matching_therapy_settings` continua separado da criacao de servicos.
 - Quando a terapia não estiver no catálogo, o CTA deve abrir
-  `/terapeuta/mensagens/solicitar-terapia`. Essa solicitação é estruturada,
+  `/terapeuta/servicos/solicitar-terapia`. A URL antiga redireciona. Essa solicitação é estruturada,
   passa por análise e nunca cria uma terapia ou serviço automaticamente.
 - Ao criar/editar serviço, terapeuta escolhe de 1 a 3 temas entre os temas
   vinculados administrativamente à terapia e até 3 refinamentos por tema.

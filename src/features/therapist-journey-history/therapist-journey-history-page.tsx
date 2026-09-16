@@ -15,7 +15,6 @@ import {
   Filter,
   HeartHandshake,
   Info,
-  MessageCircle,
   MoreVertical,
   NotebookText,
   Route,
@@ -209,13 +208,6 @@ export function TherapistJourneyDetailPage({
             >
               <CalendarDays aria-hidden="true" size={17} />
               Ver sessões
-            </Link>
-            <Link
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={routes.therapist.messages}
-            >
-              <MessageCircle aria-hidden="true" size={17} />
-              Enviar mensagem
             </Link>
           </div>
         </div>
@@ -540,17 +532,9 @@ function CarePreferencesCard() {
           Nenhuma preferência compartilhada nesta área
         </p>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Use os canais apropriados para convidar a pessoa a compartilhar o que
-          for relevante para a comunicação.
+          Aqui aparecem apenas informações compartilhadas nos encontros.
         </p>
       </div>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-        href={routes.therapist.messages}
-      >
-        <MessageCircle aria-hidden="true" size={17} />
-        Usar template de comunicação
-      </Link>
     </section>
   );
 }

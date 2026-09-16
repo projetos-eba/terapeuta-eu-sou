@@ -795,7 +795,7 @@ function SupportCard() {
       </p>
       <TESButton
         className="mt-5 w-full rounded-lg"
-        href={`${routes.patient.messages}?context=suporte`}
+        href={`${routes.patient.support}?context=suporte`}
         size="sm"
         variant="secondary"
       >

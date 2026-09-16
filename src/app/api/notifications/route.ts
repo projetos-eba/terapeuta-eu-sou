@@ -39,10 +39,10 @@ export async function GET(request: Request) {
       itemsResponse,
       countResponse,
       bookingResponse,
-      unreadMessagesResponse,
+      openSupportTicketsResponse,
     ] = await Promise.all([
       fetch(
-        `${config.url}/rest/v1/notifications?select=id,kind,title,body,href,read_at,created_at&${profileFilter}&order=created_at.desc&limit=${ITEM_LIMIT}`,
+        `${config.url}/rest/v1/notifications?select=id,kind,title,body,href,read_at,created_at&${profileFilter}&kind=neq.message_received&order=created_at.desc&limit=${ITEM_LIMIT}`,
         {
           cache: "no-store",
           headers: {
@@ -52,14 +52,13 @@ export async function GET(request: Request) {
         },
       ),
       fetch(
-        `${config.url}/rest/v1/notifications?select=id&${profileFilter}&read_at=is.null`,
+        `${config.url}/rest/v1/notifications?select=id&${profileFilter}&kind=neq.message_received&read_at=is.null`,
         {
           cache: "no-store",
           headers: {
             apikey: config.apiKey,
             Authorization: `Bearer ${accessToken}`,
             Prefer: "count=exact",
-            Range: "0-0",
           },
         },
       ),
@@ -74,14 +73,13 @@ export async function GET(request: Request) {
         },
       ),
       fetch(
-        `${config.url}/rest/v1/messages?select=id,conversations!inner(id)&sender_profile_id=neq.${encodeURIComponent(user.id)}&read_at=is.null`,
+        `${config.url}/rest/v1/support_tickets?select=id&requester_profile_id=eq.${encodeURIComponent(user.id)}&status=neq.resolved&limit=0`,
         {
           cache: "no-store",
           headers: {
             apikey: config.apiKey,
             Authorization: `Bearer ${accessToken}`,
             Prefer: "count=exact",
-            Range: "0-0",
           },
         },
       ),
@@ -91,7 +89,7 @@ export async function GET(request: Request) {
       !itemsResponse.ok ||
       !countResponse.ok ||
       !bookingResponse.ok ||
-      !unreadMessagesResponse.ok
+      !openSupportTicketsResponse.ok
     ) {
       return failure("Não foi possível carregar notificações.", 503);
     }
@@ -106,8 +104,8 @@ export async function GET(request: Request) {
         count: getCount(countResponse.headers.get("content-range")),
         items: items.map(toNotificationItem),
         toast: bookingItems[0] ? toNotificationItem(bookingItems[0]) : null,
-        unreadMessagesCount: getCount(
-          unreadMessagesResponse.headers.get("content-range"),
+        openSupportTicketsCount: getCount(
+          openSupportTicketsResponse.headers.get("content-range"),
         ),
       },
       { headers: noStoreHeaders },
@@ -150,7 +148,8 @@ async function supabaseRequest<T>(
 
 function getCount(contentRange: string | null) {
   const total = contentRange?.match(/\/(\d+)$/)?.[1];
-  return total ? Number.parseInt(total, 10) : 0;
+  if (total === undefined) throw new Error("INVALID_NOTIFICATION_COUNT");
+  return Number.parseInt(total, 10);
 }
 
 function toNotificationItem(row: NotificationRow) {
@@ -168,13 +167,19 @@ function toNotificationItem(row: NotificationRow) {
 function isSafeNotificationHref(value: string | null) {
   if (!value || !value.startsWith("/")) return false;
   return (
+    value === "/app/suporte" ||
+    value === "/terapeuta/suporte" ||
     value === "/app/mensagens" ||
     value === "/terapeuta/mensagens" ||
     value === "/admin/terapias" ||
     /^\/(?:app\/encontros|terapeuta\/sessoes|admin\/suporte)\/[0-9a-f-]{36}$/i.test(
       value,
     ) ||
-    /^\/(?:app|terapeuta)\/mensagens\/suporte\/[0-9a-f-]{36}$/i.test(value)
+    /^\/(?:app|terapeuta)\/mensagens\/suporte\/[0-9a-f-]{36}$/i.test(value) ||
+    /^\/(?:app|terapeuta)\/suporte\/[0-9a-f-]{36}$/i.test(value) ||
+    /^\/terapeuta\/(?:mensagens|servicos)\/solicitar-terapia\?request=[0-9a-f-]{36}$/i.test(
+      value,
+    )
   );
 }
 

@@ -142,7 +142,7 @@ describe("SessionOperationActions", () => {
     );
 
     const cancelButton = screen.getByRole("button", {
-      name: "Cancelar sessão",
+      name: "Solicitar cancelamento",
     });
     expect(cancelButton).toBeDisabled();
     expect(cancelButton).toHaveAttribute(
@@ -283,7 +283,7 @@ describe("SessionOperationActions", () => {
     ).toBeEnabled();
   });
 
-  it("keeps therapist-initiated rescheduling as a proposal", async () => {
+  it("opens a therapist change without proposing a slot", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(() =>
@@ -310,17 +310,33 @@ describe("SessionOperationActions", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Solicitar reagendamento" }),
-    );
-    fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar alteração" }));
 
     expect(
-      screen.getByRole("heading", { name: "Confirmar proposta" }),
+      screen.getByRole("heading", { name: "Solicitar alteração" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Enviar proposta" }),
+      screen.getByRole("button", { name: "Enviar solicitação" }),
     ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "10:00" })).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enviar solicitação" }),
+    );
+
+    await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
+    const [requestUrl, request] = vi.mocked(fetch).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(requestUrl).toBe("/api/session/reschedule");
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      actorRole: "therapist",
+      command: {
+        action: "therapist_change",
+        kind: "reschedule",
+      },
+    });
   });
 });
 

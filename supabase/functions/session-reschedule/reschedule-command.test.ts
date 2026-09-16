@@ -102,7 +102,7 @@ Deno.test("rejects invalid request payloads", () => {
       bookingId,
       proposedStartsAt: "not-a-date",
       requestId,
-    }),
+    })
   );
 });
 
@@ -116,6 +116,40 @@ Deno.test("validates reschedule resolution", () => {
 
   assertEquals(result.action, "resolve");
   if (result.action === "resolve") assertEquals(result.resolution, "accepted");
+});
+
+Deno.test("opens a therapist change without requiring a proposed slot", () => {
+  const result = validateRescheduleCommand({
+    action: "therapist_change",
+    bookingId,
+    kind: "reschedule",
+    reason: "Preciso reorganizar minha agenda.",
+    requestId,
+  });
+
+  assertEquals(result.action, "therapist_change");
+  if (result.action === "therapist_change") {
+    assertEquals(result.kind, "reschedule");
+  }
+});
+
+Deno.test("requires a slot only when the patient chooses rescheduling", () => {
+  const refund = validateRescheduleCommand({
+    action: "resolve_therapist_change",
+    requestId,
+    rescheduleRequestId,
+    resolution: "refund",
+  });
+  assertEquals(refund.action, "resolve_therapist_change");
+
+  assertDomainError(() =>
+    validateRescheduleCommand({
+      action: "resolve_therapist_change",
+      requestId,
+      rescheduleRequestId,
+      resolution: "reschedule",
+    })
+  );
 });
 
 Deno.test("maps database conflicts safely", () => {

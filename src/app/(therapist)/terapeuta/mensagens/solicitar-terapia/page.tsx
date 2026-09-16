@@ -17,7 +17,7 @@ export default async function TherapistTherapyCatalogRequestPage({
   searchParams,
 }: PageProps) {
   const [session, params] = await Promise.all([
-    requireTherapistSession(therapistRoutePolicies.messages),
+    requireTherapistSession(therapistRoutePolicies.services),
     searchParams,
   ]);
   const config = getSupabasePublicConfig();
@@ -50,7 +50,7 @@ export default async function TherapistTherapyCatalogRequestPage({
           </h1>
           <p className="mt-3 text-sm leading-6 text-tesText-secondary">
             Tente novamente em instantes. Se o problema continuar, use a Central
-            de Mensagens para falar com o suporte.
+            de Suporte para falar com nossa equipe.
           </p>
         </section>
       </main>

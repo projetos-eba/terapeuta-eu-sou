@@ -45,7 +45,7 @@ describe("OnlineSessionCard", () => {
       screen.getByRole("link", { name: /pedir ajuda com pagamento/i }),
     ).toHaveAttribute(
       "href",
-      "/app/mensagens?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
+      "/app/suporte?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
     );
   });
 

@@ -402,7 +402,7 @@ function buildReminders(
     {
       count: withoutReturn.length,
       description: "Sem sessão há mais de 30 dias",
-      href: routes.therapist.messages,
+      href: routes.therapist.sessions,
       id: "stale",
       label: "clientes sem retorno",
       tone: "warning",

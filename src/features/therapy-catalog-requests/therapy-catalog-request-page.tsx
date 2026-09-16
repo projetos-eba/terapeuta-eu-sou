@@ -628,7 +628,7 @@ function SuccessDialog({ onClose }: { onClose: () => void }) {
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
           Obrigado por contribuir com a evolução do TES. Nossa equipe analisará
           as informações com cuidado e você receberá uma atualização na Central
-          de Mensagens e, quando disponível, por e-mail.
+          de Suporte e, quando disponível, por e-mail.
         </p>
       </div>
 
@@ -645,7 +645,7 @@ function SuccessDialog({ onClose }: { onClose: () => void }) {
         <SuccessDetail
           icon={Heart}
           text="Você receberá uma atualização quando houver novidade."
-          title="Central de Mensagens"
+          title="Suporte TES"
         />
         <SuccessDetail
           icon={ShieldCheck}

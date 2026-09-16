@@ -175,9 +175,7 @@ function SupportTicketPagination({
   pagination: MessageCenterPagination;
 }) {
   const baseHref =
-    actorRole === "patient"
-      ? routes.patient.messages
-      : routes.therapist.messages;
+    actorRole === "patient" ? routes.patient.support : routes.therapist.support;
   const first =
     pagination.total === 0
       ? 0

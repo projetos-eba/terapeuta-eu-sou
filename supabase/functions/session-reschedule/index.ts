@@ -11,10 +11,10 @@ import {
 import { assertLegacySessionFinancialCommand } from "../_shared/payments/session-flow-compatibility.ts";
 import {
   mapRescheduleDatabaseError,
+  type RescheduleCommandBody,
   resolveParticipantActorRole,
   resolvePatientRescheduleRpc,
   validateRescheduleCommand,
-  type RescheduleCommandBody,
 } from "./reschedule-command.ts";
 
 type BookingRow = {
@@ -103,8 +103,8 @@ runtime.serve(async (request) => {
           operation = resolvePatientRescheduleRpc(paymentFlowVersion);
           const result = await client.rpc<Record<string, unknown>>(operation, {
             p_booking_id: booking.id,
-            p_expected_booking_version:
-              command.expectedBookingVersion ?? booking.booking_version,
+            p_expected_booking_version: command.expectedBookingVersion ??
+              booking.booking_version,
             ...(paymentFlowVersion === "v10"
               ? { p_patient_user_id: user.id }
               : { p_actor_profile_id: user.id }),
@@ -123,8 +123,8 @@ runtime.serve(async (request) => {
         operation = "request_booking_reschedule_v1";
         const reschedule = await client.rpc<RescheduleRequestRow>(operation, {
           p_booking_id: booking.id,
-          p_expected_booking_version:
-            command.expectedBookingVersion ?? booking.booking_version,
+          p_expected_booking_version: command.expectedBookingVersion ??
+            booking.booking_version,
           p_expires_in_seconds: 172800,
           p_proposed_ends_at: proposedEndsAt,
           p_proposed_starts_at: proposedStartsAt.toISOString(),
@@ -140,6 +140,72 @@ runtime.serve(async (request) => {
           rescheduleRequestId: reschedule.id,
           status: "pending",
         });
+      }
+
+      if (command.action === "therapist_change") {
+        const booking = await getAuthorizedBooking(
+          client,
+          command.bookingId,
+          user.id,
+        );
+        if (booking.actorRole !== "therapist") {
+          throw new DomainError(
+            "reschedule_forbidden",
+            403,
+            "Você não pode solicitar esta alteração.",
+          );
+        }
+
+        operation = "open_therapist_booking_change_v1";
+        const result = await client.rpc<Record<string, unknown>>(operation, {
+          p_booking_id: booking.id,
+          p_expected_booking_version: command.expectedBookingVersion ??
+            booking.booking_version,
+          p_kind: command.kind,
+          p_reason: command.reason,
+          p_request_id: command.requestId,
+          p_therapist_user_id: user.id,
+        });
+        return success(result);
+      }
+
+      if (command.action === "resolve_therapist_change") {
+        const reschedule = await getAuthorizedReschedule(
+          client,
+          command.rescheduleRequestId,
+          user.id,
+        );
+        const booking = await getAuthorizedBooking(
+          client,
+          reschedule.booking_id,
+          user.id,
+        );
+        if (booking.actorRole !== "patient") {
+          throw new DomainError(
+            "reschedule_forbidden",
+            403,
+            "Você não pode decidir esta alteração.",
+          );
+        }
+
+        operation = "resolve_therapist_booking_change_v1";
+        const result = await client.rpc<Record<string, unknown>>(operation, {
+          p_expected_booking_version: command.expectedBookingVersion ??
+            booking.booking_version,
+          p_patient_user_id: user.id,
+          p_proposed_ends_at: command.proposedStartsAt
+            ? new Date(
+              new Date(command.proposedStartsAt).getTime() +
+                booking.service_duration_minutes_snapshot * 60_000,
+            ).toISOString()
+            : null,
+          p_proposed_starts_at: command.proposedStartsAt,
+          p_proposed_timezone: booking.timezone,
+          p_request_id: command.requestId,
+          p_reschedule_request_id: reschedule.id,
+          p_resolution: command.resolution,
+        });
+        return success(result);
       }
 
       const reschedule = await getAuthorizedReschedule(
@@ -184,10 +250,9 @@ runtime.serve(async (request) => {
         actor_role: "authenticated",
         correlation_id: correlationId,
         duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),
-        error_code:
-          error instanceof DomainError
-            ? error.code
-            : "session_reschedule_failed",
+        error_code: error instanceof DomainError
+          ? error.code
+          : "session_reschedule_failed",
         operation,
       }),
     );
@@ -227,9 +292,11 @@ async function getAuthorizedBooking(
   await assertParticipant(client, bookingId, userId);
 
   const [booking] = await client.get<BookingRow[]>(
-    `/rest/v1/bookings?select=id,booking_version:version,patient_profile_id,service_duration_minutes_snapshot,therapist_profile_id,timezone&id=eq.${encodeURIComponent(
-      bookingId,
-    )}&limit=1`,
+    `/rest/v1/bookings?select=id,booking_version:version,patient_profile_id,service_duration_minutes_snapshot,therapist_profile_id,timezone&id=eq.${
+      encodeURIComponent(
+        bookingId,
+      )
+    }&limit=1`,
   );
 
   if (!booking) {
@@ -242,14 +309,18 @@ async function getAuthorizedBooking(
 
   const [[patient], [therapist]] = await Promise.all([
     client.get<ProfileOwnerRow[]>(
-      `/rest/v1/patient_profiles?select=user_id&id=eq.${encodeURIComponent(
-        booking.patient_profile_id,
-      )}&limit=1`,
+      `/rest/v1/patient_profiles?select=user_id&id=eq.${
+        encodeURIComponent(
+          booking.patient_profile_id,
+        )
+      }&limit=1`,
     ),
     client.get<ProfileOwnerRow[]>(
-      `/rest/v1/therapist_profiles?select=user_id&id=eq.${encodeURIComponent(
-        booking.therapist_profile_id,
-      )}&limit=1`,
+      `/rest/v1/therapist_profiles?select=user_id&id=eq.${
+        encodeURIComponent(
+          booking.therapist_profile_id,
+        )
+      }&limit=1`,
     ),
   ]);
 
@@ -284,9 +355,11 @@ async function getAuthorizedReschedule(
   userId: string,
 ) {
   const [request] = await client.get<RescheduleRequestRow[]>(
-    `/rest/v1/booking_reschedule_requests?select=id,booking_id,requested_by_profile_id&id=eq.${encodeURIComponent(
-      rescheduleRequestId,
-    )}&limit=1`,
+    `/rest/v1/booking_reschedule_requests?select=id,booking_id,requested_by_profile_id&id=eq.${
+      encodeURIComponent(
+        rescheduleRequestId,
+      )
+    }&limit=1`,
   );
 
   if (!request) {

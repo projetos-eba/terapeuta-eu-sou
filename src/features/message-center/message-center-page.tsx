@@ -1,65 +1,27 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
-import {
-  BellDot,
-  Headphones,
-  MessageSquareDot,
-} from "lucide-react";
+import { BellDot, Headphones } from "lucide-react";
 
 import { TESDecorativeMedia } from "@/components/tes";
 import { SupportTicketSection } from "@/features/support/components/therapist-support-section";
 import { MessageCenterLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { platformAssets } from "@/lib/platform-assets";
-import { routes } from "@/lib/routes";
 
-import { MessageCenterActions } from "./components/message-center-actions";
 import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
-import { MessageThreadDialogButton } from "./components/message-thread-dialog";
 import { PlatformNotificationDialogButton } from "./components/platform-notification-dialog";
 import type {
-  MessageCenterCategory,
   MessageCenterPageData,
   MessageCenterPlatformItem,
-  MessageCenterThread,
 } from "./message-center.types";
 
 export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
-  const [readConversationCounts, setReadConversationCounts] = useState<
-    Record<string, number>
-  >({});
-  const threads = useMemo(
-    () =>
-      data.threads.map((thread) =>
-        readConversationCounts[thread.conversationId ?? thread.id]
-          ? { ...thread, isUnread: false, unreadCount: 0 }
-          : thread,
-      ),
-    [data.threads, readConversationCounts],
-  );
-  const locallyReadCount = Object.values(readConversationCounts).reduce(
-    (total, count) => total + count,
-    0,
-  );
-  const unreadMessagesCount = Math.max(
-    0,
-    data.metrics.unreadMessagesCount - locallyReadCount,
-  );
-  const markConversationRead = (
-    conversationId: string,
-    unreadCount: number,
-  ) => {
-    setReadConversationCounts((current) => ({
-      ...current,
-      [conversationId]: unreadCount,
-    }));
-  };
   const heroAsset =
     data.actorRole === "patient"
       ? platformAssets.patientMessagesHero
       : platformAssets.therapistMessagesHero;
+  const unreadPlatformItems = data.platformItems.filter(
+    (item) => item.isNotification && item.isUnread,
+  ).length;
 
   return (
     <main className="mx-auto grid w-full max-w-[1210px] gap-5 pb-10 text-tesText-primary">
@@ -77,18 +39,16 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
               {data.hero.description}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <MetricPill
-                icon={<MessageSquareDot aria-hidden="true" size={15} />}
-                label="Mensagens não lidas"
-                tone="danger"
-                value={unreadMessagesCount}
-              />
-              <MetricPill
-                icon={<BellDot aria-hidden="true" size={15} />}
-                label="Chamados abertos"
-                tone="warning"
-                value={data.metrics.openSupportTicketsCount}
-              />
+              <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-status-warningBg px-4 text-sm font-bold text-status-warning">
+                <Headphones aria-hidden="true" size={15} />
+                Chamados abertos {data.metrics.openSupportTicketsCount}
+              </span>
+              {unreadPlatformItems > 0 ? (
+                <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-brand-lavenderSoft px-4 text-sm font-bold text-brand-primary">
+                  <BellDot aria-hidden="true" size={15} />
+                  Avisos novos {unreadPlatformItems}
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="relative hidden min-h-[230px] overflow-hidden lg:block">
@@ -104,433 +64,65 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
-        <MessageCard
-          action={
-            <MessageCenterActions
-              actorRole={data.actorRole}
-              source={data.source}
-              templates={data.templates.participant}
-              threads={threads}
-              variant="participant"
-            />
-          }
-          description={data.participantSection.description}
-          emptyLabel="Nenhuma comunicação de sessão por enquanto."
-          items={threads}
-          onMarkedRead={markConversationRead}
-          pagination={data.participantPagination}
-          paginationBaseHref={
-            data.actorRole === "patient"
-              ? routes.patient.messages
-              : routes.therapist.messages
-          }
-          supportPage={data.supportPagination.page}
-          title={data.participantSection.title}
-          actorRole={data.actorRole}
-        />
+      <SupportTicketSection
+        actorRole={data.actorRole}
+        pagination={data.supportPagination}
+        tickets={data.supportTickets}
+      />
 
-        <SupportTicketSection
-          actorRole={data.actorRole}
-          conversationPage={data.participantPagination.page}
-          pagination={data.supportPagination}
-          tickets={data.supportTickets}
-        />
-      </section>
-
-      {data.actorRole === "patient" && data.platformItems.length > 0 ? (
-        <PlatformCard
-          action={
+      {data.platformItems.length > 0 ? (
+        <section className="rounded-card border border-brand-lavender bg-white shadow-card">
+          <header className="flex flex-col gap-3 border-b border-brand-lavender/70 px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-light italic text-brand-deep">
+                Avisos TES
+              </h2>
+              <p className="mt-1 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
+                Atualizações da plataforma sobre sua conta e suas sessões.
+              </p>
+            </div>
             <MarkNotificationsReadButton
               actorRole={data.actorRole}
-              unreadCount={
-                data.platformItems.filter(
-                  (item) => item.isNotification && item.isUnread,
-                ).length
-              }
+              unreadCount={unreadPlatformItems}
             />
-          }
-          description={data.platformSection.description}
-          items={data.platformItems}
-          title={data.platformSection.title}
-        />
+          </header>
+          <div className="divide-y divide-brand-lavender/70">
+            {data.platformItems.map((item) => (
+              <PlatformRow item={item} key={item.id} />
+            ))}
+          </div>
+        </section>
       ) : null}
     </main>
   );
 }
 
-function MessageCard({
-  actorRole,
-  action,
-  description,
-  emptyLabel,
-  items,
-  pagination,
-  paginationBaseHref,
-  onMarkedRead,
-  supportPage,
-  title,
-}: {
-  actorRole: MessageCenterPageData["actorRole"];
-  action: ReactNode;
-  description: string;
-  emptyLabel: string;
-  items: MessageCenterThread[];
-  pagination: MessageCenterPageData["participantPagination"];
-  paginationBaseHref: string;
-  onMarkedRead: (conversationId: string, unreadCount: number) => void;
-  supportPage: number;
-  title: string;
-}) {
-  return (
-    <section className="rounded-card border border-brand-lavender bg-white shadow-card">
-      <CardHeader action={action} description={description} title={title} />
-      <div
-        aria-label="Tabela de conversas"
-        className="divide-y divide-brand-lavender/70"
-        role="table"
-      >
-        {items.length > 0 ? (
-          items.map((item) => (
-            <ThreadRow
-              actorRole={actorRole}
-              item={item}
-              key={item.id}
-              onMarkedRead={onMarkedRead}
-            />
-          ))
-        ) : (
-          <EmptyRow label={emptyLabel} />
-        )}
-      </div>
-      <CollectionPagination
-        baseHref={paginationBaseHref}
-        currentPage={pagination.page}
-        label="conversas"
-        otherPage={supportPage}
-        otherPageParam="supportPage"
-        pageParam="conversationPage"
-        pagination={pagination}
-      />
-    </section>
-  );
-}
-
-function PlatformCard({
-  action,
-  description,
-  items,
-  title,
-}: {
-  action: ReactNode;
-  description: string;
-  items: MessageCenterPlatformItem[];
-  title: string;
-}) {
-  return (
-    <section className="rounded-card border border-brand-lavender bg-white shadow-card">
-      <CardHeader action={action} description={description} title={title} />
-      <div className="divide-y divide-brand-lavender/70">
-        {items.length > 0 ? (
-          items.map((item) => <PlatformRow item={item} key={item.id} />)
-        ) : (
-          <EmptyRow label="Nenhum aviso da plataforma por enquanto." />
-        )}
-      </div>
-    </section>
-  );
-}
-
-function CardHeader({
-  action,
-  description,
-  title,
-}: {
-  action: ReactNode;
-  description: string;
-  title: string;
-}) {
-  return (
-    <header className="flex flex-col gap-3 border-b border-brand-lavender/70 px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h2 className="font-display text-2xl font-light italic text-brand-deep">
-          {title}
-        </h2>
-        <p className="mt-1 max-w-md text-xs font-semibold leading-5 text-tesText-secondary">
-          {description}
-        </p>
-      </div>
-      {action}
-    </header>
-  );
-}
-
-function ThreadRow({
-  actorRole,
-  item,
-  onMarkedRead,
-}: {
-  actorRole: MessageCenterPageData["actorRole"];
-  item: MessageCenterThread;
-  onMarkedRead: (conversationId: string, unreadCount: number) => void;
-}) {
-  return (
-    <article
-      className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_auto]"
-      role="row"
-    >
-      <Avatar name={item.name} src={item.avatarUrl} />
-      <div className="min-w-0">
-        <p className="truncate text-xs font-bold text-tesText-secondary">
-          {item.name}
-        </p>
-        <h3 className="mt-1 min-w-0 truncate">
-          <MessageThreadDialogButton
-            actorRole={actorRole}
-            onMarkedRead={onMarkedRead}
-            thread={item}
-            trigger="title"
-          />
-        </h3>
-        <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
-          {item.body}
-        </p>
-        {item.sessionContext ? (
-          <p className="mt-1 text-xs font-bold text-brand-primary">
-            {item.sessionContext}
-          </p>
-        ) : null}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <CategoryBadge category={item.category} label={item.categoryLabel} />
-          {item.isUnread ? (
-            <UnreadDot label="Mensagem não lida" tone="danger" />
-          ) : null}
-        </div>
-        {item.cta && item.cta.action !== "view_session" ? (
-          <div className="mt-3">
-            <Link
-              className="inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
-              href={item.cta.href}
-            >
-              {item.cta.label}
-            </Link>
-          </div>
-        ) : null}
-      </div>
-      <div className="col-start-2 flex flex-wrap items-center gap-3 sm:col-start-3 sm:row-start-1 sm:row-span-2 sm:flex-col sm:items-end sm:justify-start">
-        <p className="text-xs font-semibold text-tesText-secondary sm:text-right">
-          {item.timeLabel}
-        </p>
-        <MessageThreadDialogButton
-          actorRole={actorRole}
-          onMarkedRead={onMarkedRead}
-          thread={item}
-        />
-      </div>
-    </article>
-  );
-}
-
 function PlatformRow({ item }: { item: MessageCenterPlatformItem }) {
   return (
-    <article className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)] gap-4 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_88px]">
+    <article className="grid min-h-[78px] grid-cols-[48px_minmax(0,1fr)_auto] gap-4 px-5 py-4">
       <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-        <Headphones aria-hidden="true" size={22} />
+        <BellDot aria-hidden="true" size={21} />
       </span>
       <div className="min-w-0">
-        <p className="truncate text-xs font-bold text-tesText-secondary">
-          {item.categoryLabel}
-        </p>
-        <h3 className="mt-1 min-w-0 truncate">
-          <PlatformNotificationDialogButton item={item} />
-        </h3>
-        <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-extrabold text-brand-deep">
+            {item.title}
+          </h3>
+          {item.isUnread ? (
+            <span
+              aria-label="Aviso não lido"
+              className="size-2 rounded-full bg-brand-primary"
+            />
+          ) : null}
+        </div>
+        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-6 text-tesText-secondary">
           {item.body}
         </p>
-        {item.cta ? (
-          <Link
-            className="mt-2 inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
-            href={item.cta.href}
-          >
-            {item.cta.label}
-          </Link>
-        ) : null}
+        <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+          {item.timeLabel}
+        </p>
       </div>
-      <p className="col-start-2 flex items-center gap-2 text-xs font-semibold text-tesText-secondary sm:col-start-auto sm:justify-end sm:text-right">
-        {item.isUnread ? <UnreadDot /> : null}
-        {item.timeLabel}
-      </p>
+      <PlatformNotificationDialogButton item={item} />
     </article>
-  );
-}
-
-function MetricPill({
-  icon,
-  label,
-  tone,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  tone: "danger" | "warning";
-  value: number;
-}) {
-  const toneClass =
-    tone === "danger"
-      ? "bg-status-dangerBg text-status-danger"
-      : "bg-status-warningBg text-status-warning";
-
-  return (
-    <span
-      className={`inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-xs font-extrabold ${toneClass}`}
-    >
-      {icon}
-      {label}
-      <strong>{value}</strong>
-    </span>
-  );
-}
-
-function Avatar({ name, src }: { name: string; src: string | null }) {
-  if (src) {
-    return (
-      <Image
-        alt=""
-        className="size-12 rounded-full object-cover"
-        height={48}
-        src={src}
-        width={48}
-      />
-    );
-  }
-
-  return (
-    <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
-      {name.trim().slice(0, 1).toLocaleUpperCase("pt-BR")}
-    </span>
-  );
-}
-
-function CategoryBadge({
-  category,
-  label,
-}: {
-  category: MessageCenterCategory;
-  label: string;
-}) {
-  const tones: Record<MessageCenterCategory, string> = {
-    acompanhamento: "bg-status-infoBg text-status-info",
-    atendimento: "bg-brand-lavenderSoft text-brand-primary",
-    atualizacao: "bg-status-dangerBg text-status-danger",
-    confirmacao: "bg-status-successBg text-status-success",
-    duvida: "bg-brand-lavenderSoft text-brand-primary",
-    feedback: "bg-status-successBg text-status-success",
-    financeiro: "bg-status-successBg text-status-success",
-    plataforma: "bg-brand-lavenderSoft text-brand-primary",
-    reagendamento: "bg-status-warningBg text-status-warning",
-    suporte: "bg-brand-lavenderSoft text-brand-primary",
-  };
-
-  return (
-    <span
-      className={`inline-flex min-h-6 items-center rounded-full px-3 text-[11px] font-extrabold ${tones[category]}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function UnreadDot({
-  label = "Não lida",
-  tone = "primary",
-}: {
-  label?: string;
-  tone?: "danger" | "primary";
-}) {
-  return (
-    <span
-      aria-label={label}
-      className={`inline-block size-2.5 rounded-full ${tone === "danger" ? "bg-status-danger" : "bg-brand-primary"}`}
-    />
-  );
-}
-
-function EmptyRow({ label }: { label: string }) {
-  return (
-    <div className="px-5 py-10 text-center text-sm font-semibold text-tesText-secondary">
-      {label}
-    </div>
-  );
-}
-
-export function CollectionPagination({
-  baseHref,
-  currentPage,
-  label,
-  otherPage,
-  otherPageParam,
-  pageParam,
-  pagination,
-}: {
-  baseHref: string;
-  currentPage: number;
-  label: string;
-  otherPage: number;
-  otherPageParam: "conversationPage" | "supportPage";
-  pageParam: "conversationPage" | "supportPage";
-  pagination: MessageCenterPageData["participantPagination"];
-}) {
-  const first =
-    pagination.total === 0 ? 0 : (currentPage - 1) * pagination.pageSize + 1;
-  const last = Math.min(pagination.total, currentPage * pagination.pageSize);
-  const makeHref = (page: number) => {
-    const params = new URLSearchParams();
-    if (page > 1) params.set(pageParam, String(page));
-    if (otherPage > 1) params.set(otherPageParam, String(otherPage));
-    const query = params.toString();
-    return query ? `${baseHref}?${query}` : baseHref;
-  };
-
-  return (
-    <nav
-      aria-label={`Paginação de ${label}`}
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-lavender/70 px-5 py-4"
-    >
-      <p className="text-xs font-semibold text-tesText-secondary">
-        {first}-{last} de {pagination.total} {label}
-      </p>
-      <div className="flex items-center gap-2">
-        {currentPage > 1 ? (
-          <Link
-            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary"
-            href={makeHref(currentPage - 1)}
-          >
-            Anterior
-          </Link>
-        ) : (
-          <span
-            aria-disabled="true"
-            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-tesText-secondary/60"
-          >
-            Anterior
-          </span>
-        )}
-        {pagination.hasNext ? (
-          <Link
-            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary px-4 text-xs font-extrabold text-white"
-            href={makeHref(currentPage + 1)}
-          >
-            Próxima
-          </Link>
-        ) : (
-          <span
-            aria-disabled="true"
-            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary/40 px-4 text-xs font-extrabold text-white"
-          >
-            Próxima
-          </span>
-        )}
-      </div>
-    </nav>
   );
 }

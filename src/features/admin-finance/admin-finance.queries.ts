@@ -121,6 +121,14 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
         "warning",
       ),
       metric(
+        "therapist-change-refund-reviews",
+        "Análises de reembolso",
+        "Casos de alteração do terapeuta que exigem decisão administrativa.",
+        "booking_reschedule_requests?status=eq.pending_admin_review",
+        "booking_reschedule_requests",
+        "warning",
+      ),
+      metric(
         "open-disputes",
         "Disputas abertas",
         "Disputas sem fechamento.",

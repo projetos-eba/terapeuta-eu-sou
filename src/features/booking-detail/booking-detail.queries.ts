@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 
 import {
   getSupabaseServerRestConfig,
@@ -118,7 +119,7 @@ export const getPatientSessionDetailPage = cache(
         ),
         supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
           config,
-          `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+          `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at,change_kind&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
         ),
         supabaseServerRestRequest<BookingDetailCancellationDecisionRow[]>(
           config,
@@ -212,8 +213,17 @@ export const getPatientSessionDetailPage = cache(
         therapy,
       });
 
+      const delayNotice = await getSessionDelayNoticeState({
+        accessToken: config.accessToken,
+        actorRole: "patient",
+        bookingId: booking.id,
+        bookingVersion: booking.version,
+        userId: profileId,
+      });
+
       return {
         ...detail,
+        delayNotice,
         paymentRecovery: {
           ...mapSessionChargeStatus(chargeStatus),
           checkoutAvailable: mapCheckoutRetryAvailability(

@@ -142,6 +142,8 @@ export function ZoomVideoControls({
           <a
             className="inline-flex min-h-12 items-center gap-2 rounded-full border-l border-brand-lavender px-3 text-brand-deep transition hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"
             href={supportHref}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             <span className="grid size-9 place-items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft text-brand-primary">
               <CircleHelp aria-hidden="true" size={19} />

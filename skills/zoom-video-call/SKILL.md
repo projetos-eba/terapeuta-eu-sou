@@ -139,6 +139,11 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
 - Paciente e terapeuta devem consultar os read models já existentes antes de
   renderizar a sala.
 - A autorização definitiva continua em `/api/zoom/video-session-access`.
+- A preparação/espera mostra sempre “Não conseguiu entrar? Falar com o
+  Suporte”. Na sala ativa, “Suporte” usa o mesmo WhatsApp TES
+  (`src/lib/support-whatsapp.ts`) em nova aba segura, sem nomes, credenciais
+  ou horário na mensagem pré-preenchida. Tickets autenticados seguem na
+  Central de Suporte.
 - Não criar fallback demonstrativo nem dados locais para preencher a sala.
 
 ## Segurança e copy

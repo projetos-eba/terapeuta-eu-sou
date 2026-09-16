@@ -13,11 +13,11 @@ export function PatientActivitySection({
 }) {
   const cards = [
     {
-      description: `${activity.unreadMessagesCount} não ${activity.unreadMessagesCount === 1 ? "lida" : "lidas"}`,
-      href: routes.patient.messages,
+      description: `${activity.openSupportTicketsCount ?? 0} ${activity.openSupportTicketsCount === 1 ? "chamado aberto" : "chamados abertos"}`,
+      href: routes.patient.support,
       kind: "messages" as const,
-      label: "Mensagens",
-      linkLabel: "Ver mensagens",
+      label: "Suporte",
+      linkLabel: "Ver chamados",
     },
     {
       description: `${activity.favoritesCount} ${activity.favoritesCount === 1 ? "favorito" : "favoritos"}`,

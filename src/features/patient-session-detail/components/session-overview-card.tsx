@@ -339,7 +339,7 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
 
 function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   const supportHref =
-    `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+    `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
   const paymentRetryHref =
     `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>;
 
