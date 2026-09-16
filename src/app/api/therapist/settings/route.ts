@@ -100,6 +100,13 @@ export async function PATCH(request: Request) {
     );
   } catch (error) {
     if (error instanceof TherapistSettingsQueryError) {
+      if (error.code === "phone_in_use") {
+        return failure(
+          "Este telefone já está em uso em outra conta de terapeuta.",
+          409,
+          "PHONE_IN_USE",
+        );
+      }
       if (error.code === "cpf_in_use") {
         return failure(
           "Este documento já está em uso em outra conta.",

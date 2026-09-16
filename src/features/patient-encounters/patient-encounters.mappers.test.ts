@@ -390,6 +390,10 @@ describe("patient encounters mapper", () => {
 
     expect(result.historyEncounters[0]?.status).toBe("completed");
     expect(result.historyEncounters[0]?.statusLabel).toBe("Já realizada");
+    expect(result.historyEncounters[0]?.primaryAction).toMatchObject({
+      href: `/app/encontros/${booking.id}`,
+      label: "Ver detalhes do encontro",
+    });
   });
 
   it("keeps cancelled encounters in history with refund-oriented action", () => {
@@ -426,7 +430,7 @@ describe("patient encounters mapper", () => {
     );
   });
 
-  it("places the feedback query before the history fragment", () => {
+  it("sends a pending confirmation to the corresponding encounter details", () => {
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000008",
       new Date(Date.now() - 3 * 60 * 60 * 1000),
@@ -451,8 +455,9 @@ describe("patient encounters mapper", () => {
     });
 
     expect(result.historyEncounters[0]?.primaryAction).toMatchObject({
-      href: `/app/encontros?feedback=${booking.id}#patient-history-encounters-title`,
+      href: `/app/encontros/${booking.id}?feedback=1`,
       kind: "link",
+      label: "Ver detalhes do encontro",
     });
   });
 

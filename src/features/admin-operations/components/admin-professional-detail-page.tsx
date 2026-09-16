@@ -72,13 +72,16 @@ export function AdminProfessionalDetailPage({
   const traceability = findSection(data, "Rastreabilidade")?.fields ?? [];
 
   const name = data.title;
-  const status = formatStatusLabel(data.statusLabel);
   const plan = formatPlanLabel(profile.get("Plano"));
   const publicSlug = identity.get("Slug público") ?? "";
   const hasPublishedProfile = Boolean(
     data.publicProfile?.content && publicSlug,
   );
   const publication = describePublication(profile);
+  const status = displayProfessionalStatus(
+    formatStatusLabel(data.statusLabel),
+    publication,
+  );
   const progressStages = buildProfessionalProgressStages({
     profile,
     traceability,
@@ -214,7 +217,10 @@ export function AdminProfessionalDetailPage({
                 </p>
               </section>
             ) : null}
-            <AdminProfileReviewPanel review={data.profileReview} />
+            <AdminProfileReviewPanel
+              publicationStatus={publication}
+              review={data.profileReview}
+            />
           </AppPageMain>
 
           <AppPageAside>
@@ -966,8 +972,18 @@ function describePublication(fields: Map<string, string>) {
   return published || publicStatus || "";
 }
 
+function displayProfessionalStatus(status: string, publication: string) {
+  if (status !== "Aprovado") return status;
+
+  return publication === "Publicado e elegível"
+    ? publication
+    : "Aprovado · falta publicar";
+}
+
 function statusTone(status: string) {
-  if (status === "Aprovado" || status === "Ativo") return "success" as const;
+  if (status === "Publicado e elegível" || status === "Ativo") {
+    return "success" as const;
+  }
   if (status === "Suspenso" || status === "Não aprovado")
     return "danger" as const;
   if (status === "Em análise" || status === "Ajustes solicitados") {

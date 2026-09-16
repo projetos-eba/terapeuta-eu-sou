@@ -69,6 +69,12 @@ editável` (`13425:778`).
 
 ## QA
 
+- Em sessões não realizadas, mostrar chegada na tolerância e join confiável
+  como evidências distintas. O Admin decide com justificativa e `requestId`;
+  valores, política, taxa, Transfer e elegibilidade são derivados no servidor.
+  Retenção só aparece quando o snapshot da reserva a autoriza. Falha do TES não
+  pode gerar responsabilidade, dívida ou reincidência do terapeuta.
+
 - `npm run typecheck`
 - `npm run lint`
 - `npm run test`

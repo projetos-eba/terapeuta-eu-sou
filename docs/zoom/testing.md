@@ -261,3 +261,10 @@ enfileirados não são reservados e que fim agendado, hard timeout e fim manual
 previamente autorizado continuam terminais.
 O teste de dois dispositivos usa duas montagens isoladas da espera e respostas
 controladas de access; não representa dois dispositivos físicos nem Zoom real.
+
+A regressão `126_session_attendance_accountability.sql` cobre a chegada
+autenticada, idempotência por participante e versão, classificação em T+10,
+ausência do terapeuta, ausência dupla, bloqueio financeiro e a garantia de que
+o classificador não cria Refund, Reversal ou dívida de taxa. A homologação real
+deve repetir os quatro quadrantes de presença e também o caso em que ambos
+chegam, mas um join não se concretiza até o fim.

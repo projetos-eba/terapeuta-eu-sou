@@ -16,7 +16,6 @@ describe("therapist settings mappers", () => {
         email: "ana@example.test",
         id: userId,
         phone: "+55 11 99999-9999",
-        publicationEligibility: true,
         therapistProfile: {
           id: profileId,
           isAcceptingBookings: true,
@@ -26,6 +25,10 @@ describe("therapist settings mappers", () => {
           publicStatus: "published",
           slug: "ana-oliveira",
           status: "approved",
+        },
+        publication: {
+          isPubliclyVisible: true,
+          needsReceivingAccount: false,
         },
       }),
     ).toMatchObject({
@@ -41,6 +44,10 @@ describe("therapist settings mappers", () => {
         isPubliclyAvailable: true,
         plan: "premium_plus",
         profileId,
+        publication: {
+          isPubliclyVisible: true,
+          needsReceivingAccount: false,
+        },
         publicUrl: "/terapeutas/ana-oliveira",
         status: "approved",
       },

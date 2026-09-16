@@ -209,12 +209,27 @@ export type AdminSessionFeedbackItem = {
 
 export type AdminSessionAttendance = {
   bothJoined: boolean;
+  classification: string | null;
+  classificationSource: string | null;
+  financialResolution: string | null;
+  incidentId: string | null;
+  patientArrivedAt: string | null;
   patientJoined: boolean;
+  patientJoinedAt: string | null;
+  patientPresentAtTolerance: boolean;
+  processingCostRecoveryAuthorized: boolean;
+  resolution: string | null;
+  responsibility: string | null;
+  retentionAuthorized: boolean;
+  reviewDueAt: string | null;
   sessionClosed: boolean;
   sessionEndedAt: string | null;
   sessionEndsAt: string | null;
   sessionStartedAt: string | null;
   therapistJoined: boolean;
+  therapistArrivedAt: string | null;
+  therapistJoinedAt: string | null;
+  therapistPresentAtTolerance: boolean;
 };
 
 export type AdminSessionConfirmation = {

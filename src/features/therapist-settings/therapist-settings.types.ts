@@ -43,6 +43,10 @@ export type TherapistSettingsData = {
     publicName: string;
     publicStatus: string;
     publicUrl: string;
+    publication: {
+      isPubliclyVisible: boolean;
+      needsReceivingAccount: boolean;
+    };
     status: TherapistStatus;
   };
 };

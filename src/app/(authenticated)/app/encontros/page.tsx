@@ -1,8 +1,11 @@
+import { redirect } from "next/navigation";
+
 import {
   PatientEncountersPage,
   getPatientEncountersPage,
 } from "@/features/patient-encounters";
 import { requirePatientSession } from "@/lib/auth/patient-session";
+import { routes } from "@/lib/routes";
 
 export default async function PatientEncountersRoute({
   searchParams,
@@ -16,6 +19,10 @@ export default async function PatientEncountersRoute({
   );
   const requestedHistoryPage = parsePage(firstString(params.historyPage));
 
+  if (requestedBooking) {
+    redirect(`${routes.patient.encounterDetail(requestedBooking)}?feedback=1`);
+  }
+
   try {
     const data = await getPatientEncountersPage(
       session.profileId,
@@ -23,12 +30,7 @@ export default async function PatientEncountersRoute({
       { historyPage: requestedHistoryPage },
     );
 
-    return (
-      <PatientEncountersPage
-        data={data}
-        initialFeedbackBookingId={requestedBooking}
-      />
-    );
+    return <PatientEncountersPage data={data} />;
   } catch {
     return (
       <main className="mx-auto grid w-full max-w-[840px] gap-4 pb-12 pt-8 text-tesText-primary">

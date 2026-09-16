@@ -14,6 +14,12 @@ export type SessionModality = "online";
 export type SessionReadModelItem = {
   attendanceSource: AttendanceSource;
   attendanceStatus: AttendanceStatus;
+  attendanceIncidentId?: string | null;
+  attendanceReviewStatus?: string | null;
+  attendanceReviewDueAt?: string | null;
+  attendanceResponsibility?: string | null;
+  attendanceResolution?: string | null;
+  attendanceFinancialResolution?: string | null;
   bookingId: string;
   sessionReference: string;
   bookingStatus: BookingStatus;

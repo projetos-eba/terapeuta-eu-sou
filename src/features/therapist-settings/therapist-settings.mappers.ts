@@ -22,6 +22,7 @@ export function mapTherapistSettingsData(
 ): TherapistSettingsData {
   const value = asObject(input);
   const profile = firstObject(value.therapistProfile);
+  const publication = mapPublicationState(value.publication);
 
   const slug = stringOr(profile.slug, "");
 
@@ -38,7 +39,7 @@ export function mapTherapistSettingsData(
     profile: {
       isAcceptingBookings: Boolean(profile.isAcceptingBookings),
       isPublic: Boolean(profile.isPublic),
-      isPubliclyAvailable: Boolean(value.publicationEligibility),
+      isPubliclyAvailable: publication.isPubliclyVisible,
       plan: plan(profile.plan),
       profileId: requiredString(profile.id),
       publicName: stringOr(profile.publicName, ""),
@@ -46,8 +47,17 @@ export function mapTherapistSettingsData(
       publicUrl: slug
         ? routes.public.therapistProfile(slug)
         : routes.therapist.profile,
+      publication,
       status: status(profile.status),
     },
+  };
+}
+
+function mapPublicationState(value: unknown) {
+  const state = asObject(value);
+  return {
+    isPubliclyVisible: Boolean(state.isPubliclyVisible),
+    needsReceivingAccount: Boolean(state.needsReceivingAccount),
   };
 }
 

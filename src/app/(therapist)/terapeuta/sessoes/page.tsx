@@ -1125,6 +1125,7 @@ function isCancelledSession(item: SessionReadModelItem) {
     item.bookingStatus === BookingStatus.CancelledByTherapist ||
     item.bookingStatus === BookingStatus.NoShowPatient ||
     item.bookingStatus === BookingStatus.NoShowTherapist ||
+    item.bookingStatus === BookingStatus.NoShowBoth ||
     item.bookingStatus === BookingStatus.CancelledByPayment ||
     item.bookingStatus === BookingStatus.Refunded
   );

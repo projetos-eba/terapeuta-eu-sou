@@ -4,7 +4,6 @@ import {
   render,
   screen,
   waitFor,
-  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -162,14 +161,14 @@ describe("TherapistSettingsPage", () => {
     expect(addressGrid).toContainElement(screen.getByLabelText("Endereço"));
   });
 
-  it("does not present raw publication flags as public before eligibility is confirmed", () => {
+  it("does not present an unavailable profile as public while receiving setup is pending", () => {
     const settings = settingsFixture();
-    settings.profile = {
-      ...settings.profile,
-      isPublic: true,
-      isPubliclyAvailable: false,
-      publicStatus: "published",
-      status: "submitted",
+    settings.profile.isAcceptingBookings = true;
+    settings.profile.isPublic = true;
+    settings.profile.publicStatus = "published";
+    settings.profile.publication = {
+      isPubliclyVisible: false,
+      needsReceivingAccount: true,
     };
 
     render(
@@ -179,24 +178,15 @@ describe("TherapistSettingsPage", () => {
       />,
     );
 
-    const privacySection = screen
-      .getByRole("heading", { name: "Privacidade e publicação" })
-      .closest("section");
-
-    expect(privacySection).not.toBeNull();
+    expect(screen.getByText("Ainda não disponível")).toBeInTheDocument();
     expect(
-      within(privacySection!).getByText("Aguardando aprovação"),
+      screen.getByText("Aguardando conta de recebimento"),
     ).toBeInTheDocument();
     expect(
-      within(privacySection!).getByText("Não visível ao público"),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Concluir conta de recebimento" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=account");
     expect(
-      within(privacySection!).getByText("Ainda não recebendo sessões"),
-    ).toBeInTheDocument();
-    expect(
-      within(privacySection!).queryByRole("link", {
-        name: "Ver perfil público",
-      }),
+      screen.queryByRole("link", { name: "Ver perfil público" }),
     ).not.toBeInTheDocument();
   });
 
@@ -562,6 +552,10 @@ function settingsFixture(): TherapistSettingsData {
       publicName: "Ana Oliveira",
       publicStatus: "draft",
       publicUrl: "/terapeutas/ana-oliveira",
+      publication: {
+        isPubliclyVisible: false,
+        needsReceivingAccount: false,
+      },
       status: "draft",
     },
   };

@@ -2,8 +2,10 @@ import Image from "next/image";
 import type { AdminProfessionalProfileReview } from "../admin-operations.types";
 
 export function AdminProfileReviewPanel({
+  publicationStatus = "",
   review,
 }: {
+  publicationStatus?: string;
   review: AdminProfessionalProfileReview | null | undefined;
 }) {
   if (!review) {
@@ -21,7 +23,7 @@ export function AdminProfileReviewPanel({
   }
 
   const { fields } = review;
-  const statusLabel =
+  const verificationStatus =
     review.verificationStatus === "submitted"
       ? "Aguardando análise"
       : review.verificationStatus === "in_review"
@@ -29,6 +31,13 @@ export function AdminProfileReviewPanel({
         : review.verificationStatus === "approved"
           ? "Aprovado"
           : "Versão enviada";
+  const statusLabel =
+    verificationStatus === "Aprovado"
+      ? publicationStatus === "Publicado e elegível"
+        ? publicationStatus
+        : "Aprovado · falta publicar"
+      : verificationStatus;
+  const isPublishedEligible = statusLabel === "Publicado e elegível";
 
   return (
     <section
@@ -47,12 +56,22 @@ export function AdminProfileReviewPanel({
             Conteúdo enviado para revisão
           </h2>
           <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-            Esta é a versão que ficará pública somente depois da decisão da
-            equipe TES. Enquanto a análise estiver pendente, o perfil segue
-            oculto para pacientes.
+            {isPublishedEligible
+              ? "Esta versão está pública e elegível para novos agendamentos."
+              : verificationStatus === "Aprovado"
+                ? "A revisão foi aprovada. A publicação ainda precisa ser concluída para o perfil ficar público e elegível."
+                : "Esta é a versão que ficará pública somente depois da decisão da equipe TES. Enquanto a análise estiver pendente, o perfil segue oculto para pacientes."}
           </p>
         </div>
-        <span className="inline-flex min-h-9 items-center rounded-full bg-status-warningBg px-3 text-sm font-extrabold text-status-warning">
+        <span
+          className={`inline-flex min-h-9 items-center rounded-full px-3 text-sm font-extrabold ${
+            isPublishedEligible
+              ? "bg-status-successBg text-status-success"
+              : verificationStatus === "Aprovado"
+                ? "bg-brand-lavenderSoft text-brand-primary"
+                : "bg-status-warningBg text-status-warning"
+          }`}
+        >
           {statusLabel}
         </span>
       </div>

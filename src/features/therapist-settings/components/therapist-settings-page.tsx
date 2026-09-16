@@ -520,6 +520,8 @@ function SecuritySection({ email }: { email: string }) {
 }
 
 function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
+  const publication = publicationCopy(settings.profile);
+
   return (
     <AppPageSection className="grid gap-6">
       <SectionHeading
@@ -531,12 +533,13 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           icon={CheckCircle2}
           label="Perfil público"
-          value={publicationStatusLabel(settings.profile)}
+          value={publication.profileLabel}
         />
         <ReadOnlyFact
           icon={CalendarDays}
           label="Reservas"
           value={
+            settings.profile.publication.isPubliclyVisible &&
             settings.profile.isAcceptingBookings
               ? "Recebendo novas sessões"
               : "Ainda não recebendo sessões"
@@ -545,21 +548,25 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           icon={ExternalLink}
           label="Visibilidade do perfil"
-          value={
-            settings.profile.isPubliclyAvailable
-              ? "Visível para pessoas"
-              : "Não visível ao público"
-          }
+          value={publication.visibilityLabel}
         />
       </div>
       <AppPageActions>
-        {settings.profile.isPubliclyAvailable ? (
+        {settings.profile.publication.isPubliclyVisible ? (
           <TESButton
             className="rounded-lg"
             href={settings.profile.publicUrl}
             variant="secondary"
           >
             Ver perfil público
+          </TESButton>
+        ) : publication.needsReceivingAccount ? (
+          <TESButton
+            className="rounded-lg"
+            href={`${routes.therapist.finance}?tab=account`}
+            variant="secondary"
+          >
+            Concluir conta de recebimento
           </TESButton>
         ) : null}
         <TESButton
@@ -661,9 +668,9 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           label="Perfil público"
           value={
-            settings.profile.isPubliclyAvailable
+            settings.profile.publication.isPubliclyVisible
               ? "Perfil publicado"
-              : publicationStatusLabel(settings.profile)
+              : "Ainda não publicado"
           }
         />
         <ReadOnlyFact
@@ -941,15 +948,38 @@ function profileStatusLabel(
   return labels[status];
 }
 
-function publicationStatusLabel(
-  profile: TherapistSettingsData["profile"],
-) {
-  if (profile.isPubliclyAvailable) return "Publicado";
-  if (profile.status === "submitted" || profile.status === "in_review") {
-    return "Aguardando aprovação";
+function publicationCopy(profile: TherapistSettingsData["profile"]) {
+  if (profile.publication.isPubliclyVisible) {
+    return {
+      needsReceivingAccount: false,
+      profileLabel: "Publicado",
+      visibilityLabel: "Publicado",
+    };
   }
-  if (profile.status === "changes_requested") return "Ajustes necessários";
-  if (profile.status === "rejected") return "Cadastro não aprovado";
-  if (profile.status === "suspended") return "Suspenso";
-  return "Ainda não publicado";
+
+  if (profile.publication.needsReceivingAccount) {
+    return {
+      needsReceivingAccount: true,
+      profileLabel: "Ainda não disponível",
+      visibilityLabel: "Aguardando conta de recebimento",
+    };
+  }
+
+  return {
+    needsReceivingAccount: false,
+    profileLabel: "Ainda não disponível",
+    visibilityLabel: publicStatusLabel(profile.publicStatus),
+  };
+}
+
+function publicStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    archived: "Arquivado",
+    draft: "Rascunho",
+    published: "Publicado",
+    suspended: "Suspenso",
+    unpublished: "Despublicado",
+  };
+
+  return labels[status] ?? "Rascunho";
 }

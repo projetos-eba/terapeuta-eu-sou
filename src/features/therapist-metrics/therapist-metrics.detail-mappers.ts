@@ -445,6 +445,7 @@ function outcomeKey(value: unknown): TherapistSessionOutcomeKey {
     "completed",
     "no_show_patient",
     "no_show_therapist",
+    "no_show_both",
   );
 }
 

@@ -282,6 +282,22 @@ Never expose, log, screenshot, or write real secret values.
   after a provider failure. Verify the booking transition and local decision
   before treating a Stripe response as success.
 - Use Stripe test mode only and never real cards.
+- Attendance incidents are financially fail-closed. Classification at T+10
+  may block a payment, but only an Admin decision with reason and requestId can
+  authorize reschedule, refund, or future-policy retention. V10 refunds attempt
+  Transfer Reversal before Refund; an unavailable Reversal becomes a separate
+  transfer-recovery debt and never reduces the patient's full refund.
+- Never estimate or retroactively charge a Stripe fee. Processing-cost debt
+  requires a reconciled fee, confirmed therapist responsibility, completed
+  full refund, and a legally approved policy snapshot. The inactive V11 gate
+  does not authorize current reservations.
+- A platform-attributed attendance failure refunds the patient at TES expense:
+  keep the therapist Transfer intact and never create transfer-recovery or
+  processing-cost debt. Exclusive patient no-show uses authenticated therapist
+  presence as the V9 service-confirmation evidence while keeping the booking
+  visibly classified as `no_show_patient`.
+- Double-no-show retention requires both the legal gate and the dedicated
+  operational activation gate; legal publication alone must not expose it.
 - Validate Promotion Codes for session, Premium, Premium Plus and both
   Products, including remove/reapply, concurrent replacement, hosted fallback,
   locale `pt-BR`, zero-total session completion through the signed webhook and

@@ -24,18 +24,30 @@ export function PatientSessionFeedbackDialog({
   onSessionSubmitted,
   session,
 }: {
-  onClose: () => void;
+  onClose?: () => void;
   onSessionSubmitted?: () => void;
   session: PatientFeedbackSession;
 }) {
   const [step, setStep] = useState<"session" | "public-review">("session");
   const [completedFeedback, setCompletedFeedback] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  if (!open) return null;
+
+  function closeDialog() {
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    setOpen(false);
+  }
 
   return (
     <TESDialog
       className="max-w-[820px]"
       description={`${session.therapist.name} · ${session.dateLabel}, ${session.timeLabel}`}
-      onClose={onClose}
+      onClose={closeDialog}
       title={step === "session" ? "Confirme seu encontro" : "Avaliação pública opcional"}
     >
       {step === "session" ? (
@@ -52,7 +64,7 @@ export function PatientSessionFeedbackDialog({
           />
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             {completedFeedback ? (
-              <TESButton onClick={onClose} type="button" variant="secondary">
+              <TESButton onClick={closeDialog} type="button" variant="secondary">
                 Concluir agora
               </TESButton>
             ) : null}

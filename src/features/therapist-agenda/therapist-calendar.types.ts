@@ -49,7 +49,7 @@ export type TherapistCalendarAttentionItem = {
   bookingId: string;
   description: string;
   id: string;
-  kind: "reschedule";
+  kind: "attendance_review" | "reschedule";
   startsAt: string;
   title: string;
 };

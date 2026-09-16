@@ -101,17 +101,9 @@ export function mapPatientEncountersPage(
   const summaryBookingIds = new Set(
     input.summaries.map((summary) => summary.booking_id),
   );
-  const reviewedBookingIds = new Set(
-    input.reviews.map((review) => review.booking_id),
-  );
   const mapped = input.bookings
     .map((booking) =>
-      mapPatientEncounter(
-        booking,
-        input,
-        summaryBookingIds,
-        reviewedBookingIds,
-      ),
+      mapPatientEncounter(booking, input, summaryBookingIds),
     )
     .filter((item): item is PatientEncounter => Boolean(item));
 
@@ -186,7 +178,6 @@ function mapPatientEncounter(
   booking: BookingRecord,
   input: MapPatientEncountersInput,
   summaryBookingIds: Set<string>,
-  reviewedBookingIds: Set<string>,
 ): PatientEncounter | null {
   const therapist = input.therapistById.get(booking.therapist_profile_id);
   const service = input.serviceById.get(booking.service_id);
@@ -205,8 +196,6 @@ function mapPatientEncounter(
     input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
   );
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
-  const hasReview = reviewedBookingIds.has(booking.id);
-
   return {
     actionHint: paymentScheduled
       ? "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro."
@@ -220,13 +209,7 @@ function mapPatientEncounter(
     meetingUrl: null,
     paymentStatus: payment?.financial_status ?? null,
     paymentScheduled,
-    primaryAction: getPrimaryAction(
-      booking,
-      status,
-      summaryId,
-      hasReview,
-      paymentScheduled,
-    ),
+    primaryAction: getPrimaryAction(booking, status, paymentScheduled),
     rescheduleStatus: reschedule?.status ?? null,
     scheduleLabel:
       status === "completed"
@@ -235,7 +218,9 @@ function mapPatientEncounter(
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
-    statusLabel: paymentScheduled ? "Reservado" : getStatusLabel(status),
+    statusLabel: paymentScheduled
+      ? "Reservado"
+      : getStatusLabel(status, booking.status),
     summaryId,
     therapist: {
       avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
@@ -296,8 +281,6 @@ function getEncounterStatus(
 function getPrimaryAction(
   booking: BookingRecord,
   status: PatientEncounterStatus,
-  summaryId: string | null,
-  hasReview: boolean,
   paymentScheduled = false,
 ): PatientEncounter["primaryAction"] {
   if (status === "live") {
@@ -341,34 +324,18 @@ function getPrimaryAction(
   }
 
   if (status === "completed") {
-    if (summaryId) {
-      return {
-        href: `${routes.patient.encounterDetail(booking.id)}?resumo=1`,
-        kind: "link",
-        label: "Ver resumo",
-      };
-    }
-
-    if (!hasReview) {
-      return {
-        href: buildEncounterHistoryActionHref("avaliar", booking.id),
-        kind: "link",
-        label: "Avaliar encontro",
-      };
-    }
-
     return {
-      href: `${routes.patient.support}?context=suporte&booking=${booking.id}`,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Solicitar suporte",
+      label: "Ver detalhes do encontro",
     };
   }
 
   if (status === "awaiting_confirmation") {
     return {
-      href: buildEncounterHistoryActionHref("feedback", booking.id),
+      href: `${routes.patient.encounterDetail(booking.id)}?feedback=1`,
       kind: "link",
-      label: "Confirmar encontro",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -399,16 +366,20 @@ function isFutureV10ChargeScheduled(
   );
 }
 
-function buildEncounterHistoryActionHref(
-  action: "avaliar" | "feedback",
-  bookingId: string,
+function getStatusLabel(
+  status: PatientEncounterStatus,
+  bookingStatus?: string,
 ) {
-  const [pathname, fragment] = routes.patient.encounterHistory.split("#", 2);
-  const hash = fragment ? `#${fragment}` : "";
-  return `${pathname}?${action}=${encodeURIComponent(bookingId)}${hash}`;
-}
+  if (bookingStatus === "no_show_patient") {
+    return "Não realizado — você não compareceu";
+  }
+  if (bookingStatus === "no_show_therapist") {
+    return "Não realizado — terapeuta ausente";
+  }
+  if (bookingStatus === "no_show_both") {
+    return "Não realizado — ninguém acessou";
+  }
 
-function getStatusLabel(status: PatientEncounterStatus) {
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
     awaiting_confirmation: "Confirmação pendente",

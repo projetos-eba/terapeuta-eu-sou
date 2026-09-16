@@ -34,13 +34,34 @@ describe("parseTherapistCalendarReadModel", () => {
     );
   });
 
-  it("rejects non-reschedule items from the operational attention rail", () => {
+  it("rejects unsupported items from the operational attention rail", () => {
     const payload = calendarPayload();
     payload.attentionItems[0].kind = "pending_payment";
 
     expect(() => parseTherapistCalendarReadModel(payload)).toThrow(
       SessionReadModelContractError,
     );
+  });
+
+  it("adds an open attendance incident to the agenda attention rail", () => {
+    const payload = calendarPayload();
+    Object.assign(payload.bookings[0], {
+      attendanceIncidentId: "a5000000-0000-4000-8000-000000000099",
+      attendanceReviewStatus: "open",
+      attendanceStatus: "therapist_no_show",
+    });
+
+    const result = parseTherapistCalendarReadModel(payload);
+
+    expect(result.attentionItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          bookingId: "f2000000-0000-4000-8000-000000000001",
+          kind: "attendance_review",
+        }),
+      ]),
+    );
+    expect(result.summary.pendingAttention).toBe(2);
   });
 });
 

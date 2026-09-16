@@ -16,6 +16,7 @@ const SCHEDULED_BOOKING_STATUSES = new Set([
   "completed",
   "no_show_patient",
   "no_show_therapist",
+  "no_show_both",
 ]);
 
 const CANCELLED_BOOKING_STATUSES = new Set([
@@ -85,7 +86,9 @@ export function buildTherapistWeekSummary(
     (booking) => booking.bookingStatus === "completed",
   ).length;
   const noShows = bookings.filter((booking) =>
-    ["no_show_patient", "no_show_therapist"].includes(booking.bookingStatus),
+    ["no_show_patient", "no_show_therapist", "no_show_both"].includes(
+      booking.bookingStatus,
+    ),
   ).length;
 
   return {

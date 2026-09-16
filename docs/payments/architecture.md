@@ -156,6 +156,32 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 O plano completo e os gates de ativacao estao em
 `docs/payments/session-financial-flow-v10-implementation-plan.md`.
 
+## Responsabilização por ausência
+
+A ADR-022 separa classificação operacional de decisão financeira. Depois de
+T+10, a presença é derivada de chegada autenticada ou join Zoom confiável da
+versão da reserva. Falta do terapeuta, falta de ambos e evidência inconclusiva
+bloqueiam novos efeitos financeiros e abrem revisão administrativa; essa
+classificação não executa Refund nem Transfer Reversal.
+
+No reembolso V10 autorizado, o comando integral tenta recuperar primeiro a
+parcela transferida e depois reembolsa o valor bruto ao paciente. A falha do
+Reversal não reduz o reembolso: o saldo não recuperado vira dívida independente
+para compensação futura. O custo Stripe somente poderá formar outra dívida se
+for efetivamente reconciliado e se a reserva tiver snapshot de uma política
+futura aprovada. A V10 vigente continua atribuindo esse custo ao TES.
+
+Se a evidência confirmar falta exclusiva do paciente, a presença do terapeuta
+é registrada como confirmação por evidência para o gate semanal V9; o estado da
+reserva continua `no_show_patient`. Quando a responsabilidade for do TES, o
+reembolso V10 mantém o Transfer do terapeuta e não cria dívida de recuperação.
+
+`tes-payments-v11-attendance-accountability` existe inativa como gate técnico.
+Retenção por ausência dupla e ressarcimento de taxa não podem ser habilitados
+sem revisão jurídica, publicação, aceite imutável e homologação externa. A
+retenção possui também um gate operacional próprio, que permanece pendente até
+a recuperação sem Refund estar homologada. Não há aplicação retroativa.
+
 ## Modelo financeiro inicial
 
 - Moeda: BRL.

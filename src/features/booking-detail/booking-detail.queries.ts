@@ -94,6 +94,7 @@ export const getPatientSessionDetailPage = cache(
         cancellationDecisionRows,
         patientParticipationRows,
         patientWaitingRoomEvents,
+        attendanceIncidentRows,
         chargeStatus,
         checkoutRetryContext,
       ] = await Promise.all([
@@ -132,6 +133,17 @@ export const getPatientSessionDetailPage = cache(
         supabaseServerRestRequest<Array<{ payload: unknown }>>(
           config,
           `/rest/v1/booking_events?select=payload&booking_id=eq.${booking.id}&event_type=eq.zoom_waiting_room_entered&limit=20`,
+        ),
+        supabaseServerRestRequest<
+          Array<{
+            classification: string | null;
+            financial_resolution: string | null;
+            review_due_at: string | null;
+            status: string;
+          }>
+        >(
+          config,
+          `/rest/v1/session_confirmation_incidents?select=classification,financial_resolution,review_due_at,status&booking_id=eq.${booking.id}&order=booking_version.desc,created_at.desc&limit=1`,
         ),
         supabaseServerRestRpc<unknown>(
           config,
@@ -221,8 +233,23 @@ export const getPatientSessionDetailPage = cache(
         userId: profileId,
       });
 
+      const attendanceReview = mapAttendanceReview(attendanceIncidentRows[0]);
+
       return {
         ...detail,
+        attendanceReview,
+        booking: attendanceReview?.isOpen
+          ? {
+              ...detail.booking,
+              canJoin: false,
+              statusLabel:
+                attendanceReview.classification === "no_show_both"
+                  ? "Encontro não realizado — ninguém acessou a sala"
+                  : attendanceReview.classification === "no_show_therapist"
+                    ? "Encontro não realizado — terapeuta não compareceu"
+                    : "Encontro não realizado — acesso em análise",
+            }
+          : detail.booking,
         delayNotice,
         paymentRecovery: {
           ...mapSessionChargeStatus(chargeStatus),
@@ -239,6 +266,38 @@ export const getPatientSessionDetailPage = cache(
     }
   },
 );
+
+function mapAttendanceReview(
+  row:
+    | {
+        classification: string | null;
+        financial_resolution: string | null;
+        review_due_at: string | null;
+        status: string;
+      }
+    | undefined,
+): BookingDetailPageData["attendanceReview"] {
+  if (
+    !row?.classification ||
+    ![
+      "no_show_therapist",
+      "no_show_both",
+      "requires_review",
+      "participant_report",
+    ].includes(row.classification)
+  ) {
+    return null;
+  }
+
+  return {
+    classification: row.classification as NonNullable<
+      BookingDetailPageData["attendanceReview"]
+    >["classification"],
+    financialResolution: row.financial_resolution,
+    isOpen: row.status === "open",
+    reviewDueAt: row.review_due_at,
+  };
+}
 
 function mapSessionChargeStatus(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
