@@ -49,9 +49,9 @@ const definitions: NavigationDefinition[] = [
   },
   {
     capability: "operation_essentials",
-    href: routes.therapist.messages,
+    href: routes.therapist.support,
     icon: "message",
-    label: "Mensagens",
+    label: "Suporte",
   },
   {
     capability: "operation_essentials",
@@ -147,7 +147,7 @@ export function buildTherapistNavigation({
 
     return {
       accessState: hasAccess ? "enabled" : "locked",
-      badge: definition.label === "Mensagens" ? unreadMessagesCount : undefined,
+      badge: definition.label === "Suporte" ? unreadMessagesCount : undefined,
       href: definition.href,
       icon: definition.icon,
       label: definition.label,

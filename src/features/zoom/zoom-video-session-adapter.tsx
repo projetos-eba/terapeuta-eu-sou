@@ -7,6 +7,7 @@ import { TESDialog } from "@/components/tes";
 import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
 import { getZoomWaitingRoomStatusFromAccess } from "@/features/bookings";
 import { SessionFeedbackForm } from "@/features/session-feedback/components/session-feedback-form";
+import { getSupportWhatsAppHref } from "@/lib/support-whatsapp";
 import { routes } from "@/lib/routes";
 
 import { ZoomVideoControls } from "./components/zoom-video-controls";
@@ -3250,11 +3251,7 @@ export function ZoomVideoSessionAdapter({
         previewLoading={previewLoading}
         scheduleLabel={scheduleLabel}
         sessionTitle={sessionTitle}
-        supportHref={
-          actorRole === "patient"
-            ? `${routes.patient.messages}?context=suporte&booking=${bookingId}`
-            : `${routes.therapist.messages}?context=suporte&booking=${bookingId}`
-        }
+        supportHref={getSupportWhatsAppHref("waiting_room", bookingId)}
       />
     );
   }
@@ -3313,7 +3310,7 @@ export function ZoomVideoSessionAdapter({
           onToggleVideo={() => void toggleVideo()}
           roleType={roleType}
           state={state}
-          supportHref={`${actorRole === "patient" ? routes.patient.messages : routes.therapist.messages}?context=suporte&booking=${bookingId}`}
+          supportHref={getSupportWhatsAppHref("in_call", bookingId)}
           videoOn={videoOn}
         />
         {activeSessionCountdown ? (

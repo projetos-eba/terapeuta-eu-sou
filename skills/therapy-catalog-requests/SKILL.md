@@ -3,7 +3,7 @@
 ## Escopo
 
 Fluxo estruturado de uma pessoa terapeuta para sugerir uma terapia ausente no
-catálogo. A rota canônica é `/terapeuta/mensagens/solicitar-terapia` e começa
+catálogo. A rota canônica é `/terapeuta/servicos/solicitar-terapia` e começa
 no CTA “Não encontrou sua terapia?” do diálogo de Novo serviço.
 
 ## Fontes e regras

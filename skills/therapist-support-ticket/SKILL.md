@@ -9,15 +9,16 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 
 1. `AGENTS.md`.
 2. `docs/support/support-and-messaging-contracts.md`.
-3. `docs/architecture/adr/ADR-016-support-vs-participant-messaging.md`.
+3. `docs/architecture/adr/ADR-021-support-only-session-communications.md`.
 4. `docs/product/routes-map.md` e `docs/product/integration-map.md`.
 
 ## Rotas e contratos
 
-- Central: `/terapeuta/mensagens`.
-- Detalhe: `/terapeuta/mensagens/suporte/:ticketId`.
-- Central do paciente: `/app/mensagens`.
-- Detalhe do paciente: `/app/mensagens/suporte/:ticketId`.
+- Central: `/terapeuta/suporte`.
+- Detalhe: `/terapeuta/suporte/:ticketId`.
+- Central do paciente: `/app/suporte`.
+- Detalhe do paciente: `/app/suporte/:ticketId`.
+- Rotas antigas em `/mensagens` permanecem somente por redirect.
 - APIs: `POST|GET /api/support/tickets`, `GET|POST /api/support/tickets/:ticketId` e `POST /api/support/tickets/:ticketId/attachments`.
 - Admin mínimo: `GET /api/admin/support/tickets/:ticketId/thread`,
   `POST /api/admin/support/tickets/:ticketId/reply` e
@@ -27,7 +28,7 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 
 - `support_tickets.protocol` é persistido e imutável no formato `#` + nove dígitos + letra da categoria; nunca derivar um protocolo do UUID na UI.
 - `support_ticket_messages` é a thread plain text. `visibility=requester` é legível pelo solicitante; `visibility=internal` é exclusivamente TES/Admin.
-- Nunca usar `messages`, `conversations` ou o endpoint participante para suporte. Nunca adicionar texto livre ao fluxo paciente ↔ terapeuta.
+- Nunca usar `messages`, `conversations` ou o endpoint participante para suporte. A comunicação paciente ↔ terapeuta não é um canal ativo; avisos operacionais pertencem ao booking.
 - `requestId` é obrigatório para criação e resposta, protegendo contra retry.
 - `NewSupportTicketDialog` é o formulário reutilizável de abertura de chamado.
   Superfícies autenticadas que o incorporarem podem receber o ticket criado e

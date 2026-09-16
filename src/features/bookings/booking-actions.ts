@@ -8,8 +8,8 @@ export const encounterMoreActions = [
     label: "Ver detalhes",
   },
   {
-    href: () => routes.patient.messages,
-    label: "Enviar mensagem",
+    href: () => routes.patient.support,
+    label: "Abrir chamado",
   },
   {
     href: (bookingId: string) => routes.patient.encounterDetail(bookingId),
@@ -17,7 +17,7 @@ export const encounterMoreActions = [
   },
   {
     href: (bookingId: string) =>
-      `${routes.patient.messages}?context=suporte&booking=${bookingId}`,
+      `${routes.patient.support}?context=suporte&booking=${bookingId}`,
     label: "Pedir ajuda",
   },
 ] satisfies Array<{

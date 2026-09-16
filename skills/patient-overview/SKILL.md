@@ -29,7 +29,7 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 - Dados de demonstração: `supabase/seed.sql` usando IDs estáveis.
 - Estrutura: `supabase/migrations/20260723110000_patient_authenticated_overview.sql`.
 - Equivalências existentes: `therapist_profiles`, `bookings`, `favorite_therapists`, `reviews` e `support_tickets`.
-- Novas superfícies: `conversations`, `messages`, `notifications`, `mood_checkins`.
+- Novas superfícies: `support_tickets`, `notifications`, `mood_checkins`.
 - O componente visual não deve consultar Supabase diretamente nem manter nomes, contadores ou agenda de demonstração.
 
 ## Comportamento

@@ -72,7 +72,7 @@ describe("AuthenticatedShell mobile", () => {
         Response.json({
           count: 1,
           items: [],
-          unreadMessagesCount: 4,
+          openSupportTicketsCount: 4,
         }),
       ),
     );

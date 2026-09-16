@@ -1,14 +1,39 @@
-# Contratos de Mensagens e Suporte — TES
+# Contratos de Suporte TES — transição da Central de Mensagens
 
 Data: 2026-08-21  
-Status: Fase 4 implementada; Structured Participant Messaging V2 e Support
-Ticketing permanecem bounded contexts separados.
+Status: Support Ticketing ativo; Structured Participant Messaging V2 encerrado
+em 2026-09-15 pela ADR-021. Os parágrafos de Fases 1–4 abaixo registram o
+contrato histórico e não autorizam reativação.
+
+## Contrato vigente desde 2026-09-15
+
+- `/app/suporte`, `/terapeuta/suporte` e detalhes
+  `/app/suporte/:ticketId`, `/terapeuta/suporte/:ticketId` são canônicos.
+  Rotas antigas em `/mensagens` redirecionam permanentemente.
+- Usuários escrevem somente em tickets próprios à equipe TES. Protocolos,
+  anexos, respostas públicas e notas internas preservam as políticas de
+  visibilidade já documentadas abaixo.
+- `conversations` e `messages` são histórico somente leitura;
+  `POST /api/messages/preview-template` e
+  `POST /api/messages/send-template` respondem `410`. O badge mostra
+  chamados não resolvidos.
+- Aviso de atraso e alteração de sessão pertencem ao booking, não à thread.
+  WhatsApp TES é assistência operacional apenas na preparação e sala Zoom.
+- `source=message_center` permanece no contrato técnico de criação de
+  tickets por compatibilidade com a constraint; não é copy de interface.
+- Alteração iniciada pela terapeuta é uma decisão de 48 horas no próprio
+  booking: a pessoa escolhe um novo horário autoritativo do mesmo profissional
+  ou solicita reembolso integral. Cancelamento sem solução, horário original
+  já passado ou pedido de reembolso movem o caso para `pending_admin_review`;
+  sala, falta e repasse ficam bloqueados sem qualquer mutação Stripe automática.
+  A fila financeira Admin identifica o caso como “Reembolso em análise”, sem
+  incluir conteúdo de mensagens ou identificadores de provedores de pagamento.
 
 ## Estado real inventariado
 
 | Superfície    | Contrato atual                                                                               | Observação da Fase 1                                                                                                            |
 | ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Participante  | `conversations`, `messages`, `message_templates`, `POST /api/messages/send-template`         | A escrita passa exclusivamente pela RPC autenticada `send_structured_participant_message_v1`.                                   |
+| Participante  | `conversations`, `messages`, `message_templates` históricos e endpoints `/api/messages/*` encerrados | Histórico somente leitura; preview e envio retornam `410`, sem nova escrita por participante. |
 | Suporte       | `support_tickets`, `support_ticket_messages`, APIs `/api/support/tickets*`                   | Ticket e thread plain text para terapeuta, com idempotência, RLS por solicitante e contexto opcional autorizado.                |
 | Administração | `/admin/suporte`, thread Admin, notas internas e comandos `support.resolve`/`support.reopen` | Pode ler a thread autorizada, responder publicamente e registrar nota interna sem expô-la ao solicitante.                       |
 | Legado        | `structured_messages`                                                                        | Não identificado consumidor no runtime analisado. A tabela permanece por compatibilidade e não deve ser fundida com `messages`. |
@@ -17,19 +42,13 @@ O histórico de migrations local e de HML foi conferido em modo somente leitura 
 
 ## Bounded contexts e invariantes
 
-### Structured Participant Messaging
+### Histórico de mensagens entre participantes — encerrado
 
-Paciente e terapeuta podem comunicar somente texto previamente aprovado pelo TES. Atores: paciente e terapeuta participantes da mesma `conversation`.
-
-- Entrada permitida: `conversationId` e `templateKey`; `actorRole` serve apenas para selecionar a sessão HTTP-only e é conferido contra o papel persistido.
-- Entrada proibida: `body`, `message`, `description`, HTML, Markdown livre, anexos ou qualquer complemento digitado pelo participante.
-- O banco resolve `templateKey` em `message_templates`, exige o contexto correto (`patient_to_therapist` ou `therapist_to_patient`) e persiste o texto e o `template_id` resolvidos.
-- `messages` é a projeção operacional atual. A escrita REST direta de `authenticated` foi revogada; registros legados sem `template_id` permanecem legíveis.
-- Não é permitido usar template para substituir cancelamento, reagendamento, pagamento ou outra operação canônica.
-- `message_templates` também guarda `category`, `usage_description`,
-  `parameter_schema`, `requires_booking` e `cta_action`. A descrição orienta
-  apenas a UI; parâmetros são opções fechadas; CTAs são transformados pelo
-  banco em rotas TES conforme o papel do destinatário.
+`conversations`, `messages` e `message_templates` são preservados para leitura
+histórica e auditoria. A Central, shells, rotas Next e RPCs não podem oferecer
+lista, contador, template, prévia, composer ou envio entre paciente e terapeuta.
+Operações da sessão usam `booking_events`, `booking_reschedule_requests` e
+notificações unilaterais; atendimento humano usa tickets TES.
 
 ### Support Ticketing
 
@@ -57,7 +76,7 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 
 | Capacidade                             | Paciente                 | Terapeuta                | Admin autorizado                |
 | -------------------------------------- | ------------------------ | ------------------------ | ------------------------------- |
-| Enviar template ao outro participante  | Sim, na própria conversa | Sim, na própria conversa | Fora do escopo                  |
+| Enviar template ao outro participante  | Não                      | Não                      | Fora do escopo                  |
 | Texto livre ao outro participante      | Não                      | Não                      | Não                             |
 | Abrir ticket próprio                   | Sim                      | Sim                      | Conforme operação               |
 | Texto livre em ticket próprio (Fase 2) | Sim                      | Sim                      | Sim                             |
@@ -67,7 +86,7 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 
 ## Contratos de API
 
-### Envio estruturado V2 vigente
+### Envio estruturado V2 — contrato histórico, endpoints encerrados
 
 `POST /api/messages/send-template`
 
@@ -81,24 +100,12 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 }
 ```
 
-`POST /api/messages/preview-template` usa o mesmo payload e devolve somente o
-conteúdo resolvido, destinatário, contexto e CTA canônico; não persiste. O
-`POST /api/messages/send-template` usa a RPC
-`send_structured_participant_message_v2(uuid, text, uuid, jsonb)`. A RPC deriva
-`auth.uid()`, valida ownership da conversa, sentido do template, booking,
-parâmetros fechados e CTA allowlisted; só então persiste `body`, `template_id`
-e metadata resolvidos. `body`, `message`, `description`, `html`, URL e qualquer
-campo desconhecido são rejeitados na borda HTTP e nunca chegam à persistência.
-`send_structured_participant_message_v1` permanece como wrapper compatível que
-delegará à V2.
+`POST /api/messages/preview-template` e `POST /api/messages/send-template`
+respondem `410` com um estado de produto para canal encerrado. As RPCs de
+mensagem não recebem novos grants para perfis autenticados. Não há sucesso de
+envio, prévia ou fallback de template nesta fase.
 
-Os seis templates originais preservam envio em conversas legadas sem
-`booking_id`; nesse caso não há CTA. Os templates novos exigem contexto de
-booking quando o fluxo precisa de uma ação de sessão.
-
-Erros públicos: JSON inválido `400`, sessão ausente `401`, papel/conversa não autorizados `403`, template ou payload inválidos `422` e indisponibilidade `503`. A resposta de sucesso permanece `{ "ok": true }` com `201`.
-
-### Criação de suporte vigente — Fase 2
+### Criação de suporte vigente
 
 `POST /api/support/tickets` aceita:
 
@@ -198,14 +205,10 @@ Nota interna, alteração de prioridade e atribuição atualizam `last_activity_
 
 ## Leitura e paginação da Central
 
-As conversas estruturadas de participante e os chamados do solicitante são
-listas independentes, paginadas em blocos de 10 na rota de Central (`conversationPage`
-e `supportPage`). Cada controle preserva a página da outra lista. Uma conversa
-com mensagens recebidas não lidas mostra ponto vermelho; ao ser aberta, a rota
-autenticada chama `mark_structured_participant_messages_read_v1(uuid)`, que
-valida a participação e atualiza apenas mensagens de terceiros. Depois da
-confirmação, o ponto e o contador são atualizados imediatamente e a página é
-revalidada.
+A Central vigente pagina somente chamados por `supportPage`, apresenta
+avisos da plataforma em seção própria e não consulta conversas de
+participantes. `conversationPage`, ponto de mensagem não lida e RPC de
+marcação de mensagens pertencem exclusivamente ao histórico anterior.
 
 ## Dados, RLS e compatibilidade da Fase 2
 
@@ -223,9 +226,10 @@ RLS vigente:
 
 ## Riscos e decisões
 
-- A Fase 2 entrega Central de Mensagens do terapeuta com área separada “Suporte TES”, formulário de chamado, lista e detalhe de thread. A experiência do paciente permanece fora do escopo desta fase.
-- `message_templates` agora é a fonte server-side para os seis templates de participante. A Fase 4 deverá definir gestão/versionamento do catálogo antes de qualquer expansão.
-- Não houve mudança em e-mail, Stripe, Zoom, booking ou UI ampla.
+- A central de suporte atende paciente e terapeuta com as mesmas rotas
+  canônicas por área autenticada. A interface não depende de `message_templates`.
+- O reembolso por alteração iniciada pela terapeuta só é disparado pela decisão
+  explícita de Admin e preserva a ordem Transfer Reversal antes de Refund.
 - O upload de anexos de suporte não atravessa mais a Function do Next. Isso
   preserva o contrato de até cinco arquivos de 10 MB mesmo quando a hospedagem
   impõe limite agregado menor para o corpo de uma requisição HTTP.

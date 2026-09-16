@@ -36,7 +36,7 @@ export function OnlineSessionCard({
   if (data.encounterState.waitingRoom.kind === "ended") return null;
 
   const supportHref =
-    `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+    `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
   const showExternalEntry =
     data.onlineSession.provider !== "zoom" &&
     data.booking.canJoin &&

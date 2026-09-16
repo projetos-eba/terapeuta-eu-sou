@@ -128,10 +128,11 @@ export type BookingDetailSessionSummaryRow = {
 };
 
 export type BookingDetailRescheduleRow = {
+  change_kind: string;
   expires_at: string | null;
   id: string;
-  proposed_ends_at: string;
-  proposed_starts_at: string;
+  proposed_ends_at: string | null;
+  proposed_starts_at: string | null;
   proposed_timezone: string;
   reason: string | null;
   requested_by_profile_id: string;
@@ -335,6 +336,9 @@ function mapReschedule(
   if (!row || !isRescheduleStatus(row.status)) return null;
 
   return {
+    kind: isTherapistChangeKind(row.change_kind)
+      ? row.change_kind
+      : "legacy",
     expiresAt: row.expires_at,
     id: row.id,
     proposedEndsAt: row.proposed_ends_at,
@@ -354,9 +358,17 @@ function isRescheduleStatus(
     value === "applied" ||
     value === "cancelled" ||
     value === "expired" ||
+    value === "pending_admin_review" ||
     value === "pending" ||
-    value === "rejected"
+    value === "rejected" ||
+    value === "refunded"
   );
+}
+
+function isTherapistChangeKind(
+  value: string,
+): value is "therapist_cancellation" | "therapist_reschedule" {
+  return value === "therapist_cancellation" || value === "therapist_reschedule";
 }
 
 function getMeetingProvider(

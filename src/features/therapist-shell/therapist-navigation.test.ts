@@ -22,7 +22,7 @@ describe("buildTherapistNavigation", () => {
       routes.therapist.agenda,
       routes.therapist.patients,
       routes.therapist.sessions,
-      routes.therapist.messages,
+      routes.therapist.support,
       routes.therapist.services,
       routes.therapist.profile,
       routes.therapist.reviews,
@@ -40,7 +40,7 @@ describe("buildTherapistNavigation", () => {
     expect(
       navigation.find((item) => item.label === "Meu plano")?.accessState,
     ).toBe("hidden");
-    expect(navigation.find((item) => item.label === "Mensagens")?.badge).toBe(
+    expect(navigation.find((item) => item.label === "Suporte")?.badge).toBe(
       4,
     );
     expect(

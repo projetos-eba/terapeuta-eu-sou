@@ -183,6 +183,12 @@ reagendamento após job enfileirado, ID remoto presente, e descoberta por nome
 exato quando o webhook ainda não persistiu o ID. Nunca encerrar uma sessão
 remota ambígua.
 
+Uma alteração pendente iniciada pela terapeuta é uma exceção explícita a esse
+cenário: a reserva do job de não comparecimento deve ser recusada, inclusive
+quando o job já estava enfileirado antes da decisão. A sala fica bloqueada até
+o desfecho; não se registra falta nem se inicia conclusão financeira enquanto
+o paciente decide.
+
 Se o harness falhar antes de capturar `provider_session_id`, ele tenta descobrir
 uma sessao ativa unica no cleanup. A rotina operacional
 `zoom:video-sdk:emergency-end -- --active-singleton` existe somente para esse

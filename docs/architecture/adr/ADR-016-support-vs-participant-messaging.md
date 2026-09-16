@@ -4,7 +4,8 @@ Data: 2026-08-21
 
 ## Status
 
-Aceita.
+Substituída pela [ADR-021](./ADR-021-support-only-session-communications.md)
+em 2026-09-15. Mantida como registro histórico da decisão anterior.
 
 ## Contexto
 

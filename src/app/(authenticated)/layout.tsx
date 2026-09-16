@@ -34,16 +34,16 @@ export default async function AuthenticatedLayout({
       label: "Favoritos",
     },
     {
-      badge: overview?.unreadMessagesCount,
-      href: routes.patient.messages,
+      badge: overview?.openSupportTicketsCount,
+      href: routes.patient.support,
       icon: "message",
-      label: "Mensagens",
+      label: "Suporte",
     },
   ];
 
   return (
     <AuthenticatedShell
-      helpHref={`${routes.patient.messages}?context=suporte`}
+      helpHref={routes.patient.support}
       logoutAction={logoutPatient}
       navigation={navigation}
       notificationCount={overview?.unreadNotificationsCount ?? 0}

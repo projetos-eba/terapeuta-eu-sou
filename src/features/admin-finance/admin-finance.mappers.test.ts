@@ -106,6 +106,26 @@ describe("admin finance mappers", () => {
     );
   });
 
+  it("identifies a therapist-change refund review in the financial queue", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          financial_review_status: "therapist_change_refund_review",
+          financial_status: "paid",
+          id: "payment-review",
+          refund_pending: true,
+          transfer_status: "blocked",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Revisão TES",
+      value: "Reembolso em análise",
+    });
+  });
+
   it("normalizes every transfer lifecycle status for administration", () => {
     expect(
       Object.fromEntries(

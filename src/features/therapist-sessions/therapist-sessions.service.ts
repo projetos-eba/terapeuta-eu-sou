@@ -30,12 +30,13 @@ import {
 export type TherapistSessionPendingReschedule = {
   expiresAt: string | null;
   id: string;
-  proposedEndsAt: string;
-  proposedStartsAt: string;
+  kind: "legacy" | "therapist_cancellation" | "therapist_reschedule";
+  proposedEndsAt: string | null;
+  proposedStartsAt: string | null;
   proposedTimezone: string;
   reason: string | null;
   requestedByCurrentUser: boolean;
-  status: "pending";
+  status: "pending" | "pending_admin_review";
 };
 
 export type TherapistSessionFeedbackStatus =
@@ -126,6 +127,7 @@ export async function getTherapistSessionPendingReschedule(input: {
     return {
       expiresAt: row.expires_at,
       id: row.id,
+      kind: row.change_kind,
       proposedEndsAt: row.proposed_ends_at,
       proposedStartsAt: row.proposed_starts_at,
       proposedTimezone: row.proposed_timezone,

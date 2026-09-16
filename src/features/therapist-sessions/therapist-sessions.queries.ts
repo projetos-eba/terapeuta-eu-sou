@@ -67,14 +67,15 @@ export async function queryTherapistSessionFeedback(
 }
 
 export type TherapistPendingRescheduleRow = {
+  change_kind: "legacy" | "therapist_cancellation" | "therapist_reschedule";
   expires_at: string | null;
   id: string;
-  proposed_ends_at: string;
-  proposed_starts_at: string;
+  proposed_ends_at: string | null;
+  proposed_starts_at: string | null;
   proposed_timezone: string;
   reason: string | null;
   requested_by_profile_id: string;
-  status: "pending";
+  status: "pending" | "pending_admin_review";
 };
 
 export async function queryTherapistPendingReschedule(
@@ -86,7 +87,7 @@ export async function queryTherapistPendingReschedule(
 
   const rows = await supabaseServerRestRequest<TherapistPendingRescheduleRow[]>(
     config,
-    `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${encodeURIComponent(bookingId)}&status=eq.pending&order=created_at.desc&limit=1`,
+    `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at,change_kind&booking_id=eq.${encodeURIComponent(bookingId)}&status=in.(pending,pending_admin_review)&order=created_at.desc&limit=1`,
   );
 
   return rows[0] ?? null;

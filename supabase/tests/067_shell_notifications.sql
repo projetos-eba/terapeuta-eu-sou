@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(13);
 
 select has_column(
   'public',
@@ -27,11 +27,11 @@ select has_trigger(
   'paid payment transition emits shell notifications'
 );
 
-select has_trigger(
+select hasnt_trigger(
   'public',
   'messages',
   'notify_message_recipient',
-  'template message insertion emits a recipient notification'
+  'closed participant messaging does not emit recipient notifications'
 );
 
 select has_trigger(
@@ -53,41 +53,6 @@ select has_trigger(
   'therapy_catalog_requests',
   'notify_therapy_catalog_request_admins',
   'therapy requests notify administrators'
-);
-
-create temporary table notification_message_fixture as
-with inserted as (
-  insert into public.messages (conversation_id, sender_profile_id, body)
-  select
-    conversation.id,
-    patient.user_id,
-    'Mensagem de teste para notificação.'
-  from public.conversations as conversation
-  join public.patient_profiles as patient
-    on patient.id = conversation.patient_profile_id
-  limit 1
-  returning id, conversation_id
-)
-select
-  inserted.id,
-  therapist.user_id as recipient_profile_id
-from inserted
-join public.conversations as conversation
-  on conversation.id = inserted.conversation_id
-join public.therapist_profiles as therapist
-  on therapist.id = conversation.therapist_profile_id;
-
-select is(
-  (
-    select count(*)::integer
-    from public.notifications as notification
-    join notification_message_fixture as fixture
-      on notification.profile_id = fixture.recipient_profile_id
-    where notification.event_key = 'message:' || fixture.id::text
-      and notification.kind = 'message_received'
-  ),
-  1,
-  'a template message notifies only its recipient'
 );
 
 create temporary table notification_support_fixture as

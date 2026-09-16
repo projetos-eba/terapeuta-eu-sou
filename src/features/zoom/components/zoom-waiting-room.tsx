@@ -489,13 +489,15 @@ export function ZoomWaitingRoom({
                   <RefreshCw aria-hidden="true" size={18} />
                 )}
               </button>
-              {isProlongedAbsence && supportHref ? (
+              {supportHref ? (
                 <a
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                   href={supportHref}
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
                   <Headphones aria-hidden="true" size={18} />
-                  Suporte
+                  Não conseguiu entrar? Falar com o Suporte
                 </a>
               ) : null}
             </div>

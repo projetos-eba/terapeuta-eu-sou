@@ -134,6 +134,12 @@ histórica.
   janela, pagamento, perfil responsável e elegibilidade são revalidados no
   backend a cada acesso. Reagendar e cancelar reutilizam
   `SessionOperationActions`, sem atalhos paralelos.
+- A terapeuta não escolhe nem aplica um horário diretamente. “Solicitar
+  alteração” e “Solicitar cancelamento” abrem uma decisão de 48 horas em
+  `booking_reschedule_requests`; a pessoa escolhe outro horário do mesmo
+  profissional ou pede análise de reembolso. Sem decisão, cancelamento ou
+  horário original já passado entram em revisão administrativa, bloqueiam
+  sala, falta e repasse, e não acionam Stripe automaticamente.
 - Depois de `endsAt`, o detalhe não oferece mais ações de acompanhar sala nem
   status da sala. Se `get_session_feedback_v2` retornar `eligible`, o CTA é
   `Confirmar sessão` para `/terapeuta/sessoes/:bookingId/video?feedback=1`;
@@ -380,6 +386,17 @@ the related demand tip is not rendered without `agenda_insights`.
   seleção cria hold ou libera o horário original. Aplicação direta, criação de
   proposta e aceite revalidam o slot sob locks; somente a operação terminal
   move o mesmo booking e sincroniza vídeo/lembretes.
+- A ADR-021 substitui o canal de mensagens entre participantes por avisos
+  unilaterais e decisões no detalhe. `Vou me atrasar` usa
+  `booking_events`, é idempotente por ator/versão de T−60 a T+10 e não
+  estende tolerância. Reagendamento normal do paciente exige 24 horas no
+  banco. A alteração aberta pelo terapeuta sem horário escolhido, a decisão
+  do paciente e a revisão financeira Admin usam o mesmo agregado
+  `booking_reschedule_requests`: durante a decisão a sala e a falta automática
+  ficam bloqueadas; em `pending_admin_review`, o repasse fica bloqueado e a
+  fila financeira do Admin mostra “Reembolso em análise”. Nenhuma mutação
+  Stripe parte da pessoa participante; a decisão Admin usa a ordem idempotente
+  Transfer Reversal aplicável antes do Refund.
 - `request-session-cancellation`: continua sendo a função canônica de
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
   necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo

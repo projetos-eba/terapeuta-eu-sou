@@ -169,11 +169,11 @@ export function SupportTicketPage({
         className="inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary"
         href={
           actorRole === "patient"
-            ? routes.patient.messages
-            : routes.therapist.messages
+            ? routes.patient.support
+            : routes.therapist.support
         }
       >
-        ← Voltar para mensagens
+        ← Voltar para o suporte
       </Link>
       {feedback ? (
         <TESFeedbackDialog

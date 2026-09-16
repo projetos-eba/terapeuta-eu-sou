@@ -360,7 +360,7 @@ function getPrimaryAction(
     }
 
     return {
-      href: `${routes.patient.messages}?context=suporte&booking=${booking.id}`,
+      href: `${routes.patient.support}?context=suporte&booking=${booking.id}`,
       kind: "link",
       label: "Solicitar suporte",
     };

@@ -36,8 +36,8 @@ documento sobre o mapa de áreas e rotas.
   `/terapeuta/*`.
 - `/terapeutas/*` permanece reservado ao catálogo e ao perfil público.
 - `/para-terapeutas` concentra a decisão pública de planos e benefícios.
-- Sessões e mensagens do plano Free existem em `/terapeuta/sessoes` e
-  `/terapeuta/mensagens`.
+- Sessões e suporte do plano Free existem em `/terapeuta/sessoes` e
+  `/terapeuta/suporte`.
 - Favoritos do paciente separam terapeutas e terapias.
 - Premium Plus concentra histórico operacional do paciente em
   `/terapeuta/pacientes/:slug-do-paciente`, protegido por capability.
@@ -105,8 +105,9 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/sessoes`: sessões.
 - `/terapeuta/sessoes/:bookingId`: detalhe da sessão.
 - `/terapeuta/sessoes/:bookingId/video`: sala dedicada da videochamada.
-- `/terapeuta/mensagens`: mensagens.
-- `/terapeuta/mensagens/solicitar-terapia`: solicitação estruturada para
+- `/terapeuta/suporte`: chamados e avisos da plataforma.
+- `/terapeuta/suporte/:ticketId`: detalhe do chamado com a equipe TES.
+- `/terapeuta/servicos/solicitar-terapia`: solicitação estruturada para
   análise de uma terapia ausente no catálogo; não cria terapia automaticamente.
 - `/terapeuta/servicos`: serviços.
 - `/terapeuta/servicos/meus`: meus serviços.
@@ -120,8 +121,8 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/configuracoes`: configurações, incluindo downgrade agendado,
   cancelamento ao fim do período e reversão do cancelamento em `Plano e
 assinatura`.
-- `/terapeuta/suporte` e os aliases legados `.../suporte`: redirecionam para
-  `/terapeuta/mensagens`; não há tela dedicada de Ajuda.
+- `/terapeuta/mensagens` e aliases legados: redirects para
+  `/terapeuta/suporte`; não há tela dedicada de Ajuda.
 
 As seções por plano abaixo registram capabilities e destinos legados mantidos
 por redirect; elas não definem shells independentes.
@@ -138,7 +139,7 @@ por redirect; elas não definem shells independentes.
 
 ## Paciente
 
-Área logada para continuidade dos encontros, favoritos, mensagens, pagamentos e preferências.
+Área logada para continuidade dos encontros, favoritos, suporte, pagamentos e preferências.
 
 ### Rotas
 
@@ -146,8 +147,8 @@ por redirect; elas não definem shells independentes.
 - `/app/encontros`: área canônica de encontros.
 - `/app/encontros/:bookingId`: detalhe canônico do encontro.
 - `/app/encontros/:bookingId/video`: sala dedicada da videochamada.
-- `/app/mensagens`: mensagens e suporte por templates seguros.
-- `/app/mensagens/suporte/:ticketId`: detalhe e conversa pública de um chamado
+- `/app/suporte`: chamados com a equipe TES e avisos da plataforma.
+- `/app/suporte/:ticketId`: detalhe e conversa pública de um chamado
   do paciente com a equipe TES.
 - `/app/favoritos`: hub de favoritos.
 - `/app/favoritos/terapeutas`: terapeutas favoritos.
@@ -162,8 +163,9 @@ por redirect; elas não definem shells independentes.
 - `/app/configuracoes/seguranca`: segurança.
 
 Observação: não há rota dedicada `/app/ajuda` neste momento. Links gerais de
-suporte do paciente devem apontar para `/app/mensagens`; chamados já abertos
-podem levar ao detalhe `/app/mensagens/suporte/:ticketId`.
+suporte do paciente devem apontar para `/app/suporte`; chamados já abertos
+podem levar ao detalhe `/app/suporte/:ticketId`. URLs antigas de
+`/app/mensagens` redirecionam permanentemente.
 
 ### Fluxos
 
@@ -183,18 +185,18 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - `/basico/agenda`: agenda simples.
 - `/basico/pacientes`: pacientes ativos.
 - `/basico/sessoes`: sessões.
-- `/basico/mensagens`: mensagens.
+- `/basico/mensagens`: redirect legado para Suporte.
 - `/basico/servicos`: serviços.
 - `/basico/servicos/meus`: meus serviços.
 - `/basico/pagamento`: redirect legado para financeiro operacional.
 - `/basico/perfil`: perfil público.
 - `/basico/upgrade`: evolução para Premium ou Premium Plus.
 - `/basico/configuracoes`: configurações.
-- `/basico/suporte`: redirect legado para Mensagens.
+- `/basico/suporte`: redirect legado para Suporte.
 
 ### Permissões
 
-- Acessa agenda, pacientes, sessões, mensagens, serviços sem limite por plano, perfil e financeiro operacional.
+- Acessa agenda, pacientes, sessões, suporte, serviços sem limite por plano, perfil e financeiro operacional.
 - Não acessa avaliações, métricas intermediárias, IA ou insights avançados.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
@@ -208,7 +210,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - `/pro/agenda`: agenda avançada.
 - `/pro/pacientes`: pacientes.
 - `/pro/sessoes`: sessões.
-- `/pro/mensagens`: mensagens.
+- `/pro/mensagens`: redirect legado para Suporte.
 - `/pro/servicos`: serviços.
 - `/pro/financeiro`: redirect legado para financeiro operacional.
 - `/pro/metricas`: métricas intermediárias.
@@ -216,7 +218,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - `/pro/plano`: plano atual e evolução para Premium Plus.
 - `/pro/perfil`: perfil público.
 - `/pro/configuracoes`: configurações.
-- `/pro/suporte`: redirect legado para Mensagens.
+- `/pro/suporte`: redirect legado para Suporte.
 
 ### Permissões
 
@@ -236,7 +238,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/pacientes`: pacientes.
 - `/plus/pacientes/:slug-do-paciente`: histórico operacional do paciente.
 - `/plus/sessoes`: sessões.
-- `/plus/mensagens`: mensagens.
+- `/plus/mensagens`: redirect legado para Suporte.
 - `/plus/servicos`: serviços.
 - `/plus/servicos/meus`: meus serviços.
 - `/plus/financeiro`: redirect legado para financeiro operacional.
@@ -245,7 +247,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/assessor-ia`: Assessora Aura (alias legado).
 - `/plus/perfil`: perfil público.
 - `/plus/configuracoes`: configurações.
-- `/plus/suporte`: redirect legado para Mensagens.
+- `/plus/suporte`: redirect legado para Suporte.
 
 ### Permissões
 
@@ -294,7 +296,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - Público cria confiança e intenção.
 - Reserva transforma intenção em encontro online para o paciente e sessão operacional para o terapeuta.
 - Paciente mantém continuidade depois da reserva.
-- Terapeuta opera agenda, sessões, mensagens e pagamentos.
+- Terapeuta opera agenda, sessões, suporte e pagamentos.
 - Plano do terapeuta controla profundidade de dados e recursos.
 - Admin cuida de curadoria, moderação, pagamentos e operação.
 
