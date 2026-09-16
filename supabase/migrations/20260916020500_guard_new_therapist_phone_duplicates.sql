@@ -1,4 +1,4 @@
--- Preserve legacy therapist phone duplicates while rejecting every new
+-- Preserve legacy therapist phone duplicates while rejecting each new
 -- normalized DDI + national-number collision. A later, explicitly reviewed
 -- reconciliation may replace this guard with a unique index.
 

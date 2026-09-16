@@ -1,4 +1,4 @@
--- The editorial publication state is not, by itself, public availability.
+-- Editorial publication state is not, by itself, public availability.
 -- Keep it intact for review/history, while exposing the effective public gate
 -- consistently to the therapist's private surfaces.
 
