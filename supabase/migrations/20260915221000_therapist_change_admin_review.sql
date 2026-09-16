@@ -311,15 +311,18 @@ begin
     return new;
   end if;
 
-  select booking.*, patient.user_id, therapist.user_id
-    into v_booking, v_patient_user_id, v_therapist_user_id
+  select booking.* into v_booking
   from public.bookings as booking
-  join public.patient_profiles as patient
-    on patient.id = booking.patient_profile_id
-  join public.therapist_profiles as therapist
-    on therapist.id = booking.therapist_profile_id
   where booking.id = new.booking_id
-  for update of booking;
+  for update;
+
+  select patient.user_id into v_patient_user_id
+  from public.patient_profiles as patient
+  where patient.id = v_booking.patient_profile_id;
+
+  select therapist.user_id into v_therapist_user_id
+  from public.therapist_profiles as therapist
+  where therapist.id = v_booking.therapist_profile_id;
 
   select * into v_payment
   from public.session_payments
@@ -424,12 +427,14 @@ begin
     raise exception 'BOOKING_RESCHEDULE_NOT_FOUND' using errcode = 'P0002';
   end if;
 
-  select booking.*, patient.user_id into v_booking, v_patient_user_id
+  select booking.* into v_booking
   from public.bookings as booking
-  join public.patient_profiles as patient
-    on patient.id = booking.patient_profile_id
   where booking.id = v_request.booking_id
-  for update of booking;
+  for update;
+
+  select patient.user_id into v_patient_user_id
+  from public.patient_profiles as patient
+  where patient.id = v_booking.patient_profile_id;
   if v_patient_user_id <> p_patient_user_id then
     raise exception 'BOOKING_ACTOR_FORBIDDEN' using errcode = '42501';
   end if;
