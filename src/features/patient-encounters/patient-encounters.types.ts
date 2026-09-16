@@ -67,6 +67,7 @@ export type PatientEncounter = {
   id: string;
   meetingUrl: string | null;
   paymentStatus: string | null;
+  paymentScheduled?: boolean;
   primaryAction: BookingPrimaryAction;
   rescheduleStatus: string | null;
   scheduleLabel: string;

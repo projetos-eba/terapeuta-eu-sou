@@ -19,6 +19,7 @@ export type PatientEncounterActionPolicyInput = {
   } | null;
   endsAt: string;
   financialStatus: SessionFinancialStatusValue | string | null;
+  paymentFlowVersion?: string;
   now?: Date;
   startsAt: string;
 };
@@ -56,6 +57,7 @@ export function getPatientEncounterActionPolicy({
   cancellationPolicy,
   endsAt,
   financialStatus,
+  paymentFlowVersion = "v9",
   now = new Date(),
   startsAt,
 }: PatientEncounterActionPolicyInput): PatientEncounterActionPolicy {
@@ -69,13 +71,17 @@ export function getPatientEncounterActionPolicy({
   const rescheduleDisabledReason = getRescheduleDisabledReason({
     bookingStatus,
     financialStatus,
+    paymentFlowVersion,
     future,
+    moreThan24Hours: startsAtMs - nowMs > 24 * ONE_HOUR_MS,
     terminal,
   });
   const cancelDisabledReason = getCancelDisabledReason({
     bookingStatus,
     financialStatus,
+    paymentFlowVersion,
     future,
+    moreThan24Hours: startsAtMs - nowMs > 24 * ONE_HOUR_MS,
     terminal,
   });
 
@@ -88,6 +94,7 @@ export function getPatientEncounterActionPolicy({
         cancellationPolicy,
         endsAtMs,
         financialStatus,
+        paymentFlowVersion,
         nowMs,
         startsAtMs,
       }),
@@ -116,15 +123,26 @@ export function getPatientEncounterActionPolicy({
 function getRescheduleDisabledReason({
   bookingStatus,
   financialStatus,
+  paymentFlowVersion,
   future,
+  moreThan24Hours,
   terminal,
 }: {
   bookingStatus: string;
   financialStatus: string | null;
+  paymentFlowVersion: string;
   future: boolean;
+  moreThan24Hours: boolean;
   terminal: boolean;
 }) {
   if (terminal) return "Este encontro já foi encerrado ou cancelado.";
+  if (paymentFlowVersion === "v10") {
+    if (bookingStatus === BookingStatus.Confirmed &&
+      financialStatus === SessionFinancialStatus.Pending && moreThan24Hours) {
+      return null;
+    }
+    return "Para reagendar este encontro, fale com nossa equipe de suporte.";
+  }
   if (bookingStatus === BookingStatus.PendingPayment) {
     return "Confirme o pagamento antes de solicitar reagendamento.";
   }
@@ -139,15 +157,26 @@ function getRescheduleDisabledReason({
 function getCancelDisabledReason({
   bookingStatus,
   financialStatus,
+  paymentFlowVersion,
   future,
+  moreThan24Hours,
   terminal,
 }: {
   bookingStatus: string;
   financialStatus: string | null;
+  paymentFlowVersion: string;
   future: boolean;
+  moreThan24Hours: boolean;
   terminal: boolean;
 }) {
   if (terminal) return "Este encontro já foi encerrado ou cancelado.";
+  if (paymentFlowVersion === "v10") {
+    if (bookingStatus === BookingStatus.Confirmed &&
+      financialStatus === SessionFinancialStatus.Pending && moreThan24Hours) {
+      return null;
+    }
+    return "Para cancelar este encontro, fale com nossa equipe de suporte.";
+  }
   if (bookingStatus === BookingStatus.PendingPayment) {
     return "Não há cobrança confirmada para cancelar por este fluxo.";
   }
@@ -165,6 +194,7 @@ function getCancellationImpactLabel({
   cancellationPolicy,
   endsAtMs,
   financialStatus,
+  paymentFlowVersion,
   nowMs,
   startsAtMs,
 }: {
@@ -172,6 +202,7 @@ function getCancellationImpactLabel({
   cancellationPolicy: PatientEncounterActionPolicyInput["cancellationPolicy"];
   endsAtMs: number;
   financialStatus: string | null;
+  paymentFlowVersion: string;
   nowMs: number;
   startsAtMs: number;
 }) {
@@ -184,6 +215,19 @@ function getCancellationImpactLabel({
     }
 
     return "Cancelamento registrado sem reembolso automático.";
+  }
+
+  if (paymentFlowVersion === "v10" &&
+    financialStatus === SessionFinancialStatus.Pending) {
+    return "O pagamento dessa sessão ainda não ocorreu. Ao cancelar, a cobrança agendada também será cancelada.";
+  }
+
+  if (financialStatus === SessionFinancialStatus.Refunded) {
+    return "O valor integral deste encontro já foi devolvido ao cliente.";
+  }
+
+  if (financialStatus === SessionFinancialStatus.PartiallyRefunded) {
+    return "Há uma devolução parcial registrada e nossa equipe acompanha a conclusão.";
   }
 
   if (financialStatus !== SessionFinancialStatus.Paid) {

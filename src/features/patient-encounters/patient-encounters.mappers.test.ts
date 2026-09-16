@@ -62,7 +62,50 @@ describe("patient encounters mapper", () => {
       "Acompanhar pagamento",
     );
     expect(result.nextEncounter?.primaryAction).toMatchObject({
-      href: `/reserva/sucesso?booking=${booking.id}`,
+      href: `/app/encontros/${booking.id}`,
+    });
+  });
+
+  it("shows a future V10 charge as programmed without asking for payment attention", () => {
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000010",
+      new Date(Date.now() + 48 * 60 * 60 * 1000),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [
+          booking.id,
+          {
+            booking_id: booking.id,
+            financial_status: "pending",
+            payment_flow_version: "v10",
+          },
+        ],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter).toMatchObject({
+      actionHint:
+        "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
+      paymentScheduled: true,
+      status: "pending_payment",
+      statusLabel: "Reservado",
+      primaryAction: {
+        href: `/app/encontros/${booking.id}`,
+        label: "Ver detalhes",
+      },
     });
   });
 

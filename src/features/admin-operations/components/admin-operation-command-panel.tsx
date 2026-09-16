@@ -51,10 +51,7 @@ export function AdminOperationCommandPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
-  const options = useMemo(
-    () => getCommandOptions(data),
-    [data],
-  );
+  const options = useMemo(() => getCommandOptions(data), [data]);
 
   if (options.length === 0) {
     return (
@@ -203,12 +200,12 @@ export function getCommandOptions(
               },
             ]
           : []),
-          {
-            action: "professional.suspend",
-            label: "Suspender profissional",
-            tone: "danger",
-          },
-        ];
+        {
+          action: "professional.suspend",
+          label: "Suspender profissional",
+          tone: "danger",
+        },
+      ];
     }
 
     return [];
@@ -255,11 +252,7 @@ export function getCommandOptions(
       ];
     }
 
-    if (
-      statusLabel === "approved" &&
-      canPublish &&
-      relatedProfessionalId
-    ) {
+    if (statusLabel === "approved" && canPublish && relatedProfessionalId) {
       return [
         {
           action: "professional.publish",
@@ -287,7 +280,7 @@ export function getCommandOptions(
     return [
       {
         action: "support.resolve",
-          label: "Resolver chamado",
+        label: "Resolver chamado",
         tone: "success",
       },
     ];
@@ -331,7 +324,10 @@ function getEmptyActionMessage(
   return "Nenhuma ação administrativa está disponível para este estado.";
 }
 
-function getCommandSuccessMessage(action: CommandAction, payload?: ApiEnvelope) {
+function getCommandSuccessMessage(
+  action: CommandAction,
+  payload?: ApiEnvelope,
+) {
   const eligibility =
     payload && payload.ok && isRecord(payload.data)
       ? publicationEligibility(payload.data)
@@ -377,6 +373,7 @@ function publicationBlockers(value: unknown) {
     not_accepting_bookings: "não aceita novos agendamentos",
     profile_not_public: "perfil público desativado",
     profile_not_published: "perfil ainda não publicado",
+    receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_not_public: "terapia não publicada ou não visível",
   };
   return value

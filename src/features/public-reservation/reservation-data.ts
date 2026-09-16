@@ -108,6 +108,7 @@ export function resolveReservationContext(input: {
     prepareStepHref,
     priceCents,
     priceLabel: formatCurrency(priceCents),
+    reservationUnavailable: params.has("service") && !serviceId,
     retryBookingId: parseUuid(params.get("booking")),
     patientScheduleIntervals: [],
     patientScheduleCheckStatus: input.isPatientAuthenticated
@@ -121,6 +122,7 @@ export function resolveReservationContext(input: {
       durationMinutes && priceCents
         ? `${serviceLabel} (${durationMinutes} min)`
         : serviceLabel,
+    serviceDetailsUpdated: false,
     source,
     step,
     therapist: {
@@ -327,6 +329,7 @@ export function mergeReservationContextWithPublicProfile(
     isVerified: boolean;
     name: string;
     service?: {
+      id: string;
       durationMinutes: number;
       priceCents: number;
       priceLabel: string;
@@ -337,11 +340,29 @@ export function mergeReservationContextWithPublicProfile(
     timezone?: string;
   },
 ): ReservationContext {
-  const durationMinutes =
-    context.durationMinutes ?? input.service?.durationMinutes ?? null;
-  const priceCents = context.priceCents ?? input.service?.priceCents ?? null;
+  const durationMinutes = input.service?.durationMinutes ?? null;
+  const priceCents = input.service?.priceCents ?? null;
   const serviceLabel = input.service?.title ?? context.serviceLabel;
   const timezone = normalizeTimeZone(input.timezone ?? context.timezone);
+  const serviceDetailsUpdated = Boolean(
+    input.service &&
+    ((context.durationMinutes !== null &&
+      context.durationMinutes !== input.service.durationMinutes) ||
+      (context.priceCents !== null &&
+        context.priceCents !== input.service.priceCents)),
+  );
+  const canonicalParams = new URLSearchParams(
+    context.currentPath.split("?")[1] ?? "",
+  );
+  if (input.service) {
+    canonicalParams.set("duration", String(input.service.durationMinutes));
+    canonicalParams.set("price", String(input.service.priceCents));
+    canonicalParams.set("service", input.service.id);
+    canonicalParams.set("serviceName", input.service.title);
+    canonicalParams.set("therapy", input.service.therapySlug);
+  }
+  canonicalParams.set("therapist", input.slug);
+  const currentPath = `/reserva?${canonicalParams.toString()}`;
   const time = context.selectedSlot
     ? formatReservationTime(
         context.selectedSlot,
@@ -352,12 +373,23 @@ export function mergeReservationContextWithPublicProfile(
 
   return {
     ...context,
+    currentPath,
     durationMinutes,
     priceCents,
-    priceLabel:
-      context.priceCents === null && input.service
-        ? input.service.priceLabel
-        : context.priceLabel,
+    hasRequiredCheckoutData: Boolean(input.service && context.selectedSlot),
+    nextStepHref: buildReservationHref(canonicalParams, {
+      etapa: context.step === "momento" ? "preparar" : "pagamento",
+    }),
+    paymentStepHref: buildReservationHref(canonicalParams, {
+      etapa: "pagamento",
+    }),
+    prepareStepHref: buildReservationHref(canonicalParams, {
+      etapa: "preparar",
+    }),
+    priceLabel: input.service?.priceLabel ?? formatCurrency(null),
+    reservationUnavailable: context.reservationUnavailable || !input.service,
+    serviceDetailsUpdated,
+    serviceId: input.service?.id ?? null,
     serviceLabel,
     serviceSummary: durationMinutes
       ? `${serviceLabel} (${durationMinutes} min)`
@@ -369,7 +401,7 @@ export function mergeReservationContextWithPublicProfile(
       name: input.name,
       slug: input.slug,
     },
-    therapySlug: context.therapySlug ?? input.service?.therapySlug ?? null,
+    therapySlug: input.service?.therapySlug ?? null,
     timezone,
     time,
   };

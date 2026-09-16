@@ -79,7 +79,6 @@ export function TherapistProfileEditorPage({
   const [liveMessage, setLiveMessage] = useState("");
   const [publicationResult, setPublicationResult] =
     useState<PublicationResult | null>(null);
-  const [draftSavedNotice, setDraftSavedNotice] = useState(false);
   const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>({
     status: "idle",
   });
@@ -293,10 +292,6 @@ export function TherapistProfileEditorPage({
       router.refresh();
     }
 
-    if (action === "save_draft") {
-      setDraftSavedNotice(true);
-    }
-
     const message = getSuccessMessage(
       action,
       mutation.idempotentReplay,
@@ -317,24 +312,15 @@ export function TherapistProfileEditorPage({
           hasUnsavedChanges ? setConfirmAction("reset") : resetLocalChanges()
         }
         onPrimaryAction={() =>
-          isFirstConfiguration
-            ? requestPublishConfirmation()
-            : void runMutation("save_draft")
+          requestPublishConfirmation()
         }
         primaryDisabled={
           pendingAction !== null ||
           autoSaveState.status === "saving" ||
-          (isFirstConfiguration ? false : !hasUnsavedChanges)
+          (!isFirstConfiguration && !hasDraft && !hasUnsavedChanges)
         }
-        primaryLabel={
-          isFirstConfiguration ? "Publicar alterações" : "Salvar rascunho"
-        }
-        primaryLoading={
-          isFirstConfiguration
-            ? pendingAction === "publish"
-            : pendingAction === "save_draft"
-        }
-        primaryMode={isFirstConfiguration ? "publish" : "save"}
+        primaryLabel="Publicar alterações"
+        primaryLoading={pendingAction === "publish"}
       />
 
       <ProfileCompleteness editor={editor} />
@@ -367,7 +353,6 @@ export function TherapistProfileEditorPage({
             hasUnsavedChanges={hasUnsavedChanges}
             onDiscardDraft={() => setConfirmAction("discard_draft")}
             onPublish={requestPublishConfirmation}
-            onSaveDraft={() => void runMutation("save_draft")}
             onUnpublish={() => setConfirmAction("unpublish")}
             pendingAction={pendingAction}
             propagationNotice={editor.propagationNotice}
@@ -385,20 +370,23 @@ export function TherapistProfileEditorPage({
             updateField={updateField}
           />
           <ProfileManagedElsewhere plan={editor.derived.plan} />
-          <ProfileSection title="Importante">
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              {requiresInitialReview
-                ? "Para enviar seu perfil para análise, complete também seus dados e envie os documentos obrigatórios em Configurações. Salvar rascunho não altera o que as pessoas veem."
-                : "Seu cadastro já foi aprovado. Salvar rascunho não altera o que as pessoas veem; publique as alterações quando quiser atualizar o perfil público."}
-            </p>
-            <TESButton
-              className="mt-4 min-h-11 rounded-lg"
-              href={routes.therapist.settings}
-              variant="secondary"
-            >
-              Completar dados e documentos
-            </TESButton>
-          </ProfileSection>
+          {requiresInitialReview ? (
+            <ProfileSection title="Importante">
+              <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+                Para enviar seu perfil para análise, complete também seus dados e
+                envie os documentos obrigatórios em Configurações. As alterações
+                são salvas automaticamente como rascunho e ainda não aparecem
+                para outras pessoas.
+              </p>
+              <TESButton
+                className="mt-4 min-h-11 rounded-lg"
+                href={routes.therapist.settings}
+                variant="secondary"
+              >
+                Completar dados e documentos
+              </TESButton>
+            </ProfileSection>
+          ) : null}
         </AppPageAside>
       </AppPageGrid>
 
@@ -446,15 +434,6 @@ export function TherapistProfileEditorPage({
         />
       ) : null}
 
-      {draftSavedNotice ? (
-        <DraftSavedDialog
-          onClose={() => setDraftSavedNotice(false)}
-          onPublish={() => {
-            setDraftSavedNotice(false);
-            requestPublishConfirmation();
-          }}
-        />
-      ) : null}
     </AppPageContainer>
   );
 }
@@ -588,38 +567,6 @@ function PublicationResultDialog({
         >
           Entendi
         </TESButton>
-      </div>
-    </TESDialog>
-  );
-}
-
-function DraftSavedDialog({
-  onClose,
-  onPublish,
-}: {
-  onClose: () => void;
-  onPublish: () => void;
-}) {
-  return (
-    <TESDialog
-      description="A prévia e a página pública continuam mostrando a versão anterior enquanto o rascunho não for publicado."
-      onClose={onClose}
-      title="Alterações salvas como rascunho"
-    >
-      <div className="grid gap-5">
-        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-          Para que pacientes vejam o novo tema e as demais mudanças, publique as
-          alterações. Depois da publicação, a atualização pode levar até 2 a 3
-          horas para aparecer em todas as superfícies públicas.
-        </p>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <TESButton onClick={onClose} type="button" variant="secondary">
-            Continuar editando
-          </TESButton>
-          <TESButton onClick={onPublish} type="button">
-            Publicar alterações
-          </TESButton>
-        </div>
       </div>
     </TESDialog>
   );
@@ -770,7 +717,12 @@ function validatePublishFields(
   fields: TherapistProfileEditableFields,
 ): FieldValidationError | null {
   const draftError = validateDraftFields(fields);
-  if (draftError) return draftError;
+  if (draftError) {
+    return {
+      ...draftError,
+      message: draftError.message.replace("antes de salvar", "antes de publicar"),
+    };
+  }
 
   if (hasInvalidVideoUrl(fields.videoUrl, fields.videoProvider)) {
     return {

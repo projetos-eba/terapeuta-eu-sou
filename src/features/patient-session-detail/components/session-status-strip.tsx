@@ -8,16 +8,21 @@ export function SessionStatusStrip({
   data: PatientSessionDetailPageData;
 }) {
   const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
-  const paymentSupporting = data.encounterState.actions.includes(
-    "retry_payment",
-  )
-    ? undefined
-    : data.encounterState.payment.message;
+  const checkoutRetryAvailable =
+    data.paymentRecovery?.checkoutAvailable === true;
+  const paymentSupporting = checkoutRetryAvailable
+    ? "Continue o pagamento para confirmar este horário."
+    : data.encounterState.actions.includes("retry_payment")
+      ? undefined
+      : data.encounterState.payment.message;
   const roomAvailable = ["entry_available", "therapist_present"].includes(
     data.encounterState.waitingRoom.kind,
   );
   const encounterConfirmed =
-    data.booking.status === "confirmed" || data.booking.status === "live";
+    paymentConfirmed &&
+    (data.booking.status === "confirmed" || data.booking.status === "live");
+  const encounterReserved =
+    !encounterConfirmed && data.booking.status === "confirmed";
 
   return (
     <section
@@ -28,7 +33,11 @@ export function SessionStatusStrip({
         icon={CreditCard}
         supporting={paymentSupporting}
         tone={paymentConfirmed ? "success" : "warning"}
-        title={data.encounterState.payment.title}
+        title={
+          checkoutRetryAvailable
+            ? "Pagamento não concluído"
+            : data.encounterState.payment.title
+        }
       />
       <StatusItem
         icon={roomAvailable ? CheckCircle2 : Clock3}
@@ -41,11 +50,17 @@ export function SessionStatusStrip({
         supporting={
           encounterConfirmed
             ? "Seu horário está reservado para você."
-            : data.booking.statusLabel
+            : encounterReserved
+              ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
+              : data.booking.statusLabel
         }
         tone={encounterConfirmed ? "success" : "neutral"}
         title={
-          encounterConfirmed ? "Encontro confirmado" : data.booking.statusLabel
+          encounterConfirmed
+            ? "Encontro confirmado"
+            : encounterReserved
+              ? "Encontro reservado"
+              : data.booking.statusLabel
         }
       />
     </section>

@@ -36,7 +36,7 @@ export function OnlineSessionCard({
   if (data.encounterState.waitingRoom.kind === "ended") return null;
 
   const supportHref =
-    `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+    `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
   const showExternalEntry =
     data.onlineSession.provider !== "zoom" &&
     data.booking.canJoin &&
@@ -107,7 +107,7 @@ export function OnlineSessionCard({
 
         <div className="grid gap-3 border-t border-border pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
           <p className="text-base font-extrabold text-brand-deep sm:text-lg">
-            Preparação técnica
+            Antes de entrar
           </p>
           <ul className="grid gap-2">
             {data.encounterState.preparation.checklist.map((item) => (

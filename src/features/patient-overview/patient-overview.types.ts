@@ -10,6 +10,7 @@ export const moodKeys = [
 export type MoodKey = (typeof moodKeys)[number];
 
 export type PatientOverview = {
+  openSupportTicketsCount?: number;
   activitySummary: PatientActivitySummary;
   favoriteProfessionals: PatientFavoriteProfessional[];
   latestMoodCheckin: PatientMoodCheckin | null;
@@ -31,6 +32,7 @@ export type PatientOverviewPatient = {
 };
 
 export type PatientActivitySummary = {
+  openSupportTicketsCount?: number;
   favoritesCount: number;
   lastActivityLabel: string | null;
   unreadMessagesCount: number;

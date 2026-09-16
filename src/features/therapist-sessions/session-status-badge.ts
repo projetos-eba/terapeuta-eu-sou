@@ -4,7 +4,12 @@ export function getTherapistSessionStatusBadge(
   presentation: SessionPresentation,
   confirmationPending = false,
 ) {
-  if (confirmationPending) {
+  if (
+    confirmationPending &&
+    presentation.state !== "cancelled" &&
+    presentation.state !== "completed" &&
+    presentation.state !== "refunded"
+  ) {
     return {
       label: "Aguardando confirmação",
       tone: "warning" as const,

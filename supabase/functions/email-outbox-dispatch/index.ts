@@ -469,6 +469,8 @@ function isTherapistLifecycleAction(actionKey: EmailActionKey) {
 
 function isBookingAction(actionKey: EmailActionKey) {
   return [
+    "booking_reserved_patient",
+    "booking_reserved_therapist",
     "booking_confirmed_patient",
     "booking_confirmed_therapist",
     "booking_reminder_24h_patient",

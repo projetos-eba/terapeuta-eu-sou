@@ -126,11 +126,11 @@ export function mapSessionPresentation(
 
   if (session.financialStatus === SessionFinancialStatus.PartiallyRefunded) {
     return presentation(
-      "refunded",
-      "Reembolso parcial",
-      "Há um reembolso parcial registrado para esta sessão.",
+      "requires_attention",
+      "Em análise",
+      "O pagamento desta sessão está em análise. Nossa equipe entrará em contato.",
       "medium",
-      "neutral",
+      "warning",
       actions,
     );
   }
@@ -183,6 +183,21 @@ export function mapSessionPresentation(
   }
 
   if (
+    session.bookingStatus === BookingStatus.Confirmed &&
+    (session.financialStatus === SessionFinancialStatus.Pending ||
+      session.financialStatus === SessionFinancialStatus.Processing)
+  ) {
+    return presentation(
+      "reserved",
+      "Reservada",
+      "O horário está reservado e aguarda a confirmação do pagamento.",
+      "low",
+      "info",
+      actions,
+    );
+  }
+
+  if (
     session.financialStatus === null ||
     session.financialStatus === SessionFinancialStatus.Pending ||
     session.financialStatus === SessionFinancialStatus.Processing ||
@@ -209,6 +224,19 @@ export function mapSessionPresentation(
       "Há uma ocorrência operacional ou financeira para revisar.",
       "critical",
       "danger",
+      actions,
+    );
+  }
+
+  if (
+    session.fulfillmentStatus === FulfillmentStatus.OccurredPendingConfirmation
+  ) {
+    return presentation(
+      "awaiting_confirmation",
+      "Aguardando confirmação",
+      "A sessão foi realizada e aguarda a confirmação dos participantes.",
+      "medium",
+      "warning",
       actions,
     );
   }

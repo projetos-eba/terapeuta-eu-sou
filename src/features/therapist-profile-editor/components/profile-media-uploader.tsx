@@ -112,10 +112,7 @@ export function ProfileVideoUploader({
     value: TherapistProfileEditableFields[K],
   ) => void;
 }) {
-  if (
-    !canUploadVideo ||
-    !canAccessTherapistPlan(plan, TherapistPlan.Premium)
-  ) {
+  if (!canUploadVideo || !canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
     return (
       <ProfileSection title="Vídeo de apresentação">
         <TherapistLockedCard
@@ -134,70 +131,69 @@ export function ProfileVideoUploader({
       title="Vídeo de apresentação"
     >
       <div className="grid gap-4">
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-brand-lavender bg-brand-lavenderSoft">
-            {fields.videoThumbnailUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- preview de URL pública recém-enviada ao Storage, sem remotePatterns estáticos.
-              <img
-                alt="Prévia do vídeo de apresentação"
-                className="size-full object-cover"
-                src={fields.videoThumbnailUrl}
-              />
-            ) : (
-              <div className="grid size-full place-items-center text-center text-sm font-bold leading-6 text-brand-primary">
-                <ImagePlus aria-hidden="true" className="mb-2 size-8" />
-                Adicione uma capa para o vídeo
-              </div>
-            )}
-            <span className="absolute inset-0 grid place-items-center">
-              <span className="grid size-14 place-items-center rounded-full bg-white/90 text-brand-primary shadow-card">
-                <Play aria-hidden="true" className="ml-1 size-7 fill-current" />
-              </span>
+        <ProfileTextField
+          id="videoTitle"
+          label="Título do vídeo"
+          onChange={(value) => updateField("videoTitle", value)}
+          value={fields.videoTitle}
+        />
+
+        <div className="relative aspect-video overflow-hidden rounded-lg border border-brand-lavender bg-brand-lavenderSoft">
+          {fields.videoThumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- preview de URL pública recém-enviada ao Storage, sem remotePatterns estáticos.
+            <img
+              alt="Prévia do vídeo de apresentação"
+              className="size-full object-cover"
+              src={fields.videoThumbnailUrl}
+            />
+          ) : (
+            <div className="grid size-full place-items-center text-center text-sm font-bold leading-6 text-brand-primary">
+              <ImagePlus aria-hidden="true" className="mb-2 size-8" />
+              Adicione uma capa para o vídeo
+            </div>
+          )}
+          <span className="absolute inset-0 grid place-items-center">
+            <span className="grid size-14 place-items-center rounded-full bg-white/90 text-brand-primary shadow-card">
+              <Play aria-hidden="true" className="ml-1 size-7 fill-current" />
             </span>
-          </div>
+          </span>
+        </div>
 
-          <MediaUploadControl
-            accept="video/mp4,video/webm,video/quicktime"
-            currentUrl={fields.videoUrl}
-            kind="video"
-            label="Enviar novo vídeo"
-            maxBytes={maxVideoBytes}
-            onUploaded={(url) => {
-              updateField("videoUrl", url);
-              updateField("videoProvider", "upload");
-            }}
-          />
-          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-            Arquivos maiores que 5 MB precisam ser publicados no YouTube ou no
-            Vimeo. Depois, cole o link abaixo para que o vídeo seja analisado
-            pela equipe TES.
-          </p>
-          <MediaUploadControl
-            accept="image/jpeg,image/png,image/webp"
-            currentUrl={fields.videoThumbnailUrl}
-            kind="video_thumbnail"
-            label="Enviar capa do vídeo"
-            maxBytes={maxImageBytes}
-            onUploaded={(url) => updateField("videoThumbnailUrl", url)}
-          />
+        <MediaUploadControl
+          accept="video/mp4,video/webm,video/quicktime"
+          currentUrl={fields.videoUrl}
+          kind="video"
+          label="Enviar novo vídeo"
+          maxBytes={maxVideoBytes}
+          onUploaded={(url) => {
+            updateField("videoUrl", url);
+            updateField("videoProvider", "upload");
+          }}
+        />
+        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+          Arquivos maiores que 5 MB precisam ser publicados no YouTube ou no
+          Vimeo. Depois, cole o link abaixo para que o vídeo seja analisado pela
+          equipe TES.
+        </p>
+        <MediaUploadControl
+          accept="image/jpeg,image/png,image/webp"
+          currentUrl={fields.videoThumbnailUrl}
+          kind="video_thumbnail"
+          label="Enviar capa do vídeo"
+          maxBytes={maxImageBytes}
+          onUploaded={(url) => updateField("videoThumbnailUrl", url)}
+        />
 
-          <div className="grid gap-4">
-            <ProfileTextField
-              id="videoUrl"
-              label="Inserir link do vídeo"
-              onChange={(value) => {
-                updateField("videoUrl", value);
-                updateField("videoProvider", videoProviderForUrl(value));
-              }}
-              placeholder="Cole um link do YouTube ou Vimeo"
-              value={fields.videoUrl}
-            />
-            <ProfileTextField
-              id="videoTitle"
-              label="Título do vídeo"
-              onChange={(value) => updateField("videoTitle", value)}
-              value={fields.videoTitle}
-            />
-          </div>
+        <ProfileTextField
+          id="videoUrl"
+          label="Inserir link do vídeo"
+          onChange={(value) => {
+            updateField("videoUrl", value);
+            updateField("videoProvider", videoProviderForUrl(value));
+          }}
+          placeholder="Cole um link do YouTube ou Vimeo"
+          value={fields.videoUrl}
+        />
       </div>
     </ProfileSection>
   );

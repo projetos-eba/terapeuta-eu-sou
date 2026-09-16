@@ -6,10 +6,42 @@ import type {
   TherapistMetricDirectionCopyKey,
   TherapistMetricProtectedCollection,
   TherapistMetricsCommonMeta,
+  TherapistMetricsTodayActivity,
   TherapistSessionEvolutionComparison,
   TherapistSessionMetrics,
   TherapistSessionOutcomeKey,
 } from "./therapist-metrics.types";
+
+export function mapTherapistMetricsTodayActivity(
+  input: unknown,
+): TherapistMetricsTodayActivity {
+  try {
+    const value = record(input);
+    const meta = record(value.meta);
+    const favorites = record(value.profileFavoritesAdded);
+
+    return {
+      contractVersion: literal(value.contractVersion, 1),
+      meta: {
+        computedAt: dateTime(meta.computedAt),
+        freshThrough: nullableDateTime(meta.freshThrough),
+        localDate: metricDate(meta.localDate),
+        timezone: nonEmptyString(meta.timezone),
+      },
+      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
+      profileFavoritesAdded: {
+        status: emptyOrReady(favorites.status),
+        unit: literal(favorites.unit, "favorites"),
+        value: nonNegativeInteger(favorites.value),
+      },
+      status: "ready",
+      therapist: therapist(value.therapist),
+    };
+  } catch (error) {
+    if (error instanceof TherapistMetricsError) throw error;
+    throw new TherapistMetricsError("invalid_contract");
+  }
+}
 
 export function mapTherapistSessionEvolutionComparison(
   input: unknown,
@@ -236,11 +268,7 @@ export function mapTherapistInterestMetrics(
           "therapist_metrics.people_returned",
           "people",
         ),
-        profileFavorites: sampledMetric(
-          summary.profileFavorites,
-          "therapist_metrics.profile_favorites",
-          "favorites",
-        ),
+        profileFavorites: profileFavorites(summary.profileFavorites),
         returnRate: sampledMetric(
           summary.returnRate,
           "therapist_metrics.return_rate",
@@ -264,6 +292,24 @@ export function mapTherapistInterestMetrics(
     if (error instanceof TherapistMetricsError) throw error;
     throw new TherapistMetricsError("invalid_contract");
   }
+}
+
+function profileFavorites(input: unknown) {
+  const value = record(input);
+  const activity = record(value.activity);
+
+  return {
+    activity: {
+      status: emptyOrReady(activity.status),
+      unit: literal(activity.unit, "favorites"),
+      value: nonNegativeInteger(activity.value),
+    },
+    comparison: sampledMetric(
+      value.comparison,
+      "therapist_metrics.profile_favorites",
+      "favorites",
+    ),
+  } as const;
 }
 
 function commonMeta(input: unknown): TherapistMetricsCommonMeta {
@@ -418,6 +464,11 @@ function dateTime(value: unknown) {
   const parsed = nonEmptyString(value);
   if (Number.isNaN(Date.parse(parsed))) throw new Error("Invalid date.");
   return parsed;
+}
+
+function nullableDateTime(value: unknown) {
+  if (value === null) return null;
+  return dateTime(value);
 }
 
 function metricDate(value: unknown) {

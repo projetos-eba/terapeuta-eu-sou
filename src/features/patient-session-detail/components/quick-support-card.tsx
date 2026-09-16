@@ -22,7 +22,7 @@ export function QuickSupportCard({ bookingId }: { bookingId: string }) {
       <Link
         className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         href={
-          `${routes.patient.messages}?context=suporte&booking=${bookingId}` as Route<string>
+          `${routes.patient.support}?context=suporte&booking=${bookingId}` as Route<string>
         }
       >
         Falar com suporte

@@ -59,7 +59,7 @@ export function ShellHelpCard({
         <Link
           className={actionClassName}
           href={href as Route<string>}
-          rel={target === "_blank" ? "noreferrer" : undefined}
+          rel={target === "_blank" ? "noopener noreferrer" : undefined}
           target={target}
         >
           {label}

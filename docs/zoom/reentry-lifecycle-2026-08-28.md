@@ -46,6 +46,11 @@ chegada da espera. Ele não reutiliza `end_therapist_absent` ou
 O backend bloqueia a emissão de novos acessos imediatamente e a maintenance
 encerra a instância remota no ciclo seguinte.
 
+Uma decisão pendente de alteração solicitada pela terapeuta bloqueia a reserva
+de `end_patient_no_show`, inclusive para job que foi criado antes do pedido.
+Essa proteção é separada da presença: impede que a ausência automática decida
+um encontro que ainda aguarda escolha de reagendamento ou reembolso.
+
 ## Implementação local
 
 A migration `zoom_preserve_reentry_until_scheduled_end`:

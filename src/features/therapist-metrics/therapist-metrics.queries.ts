@@ -131,6 +131,36 @@ export function queryTherapistInterestMetrics(
   );
 }
 
+export async function queryTherapistMetricsTodayActivity(accessToken: string) {
+  const config = getSupabasePublicConfig();
+  if (!config) throw new TherapistMetricsError("unavailable");
+
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/get_therapist_metrics_today_v1`,
+    {
+      body: "{}",
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401) {
+    throw new TherapistMetricsError("session_expired");
+  }
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as unknown;
+    throw mapRpcError(response.status, payload);
+  }
+
+  return (await response.json()) as unknown;
+}
+
 async function queryTherapistMetricsDetail(
   accessToken: string,
   rpc:

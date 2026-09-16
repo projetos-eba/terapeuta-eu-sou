@@ -18,12 +18,13 @@ export async function TherapistAreaLayout({
   const counters = await getTherapistShellCounters({
     accessToken: session.accessToken,
     profileId: session.profileId,
+    userId: session.userId,
   });
   const config = getTherapistShellConfig({
     auraLaunchEnabled: getTherapistAuraFeatureAccess(session.plan)
       .launchEnabled,
     plan: session.plan,
-    unreadMessagesCount: counters.unreadMessages,
+    unreadMessagesCount: counters.openSupportTickets,
   });
   const firstName = session.name.trim().split(/\s+/)[0] || "Terapeuta";
 

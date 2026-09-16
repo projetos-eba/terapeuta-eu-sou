@@ -15,7 +15,6 @@ import {
   Filter,
   HeartHandshake,
   Info,
-  MessageCircle,
   MoreVertical,
   NotebookText,
   Route,
@@ -209,13 +208,6 @@ export function TherapistJourneyDetailPage({
             >
               <CalendarDays aria-hidden="true" size={17} />
               Ver sessões
-            </Link>
-            <Link
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={routes.therapist.messages}
-            >
-              <MessageCircle aria-hidden="true" size={17} />
-              Enviar mensagem
             </Link>
           </div>
         </div>
@@ -417,7 +409,8 @@ function JourneyMemory({
           <div className="hidden lg:block">
             <table className="w-full table-auto text-left">
               <caption className="sr-only">
-                Memórias compartilhadas das sessões realizadas
+                Memórias compartilhadas das sessões realizadas ou aguardando
+                confirmação
               </caption>
               <thead>
                 <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
@@ -499,8 +492,8 @@ function JourneyMemory({
             Nenhuma memória compartilhada ainda
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
-            As memórias aparecerão aqui quando uma sessão realizada tiver um
-            resumo compartilhado.
+            As memórias aparecerão aqui quando uma sessão realizada ou
+            aguardando confirmação tiver um resumo compartilhado.
           </p>
         </div>
       )}
@@ -539,17 +532,9 @@ function CarePreferencesCard() {
           Nenhuma preferência compartilhada nesta área
         </p>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Use os canais apropriados para convidar a pessoa a compartilhar o que
-          for relevante para a comunicação.
+          Aqui aparecem apenas informações compartilhadas nos encontros.
         </p>
       </div>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-        href={routes.therapist.messages}
-      >
-        <MessageCircle aria-hidden="true" size={17} />
-        Usar template de comunicação
-      </Link>
     </section>
   );
 }

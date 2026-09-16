@@ -108,6 +108,15 @@ set
   resolved_by_profile_id = 'aaaaaaaa-0000-4000-8000-000000000001'
 where id = 'e7000000-0000-4000-8000-000000000001';
 
+-- The authenticated caller cannot select raw refund records; keep the
+-- expected aggregate scoped to this test transaction.
+create temporary table metric_test_refund_totals as
+select session_payment_id, sum(amount_cents)::integer as amount_cents
+from public.session_refunds
+where status = 'succeeded'
+group by session_payment_id;
+grant select on metric_test_refund_totals to authenticated;
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -203,12 +212,11 @@ select is(
     select coalesce(sum(
       payment.gross_amount_cents
       - payment.platform_gross_commission_cents
-      - case
-        when payment.booking_id =
-          'f2000000-0000-4000-8000-000000000002'
-          then 1000
-        else 0
-      end
+      - coalesce((
+        select refund.amount_cents
+        from metric_test_refund_totals as refund
+        where refund.session_payment_id = payment.id
+      ), 0)
     ), 0)::integer
     from public.session_payments as payment
     where payment.therapist_profile_id =

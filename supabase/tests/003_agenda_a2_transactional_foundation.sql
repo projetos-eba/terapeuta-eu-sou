@@ -2,6 +2,61 @@ begin;
 
 select plan(43);
 
+-- Keep this foundational test independent from the mutable local publication
+-- state used by browser homologation.
+update public.therapist_profiles
+set status = 'approved',
+    public_status = 'published',
+    is_public = true,
+    is_accepting_bookings = true,
+    accepts_online_sessions = true
+where id in (
+  'c1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000002'
+);
+
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  payouts_enabled,
+  stripe_transfers_status,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  pending_requirements,
+  is_current,
+  closed_at
+)
+values
+  (
+    'a2300000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    'acct_test_a2_therapist_1',
+    'ready', true, true, 'active', 'ready', 'enabled', 'daily',
+    '[]'::jsonb, true, null
+  ),
+  (
+    'a2300000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000002',
+    'acct_test_a2_therapist_2',
+    'ready', true, true, 'active', 'ready', 'enabled', 'daily',
+    '[]'::jsonb, true, null
+  )
+on conflict (therapist_profile_id) where is_current
+do update set
+  onboarding_status = excluded.onboarding_status,
+  details_submitted = excluded.details_submitted,
+  payouts_enabled = excluded.payouts_enabled,
+  stripe_transfers_status = excluded.stripe_transfers_status,
+  operational_status = excluded.operational_status,
+  payout_status = excluded.payout_status,
+  payout_schedule_interval = excluded.payout_schedule_interval,
+  pending_requirements = excluded.pending_requirements,
+  closed_at = null;
+
 update public.therapist_services
 set status = 'active',
     is_bookable = true,
@@ -20,7 +75,7 @@ insert into public.therapist_service_booking_settings (
 values (
   'a2300000-0000-4000-8000-000000000021',
   'd1000000-0000-4000-8000-000000000021',
-  15,
+  0,
   15,
   0,
   90,
@@ -203,8 +258,8 @@ select is(
     from public.booking_holds
     where idempotency_key = 'a2-hold-idempotency-0001'
   ),
-  70,
-  'the occupied interval includes both booking buffers'
+  60,
+  'the occupied interval includes the post-session interval'
 );
 
 select is(
@@ -583,13 +638,30 @@ select isnt(
   'the paid booking receives a local Video SDK session for the test'
 );
 
+-- A fixed "now() + 25 days at 18:00" eventually falls outside the
+-- therapist's weekly availability. Select an actually offered future slot.
+create temporary table a2_reschedule_slot on commit drop as
+select
+  (slot.value ->> 'startsAt')::timestamptz as starts_at,
+  (slot.value ->> 'endsAt')::timestamptz as ends_at
+from pg_catalog.jsonb_array_elements(
+  public.get_booking_reschedule_availability_v1(
+    'f2000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    'next', null, 1000
+  ) -> 'slots'
+) as slot(value)
+where (slot.value ->> 'startsAt')::timestamptz > now() + interval '20 days'
+order by starts_at
+limit 1;
+
 select is(
   (
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
       'aaaaaaaa-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '25 days 18 hours',
-      date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
+      (select starts_at from a2_reschedule_slot),
+      (select ends_at from a2_reschedule_slot),
       'America/Sao_Paulo',
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',
@@ -610,8 +682,8 @@ select is(
     public.request_booking_reschedule_v1(
       'f2000000-0000-4000-8000-000000000001',
       'aaaaaaaa-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '25 days 18 hours',
-      date_trunc('day', now()) + interval '25 days 18 hours 50 minutes',
+      (select starts_at from a2_reschedule_slot),
+      (select ends_at from a2_reschedule_slot),
       'America/Sao_Paulo',
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',

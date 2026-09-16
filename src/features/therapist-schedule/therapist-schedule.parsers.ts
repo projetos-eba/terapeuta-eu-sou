@@ -8,6 +8,7 @@ import type {
 } from "@/domain/tes";
 
 import { TherapistScheduleContractError } from "./therapist-schedule.errors";
+import { BRASILIA_TIMEZONE } from "./therapist-schedule.constants";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -33,7 +34,7 @@ export function parseTherapistScheduleReadModel(
       ),
     },
     therapistProfileId: requiredUuid(row.therapistProfileId),
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
     updatedAt: requiredIsoDateTime(row.updatedAt),
   };
 }
@@ -86,7 +87,7 @@ export function parseSaveTherapistScheduleInput(
     requestId: requiredUuid(row.requestId),
     rules: parsedRules,
     serviceSettings: parsedSettings,
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
   };
 }
 
@@ -98,7 +99,7 @@ export function parseSaveTherapistScheduleResult(
   return {
     idempotentReplay: requiredBoolean(row.idempotentReplay),
     scheduleVersion: positiveInteger(row.scheduleVersion),
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
   };
 }
 
@@ -160,6 +161,12 @@ function requiredArray(value: unknown): unknown[] {
 function requiredString(value: unknown): string {
   if (typeof value !== "string" || value.length === 0) fail();
   return value;
+}
+
+function requiredBrasiliaTimezone(value: unknown): string {
+  const timezone = requiredString(value);
+  if (timezone !== BRASILIA_TIMEZONE) fail();
+  return timezone;
 }
 
 function requiredBoolean(value: unknown): boolean {

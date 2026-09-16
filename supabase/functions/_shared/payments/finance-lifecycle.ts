@@ -108,6 +108,59 @@ export function buildSessionTransferCreateParams(input: {
   };
 }
 
+export type ImmediateSessionTransferCreateParams = {
+  amount: number;
+  currency: "brl";
+  destination: string;
+  expand: ["destination_payment.balance_transaction"];
+  metadata: {
+    system: "tes";
+    tes_booking_id: string;
+    tes_session_payment_id: string;
+    tes_transfer_job_id: string;
+    tes_transfer_origin: "session_direct";
+  };
+  source_transaction: string;
+  transfer_group: string;
+};
+
+export function buildImmediateSessionTransferCreateParams(input: {
+  amountCents: number;
+  bookingId: string;
+  destination: string;
+  jobId: string;
+  sessionPaymentId: string;
+  sourceChargeId: string;
+}): ImmediateSessionTransferCreateParams {
+  if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0) {
+    throw new DomainError("invalid_transfer_amount", 422, "Valor de repasse invalido.");
+  }
+  for (const [field, value] of Object.entries(input)) {
+    if (field === "amountCents") continue;
+    if (typeof value !== "string" || !value.trim()) {
+      throw new DomainError(`invalid_${field}`, 422, "Dados de repasse invalidos.");
+    }
+  }
+  if (!input.sourceChargeId.startsWith("ch_") || !input.destination.startsWith("acct_")) {
+    throw new DomainError("invalid_transfer_binding", 422, "Dados de repasse invalidos.");
+  }
+  return {
+    amount: input.amountCents,
+    currency: "brl",
+    destination: input.destination,
+    expand: ["destination_payment.balance_transaction"],
+    metadata: {
+      system: "tes",
+      tes_booking_id: input.bookingId,
+      tes_session_payment_id: input.sessionPaymentId,
+      tes_transfer_job_id: input.jobId,
+      tes_transfer_origin: "session_direct",
+    },
+    source_transaction: input.sourceChargeId,
+    transfer_group: `tes_booking_${input.bookingId}`,
+  };
+}
+
 export function isSessionPaymentTransferable(input: {
   financialStatus: string;
   refundPending: boolean;

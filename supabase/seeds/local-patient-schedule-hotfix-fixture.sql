@@ -10,7 +10,7 @@ insert into public.therapist_service_booking_settings (
 ) values (
   'a1030000-0000-4000-8000-000000000202',
   'd1000000-0000-4000-8000-000000000002',
-  10, 10, 0, 90, 10
+  0, 10, 0, 90, 10
 )
 on conflict (service_id) do update
 set

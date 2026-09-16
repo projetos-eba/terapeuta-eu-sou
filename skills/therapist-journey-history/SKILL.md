@@ -71,7 +71,8 @@ Regras:
 
 - Não buscar e-mail de pacientes via `profiles`; a policy padrão só garante leitura do próprio profile.
 - Não exibir chat livre.
-- Links de comunicação devem apontar para `/terapeuta/mensagens`, que usa templates.
+- Links de comunicação devem apontar para `/terapeuta/suporte`; não há canal
+  ativo de mensagens entre participante e terapeuta.
 - Links de sessões devem usar `/terapeuta/sessoes?patient=<patientProfileId>`.
 - Detalhes de sessão devem usar `/terapeuta/sessoes/[bookingId]`.
 - Os títulos de terapia por sessão podem ser derivados dos mesmos `bookings`,
@@ -140,8 +141,8 @@ Regra de acompanhamento:
 
 - Não prometer cura, diagnóstico, resolução emocional ou resultado garantido.
 - Usar linguagem operacional: jornada, sessões, registros, continuidade, cuidado.
-- O atalho principal de comunicação no hero usa o rótulo `Enviar mensagem` e
-  direciona para `/terapeuta/mensagens`.
+- O atalho principal de comunicação no hero usa o rótulo `Falar com o Suporte`
+  e direciona para `/terapeuta/suporte`.
 - Deixar claro que a timeline é operacional e não substitui prontuário clínico.
 
 ## QA

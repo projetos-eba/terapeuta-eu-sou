@@ -40,6 +40,7 @@ export type BookingRecord = {
 export type SessionPaymentRecord = {
   booking_id: string;
   financial_status: string;
+  payment_flow_version?: string | null;
 };
 
 export type RescheduleRecord = {
@@ -194,6 +195,7 @@ function mapPatientEncounter(
   if (!therapist || !service || !therapy) return null;
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
+  const paymentScheduled = isFutureV10ChargeScheduled(booking, payment);
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
   const status = getEncounterStatus(
     booking,
@@ -206,8 +208,9 @@ function mapPatientEncounter(
   const hasReview = reviewedBookingIds.has(booking.id);
 
   return {
-    actionHint:
-      payment?.financial_status === "paid" && status === "confirmed"
+    actionHint: paymentScheduled
+      ? "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro."
+      : payment?.financial_status === "paid" && status === "confirmed"
         ? `Acesso à sala liberado ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} minutos antes.`
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
@@ -216,7 +219,14 @@ function mapPatientEncounter(
     id: booking.id,
     meetingUrl: null,
     paymentStatus: payment?.financial_status ?? null,
-    primaryAction: getPrimaryAction(booking, status, summaryId, hasReview),
+    paymentScheduled,
+    primaryAction: getPrimaryAction(
+      booking,
+      status,
+      summaryId,
+      hasReview,
+      paymentScheduled,
+    ),
     rescheduleStatus: reschedule?.status ?? null,
     scheduleLabel:
       status === "completed"
@@ -225,7 +235,7 @@ function mapPatientEncounter(
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
-    statusLabel: getStatusLabel(status),
+    statusLabel: paymentScheduled ? "Reservado" : getStatusLabel(status),
     summaryId,
     therapist: {
       avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
@@ -288,6 +298,7 @@ function getPrimaryAction(
   status: PatientEncounterStatus,
   summaryId: string | null,
   hasReview: boolean,
+  paymentScheduled = false,
 ): PatientEncounter["primaryAction"] {
   if (status === "live") {
     return {
@@ -298,8 +309,16 @@ function getPrimaryAction(
   }
 
   if (status === "pending_payment") {
+    if (paymentScheduled) {
+      return {
+        href: routes.patient.encounterDetail(booking.id),
+        kind: "link",
+        label: "Ver detalhes",
+      };
+    }
+
     return {
-      href: `/reserva/sucesso?booking=${encodeURIComponent(booking.id)}`,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
       label: "Acompanhar pagamento",
     };
@@ -339,7 +358,7 @@ function getPrimaryAction(
     }
 
     return {
-      href: `${routes.patient.messages}?context=suporte&booking=${booking.id}`,
+      href: `${routes.patient.support}?context=suporte&booking=${booking.id}`,
       kind: "link",
       label: "Solicitar suporte",
     };
@@ -366,6 +385,18 @@ function getPrimaryAction(
     kind: "link",
     label: "Ver detalhes",
   };
+}
+
+function isFutureV10ChargeScheduled(
+  booking: BookingRecord,
+  payment: SessionPaymentRecord | null,
+) {
+  return (
+    booking.status === "confirmed" &&
+    payment?.payment_flow_version === "v10" &&
+    payment.financial_status === "pending" &&
+    new Date(booking.starts_at).getTime() - Date.now() > 24 * 60 * 60_000
+  );
 }
 
 function buildEncounterHistoryActionHref(

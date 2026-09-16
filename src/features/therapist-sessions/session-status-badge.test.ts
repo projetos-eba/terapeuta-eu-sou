@@ -3,22 +3,31 @@ import { describe, expect, it } from "vitest";
 import { getTherapistSessionStatusBadge } from "./session-status-badge";
 
 describe("therapist session status badge", () => {
-  it("prioritizes the pending confirmation state", () => {
+  it("does not overwrite a confirmed completed session", () => {
     expect(
       getTherapistSessionStatusBadge(
         presentation({ label: "Realizada", state: "completed" }),
         true,
       ),
+    ).toEqual({ label: "Realizada", tone: "success" });
+  });
+
+  it("uses the pending confirmation label only for non-terminal sessions", () => {
+    expect(
+      getTherapistSessionStatusBadge(
+        presentation({ label: "Confirmada", state: "confirmed", tone: "info" }),
+        true,
+      ),
     ).toEqual({ label: "Aguardando confirmação", tone: "warning" });
   });
 
-  it("keeps the regular compact label after the pending state is cleared", () => {
+  it("preserves the not performed status even if stale pending data arrives", () => {
     expect(
       getTherapistSessionStatusBadge(
-        presentation({ label: "Realizada", state: "completed" }),
-        false,
+        presentation({ label: "Não realizada", state: "cancelled", tone: "danger" }),
+        true,
       ),
-    ).toEqual({ label: "Realizada", tone: "success" });
+    ).toEqual({ label: "Não realizada", tone: "danger" });
   });
 });
 

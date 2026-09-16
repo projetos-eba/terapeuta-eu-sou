@@ -32,8 +32,11 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
     detailHref: getAdminFinanceDetailHref("payments", id),
     fields: compactFields([
       field("Profissional", asText(row.therapist_name)),
-      field("Atendimento", asText(row.service_status)),
-      field("Transferência", formatTransferStatus(row.transfer_status)),
+      field(
+        "Atendimento",
+        formatServiceStatus(row.service_status, row.financial_status),
+      ),
+      field("Repasse", formatPaymentTransferStatus(row)),
       field(
         "Valor bruto",
         formatCurrency(row.gross_amount_cents, row.currency),
@@ -43,10 +46,16 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
         formatCurrency(row.therapist_amount_cents, row.currency),
       ),
       field(
-        "Comissão TES",
+        "Compensação",
+        formatPositiveCurrency(row.debt_offset_amount_cents, row.currency),
+      ),
+      field("Valor encaminhado", formatEffectiveTransferAmount(row)),
+      field(
+        "Custos da plataforma",
         formatCurrency(row.platform_gross_commission_cents, row.currency),
       ),
       field("Reembolso pendente", asBooleanLabel(row.refund_pending)),
+      field("Revisão TES", formatFinancialReview(row.financial_review_status)),
       field("Disputa", formatDate(row.disputed_at)),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
@@ -57,6 +66,12 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
       : "Reserva não vinculada na listagem.",
     title: asText(row.service_title) || "Pagamento de sessão",
   } satisfies AdminFinanceRow;
+}
+
+function formatFinancialReview(value: unknown) {
+  return asText(value) === "therapist_change_refund_review"
+    ? "Reembolso em análise"
+    : "";
 }
 
 function mapSubscriptionRow(row: UnknownRecord, index: number) {
@@ -146,8 +161,11 @@ function getDetailSections(
         field("Pagamento local", asText(record.id)),
         field("Reserva", asText(record.booking_id)),
         field("Status financeiro", asText(record.financial_status)),
-        field("Status do atendimento", asText(record.service_status)),
-        field("Transferência", formatTransferStatus(record.transfer_status)),
+        field(
+          "Status do atendimento",
+          formatServiceStatus(record.service_status, record.financial_status),
+        ),
+        field("Repasse", formatPaymentTransferStatus(record)),
         field("Bloqueio de repasse", asText(record.transfer_blocked_reason)),
       ]),
       section("Valores", [
@@ -160,7 +178,15 @@ function getDetailSections(
           formatCurrency(record.therapist_amount_cents, record.currency),
         ),
         field(
-          "Comissão TES",
+          "Compensação",
+          formatPositiveCurrency(
+            record.debt_offset_amount_cents,
+            record.currency,
+          ),
+        ),
+        field("Valor encaminhado", formatEffectiveTransferAmount(record)),
+        field(
+          "Custos da plataforma",
           formatCurrency(
             record.platform_gross_commission_cents,
             record.currency,
@@ -215,6 +241,7 @@ function getDetailSections(
         field("Transferências", formatCount(record.transfer_count)),
         field("Lançamentos", formatCount(record.ledger_entry_count)),
         field("Elegível em", formatDate(record.eligible_at)),
+        field("Pago ao banco em", formatDate(record.bank_paid_at)),
       ]),
       timestampSection(record),
     ];
@@ -293,7 +320,7 @@ function timestampSection(record: UnknownRecord) {
   return section("Rastreabilidade", [
     field("Criado em", formatDate(record.created_at)),
     field("Atualizado em", formatDate(record.updated_at)),
-    field("Pago em", formatDate(record.paid_at)),
+    field("Pagamento confirmado em", formatDate(record.paid_at)),
     field("Falhou em", formatDate(record.failed_at)),
     field("Cancelado em", formatDate(record.canceled_at)),
   ]);
@@ -336,13 +363,61 @@ export function formatTransferStatus(value: unknown) {
     not_eligible: "Ainda não elegível",
     reversed: "Repasse revertido",
     transfer_pending: "Em processamento",
-    transferred: "Transferido",
+    transferred: "A caminho do banco",
     waiting_confirmation: "Aguardando confirmação",
     waiting_safety_period: "Em liquidação",
     waiting_settlement: "Em liquidação",
   };
 
   return labels[status] ?? "Situação do repasse não identificada";
+}
+
+function formatPaymentTransferStatus(record: UnknownRecord) {
+  const financialStatus = asText(record.financial_status).trim().toLowerCase();
+  const transferStatus = asText(record.transfer_status).trim().toLowerCase();
+  const payoutDisplayStatus = asText(record.payout_display_status)
+    .trim()
+    .toLowerCase();
+
+  const payoutLabels: Record<string, string> = {
+    bank_pending: "A caminho do banco",
+    compensated: "Compensado",
+    compensation_pending: "Valor a compensar",
+    failed: "Falhou",
+    needs_review: "Em análise",
+    paid: "Pago",
+    processing: "Em processamento",
+    refunded: "Repasse encerrado",
+    reversed: "Repasse revertido",
+  };
+
+  if (payoutDisplayStatus && payoutLabels[payoutDisplayStatus]) {
+    return payoutLabels[payoutDisplayStatus];
+  }
+
+  if (financialStatus === "refunded") {
+    if (transferStatus === "reversed") return "Repasse revertido";
+    if (transferStatus === "transferred") return "Valor a compensar";
+    return "Repasse encerrado";
+  }
+
+  return formatTransferStatus(transferStatus);
+}
+
+function formatServiceStatus(value: unknown, financialStatus: unknown) {
+  if (asText(financialStatus).trim().toLowerCase() === "refunded") {
+    return "Encerrado";
+  }
+
+  const status = asText(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    canceled: "Cancelado",
+    completed: "Concluído",
+    not_performed: "Não realizado",
+    refunded: "Encerrado",
+    scheduled: "Agendado",
+  };
+  return labels[status] ?? asText(value);
 }
 
 function formatCount(value: unknown) {
@@ -370,6 +445,28 @@ function formatCurrency(amount: unknown, currency: unknown) {
     currency: currencyCode.toUpperCase(),
     style: "currency",
   }).format(amount / 100);
+}
+
+function formatPositiveCurrency(amount: unknown, currency: unknown) {
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
+    return "";
+  }
+
+  return formatCurrency(amount, currency);
+}
+
+function formatEffectiveTransferAmount(record: UnknownRecord) {
+  if (
+    typeof record.transfer_effective_amount_cents !== "number" ||
+    !Number.isFinite(record.transfer_effective_amount_cents)
+  ) {
+    return "";
+  }
+
+  return formatCurrency(
+    record.transfer_effective_amount_cents,
+    record.currency,
+  );
 }
 
 function formatPeriod(start: unknown, end: unknown) {
@@ -425,7 +522,7 @@ function getDetailSafetyNotes(
 ) {
   if (module === "payments") {
     return [
-      "Esta visão é apenas para consulta: não cria reembolso, transferência, reversão ou ajuste.",
+      "A devolução integral de uma sessão requer decisão registrada e conferência do resultado.",
       "Identificadores externos e dados sensíveis ficam fora da interface.",
       "Qualquer mudança financeira precisa de uma ação autorizada e conferida.",
     ];
@@ -452,8 +549,11 @@ function mapFinanceEvent(
       createdAt: asText(event.occurred_at) || asText(event.recorded_at),
       id: asText(event.id),
       kind,
-      subtitle: `${asText(event.direction)} · ${asText(event.source_table)}`,
-      title: asText(event.entry_type) || "Lançamento financeiro",
+      subtitle:
+        asText(event.direction) === "credit"
+          ? "Entrada registrada"
+          : "Saída registrada",
+      title: financialEventLabel(asText(event.entry_type)),
     };
   }
 
@@ -475,6 +575,26 @@ function mapFinanceEvent(
     subtitle: `${formatPlan(event.previous_plan)} → ${formatPlan(event.next_plan)}`,
     title: asText(event.event_type) || "Evento de assinatura",
   };
+}
+
+function financialEventLabel(code: string) {
+  const labels: Record<string, string> = {
+    session_gross_payment: "Pagamento da sessão",
+    therapist_payable: "Valor destinado ao profissional",
+    platform_gross_commission: "Parcela da plataforma",
+    stripe_fee: "Taxa de processamento",
+    refund: "Devolução ao cliente",
+    adjustment: "Ajuste financeiro",
+    transfer: "Valor encaminhado ao profissional",
+    transfer_reversal: "Valor recuperado do profissional",
+    dispute: "Pagamento contestado",
+    loss: "Perda registrada",
+    recovery: "Valor recuperado",
+    subscription_revenue: "Receita de assinatura",
+    therapist_debt: "Valor a compensar",
+    therapist_debt_offset: "Compensação aplicada",
+  };
+  return labels[code] ?? "Movimentação financeira";
 }
 
 function formatEventAmount(event: UnknownRecord, currency: string) {

@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -82,8 +82,21 @@ export function AuthenticatedShell({
   variant = "patient",
 }: AuthenticatedShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [currentNavigation, setCurrentNavigation] = useState(navigation);
   const pathname = usePathname();
   const resolvedLogoutHref = logoutHref ?? getDefaultLogoutHref(variant);
+
+  useEffect(() => {
+    setCurrentNavigation(navigation);
+  }, [navigation]);
+
+  const handleOpenSupportTicketsCountChange = useCallback((count: number) => {
+    setCurrentNavigation((current) =>
+      current.map((item) =>
+        item.icon === "message" ? { ...item, badge: count } : item,
+      ),
+    );
+  }, []);
 
   if (isDedicatedVideoCallPath(pathname)) {
     return (
@@ -112,7 +125,7 @@ export function AuthenticatedShell({
             homeHref={routes.public.home}
             logoutAction={logoutAction}
             logoutHref={resolvedLogoutHref}
-            navigation={navigation}
+            navigation={currentNavigation}
             onNavigate={() => setIsNavigationOpen(false)}
           />
         </aside>
@@ -135,6 +148,7 @@ export function AuthenticatedShell({
               notificationHref ?? getDefaultNotificationHref(variant)
             }
             notificationCount={notificationCount}
+            onOpenSupportTicketsCountChange={handleOpenSupportTicketsCountChange}
             planLabel={planLabel}
             user={user}
             variant={variant}
@@ -167,10 +181,10 @@ function getDefaultNotificationHref(
   variant: NonNullable<AuthenticatedShellProps["variant"]>,
 ) {
   if (variant === "therapist")
-    return "/terapeuta/mensagens?context=notificacoes";
+    return `${routes.therapist.support}?context=notificacoes`;
   if (variant === "admin") return "/admin/suporte";
 
-  return "/app/mensagens?context=notificacoes";
+  return `${routes.patient.support}?context=notificacoes`;
 }
 
 function getDefaultAccountHref(

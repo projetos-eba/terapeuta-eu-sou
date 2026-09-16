@@ -6,49 +6,81 @@ const UUID =
 
 export type RescheduleCommandBody =
   | {
-      action?: "availability";
-      anchor?: string;
-      bookingId?: string;
-      scope?: "day" | "month" | "next";
-    }
+    action?: "availability";
+    anchor?: string;
+    bookingId?: string;
+    scope?: "day" | "month" | "next";
+  }
   | {
-      action?: "request";
-      bookingId?: string;
-      expectedBookingVersion?: number;
-      proposedStartsAt?: string;
-      reason?: string | null;
-      requestId?: string;
-    }
+    action?: "request";
+    bookingId?: string;
+    expectedBookingVersion?: number;
+    proposedStartsAt?: string;
+    reason?: string | null;
+    requestId?: string;
+  }
   | {
-      action?: "resolve";
-      expectedBookingVersion?: number;
-      requestId?: string;
-      rescheduleRequestId?: string;
-      resolution?: "accepted" | "cancelled" | "rejected";
-    };
+    action?: "resolve";
+    expectedBookingVersion?: number;
+    requestId?: string;
+    rescheduleRequestId?: string;
+    resolution?: "accepted" | "cancelled" | "rejected";
+  }
+  | {
+    action?: "therapist_change";
+    bookingId?: string;
+    expectedBookingVersion?: number;
+    kind?: "cancellation" | "reschedule";
+    reason?: string | null;
+    requestId?: string;
+  }
+  | {
+    action?: "resolve_therapist_change";
+    expectedBookingVersion?: number;
+    proposedStartsAt?: string;
+    requestId?: string;
+    rescheduleRequestId?: string;
+    resolution?: "refund" | "reschedule";
+  };
 
 export type ValidRescheduleCommand =
   | {
-      action: "availability";
-      anchor: string | null;
-      bookingId: string;
-      scope: "day" | "month" | "next";
-    }
+    action: "availability";
+    anchor: string | null;
+    bookingId: string;
+    scope: "day" | "month" | "next";
+  }
   | {
-      action: "request";
-      bookingId: string;
-      expectedBookingVersion: number | null;
-      proposedStartsAt: string;
-      reason: string | null;
-      requestId: string;
-    }
+    action: "request";
+    bookingId: string;
+    expectedBookingVersion: number | null;
+    proposedStartsAt: string;
+    reason: string | null;
+    requestId: string;
+  }
   | {
-      action: "resolve";
-      expectedBookingVersion: number | null;
-      requestId: string;
-      rescheduleRequestId: string;
-      resolution: "accepted" | "cancelled" | "rejected";
-    };
+    action: "resolve";
+    expectedBookingVersion: number | null;
+    requestId: string;
+    rescheduleRequestId: string;
+    resolution: "accepted" | "cancelled" | "rejected";
+  }
+  | {
+    action: "therapist_change";
+    bookingId: string;
+    expectedBookingVersion: number | null;
+    kind: "cancellation" | "reschedule";
+    reason: string | null;
+    requestId: string;
+  }
+  | {
+    action: "resolve_therapist_change";
+    expectedBookingVersion: number | null;
+    proposedStartsAt: string | null;
+    requestId: string;
+    rescheduleRequestId: string;
+    resolution: "refund" | "reschedule";
+  };
 
 export function validateRescheduleCommand(
   body: RescheduleCommandBody,
@@ -125,6 +157,63 @@ export function validateRescheduleCommand(
     };
   }
 
+  if (body.action === "therapist_change") {
+    if (
+      !isUuid(body.bookingId) ||
+      !isUuid(body.requestId) ||
+      !isOptionalVersion(body.expectedBookingVersion) ||
+      !["cancellation", "reschedule"].includes(body.kind ?? "") ||
+      (body.reason !== null &&
+        body.reason !== undefined &&
+        (typeof body.reason !== "string" || body.reason.length > 500))
+    ) {
+      invalid();
+    }
+
+    return {
+      action: "therapist_change",
+      bookingId: body.bookingId,
+      expectedBookingVersion: body.expectedBookingVersion ?? null,
+      kind: body.kind as "cancellation" | "reschedule",
+      reason: body.reason?.trim() || null,
+      requestId: body.requestId,
+    };
+  }
+
+  if (body.action === "resolve_therapist_change") {
+    const needsSlot = body.resolution === "reschedule";
+    if (
+      !isUuid(body.rescheduleRequestId) ||
+      !isUuid(body.requestId) ||
+      !isOptionalVersion(body.expectedBookingVersion) ||
+      !["refund", "reschedule"].includes(body.resolution ?? "") ||
+      (needsSlot && !isIsoInstant(body.proposedStartsAt)) ||
+      (!needsSlot && body.proposedStartsAt !== undefined)
+    ) {
+      invalid();
+    }
+
+    const proposedStartsAt = needsSlot
+      ? new Date(body.proposedStartsAt!).toISOString()
+      : null;
+    if (proposedStartsAt && new Date(proposedStartsAt).getTime() <= Date.now()) {
+      throw new DomainError(
+        "invalid_reschedule_payload",
+        422,
+        "Escolha um horário futuro para reagendar.",
+      );
+    }
+
+    return {
+      action: "resolve_therapist_change",
+      expectedBookingVersion: body.expectedBookingVersion ?? null,
+      proposedStartsAt,
+      requestId: body.requestId,
+      rescheduleRequestId: body.rescheduleRequestId,
+      resolution: body.resolution as "refund" | "reschedule",
+    };
+  }
+
   invalid();
 }
 
@@ -172,7 +261,9 @@ export function mapRescheduleDatabaseError(error: unknown) {
     details.includes("BOOKING_CANNOT_BE_RESCHEDULED") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_PENDING") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED") ||
-    details.includes("IDEMPOTENCY_KEY_REUSED")
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT") ||
+    details.includes("IDEMPOTENCY_KEY_REUSED") ||
+    details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED")
   ) {
     return new DomainError(
       "reschedule_not_allowed",
@@ -183,6 +274,7 @@ export function mapRescheduleDatabaseError(error: unknown) {
   if (
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
     details.includes("BOOKING_ACTOR_NOT_PATIENT") ||
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_FORBIDDEN") ||
     details.includes("BOOKING_PROPOSAL_REQUIRES_THERAPIST") ||
     details.includes("BOOKING_NOT_FOUND") ||
     details.includes("BOOKING_RESCHEDULE_NOT_FOUND")
@@ -196,7 +288,10 @@ export function mapRescheduleDatabaseError(error: unknown) {
   if (
     details.includes("INVALID_IDEMPOTENCY_KEY") ||
     details.includes("INVALID_RESCHEDULE_RESOLUTION") ||
-    details.includes("INVALID_TIMEZONE")
+    details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_INVALID") ||
+    details.includes("INVALID_TIMEZONE") ||
+    details.includes("INVALID_THERAPIST_CHANGE_REQUEST") ||
+    details.includes("INVALID_THERAPIST_CHANGE_RESOLUTION")
   ) {
     return new DomainError(
       "invalid_reschedule_payload",
@@ -216,6 +311,14 @@ export function resolveParticipantActorRole(
   if (patientUserId === userId) return "patient" as const;
   if (therapistUserId === userId) return "therapist" as const;
   return null;
+}
+
+export function resolvePatientRescheduleRpc(
+  paymentFlowVersion: string | null | undefined,
+) {
+  return paymentFlowVersion === "v10"
+    ? "reschedule_uncharged_session_v10"
+    : "apply_patient_booking_reschedule_v1";
 }
 
 function invalid(): never {

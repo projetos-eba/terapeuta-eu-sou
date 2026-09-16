@@ -7,7 +7,7 @@ import { TESDialog } from "@/components/tes";
 
 type ActorRole = "patient" | "therapist";
 type DialogMode = "cancel" | "reschedule";
-type Screen = "calendar" | "cancel" | "confirm" | "schedule";
+type Screen = "calendar" | "cancel" | "confirm" | "schedule" | "therapist_change";
 
 export type RescheduleSlot = { endsAt: string; startsAt: string };
 type Availability = {
@@ -35,7 +35,7 @@ type Props = {
   onClose: () => void;
   onSubmitCancel: (userReason: string) => void;
   onSubmitReschedule: (input: {
-    proposedStartsAt: string;
+    proposedStartsAt: string | null;
     reason: string;
   }) => void;
 };
@@ -57,7 +57,11 @@ export function SessionChangeDialog({
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [screen, setScreen] = useState<Screen>(
-    mode === "cancel" && actorRole === "therapist" ? "cancel" : "schedule",
+    mode === "cancel" && actorRole === "therapist"
+      ? "cancel"
+      : mode === "reschedule" && actorRole === "therapist"
+        ? "therapist_change"
+        : "schedule",
   );
   const [selectedSlot, setSelectedSlot] = useState<RescheduleSlot | null>(null);
   const [rescheduleReason, setRescheduleReason] = useState("");
@@ -71,7 +75,10 @@ export function SessionChangeDialog({
   const subject = actorRole === "patient" ? "encontro" : "sessão";
 
   useEffect(() => {
-    if (mode === "cancel" && actorRole === "therapist") return;
+    if (
+      (mode === "cancel" && actorRole === "therapist") ||
+      screen === "therapist_change"
+    ) return;
     const controller = new AbortController();
     setLoadState("loading");
     void loadAvailability(bookingId, actorRole, "next", null, controller.signal)
@@ -89,7 +96,7 @@ export function SessionChangeDialog({
         if (!controller.signal.aborted) setLoadState("error");
       });
     return () => controller.abort();
-  }, [actorRole, bookingId, mode]);
+  }, [actorRole, bookingId, mode, screen]);
 
   useEffect(() => {
     if (screen !== "calendar" || !availability) return;
@@ -137,7 +144,9 @@ export function SessionChangeDialog({
       ? `Cancelar ${subject}`
       : screen === "calendar"
         ? "Escolha um dia e horário"
-        : screen === "confirm"
+        : screen === "therapist_change"
+          ? "Solicitar alteração"
+          : screen === "confirm"
           ? actorRole === "patient"
             ? "Confirmar reagendamento"
             : "Confirmar proposta"
@@ -148,8 +157,10 @@ export function SessionChangeDialog({
               : "Solicitar reagendamento";
   const description =
     screen === "cancel"
-      ? "A plataforma aplica a política financeira e registra o cancelamento com segurança."
-      : screen === "confirm"
+      ? "Confira as condições deste encontro antes de confirmar o cancelamento."
+      : screen === "therapist_change"
+        ? "A pessoa poderá escolher outro horário disponível ou solicitar análise de reembolso."
+        : screen === "confirm"
         ? actorRole === "patient"
           ? "O novo horário será confirmado imediatamente após a validação final da agenda."
           : "O reagendamento só será concluído depois que a outra parte aceitar a proposta."
@@ -240,6 +251,38 @@ export function SessionChangeDialog({
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {screen === "therapist_change" ? (
+        <form
+          className="grid gap-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmitReschedule({ proposedStartsAt: null, reason: rescheduleReason });
+          }}
+        >
+          <p className="rounded-xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep">
+            O horário atual fica preservado enquanto a pessoa decide. Esta solicitação não altera cobrança nem repasse.
+          </p>
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
+              Motivo opcional
+            </span>
+            <textarea
+              className="min-h-[110px] rounded-lg border border-brand-lavender px-4 py-3 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              maxLength={500}
+              onChange={(event) => setRescheduleReason(event.target.value)}
+              placeholder="Explique a necessidade de alteração, se quiser."
+              value={rescheduleReason}
+            />
+          </label>
+          <DialogActions
+            backLabel="Voltar"
+            isSubmitting={isSubmitting}
+            onBack={onClose}
+            submitLabel="Enviar solicitação"
+          />
+        </form>
       ) : null}
 
       {screen === "calendar" && availability ? (

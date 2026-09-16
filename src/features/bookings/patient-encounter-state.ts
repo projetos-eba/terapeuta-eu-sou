@@ -16,7 +16,8 @@ export type PatientEncounterPaymentKind =
   | "failed"
   | "not_started"
   | "processing"
-  | "refunded";
+  | "refunded"
+  | "scheduled";
 
 export type PatientEncounterWaitingRoomKind =
   | "entry_available"
@@ -69,6 +70,7 @@ type Input = {
   financialStatus: SessionFinancialStatus | null;
   now?: Date;
   patientHasJoined?: boolean;
+  paymentFlowVersion?: string;
   provider: "external" | "google_meet" | "zoom";
   startsAt: string;
   zoomAccess?: ZoomAccessState | null;
@@ -77,6 +79,7 @@ type Input = {
 const JOIN_WINDOW_BEFORE_MS = 15 * 60_000;
 const FIRST_JOIN_WINDOW_AFTER_MS = 10 * 60_000;
 const THERAPIST_ABSENCE_THRESHOLD_MS = 10 * 60_000;
+const CHARGE_LEAD_TIME_MS = 24 * 60 * 60_000;
 
 export function getPatientEncounterPresentationState({
   bookingStatus,
@@ -84,6 +87,7 @@ export function getPatientEncounterPresentationState({
   financialStatus,
   now = new Date(),
   patientHasJoined = false,
+  paymentFlowVersion = "v9",
   provider,
   startsAt,
   zoomAccess = null,
@@ -95,6 +99,7 @@ export function getPatientEncounterPresentationState({
     bookingStatus,
     financialStatus,
     nowMs,
+    paymentFlowVersion,
     startsAtMs,
   });
   const waitingRoom = getWaitingRoomState({
@@ -128,7 +133,7 @@ export function getPatientEncounterPresentationState({
         waitingRoom.kind !== "ended" &&
         waitingRoom.kind !== "operational_unavailable",
       title:
-        payment.kind === "confirmed"
+        payment.kind === "confirmed" || payment.kind === "scheduled"
           ? "Prepare seu encontro"
           : "Confirme o pagamento para preparar a sala",
     },
@@ -140,11 +145,13 @@ function getPaymentState({
   bookingStatus,
   financialStatus,
   nowMs,
+  paymentFlowVersion,
   startsAtMs,
 }: {
   bookingStatus: string;
   financialStatus: SessionFinancialStatus | null;
   nowMs: number;
+  paymentFlowVersion: string;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
   if (
@@ -185,6 +192,22 @@ function getPaymentState({
 
   if (financialStatus === SessionFinancialStatus.Pending) {
     const expired = Number.isFinite(startsAtMs) && nowMs > startsAtMs;
+    const scheduled =
+      paymentFlowVersion === "v10" &&
+      bookingStatus === BookingStatus.Confirmed &&
+      Number.isFinite(startsAtMs) &&
+      startsAtMs - nowMs > CHARGE_LEAD_TIME_MS;
+
+    if (scheduled) {
+      return {
+        kind: "scheduled",
+        message:
+          "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
+        retryAllowed: false,
+        slotState: "confirmed",
+        title: "Cobrança programada",
+      };
+    }
 
     return {
       kind: expired ? "expired" : "awaiting_webhook",
@@ -312,7 +335,7 @@ function getWaitingRoomState({
   if (financialStatus !== SessionFinancialStatus.Paid) {
     return {
       kind: "payment_required",
-      message: "A sala só abre após confirmação financeira persistida.",
+      message: "A sala será liberada quando o pagamento for confirmado.",
       title: "Pagamento necessário",
     };
   }
@@ -339,8 +362,7 @@ function getWaitingRoomState({
   if (zoomAccess?.reason === ZoomAccessReason.TooEarly) {
     return {
       kind: "too_early",
-      message:
-        "Sala estará disponível assim que o terapeuta liberar o acesso.",
+      message: "Sala estará disponível assim que o terapeuta liberar o acesso.",
       title: "A sala ainda não abriu",
     };
   }

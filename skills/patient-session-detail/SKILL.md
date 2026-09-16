@@ -96,8 +96,9 @@ anotação.
 - Questions in "Informações úteis" open a local `TESDialog` with the canonical operational answer; they do not redirect to the message center.
 - No hero do detalhe, o próximo passo é a ação principal de entrada; os atalhos
   redundantes “Testar dispositivos” e “Falar com suporte” não devem ser
-  repetidos nesse bloco. A preparação técnica permanece na seção dedicada
-  quando existir.
+  repetidos nesse bloco. A orientação de entrada permanece na seção dedicada
+  “Antes de entrar” quando existir, sempre em linguagem simples e sem termos
+  técnicos, de desenvolvimento ou de arquitetura.
 - Quando o pagamento está confirmado e o horário está dentro da janela ativa,
   o CTA principal deve abrir a sala dedicada mesmo que a presença do terapeuta
   ainda não tenha sido confirmada. A sala de espera aplica o host-first e
@@ -124,6 +125,17 @@ anotação.
   transacional, sem proposta nem hold; o horário original permanece ocupado até
   o commit. Propostas pendentes exibidas à pessoa são exclusivamente as
   iniciadas pela terapeuta e mantêm as ações de aceitar ou recusar.
+- `Vou me atrasar` fica disponível de T−60 a T+10 no detalhe confirmado:
+  confirmar em `TESDialog`, criar um aviso por pessoa e versão e deixar
+  explícito que a tolerância de entrada não muda. O estado “Aviso enviado”
+  desaparece após entrada confiável ou fim da janela.
+- O reagendamento normal do paciente exige pelo menos 24 horas também no
+  banco; abaixo disso, a UI orienta o fluxo de cancelamento. Uma alteração
+  aberta pela terapeuta usa `booking_reschedule_requests` sem horário prévio:
+  a pessoa escolhe um slot autoritativo do mesmo profissional ou solicita
+  reembolso integral. A segunda escolha move o caso para análise financeira
+  do TES; não apresentar reembolso automático nem acesso à sala enquanto a
+  revisão estiver pendente.
 - O cancelamento da pessoa começa com o mesmo componente completo de próximos
   horários do reagendamento: até cinco opções por dia nos três próximos dias
   disponíveis e acesso a “Ver agenda completa e mais horários”. A disponibilidade
@@ -135,6 +147,11 @@ anotação.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados, as
   ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
   mostram o motivo em texto acessível.
+- Quando o encontro estiver cancelado ou integralmente reembolsado, o detalhe
+  deve encerrar a sala e as ações de gestão, omitir qualquer preparação de
+  entrada e apresentar título, estado e explicação coerentes entre si. Um
+  reembolso integral confirmado nunca pode aparecer como pagamento ausente,
+  pendente ou parcial.
 - Quando um booking futuro estiver `cancelled_by_payment` com pagamento
   `failed` ou `canceled`, o hero substitui a entrada desabilitada por
   `Tentar pagamento novamente` e usa somente
@@ -143,6 +160,14 @@ anotação.
   horário após a autorização e a revalidação autoritativa. Depois do início,
   o detalhe oferece `Escolher outro horário` no perfil do terapeuta em vez de
   tentar reutilizar o booking encerrado.
+- Quando uma tentativa V10 expirar, a lista de encontros deve abrir este
+  detalhe canônico, nunca retornar à tela de sucesso expirada. O detalhe exibe
+  `Continuar pagamento` somente se
+  `get_patient_reservation_retry_context_v1` devolver `canRetry=true` para o
+  mesmo booking autenticado; erro, ausência, divergência ou resposta
+  inconclusiva falham fechado. A ação usa exclusivamente
+  `/reserva?booking=<uuid>&etapa=pagamento` e a interface não expõe nomes
+  internos do fluxo.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados
@@ -168,3 +193,6 @@ anotação.
 - Do not mention implementation details in user-facing UI.
 - Payment, cancellation and access statuses must use human TES language; never
   expose terms such as backend, webhook or provider to the patient.
+- Também não expor nomes internos de etapas financeiras ou de integração. A
+  pessoa deve ler apenas o resultado e a próxima ação possível em linguagem
+  comum.

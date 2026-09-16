@@ -29,6 +29,7 @@ export function getEncounterGuidance(encounter: PatientEncounter) {
 export function getSpotlightEyebrow(encounter: PatientEncounter | null) {
   if (!encounter) return "Próximo passo";
   if (encounter.status === "live") return "Entrada disponível";
+  if (encounter.paymentScheduled) return "Próximo encontro";
   if (
     encounter.status === "pending_payment" ||
     encounter.status === "payment_incomplete"

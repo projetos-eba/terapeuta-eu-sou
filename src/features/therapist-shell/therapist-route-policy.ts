@@ -22,7 +22,7 @@ export const therapistRoutePolicies = {
   insights: {
     capability: "advanced_metrics",
   },
-  messages: {
+  support: {
     capability: "operation_essentials",
   },
   patients: {

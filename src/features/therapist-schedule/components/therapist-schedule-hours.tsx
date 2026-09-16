@@ -12,6 +12,7 @@ import {
   Copy,
   Globe2,
   Info,
+  LockKeyhole,
   Plus,
   Save,
   Sparkles,
@@ -39,6 +40,10 @@ import {
   scheduleWeekDays,
   type ScheduleScope,
 } from "@/features/therapist-schedule/therapist-schedule-view-model";
+import {
+  BRASILIA_TIMEZONE,
+  BRASILIA_TIMEZONE_LABEL,
+} from "@/features/therapist-schedule/therapist-schedule.constants";
 import { routes } from "@/lib/routes";
 
 import { TherapistAgendaHeader } from "@/features/therapist-agenda/components/therapist-agenda-chrome";
@@ -66,7 +71,7 @@ export function TherapistScheduleHours({
     toEditableRules(initialSchedule.rules),
   );
   const [services, setServices] = useState(initialSchedule.services);
-  const [timezone, setTimezone] = useState(initialSchedule.timezone);
+  const timezone = BRASILIA_TIMEZONE;
   const [scope, setScope] = useState<ScheduleScope>(() =>
     findDefaultScheduleScope(initialSchedule.services, initialSchedule.rules),
   );
@@ -83,7 +88,6 @@ export function TherapistScheduleHours({
 
     setRules(toEditableRules(initialSchedule.rules));
     setServices(initialSchedule.services);
-    setTimezone(initialSchedule.timezone);
     setScope((currentScope) =>
       initialSchedule.services.some((service) => service.id === currentScope)
         ? currentScope
@@ -160,8 +164,7 @@ export function TherapistScheduleHours({
       dayRules.length === 0
         ? [...rules, createRule(scope, dayOfWeek, "09:00", "17:00")]
         : rules.map((rule) =>
-            rule.serviceId === scope &&
-            rule.dayOfWeek === dayOfWeek
+            rule.serviceId === scope && rule.dayOfWeek === dayOfWeek
               ? { ...rule, isActive: shouldActivate }
               : rule,
           );
@@ -196,7 +199,7 @@ export function TherapistScheduleHours({
   }
 
   function updateServiceSetting(
-    field: "minimumNoticeMinutes" | "slotStepMinutes",
+    field: "bufferAfterMinutes" | "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) {
     if (!currentService) return;
@@ -222,8 +225,7 @@ export function TherapistScheduleHours({
     const nextRules = [
       ...rules.filter(
         (rule) =>
-          rule.serviceId !== scope ||
-          !copyTargetDays.includes(rule.dayOfWeek),
+          rule.serviceId !== scope || !copyTargetDays.includes(rule.dayOfWeek),
       ),
       ...copyTargetDays.flatMap((dayOfWeek) =>
         sourceRules.map((rule) => ({
@@ -277,9 +279,7 @@ export function TherapistScheduleHours({
       expectedVersion: scheduleVersion,
       requestId: crypto.randomUUID(),
       rules: rules
-        .filter(
-          (rule) => schedulableServiceIds.has(rule.serviceId),
-        )
+        .filter((rule) => schedulableServiceIds.has(rule.serviceId))
         .map((rule) => ({
           ...rule,
           endTime: normalizeClock(rule.endTime),
@@ -287,6 +287,7 @@ export function TherapistScheduleHours({
         })),
       serviceSettings: schedulableServices.map((service) => ({
         ...service.settings,
+        bufferBeforeMinutes: 0,
         serviceId: service.id,
       })),
       timezone,
@@ -578,12 +579,7 @@ export function TherapistScheduleHours({
 
             <SessionRulesCard
               onSettingChange={updateServiceSetting}
-              onTimezoneChange={(value) => {
-                setTimezone(value);
-                markChanged();
-              }}
               service={currentService}
-              timezone={timezone}
             />
           </div>
 
@@ -739,17 +735,13 @@ export function TherapistScheduleHours({
 
 function SessionRulesCard({
   onSettingChange,
-  onTimezoneChange,
   service,
-  timezone,
 }: {
   onSettingChange: (
-    field: "minimumNoticeMinutes" | "slotStepMinutes",
+    field: "bufferAfterMinutes" | "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) => void;
-  onTimezoneChange: (value: string) => void;
   service: TherapistScheduleService | null;
-  timezone: string;
 }) {
   return (
     <section className="rounded-[14px] border border-brand-lavender bg-white shadow-card">
@@ -773,16 +765,29 @@ function SessionRulesCard({
             </span>
           </RuleRow>
           <RuleRow
-            description="Frequência em que os inícios são oferecidos."
+            description="Define de quanto em quanto tempo um atendimento pode começar."
             icon={CalendarDays}
-            info="De quanto em quanto tempo uma nova sessão pode começar. Por exemplo: 30 minutos organiza os horários com início a cada 30 minutos."
-            label="Intervalo das sessões"
+            info="A grade de horários começa no início de cada faixa de disponibilidade. Um agendamento não desloca os próximos horários de início."
+            label="Horários de início — Disponibilizar novos horários a cada"
           >
             <MinutesSelect
-              ariaLabel="Intervalo das sessões"
+              ariaLabel="Disponibilizar novos horários a cada"
               onChange={(value) => onSettingChange("slotStepMinutes", value)}
               options={[15, 30, 45, 60]}
               value={service.settings.slotStepMinutes}
+            />
+          </RuleRow>
+          <RuleRow
+            description="É o tempo livre entre o fim desta sessão e o início da próxima. Alterações valem para novas reservas; sessões já reservadas mantêm o intervalo registrado."
+            icon={Clock3}
+            info="Uma sessão de 40 minutos iniciada às 10h termina às 10h40. Sem intervalo, uma grade de 15 minutos pode oferecer 10h45. Com 10 minutos de intervalo, o próximo início possível é 11h. Alterações no intervalo valem para novas reservas; sessões já reservadas mantêm o tempo registrado."
+            label="Intervalo da sessão — Tempo livre depois de cada sessão"
+          >
+            <MinutesSelect
+              ariaLabel="Tempo livre depois de cada sessão"
+              onChange={(value) => onSettingChange("bufferAfterMinutes", value)}
+              options={[0, 5, 10, 15, 20, 30, 45, 60]}
+              value={service.settings.bufferAfterMinutes}
             />
           </RuleRow>
           <RuleRow
@@ -791,31 +796,25 @@ function SessionRulesCard({
             info="Este fuso define como os horários da sua agenda serão calculados e exibidos. O TES usa São Paulo (Brasília) como referência; se você atende de outro país, organize sua disponibilidade considerando esse horário."
             label="Fuso horário"
           >
-            <select
-              aria-label="Fuso horário"
-              className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 sm:w-[220px] sm:max-w-full"
-              onChange={(event) => onTimezoneChange(event.target.value)}
-              value={timezone}
-            >
-              <option value="America/Sao_Paulo">
-                São Paulo (Brasília, GMT-03)
-              </option>
-              <option value="America/Manaus">Manaus (GMT-04)</option>
-              <option value="America/Rio_Branco">Rio Branco (GMT-05)</option>
-              <option value="America/Noronha">
-                Fernando de Noronha (GMT-02)
-              </option>
-            </select>
+            <div className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-brand-lavender bg-brand-lavenderSoft/60 px-3 text-sm font-bold text-brand-deep sm:w-[280px] sm:max-w-full">
+              <span className="whitespace-nowrap">
+                {BRASILIA_TIMEZONE_LABEL}
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-extrabold text-brand-primary">
+                <LockKeyhole aria-hidden="true" size={13} />
+                Fixo
+              </span>
+            </div>
           </RuleRow>
           <p className="border-t border-brand-lavender bg-brand-lavenderSoft/60 px-5 py-4 text-sm font-semibold leading-6 text-tesText-secondary">
-            O TES organiza a agenda no fuso de São Paulo (Brasília). Isso vale
-            para a disponibilidade e para as reservas, inclusive quando você ou
-            a pessoa atendida estiverem fora do Brasil.
+            O horário oficial da agenda é fixo em Brasília (GMT-03). Configure
+            sua disponibilidade nesse fuso; se você atende de outra região ou
+            país, converta seus horários para Brasília antes de cadastrá-los.
           </p>
           <RuleRow
             description="É o tempo mínimo entre o momento do agendamento e o início da sessão."
             icon={CalendarDays}
-            info="Por exemplo: com 2 horas de antecedência, uma sessão às 12h só poderá ser agendada com pelo menos 2 horas de antecedência, ou seja até às 09:59am. Com 48 horas, o cliente só poderá agendar horários que estejam a pelo menos 48 horas do início da sessão. Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento."
+            info="Por exemplo: com 2 horas de antecedência, uma sessão às 12h poderá ser agendada até às 10:00. Com 48 horas, o cliente só poderá agendar horários que estejam a pelo menos 48 horas do início da sessão. Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento."
             label="Antecedência mínima"
           >
             <MinutesSelect
@@ -825,6 +824,7 @@ function SessionRulesCard({
               }
               options={[0, 60, 120, 360, 720, 1440, 2880]}
               value={service.settings.minimumNoticeMinutes}
+              zeroLabel="0 min — sem antecedência"
             />
           </RuleRow>
         </div>
@@ -870,7 +870,7 @@ function RuleRow({
             <span>{label}</span>
             {info ? <RuleInfoPopover label={label} text={info} /> : null}
           </h3>
-          <p className="mt-1 text-xs font-semibold leading-5 text-tesText-muted">
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-muted">
             {description}
           </p>
         </div>
@@ -1240,11 +1240,13 @@ function MinutesSelect({
   onChange,
   options,
   value,
+  zeroLabel,
 }: {
   ariaLabel: string;
   onChange: (value: number) => void;
   options: number[];
   value: number;
+  zeroLabel?: string;
 }) {
   return (
     <select
@@ -1253,11 +1255,13 @@ function MinutesSelect({
       onChange={(event) => onChange(Number(event.target.value))}
       value={value}
     >
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {formatMinutesOption(option)}
-        </option>
-      ))}
+      {Array.from(new Set([...options, value]))
+        .sort((left, right) => left - right)
+        .map((option) => (
+          <option key={option} value={option}>
+            {formatMinutesOption(option, zeroLabel)}
+          </option>
+        ))}
     </select>
   );
 }
@@ -1337,8 +1341,8 @@ function minutesToClock(totalMinutes: number) {
   ).padStart(2, "0")}`;
 }
 
-function formatMinutesOption(minutes: number) {
-  if (minutes === 0) return "Sem intervalo";
+function formatMinutesOption(minutes: number, zeroLabel?: string) {
+  if (minutes === 0) return zeroLabel ?? "0 min — sem intervalo";
   if (minutes < 60) return `${minutes} min`;
   if (minutes % 60 === 0) return `${minutes / 60}h`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;

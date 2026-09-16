@@ -80,6 +80,30 @@ const tarot = createService({
 describe("AvailabilitySelector", () => {
   afterEach(cleanup);
 
+  it("shows only the three closest available dates", () => {
+    const serviceWithFourDays: TherapistProfileService = {
+      ...reiki,
+      availability: [
+        createAvailabilityDay("2026-09-01", "01/09", "09:00"),
+        createAvailabilityDay("2026-09-02", "02/09", "10:00"),
+        createAvailabilityDay("2026-09-03", "03/09", "11:00"),
+        createAvailabilityDay("2026-09-04", "04/09", "12:00"),
+      ],
+    };
+
+    render(
+      <AvailabilitySelector
+        services={[serviceWithFourDays]}
+        therapistSlug="antonio-ferrari-e2e"
+      />,
+    );
+
+    expect(screen.getByText("01/09")).toBeInTheDocument();
+    expect(screen.getByText("02/09")).toBeInTheDocument();
+    expect(screen.getByText("03/09")).toBeInTheDocument();
+    expect(screen.queryByText("04/09")).toBeNull();
+  });
+
   it("switches registered service names without retaining stale service data", () => {
     render(
       <AvailabilitySelector
@@ -120,3 +144,24 @@ describe("AvailabilitySelector", () => {
     expect(screen.queryByRole("link", { name: "10:15" })).toBeNull();
   });
 });
+
+function createAvailabilityDay(date: string, dateLabel: string, time: string) {
+  const startsAt = `${date}T${time}:00.000Z`;
+  return {
+    date,
+    dateLabel,
+    dayLabel: "Dia",
+    slots: [
+      {
+        dateLabel,
+        dayLabel: "Dia",
+        endsAt: new Date(
+          new Date(startsAt).getTime() + 50 * 60_000,
+        ).toISOString(),
+        serviceId: reiki.id,
+        startsAt,
+        timeLabel: time,
+      },
+    ],
+  };
+}

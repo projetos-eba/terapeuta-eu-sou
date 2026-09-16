@@ -37,6 +37,7 @@ export function ShellUserMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const accountName = user.fullName ?? user.name;
   const effectivePlanLabel = planLabel ?? user.planLabel;
+  const showRoleLabel = user.roleLabel !== "Paciente";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -100,11 +101,11 @@ export function ShellUserMenu({
             <span className="mt-1 inline-flex min-h-6 items-center rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
               TES {effectivePlanLabel}
             </span>
-          ) : (
+          ) : showRoleLabel ? (
             <span className="mt-0.5 block truncate text-xs text-[var(--tes-color-text-secondary-app)]">
               {user.roleLabel}
             </span>
-          )}
+          ) : null}
         </span>
         <ChevronDown
           aria-hidden="true"
@@ -126,10 +127,14 @@ export function ShellUserMenu({
             <p className="text-sm font-semibold text-tesText-primary">
               {accountName}
             </p>
-            <p className="mt-1 text-sm text-tesText-secondary">
-              {user.roleLabel}
-              {effectivePlanLabel ? ` · TES ${effectivePlanLabel}` : ""}
-            </p>
+            {showRoleLabel || effectivePlanLabel ? (
+              <p className="mt-1 text-sm text-tesText-secondary">
+                {showRoleLabel ? user.roleLabel : ""}
+                {effectivePlanLabel
+                  ? `${showRoleLabel ? " · " : ""}TES ${effectivePlanLabel}`
+                  : ""}
+              </p>
+            ) : null}
             <div className="mt-3 flex min-w-0 items-center gap-2 text-sm text-tesText-secondary">
               <Mail
                 aria-hidden="true"

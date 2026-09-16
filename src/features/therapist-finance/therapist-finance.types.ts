@@ -20,6 +20,7 @@ export type TherapistReceiptStatus =
   | "bank_pending"
   | "blocked"
   | "canceled"
+  | "compensated"
   | "disputed"
   | "eligible"
   | "failed"
@@ -147,10 +148,12 @@ export type TherapistReceiptsContract = {
 
 export type TherapistPayoutItem = {
   blockedReason: string | null;
+  debtOffsetAmountCents: number;
   expectedTransferAt: string | null;
   failedReason: string | null;
   grossAmountCents: number;
-  payoutBatchId: string;
+  payoutBatchId: string | null;
+  payoutItemId: string;
   periodEnd: string;
   periodStart: string;
   reconciliationStatus:
@@ -165,6 +168,7 @@ export type TherapistPayoutItem = {
   sessionCount: number;
   stripeSourceChargeId: string | null;
   stripeTransferId: string | null;
+  sourceKind: "session_direct" | "weekly_batch";
   tesCommissionCents: number;
   therapistNetAmountCents: number;
   transferredAt: string | null;

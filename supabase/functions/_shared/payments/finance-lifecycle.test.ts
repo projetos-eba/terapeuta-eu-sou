@@ -1,4 +1,5 @@
 import {
+  buildImmediateSessionTransferCreateParams,
   buildSessionTransferCreateParams,
   isSessionPaymentTransferable,
   resolveFinanceOperationInstant,
@@ -70,6 +71,30 @@ Deno.test(
     assertEquals(params.metadata.tes_session_payment_id, "payment_123");
   },
 );
+
+Deno.test("V10 Transfer is bound to the original Charge and frozen destination", () => {
+  const params = buildImmediateSessionTransferCreateParams({
+    amountCents: 8_500,
+    bookingId: "booking_10",
+    destination: "acct_frozen",
+    jobId: "job_10",
+    sessionPaymentId: "payment_10",
+    sourceChargeId: "ch_original",
+  });
+  assertEquals(params.amount, 8_500);
+  assertEquals(params.destination, "acct_frozen");
+  assertEquals(params.source_transaction, "ch_original");
+  assertEquals(params.metadata.tes_transfer_origin, "session_direct");
+  assertEquals(params.metadata.tes_transfer_job_id, "job_10");
+  assertThrows(() => buildImmediateSessionTransferCreateParams({
+    amountCents: 0,
+    bookingId: "booking_10",
+    destination: "acct_frozen",
+    jobId: "job_10",
+    sessionPaymentId: "payment_10",
+    sourceChargeId: "ch_original",
+  }));
+});
 
 Deno.test(
   "only paid batched payments with source charge are transferable",

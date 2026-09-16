@@ -7,8 +7,8 @@ select plan(36);
 -- must not decide whether the block-impact contract is exercised.
 update public.bookings
 set
-  starts_at = ((current_date + 1)::date + time '10:00') at time zone 'America/Sao_Paulo',
-  ends_at = ((current_date + 1)::date + time '11:00') at time zone 'America/Sao_Paulo'
+  starts_at = ((current_date + 3650)::date + time '10:00') at time zone 'America/Sao_Paulo',
+  ends_at = ((current_date + 3650)::date + time '11:00') at time zone 'America/Sao_Paulo'
 where id = 'f2000000-0000-4000-8000-000000000004';
 
 create temporary table a4_baseline as
@@ -190,12 +190,12 @@ select is(
       'aaaaaaaa-0000-4000-8000-000000000001',
       'a4000000-0000-4000-8000-000000000090',
       'America/Sao_Paulo',
-      (current_date + 1)::date,
+      (current_date + 3650)::date,
       null,
       null,
       true,
       'daily',
-      (current_date + 3)::date,
+      (current_date + 3652)::date,
       null,
       'vacation',
       'A4 pgTAP'
@@ -229,7 +229,7 @@ select is(
       on series.id = exception.series_id
     where series.reason = 'A4 pgTAP'
   ),
-  (current_date + 1)::date,
+  (current_date + 3650)::date,
   'materialized UTC instants preserve the requested business date'
 );
 
@@ -282,12 +282,12 @@ select is(
       'aaaaaaaa-0000-4000-8000-000000000001',
       'a4000000-0000-4000-8000-000000000090',
       'America/Sao_Paulo',
-      (current_date + 1)::date,
+      (current_date + 3650)::date,
       null,
       null,
       true,
       'daily',
-      (current_date + 3)::date,
+      (current_date + 3652)::date,
       null,
       'vacation',
       'A4 pgTAP'
@@ -337,7 +337,7 @@ select throws_ok(
       1
     )
   $$,
-  '40001',
+  'P0001',
   'schedule_version_conflict',
   'stale cancellation versions are rejected'
 );

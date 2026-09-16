@@ -5,6 +5,7 @@ import { TherapistInterestMetricsPage } from "./components/therapist-interest-me
 import { TherapistSessionMetricsPage } from "./components/therapist-session-metrics-page";
 import {
   mapTherapistInterestMetrics,
+  mapTherapistMetricsTodayActivity,
   mapTherapistSessionEvolutionComparison,
   mapTherapistSessionMetrics,
 } from "./therapist-metrics.detail-mappers";
@@ -13,6 +14,23 @@ import { buildTherapistMetricsCsv } from "./therapist-metrics.export";
 afterEach(cleanup);
 
 describe("therapist metric detail contracts", () => {
+  it("maps the separate current-day favorites projection", () => {
+    const mapped = mapTherapistMetricsTodayActivity(todayActivityPayload(2));
+
+    expect(mapped).toMatchObject({
+      meta: {
+        localDate: "2026-07-28",
+        timezone: "America/Sao_Paulo",
+      },
+      profileFavoritesAdded: {
+        status: "ready",
+        unit: "favorites",
+        value: 2,
+      },
+      status: "ready",
+    });
+  });
+
   it("maps a complete aligned current-versus-previous session series", () => {
     const payload = {
       contractVersion: 1,
@@ -98,6 +116,10 @@ describe("therapist metric detail contracts", () => {
     if (!("summary" in mapped)) throw new Error("Unexpected lock.");
 
     expect(mapped.summary.peopleReturned.status).toBe("insufficient_sample");
+    expect(mapped.summary.profileFavorites).toEqual({
+      activity: { status: "ready", unit: "favorites", value: 3 },
+      comparison: sampledInsufficient("favorites", 3),
+    });
     expect(mapped.segments.items).toEqual([]);
     expect(mapped.journeyThemes.reason).toBe("free_text_analysis_prohibited");
   });
@@ -140,7 +162,7 @@ describe("therapist metric detail contracts", () => {
       }),
     ).toBeInTheDocument();
     const outcomeDonut = screen.getByRole("img", {
-      name: "Distribuição dos resultados das sessões",
+      name: /Distribuição dos resultados das sessões: Compareceram, 12/,
     });
     expect(
       outcomeDonut.querySelector("[data-chart-graphics-layer]"),
@@ -201,7 +223,7 @@ describe("therapist metric detail contracts", () => {
     ).toBeInTheDocument();
     expect(
       container.querySelectorAll('[data-state="insufficient_sample"]'),
-    ).toHaveLength(6);
+    ).toHaveLength(4);
     expect(
       Array.from(
         container.querySelectorAll(
@@ -209,12 +231,9 @@ describe("therapist metric detail contracts", () => {
         ),
       ).map((element) => element.getAttribute("aria-label")),
     ).toEqual([
-      "8 de 10 registros necessários",
-      "3 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
+      "8 de 10 pessoas na base atual",
+      "8 de 10 pessoas na base atual",
+      "8 de 10 pessoas no período",
     ]);
   });
 
@@ -239,15 +258,18 @@ describe("therapist metric detail contracts", () => {
         20,
       ),
       profileFavorites: {
-        ...sampledReady(
-          "therapist_metrics.profile_favorites.stable",
-          3,
-          4,
-          "favorites",
-          20,
-        ),
-        direction: "down",
-        directionCopyKey: "therapist_metrics.profile_favorites.down",
+        activity: { status: "ready", unit: "favorites", value: 3 },
+        comparison: {
+          ...sampledReady(
+            "therapist_metrics.profile_favorites.stable",
+            3,
+            4,
+            "favorites",
+            20,
+          ),
+          direction: "down",
+          directionCopyKey: "therapist_metrics.profile_favorites.down",
+        },
       },
       returnRate: sampledReady(
         "therapist_metrics.return_rate.up",
@@ -268,14 +290,28 @@ describe("therapist metric detail contracts", () => {
     const { container } = render(
       <TherapistInterestMetricsPage
         data={mapTherapistInterestMetrics(payload)}
+        todayActivity={mapTherapistMetricsTodayActivity(
+          todayActivityPayload(2),
+        )}
       />,
     );
 
-    expect(screen.getByText("↑ 50%")).toBeInTheDocument();
     expect(screen.getByText("↑ 10 p.p.")).toBeInTheDocument();
     expect(screen.getByText("↑ 20%")).toBeInTheDocument();
     expect(screen.getByText("↓ 25%")).toBeInTheDocument();
-    expect(screen.getAllByText("vs. período anterior")).toHaveLength(4);
+    expect(screen.getAllByText("vs. período anterior")).toHaveLength(3);
+    expect(screen.getByText("+2 favoritos hoje")).toBeInTheDocument();
+    expect(
+      screen.getByText("Entra no comparativo amanhã."),
+    ).toBeInTheDocument();
+    const summaryGrid = screen.getByRole("heading", {
+      name: "Continuidade do acompanhamento",
+    }).parentElement?.nextElementSibling;
+    expect(summaryGrid).toHaveClass(
+      "sm:grid-cols-2",
+      "lg:grid-cols-3",
+      "xl:grid-cols-5",
+    );
     expect(
       screen.getByRole("heading", { name: "Pessoas ativas" }),
     ).toBeInTheDocument();
@@ -288,14 +324,47 @@ describe("therapist metric detail contracts", () => {
     expect(
       container.querySelector('[aria-label="25% da base acompanhada"]'),
     ).toBeInTheDocument();
-    expect(
-      container.querySelectorAll('article[data-state="ready"]'),
-    ).toHaveLength(6);
-    expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(
-      4,
-    );
+    expect(container.querySelectorAll('article[data-state="ready"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(3);
+    expect(screen.getByText("Retorno no período")).toBeInTheDocument();
+    expect(screen.getByText("12 pessoas")).toBeInTheDocument();
+    expect(screen.getByText("60% da base voltou para uma nova sessão")).toBeInTheDocument();
+    expect(screen.queryByText("Pessoas que voltaram")).not.toBeInTheDocument();
+    expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
+  });
+
+  it("exports immediate favorite activity and one protected return summary", () => {
+    const mapped = mapTherapistInterestMetrics(readyInterestPayload());
+    const csv = buildTherapistMetricsCsv({ data: mapped, tab: "interest" });
+
+    expect(csv).toContain("profile_favorites");
+    expect(csv).toContain("Novos favoritos do perfil");
+    expect(csv).toContain("ready,3,favorites");
+    expect(csv).toContain("return_summary");
+    expect(csv).toContain("Retorno no período");
+    expect(csv).not.toContain("Pessoas que voltaram");
+    expect(csv).not.toContain("Taxa de retorno");
   });
 });
+
+function todayActivityPayload(favorites: number) {
+  return {
+    contractVersion: 1,
+    meta: {
+      computedAt: "2026-07-28T16:00:00.000Z",
+      freshThrough: favorites > 0 ? "2026-07-28T15:59:00.000Z" : null,
+      localDate: "2026-07-28",
+      timezone: "America/Sao_Paulo",
+    },
+    metricDefinitionVersion: 1,
+    profileFavoritesAdded: {
+      status: favorites > 0 ? "ready" : "empty",
+      unit: "favorites",
+      value: favorites,
+    },
+    therapist: therapist("premium_plus"),
+  };
+}
 
 export function sessionPayload(): Record<string, unknown> {
   return {
@@ -447,7 +516,10 @@ export function readyInterestPayload(): Record<string, unknown> {
     },
     summary: {
       peopleReturned: sampledInsufficient("people", 8),
-      profileFavorites: sampledInsufficient("favorites", 3),
+      profileFavorites: {
+        activity: { status: "ready", unit: "favorites", value: 3 },
+        comparison: sampledInsufficient("favorites", 3),
+      },
       returnRate: sampledInsufficient("percent", 8),
       sessionsPerPerson: sampledInsufficient("ratio", 8),
     },

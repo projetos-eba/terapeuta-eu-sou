@@ -45,7 +45,7 @@ describe("OnlineSessionCard", () => {
       screen.getByRole("link", { name: /pedir ajuda com pagamento/i }),
     ).toHaveAttribute(
       "href",
-      "/app/mensagens?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
+      "/app/suporte?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
     );
   });
 
@@ -207,6 +207,57 @@ describe("OnlineSessionCard", () => {
     ).toBeNull();
   });
 
+  it("offers the server-authorized checkout retry for an expired V10 checkout", () => {
+    const data = makeData({
+      checkoutRetryAvailable: true,
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.PendingPayment,
+    });
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Continuar pagamento" })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/reserva?booking=f2000000-0000-4000-8000-000000000001&etapa=pagamento",
+        ),
+    ).toBe(true);
+    expect(screen.getByText("Pagamento não concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText("Continue o pagamento para confirmar este horário."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Pedir ajuda com pagamento" }),
+    ).toBeNull();
+  });
+
+  it("shows a saved future slot as reserved until payment is confirmed", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.Confirmed,
+    });
+    data.booking.statusLabel = "Reservado";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Reservado")).toBeInTheDocument();
+    expect(screen.getByText("Encontro reservado")).toBeInTheDocument();
+    expect(screen.queryByText("Encontro confirmado")).toBeNull();
+  });
+
   it("offers a new time instead of retrying an elapsed interrupted payment", () => {
     render(
       <SessionOverviewCard
@@ -233,6 +284,7 @@ describe("OnlineSessionCard", () => {
 
 function makeData({
   canJoin,
+  checkoutRetryAvailable = false,
   financialStatus,
   meetingUrl = null,
   now = new Date("2026-08-01T13:50:00.000Z"),
@@ -240,6 +292,7 @@ function makeData({
   status = BookingStatus.Confirmed,
 }: {
   canJoin?: boolean;
+  checkoutRetryAvailable?: boolean;
   financialStatus: SessionFinancialStatus;
   meetingUrl?: string | null;
   now?: Date;
@@ -306,6 +359,12 @@ function makeData({
       meetingUrl,
       provider,
       securityNote: "Acesso autenticado.",
+    },
+    paymentRecovery: {
+      available: false,
+      checkoutAvailable: checkoutRetryAvailable,
+      dueAt: null,
+      status: null,
     },
     patient: {
       avatarUrl: null,

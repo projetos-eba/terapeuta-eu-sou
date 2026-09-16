@@ -138,6 +138,76 @@ const nextConfig = {
         permanent: false,
       },
       {
+        source: "/app/mensagens/suporte/:ticketId",
+        destination: "/app/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/app/mensagens",
+        destination: "/app/suporte",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
         source: "/plus/servi%C3%A7os",
         destination: "/terapeuta/servicos",
         permanent: false,

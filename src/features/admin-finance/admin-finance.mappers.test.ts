@@ -40,13 +40,90 @@ describe("admin finance mappers", () => {
     expect(row.fields.map((field) => field.label)).toEqual([
       "Profissional",
       "Atendimento",
-      "Transferência",
+      "Repasse",
       "Valor bruto",
       "Repasse terapeuta",
-      "Comissão TES",
+      "Custos da plataforma",
       "Reembolso pendente",
       "Atualizado",
     ]);
+  });
+
+  it("presents refunded sessions as closed without a stale transferred state", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          financial_status: "refunded",
+          id: "payment-refunded",
+          service_status: "scheduled",
+          transfer_status: "transferred",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Atendimento",
+      value: "Encerrado",
+    });
+    expect(row.fields).toContainEqual({
+      label: "Repasse",
+      value: "Valor a compensar",
+    });
+  });
+
+  it("presents the V10 bank and compensation projection without internal terms", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          currency: "BRL",
+          debt_offset_amount_cents: 1000,
+          financial_status: "paid",
+          id: "payment-v10",
+          payout_display_status: "bank_pending",
+          therapist_amount_cents: 8500,
+          transfer_effective_amount_cents: 7500,
+          transfer_status: "transferred",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Repasse",
+      value: "A caminho do banco",
+    });
+    expect(row.fields).toContainEqual({
+      label: "Compensação",
+      value: "R$ 10,00",
+    });
+    expect(row.fields).toContainEqual({
+      label: "Valor encaminhado",
+      value: "R$ 75,00",
+    });
+    expect(JSON.stringify(row)).not.toMatch(
+      /source_transaction|transfer reversal|paymentintent|payout_display_status/i,
+    );
+  });
+
+  it("identifies a therapist-change refund review in the financial queue", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          financial_review_status: "therapist_change_refund_review",
+          financial_status: "paid",
+          id: "payment-review",
+          refund_pending: true,
+          transfer_status: "blocked",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Revisão TES",
+      value: "Reembolso em análise",
+    });
   });
 
   it("normalizes every transfer lifecycle status for administration", () => {
@@ -74,7 +151,7 @@ describe("admin finance mappers", () => {
       not_eligible: "Ainda não elegível",
       reversed: "Repasse revertido",
       transfer_pending: "Em processamento",
-      transferred: "Transferido",
+      transferred: "A caminho do banco",
       waiting_confirmation: "Aguardando confirmação",
       waiting_safety_period: "Em liquidação",
       waiting_settlement: "Em liquidação",
@@ -133,6 +210,7 @@ describe("admin finance mappers", () => {
         has_checkout_session: true,
         id: "payment-1",
         metadata: { raw: "hidden" },
+        paid_at: "2026-08-08T12:00:00.000Z",
         service_title: "Reiki",
         stripe_checkout_session_id: "cs_test_hidden",
         stripe_payment_intent_id: "pi_hidden",
@@ -145,6 +223,14 @@ describe("admin finance mappers", () => {
     expect(JSON.stringify(detail)).not.toContain("pi_hidden");
     expect(JSON.stringify(detail)).not.toContain("evt_hidden");
     expect(JSON.stringify(detail)).not.toContain("hidden");
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          expect.objectContaining({ label: "Pagamento confirmado em" }),
+        ]),
+        title: "Rastreabilidade",
+      }),
+    );
   });
 
   it("maps subscription details without exposing provider ids or invoice urls", () => {

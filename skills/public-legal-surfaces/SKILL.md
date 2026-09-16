@@ -36,7 +36,8 @@ description: Implementar e manter as paginas publicas juridicas e ajuda do TES c
 - Checkout e cadastros gravam aceite server-side com a versao publicada; o
   navegador envia somente a intencao de aceite.
 - `/app/ajuda` nao existe neste momento. Suporte autenticado do paciente usa
-  `/app/mensagens` com templates aprovados.
+  `/app/suporte`; mensagens entre participantes permanecem somente como
+  histórico de leitura e não possuem templates ativos.
 - `/status` nao existe como superficie publica nesta fase. Nao criar pagina
   estatica de status sem fonte operacional real e decisao de produto.
 

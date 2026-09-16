@@ -27,7 +27,6 @@ import {
   PromotionCodeField,
   type PromotionCheckoutAmounts,
 } from "@/features/payments";
-import { NewSupportTicketDialog } from "@/features/support/components/therapist-support-section";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +46,9 @@ import { CheckoutButton, ReservationLinkButton } from "./checkout-button";
 import { PrepareForm } from "./prepare-form";
 
 const reservationJourneyDraftHistoryKey = "tes.reservation.journey-draft.v1";
+const paymentSupportWhatsappHref = `https://wa.me/5518981058337?text=${encodeURIComponent(
+  "Olá, estou tentando realizar um pagamento na plataforma TES e preciso de ajuda.",
+)}`;
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -89,29 +91,27 @@ export function ReservationPage({
   const therapistProfileHref = buildReservationReturnHref(
     context.therapist.slug,
   );
-  const initialJourneyDraft = readReservationJourneyDraft(reservationKey);
-  const [acceptedTerms, setAcceptedTerms] = useState(
-    () => isPaymentRetry || initialJourneyDraft?.acceptedTerms === true,
-  );
+  // Keep the server and the first client render deterministic. Browser-only
+  // journey state is restored by the effect below after hydration.
+  const [acceptedTerms, setAcceptedTerms] = useState(isPaymentRetry);
   const [marketingConsent, setMarketingConsent] = useState(
-    () => initialJourneyDraft?.marketingConsent ?? context.marketingConsent,
+    context.marketingConsent,
   );
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(
-    () => initialJourneyDraft?.checkoutAttemptId ?? null,
+    null,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
-    isPaymentRetry
-      ? "pagamento"
-      : context.selectedSlotHasPatientConflict
-        ? "momento"
-        : context.step === "pagamento"
-          ? context.hasRequiredCheckoutData &&
-            initialJourneyDraft?.acceptedTerms
-            ? "pagamento"
-            : context.hasRequiredCheckoutData
+    context.reservationUnavailable
+      ? "momento"
+      : isPaymentRetry
+        ? "pagamento"
+        : context.selectedSlotHasPatientConflict
+          ? "momento"
+          : context.step === "pagamento"
+            ? context.hasRequiredCheckoutData
               ? "preparar"
               : "momento"
-          : context.step,
+            : context.step,
   );
   const [sharedNote, setSharedNote] = useState("");
   const [promotionCode, setPromotionCode] = useState("");
@@ -126,16 +126,11 @@ export function ReservationPage({
   const [checkoutReady, setCheckoutReady] = useState(false);
   const [isPatientConflictDialogOpen, setIsPatientConflictDialogOpen] =
     useState(context.selectedSlotHasPatientConflict);
-  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
-  const [supportTicketProtocol, setSupportTicketProtocol] = useState<
-    string | null
-  >(null);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
     isPaymentRetry || context.selectedSlotHasPatientConflict
       ? null
-      : context.step === "pagamento" &&
-          initialJourneyDraft?.acceptedTerms !== true
+      : context.step === "pagamento"
         ? "Aceite os termos antes de seguir para o pagamento."
         : null,
   );
@@ -162,16 +157,19 @@ export function ReservationPage({
           : null,
     );
     setCurrentStep(
-      context.selectedSlotHasPatientConflict
+      context.reservationUnavailable
         ? "momento"
-        : context.step === "pagamento"
-          ? context.hasRequiredCheckoutData
-            ? "preparar"
-            : "momento"
-          : context.step,
+        : context.selectedSlotHasPatientConflict
+          ? "momento"
+          : context.step === "pagamento"
+            ? context.hasRequiredCheckoutData
+              ? "preparar"
+              : "momento"
+            : context.step,
     );
   }, [
     context.hasRequiredCheckoutData,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     reservationKey,
@@ -180,6 +178,11 @@ export function ReservationPage({
   useEffect(() => {
     const restoreJourneyDraft = () => {
       if (isPaymentRetry) return;
+      if (context.reservationUnavailable) {
+        setJourneyError(null);
+        setCurrentStep("momento");
+        return;
+      }
       if (context.selectedSlotHasPatientConflict) {
         setJourneyError(null);
         setCurrentStep("momento");
@@ -215,12 +218,18 @@ export function ReservationPage({
   }, [
     context.hasRequiredCheckoutData,
     context.marketingConsent,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     isPaymentRetry,
     reservationKey,
   ]);
 
   useEffect(() => {
+    if (context.reservationUnavailable) {
+      setJourneyError(null);
+      setCurrentStep("momento");
+      return;
+    }
     if (context.selectedSlotHasPatientConflict) {
       setCurrentStep("momento");
       return;
@@ -234,12 +243,17 @@ export function ReservationPage({
   }, [
     acceptedTerms,
     context.hasRequiredCheckoutData,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     isPaymentRetry,
   ]);
 
   useEffect(() => {
+    if (context.reservationUnavailable) {
+      router.replace(momentStepHref);
+      return;
+    }
     if (context.selectedSlotHasPatientConflict) {
       setJourneyError(null);
       setIsPatientConflictDialogOpen(true);
@@ -251,6 +265,7 @@ export function ReservationPage({
     }
   }, [
     acceptedTerms,
+    context.reservationUnavailable,
     context.selectedSlotHasPatientConflict,
     context.step,
     isPaymentRetry,
@@ -260,6 +275,7 @@ export function ReservationPage({
   ]);
 
   const canPrepare =
+    !context.reservationUnavailable &&
     (context.canPrepareEncounter || isPaymentRetry) &&
     context.isPatientAuthenticated;
   const canPay = canPrepare && acceptedTerms;
@@ -296,6 +312,11 @@ export function ReservationPage({
 
   const goToStep = useCallback(
     (step: ReservationStep) => {
+      if (context.reservationUnavailable) {
+        setCurrentStep("momento");
+        router.replace(momentStepHref);
+        return;
+      }
       if (step === "pagamento" && !canPay) {
         setJourneyError("Aceite os termos antes de seguir para o pagamento.");
         setCurrentStep("preparar");
@@ -342,6 +363,7 @@ export function ReservationPage({
       acceptedTerms,
       canPay,
       checkoutAttemptId,
+      context.reservationUnavailable,
       marketingConsent,
       momentStepHref,
       paymentStepHref,
@@ -366,6 +388,15 @@ export function ReservationPage({
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_520px] xl:gap-12">
           <section>
             <ReservationStepper current={currentStep} onNavigate={goToStep} />
+            {context.serviceDetailsUpdated ? (
+              <p
+                role="status"
+                className="mb-6 rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep"
+              >
+                Os detalhes desta terapia foram atualizados. Confira a duração e
+                o valor antes de continuar.
+              </p>
+            ) : null}
             {journeyError ? (
               <p
                 role="alert"
@@ -430,73 +461,47 @@ export function ReservationPage({
           </section>
 
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <ReservationSummary
-              acceptedTerms={acceptedTerms}
-              canPay={canPay}
-              context={activeContext}
-              checkoutReady={checkoutReady}
-              promotionAmounts={promotionAmounts}
-              promotionCode={promotionCode}
-              promotionError={promotionError}
-              promotionPending={promotionPending}
-              onApplyPromotion={() => {
-                setPromotionError(null);
-                setPromotionPending(true);
-                setPromotionRequest({
-                  code: promotionCode.trim(),
-                  requestId: crypto.randomUUID(),
-                });
-              }}
-              onPromotionCodeChange={setPromotionCode}
-              onRemovePromotion={() => {
-                setPromotionError(null);
-                setPromotionPending(true);
-                setPromotionRequest({
-                  code: null,
-                  requestId: crypto.randomUUID(),
-                });
-              }}
-              onAdvanceToPayment={() => goToStep("pagamento")}
-            />
+            {!context.reservationUnavailable ? (
+              <ReservationSummary
+                acceptedTerms={acceptedTerms}
+                canPay={canPay}
+                context={activeContext}
+                checkoutReady={checkoutReady}
+                promotionAmounts={promotionAmounts}
+                promotionCode={promotionCode}
+                promotionError={promotionError}
+                promotionPending={promotionPending}
+                onApplyPromotion={() => {
+                  setPromotionError(null);
+                  setPromotionPending(true);
+                  setPromotionRequest({
+                    code: promotionCode.trim(),
+                    requestId: crypto.randomUUID(),
+                  });
+                }}
+                onPromotionCodeChange={setPromotionCode}
+                onRemovePromotion={() => {
+                  setPromotionError(null);
+                  setPromotionPending(true);
+                  setPromotionRequest({
+                    code: null,
+                    requestId: crypto.randomUUID(),
+                  });
+                }}
+                onAdvanceToPayment={() => goToStep("pagamento")}
+              />
+            ) : null}
             {currentStep === "pagamento" ? (
-              <ShellHelpCard onClick={() => setIsSupportDialogOpen(true)} />
+              <ShellHelpCard
+                href={paymentSupportWhatsappHref}
+                target="_blank"
+              />
             ) : null}
             <PolicyCard />
           </aside>
         </div>
       </div>
       <ReservationFooter />
-      {isSupportDialogOpen ? (
-        <NewSupportTicketDialog
-          actorRole="patient"
-          onClose={() => setIsSupportDialogOpen(false)}
-          onTicketCreated={(ticket) => {
-            setIsSupportDialogOpen(false);
-            setSupportTicketProtocol(ticket.protocol);
-          }}
-        />
-      ) : null}
-      {supportTicketProtocol ? (
-        <TESDialog
-          onClose={() => setSupportTicketProtocol(null)}
-          title="Chamado aberto"
-        >
-          <div className="grid gap-5">
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Recebemos seu chamado. Seu protocolo é {supportTicketProtocol}.
-              Você pode continuar seu pagamento enquanto nossa equipe analisa a
-              solicitação.
-            </p>
-            <TESButton
-              className="min-h-11 rounded-lg"
-              onClick={() => setSupportTicketProtocol(null)}
-              type="button"
-            >
-              Voltar ao pagamento
-            </TESButton>
-          </div>
-        </TESDialog>
-      ) : null}
       {isPatientConflictDialogOpen ? (
         <TESDialog
           description="Para evitar dois atendimentos ao mesmo tempo, escolha outro horário disponível."
@@ -697,6 +702,27 @@ function MomentStep({
   schedule: ReservationSchedule;
   signupHref: string;
 }) {
+  if (context.reservationUnavailable) {
+    return (
+      <div className="space-y-8">
+        <PageIntro
+          eyebrow="Reserva indisponível"
+          title="Esta terapia não está disponível para reserva"
+          description="Escolha novamente uma terapia e um profissional para consultar os horários atuais."
+        />
+        <TESCard as="section" className="rounded-[28px] p-6 sm:p-8">
+          <p className="text-base font-semibold leading-7 text-tesText-secondary">
+            O link usado não corresponde a uma terapia disponível deste
+            profissional.
+          </p>
+          <TESButton className="mt-6" href={routes.public.therapists}>
+            Ver terapeutas disponíveis
+          </TESButton>
+        </TESCard>
+      </div>
+    );
+  }
+
   const canContinue =
     context.canPrepareEncounter && context.isPatientAuthenticated;
   const hasVisibleSlots = schedule.days.some((day) => day.slots.length > 0);
@@ -987,9 +1013,16 @@ function PaymentStep({
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
               retryBookingId={context.retryBookingId}
+              reviewHref={buildReservationHref(
+                new URLSearchParams(context.currentPath.split("?")[1] ?? ""),
+                { etapa: "momento", slot: null },
+              )}
               serviceId={context.serviceId}
               sharedNote={sharedNote}
               startsAt={context.selectedSlot}
+              therapistSlug={context.therapist.slug}
+              expectedDurationMinutes={context.durationMinutes}
+              expectedPriceCents={context.priceCents}
             />
           </TESCard>
         </NumberedSection>
@@ -1417,6 +1450,7 @@ export function ReservationSuccessPage() {
   const [status, setStatus] = useState<
     | "waiting_payment"
     | "authorizing"
+    | "scheduled"
     | "confirmed"
     | "expired"
     | "slot_conflict"
@@ -1462,6 +1496,7 @@ export function ReservationSuccessPage() {
         [
           "waiting_payment",
           "authorizing",
+          "scheduled",
           "confirmed",
           "expired",
           "slot_conflict",
@@ -1477,6 +1512,7 @@ export function ReservationSuccessPage() {
         }
         if (
           body.status === "confirmed" ||
+          body.status === "scheduled" ||
           body.status === "expired" ||
           body.status === "slot_conflict" ||
           body.status === "failed"
@@ -1515,6 +1551,12 @@ export function ReservationSuccessPage() {
       title: "Seu encontro está confirmado",
       description:
         "O pagamento foi confirmado e o encontro já está disponível na sua área de cliente.",
+    },
+    scheduled: {
+      eyebrow: "Reserva confirmada",
+      title: "Seu encontro está reservado",
+      description:
+        "Seu cartão foi salvo com segurança. A cobrança será realizada 24 horas antes do encontro e o banco poderá pedir uma confirmação adicional.",
     },
     expired: {
       eyebrow: "Prazo encerrado",

@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -72,6 +73,28 @@ describe("ReservationPage", () => {
     expect(signal?.aborted).toBe(true);
   });
 
+  it("confirms a future reservation whose card was saved for later billing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: "scheduled" }),
+      }),
+    );
+    render(<ReservationSuccessPage />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Seu encontro está reservado",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("A cobrança será realizada 24 horas antes", {
+        exact: false,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it.each([
     [401, "Entre para acompanhar o pagamento"],
     [404, "Confira a situação do pagamento"],
@@ -91,7 +114,7 @@ describe("ReservationPage", () => {
     },
   );
 
-  it("keeps Stripe mounted when checkout readiness and support rerender the page", async () => {
+  it("keeps Stripe mounted while checkout support is available", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     const mount = vi.fn();
     const destroy = vi.fn();
@@ -134,10 +157,9 @@ describe("ReservationPage", () => {
     );
     await waitFor(() => expect(mount).toHaveBeenCalledOnce());
 
-    fireEvent.click(screen.getByRole("button", { name: "Fale conosco" }));
-    expect(
-      screen.getByRole("dialog", { name: "Novo chamado" }),
-    ).toBeInTheDocument();
+    const supportLink = screen.getByRole("link", { name: "Fale conosco" });
+    expect(supportLink).toHaveAttribute("target", "_blank");
+    expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
     expect(initEmbeddedCheckout).toHaveBeenCalledOnce();
     expect(
       fetchMock.mock.calls.filter(
@@ -154,6 +176,38 @@ describe("ReservationPage", () => {
     render(<ReservationPage context={context} />);
 
     expect(screen.queryByText(/Reserva por/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps an unavailable legacy link in the selection step", () => {
+    const context = {
+      ...resolveReservationContext({
+        isPatientAuthenticated: true,
+        searchParams: {
+          etapa: "pagamento",
+          service: "d1000000-0000-4000-8000-000000000001",
+          slot: "2026-09-09T14:00:00.000Z",
+          therapist: "ana-oliveira",
+        },
+      }),
+      hasRequiredCheckoutData: false,
+      reservationUnavailable: true,
+      serviceId: null,
+    };
+
+    render(<ReservationPage context={context} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Esta terapia não está disponível para reserva",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /confirme seus dados/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Resumo da reserva")).not.toBeInTheDocument();
+    expect(router.replace).toHaveBeenCalledWith(
+      expect.stringContaining("etapa=momento"),
+    );
   });
 
   it("labels the agenda navigation as five-day jumps", () => {
@@ -444,6 +498,34 @@ describe("ReservationPage", () => {
     });
   });
 
+  it("keeps the first checkout render independent of browser-only journey state", () => {
+    const serviceId = "d1000000-0000-4000-8000-000000000001";
+    const slot = "2026-09-01T16:15:00.000Z";
+    const reservationKey = `${serviceId}:${slot}`;
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: { etapa: "pagamento", service: serviceId, slot },
+    });
+    window.history.replaceState({}, "", "/reserva?etapa=pagamento");
+    const withoutDraft = renderToString(<ReservationPage context={context} />);
+
+    window.history.replaceState(
+      {
+        "tes.reservation.journey-draft.v1": {
+          acceptedTerms: true,
+          checkoutAttemptId: "a1000000-0000-4000-8000-000000000001",
+          marketingConsent: false,
+          reservationKey,
+        },
+      },
+      "",
+      "/reserva?etapa=pagamento",
+    );
+    const withDraft = renderToString(<ReservationPage context={context} />);
+
+    expect(withDraft).toBe(withoutDraft);
+  });
+
   it("restores the checkout journey from tab storage when Next replaces history state", async () => {
     const serviceId = "d1000000-0000-4000-8000-000000000001";
     const slot = "2026-09-01T16:15:00.000Z";
@@ -481,7 +563,7 @@ describe("ReservationPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens support in the checkout and removes the redundant payment anchor", () => {
+  it("opens WhatsApp support from checkout and removes the redundant payment anchor", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,
       searchParams: {
@@ -506,17 +588,16 @@ describe("ReservationPage", () => {
       support.compareDocumentPosition(policy) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Fale conosco" }));
-    expect(
-      screen.getByRole("dialog", { name: "Novo chamado" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Categoria")).toHaveValue("outro");
-    expect(screen.getByLabelText("Assunto")).toBeInTheDocument();
-    expect(
-      screen
-        .getByRole("dialog", { name: "Novo chamado" })
-        .querySelector("textarea"),
-    ).not.toBeNull();
+    const supportLink = screen.getByRole("link", { name: "Fale conosco" });
+    const supportUrl = new URL(supportLink.getAttribute("href")!);
+    expect(`${supportUrl.origin}${supportUrl.pathname}`).toBe(
+      "https://wa.me/5518981058337",
+    );
+    expect(supportUrl.searchParams.get("text")).toBe(
+      "Olá, estou tentando realizar um pagamento na plataforma TES e preciso de ajuda.",
+    );
+    expect(supportLink).toHaveAttribute("target", "_blank");
+    expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
     expect(
       screen.queryByRole("link", { name: "Ir para pagamento seguro" }),
     ).toBeNull();

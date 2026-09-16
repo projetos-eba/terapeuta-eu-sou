@@ -37,11 +37,14 @@ type CheckoutResponse =
         holdId?: string;
         mode: "initial_hold" | "payment_retry";
         originalAmountCents: number;
+        paymentFlowVersion: string;
+        paymentTiming: "immediate" | "scheduled";
         promotion: PromotionCheckoutAmounts["promotion"];
         sessionPaymentId: string;
         totalAmountCents: number;
         reservationExpiresAt: string | null;
         serverNow: string;
+        snapshot?: BookingSnapshot;
       };
     }
   | {
@@ -49,6 +52,18 @@ type CheckoutResponse =
       ok: false;
       message: string;
     };
+
+type BookingSnapshot = {
+  bookingId: string;
+  currency: string;
+  durationMinutes: number;
+  endsAt: string;
+  priceCents: number;
+  serviceId: string;
+  serviceLabel: string;
+  startsAt: string;
+  therapist: { name: string; slug: string };
+};
 
 export function CheckoutButton({
   acceptedTerms,
@@ -61,9 +76,13 @@ export function CheckoutButton({
   onPromotionSettled,
   promotionRequest,
   retryBookingId,
+  reviewHref,
   serviceId,
   sharedNote,
   startsAt,
+  therapistSlug,
+  expectedDurationMinutes,
+  expectedPriceCents,
 }: {
   acceptedTerms: boolean;
   checkoutAttemptId?: string | null;
@@ -82,9 +101,13 @@ export function CheckoutButton({
   }) => void;
   promotionRequest?: { code: string | null; requestId: string } | null;
   retryBookingId?: string | null;
+  reviewHref: string;
   serviceId: string | null;
   sharedNote: string;
   startsAt: string | null;
+  therapistSlug: string | null;
+  expectedDurationMinutes: number | null;
+  expectedPriceCents: number | null;
 }) {
   const checkoutRef = useRef<{
     destroy: () => void;
@@ -111,6 +134,16 @@ export function CheckoutButton({
     expiresAt: string;
     serverNow: string;
   } | null>(null);
+  const [paymentTiming, setPaymentTiming] = useState<
+    "immediate" | "scheduled" | null
+  >(null);
+  const [snapshotReview, setSnapshotReview] = useState<BookingSnapshot | null>(
+    null,
+  );
+  const [acknowledgedSnapshotKey, setAcknowledgedSnapshotKey] = useState<
+    string | null
+  >(null);
+  const [isCancellingReview, setIsCancellingReview] = useState(false);
 
   const expireReservation = useCallback(() => {
     const currentCheckout = currentCheckoutRef.current;
@@ -179,6 +212,7 @@ export function CheckoutButton({
         handledPromotionRequestRef.current = null;
         abandonmentStartedRef.current = false;
         setExpiredCheckout(null);
+        setPaymentTiming(null);
       }
       if (abandonmentStartedRef.current) {
         setIsSubmitting(false);
@@ -219,6 +253,7 @@ export function CheckoutButton({
                     serviceId,
                     sharedNote,
                     startsAt,
+                    therapistSlug,
                     termsAccepted: true,
                   },
           ),
@@ -243,6 +278,28 @@ export function CheckoutButton({
           checkoutSessionId: data.checkout.checkoutSessionId,
           clientSecret: data.checkout.clientSecret,
         };
+        const responseSnapshot = data.checkout.snapshot;
+        const responseSnapshotKey = responseSnapshot
+          ? bookingSnapshotKey(responseSnapshot)
+          : null;
+        if (
+          !retryBookingId &&
+          responseSnapshot &&
+          bookingSnapshotDiffers(responseSnapshot, {
+            durationMinutes: expectedDurationMinutes,
+            priceCents: expectedPriceCents,
+            serviceId,
+            startsAt,
+            therapistSlug,
+          }) &&
+          acknowledgedSnapshotKey !== responseSnapshotKey
+        ) {
+          setSnapshotReview(responseSnapshot);
+          setIsSubmitting(false);
+          return;
+        }
+        setSnapshotReview(null);
+        setPaymentTiming(data.checkout.paymentTiming);
         setReservationLease(
           data.checkout.mode === "initial_hold" &&
             data.checkout.reservationExpiresAt
@@ -350,8 +407,11 @@ export function CheckoutButton({
     };
   }, [
     acceptedTerms,
+    acknowledgedSnapshotKey,
     checkoutAttemptId,
     disabled,
+    expectedDurationMinutes,
+    expectedPriceCents,
     isPatientAuthenticated,
     onCheckoutChange,
     onPatientScheduleConflict,
@@ -361,7 +421,31 @@ export function CheckoutButton({
     serviceId,
     sharedNote,
     startsAt,
+    therapistSlug,
   ]);
+
+  const cancelSnapshotReview = useCallback(async () => {
+    const currentCheckout = currentCheckoutRef.current;
+    if (!currentCheckout || isCancellingReview) return;
+    setIsCancellingReview(true);
+    abandonmentStartedRef.current = true;
+    try {
+      await fetch("/api/public/reservation/abandon", {
+        body: JSON.stringify({
+          bookingId: currentCheckout.bookingId,
+          checkoutSessionId: currentCheckout.checkoutSessionId,
+          reason: "reservation_details_changed",
+          requestId: crypto.randomUUID(),
+        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        method: "POST",
+      });
+    } finally {
+      window.location.assign(reviewHref);
+    }
+  }, [isCancellingReview, reviewHref]);
 
   if (!isPatientAuthenticated) {
     return (
@@ -379,6 +463,36 @@ export function CheckoutButton({
 
   return (
     <div className="mt-6 space-y-4">
+      {snapshotReview ? (
+        <div className="space-y-4 rounded-[18px] border border-status-warning/30 bg-status-warningBg p-5">
+          <p className="text-base font-extrabold text-brand-deep">
+            Os detalhes desta terapia mudaram
+          </p>
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            Confira antes de carregar o pagamento: {snapshotReview.serviceLabel}
+            , {snapshotReview.durationMinutes} min,{" "}
+            {formatSnapshotPrice(snapshotReview)}.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TESButton
+              onClick={() =>
+                setAcknowledgedSnapshotKey(bookingSnapshotKey(snapshotReview))
+              }
+              type="button"
+            >
+              Revisei os detalhes
+            </TESButton>
+            <TESButton
+              disabled={isCancellingReview}
+              onClick={() => void cancelSnapshotReview()}
+              type="button"
+              variant="secondary"
+            >
+              Escolher outro horário
+            </TESButton>
+          </div>
+        </div>
+      ) : null}
       {reservationLease ? (
         <div className="rounded-[18px] border border-brand-lavender bg-brand-lavenderSoft p-4 text-sm font-extrabold text-brand-primary">
           Horário reservado por até{" "}
@@ -401,6 +515,13 @@ export function CheckoutButton({
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
             O formulário abaixo é carregado pela Stripe. O TES não recebe número
             de cartão, CVC ou dados de autenticação bancária.
+            {paymentTiming === "scheduled" ? (
+              <span className="mt-2 block">
+                Seu cartão será salvo com segurança e a cobrança será realizada
+                24 horas antes do encontro. O banco poderá pedir uma confirmação
+                adicional.
+              </span>
+            ) : null}
           </p>
         </div>
       </div>
@@ -438,6 +559,45 @@ export function CheckoutButton({
       </p>
     </div>
   );
+}
+
+function bookingSnapshotKey(snapshot: BookingSnapshot) {
+  return [
+    snapshot.bookingId,
+    snapshot.serviceId,
+    snapshot.startsAt,
+    snapshot.endsAt,
+    snapshot.durationMinutes,
+    snapshot.priceCents,
+    snapshot.therapist.slug,
+  ].join(":");
+}
+
+function bookingSnapshotDiffers(
+  snapshot: BookingSnapshot,
+  expected: {
+    durationMinutes: number | null;
+    priceCents: number | null;
+    serviceId: string | null;
+    startsAt: string | null;
+    therapistSlug: string | null;
+  },
+) {
+  return (
+    snapshot.durationMinutes !== expected.durationMinutes ||
+    snapshot.priceCents !== expected.priceCents ||
+    snapshot.serviceId !== expected.serviceId ||
+    new Date(snapshot.startsAt).getTime() !==
+      new Date(expected.startsAt ?? "").getTime() ||
+    snapshot.therapist.slug !== expected.therapistSlug
+  );
+}
+
+function formatSnapshotPrice(snapshot: BookingSnapshot) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: snapshot.currency.toUpperCase(),
+    style: "currency",
+  }).format(snapshot.priceCents / 100);
 }
 
 export function ReservationLinkButton({

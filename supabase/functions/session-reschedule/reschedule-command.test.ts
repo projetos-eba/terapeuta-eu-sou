@@ -8,6 +8,7 @@ import { DomainError } from "../_shared/payments/http.ts";
 import {
   mapRescheduleDatabaseError,
   resolveParticipantActorRole,
+  resolvePatientRescheduleRpc,
   validateRescheduleCommand,
 } from "./reschedule-command.ts";
 
@@ -79,6 +80,21 @@ Deno.test("validates booking-scoped availability", () => {
   });
 });
 
+Deno.test("routes only V10 patient reschedules through the pristine charge command", () => {
+  assertEquals(
+    resolvePatientRescheduleRpc("v10"),
+    "reschedule_uncharged_session_v10",
+  );
+  assertEquals(
+    resolvePatientRescheduleRpc("v9"),
+    "apply_patient_booking_reschedule_v1",
+  );
+  assertEquals(
+    resolvePatientRescheduleRpc(null),
+    "apply_patient_booking_reschedule_v1",
+  );
+});
+
 Deno.test("rejects invalid request payloads", () => {
   assertDomainError(() =>
     validateRescheduleCommand({
@@ -86,7 +102,7 @@ Deno.test("rejects invalid request payloads", () => {
       bookingId,
       proposedStartsAt: "not-a-date",
       requestId,
-    }),
+    })
   );
 });
 
@@ -100,6 +116,40 @@ Deno.test("validates reschedule resolution", () => {
 
   assertEquals(result.action, "resolve");
   if (result.action === "resolve") assertEquals(result.resolution, "accepted");
+});
+
+Deno.test("opens a therapist change without requiring a proposed slot", () => {
+  const result = validateRescheduleCommand({
+    action: "therapist_change",
+    bookingId,
+    kind: "reschedule",
+    reason: "Preciso reorganizar minha agenda.",
+    requestId,
+  });
+
+  assertEquals(result.action, "therapist_change");
+  if (result.action === "therapist_change") {
+    assertEquals(result.kind, "reschedule");
+  }
+});
+
+Deno.test("requires a slot only when the patient chooses rescheduling", () => {
+  const refund = validateRescheduleCommand({
+    action: "resolve_therapist_change",
+    requestId,
+    rescheduleRequestId,
+    resolution: "refund",
+  });
+  assertEquals(refund.action, "resolve_therapist_change");
+
+  assertDomainError(() =>
+    validateRescheduleCommand({
+      action: "resolve_therapist_change",
+      requestId,
+      rescheduleRequestId,
+      resolution: "reschedule",
+    })
+  );
 });
 
 Deno.test("maps database conflicts safely", () => {
@@ -139,6 +189,16 @@ Deno.test("maps a therapist direct-apply attempt as forbidden", () => {
   assertEquals(result instanceof DomainError, true);
   assertEquals((result as DomainError).status, 403);
   assertEquals((result as DomainError).code, "reschedule_forbidden");
+});
+
+Deno.test("maps a claimed V10 charge to the support-safe response", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(400, "SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "reschedule_not_allowed");
+  assertEquals((result as DomainError).status, 409);
 });
 
 function assertDomainError(callback: () => unknown) {

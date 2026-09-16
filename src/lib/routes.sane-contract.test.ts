@@ -56,4 +56,37 @@ describe("canonical patient route contract", () => {
     expect(nextConfigSource).not.toContain('source: "/entrar"');
     expect(nextConfigSource).not.toContain('source: "/cadastro"');
   });
+
+  it("uses support as the canonical authenticated channel and preserves old URLs", () => {
+    expect(routes.patient.support).toBe("/app/suporte");
+    expect(routes.patient.supportTicketDetail("ticket-1")).toBe(
+      "/app/suporte/ticket-1",
+    );
+    expect(routes.therapist.support).toBe("/terapeuta/suporte");
+    expect(routes.therapist.supportTicketDetail("ticket-1")).toBe(
+      "/terapeuta/suporte/ticket-1",
+    );
+    expect(routes.therapist.therapyCatalogRequest).toBe(
+      "/terapeuta/servicos/solicitar-terapia",
+    );
+    expect("messages" in routes.patient).toBe(false);
+    expect("messages" in routes.therapist).toBe(false);
+
+    const source = readFileSync(
+      join(process.cwd(), "next.config.mjs"),
+      "utf8",
+    );
+    for (const oldPath of [
+      "/app/mensagens",
+      "/app/mensagens/suporte/:ticketId",
+      "/terapeuta/mensagens",
+      "/terapeuta/mensagens/suporte/:ticketId",
+      "/terapeuta/mensagens/solicitar-terapia",
+      "/basico/mensagens",
+      "/pro/mensagens",
+      "/plus/mensagens",
+    ]) {
+      expect(source).toContain(`source: "${oldPath}"`);
+    }
+  });
 });

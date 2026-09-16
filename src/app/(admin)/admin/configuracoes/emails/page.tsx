@@ -9,7 +9,7 @@ export default async function AdminEmailManagementPage() {
         <p className="text-sm font-bold text-brand-primary">Configurações</p>
         <h1 className="text-3xl font-extrabold text-brand-deep">E-mails</h1>
         <p className="mt-2 text-tesText-secondary">
-          Perfis de envio, eventos configuráveis e histórico sanitizado.
+          Remetentes, mensagens configuráveis e histórico protegido.
         </p>
       </div>
       <AdminEmailManagementList />

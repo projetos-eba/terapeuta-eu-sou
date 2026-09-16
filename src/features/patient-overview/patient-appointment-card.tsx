@@ -101,9 +101,9 @@ export function PatientAppointmentCard({
             </Link>
             <Link
               className="inline-flex min-h-8 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={routes.patient.messages as Route<string>}
+              href={routes.patient.support as Route<string>}
             >
-              Enviar mensagem
+              Abrir chamado
             </Link>
           </>
         ) : (
