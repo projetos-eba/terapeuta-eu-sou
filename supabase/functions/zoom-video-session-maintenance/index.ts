@@ -70,6 +70,14 @@ runtime.serve(async (request) => {
     const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
     const zoom = new ZoomVideoSdkApiClient({ config });
 
+    const attendanceFinalizedBeforeControl = await client.rpc<number>(
+      "finalize_due_session_attendance_v1",
+      {
+        p_limit: Math.min(limit * 3, 50),
+        p_now: new Date().toISOString(),
+      },
+    );
+
     const enqueued = await client.rpc<number>(
       "enqueue_due_video_session_control_jobs_v1",
       {
@@ -93,17 +101,34 @@ runtime.serve(async (request) => {
       results.push(await processJob({ client, job, zoom }));
     }
 
+    const attendanceFinalizedAfterControl = await client.rpc<number>(
+      "finalize_due_session_attendance_v1",
+      {
+        p_limit: Math.min(limit * 3, 50),
+        p_now: new Date().toISOString(),
+      },
+    );
+    const attendanceFinalized =
+      (attendanceFinalizedBeforeControl ?? 0) +
+      (attendanceFinalizedAfterControl ?? 0);
+
     console.log(
       JSON.stringify({
         code: "ZOOM_VIDEO_MAINTENANCE_COMPLETED",
         durationMs: Date.now() - startedAt,
+        attendanceFinalized,
         enqueued,
         processed: results.length,
         requestId,
       }),
     );
 
-    return success({ enqueued, processed: results.length, results });
+    return success({
+      attendanceFinalized,
+      enqueued,
+      processed: results.length,
+      results,
+    });
   } catch (error) {
     console.error(
       JSON.stringify({

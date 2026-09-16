@@ -50,7 +50,7 @@ select is(
   (
     public.open_therapist_booking_change_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       'reschedule', 'Conflito de agenda.',
       'therapist-change-reschedule-0001',
       (select version from public.bookings where id = 'f2000000-0000-4000-8000-000000000001')
@@ -82,7 +82,7 @@ select is(
   (
     select count(*)::integer from public.notifications
     where kind = 'booking_reschedule_requested_patient'
-      and profile_id = 'aaaaaaaa-0000-4000-8000-000000000001'
+      and profile_id = 'bbbbbbbb-0000-4000-8000-000000000001'
   ),
   1,
   'the patient receives one unilateral notification about the change'
@@ -101,7 +101,7 @@ select is(
   (
     public.open_therapist_booking_change_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       'reschedule', 'Conflito de agenda.',
       'therapist-change-reschedule-0001',
       null
@@ -119,7 +119,7 @@ select is(
     public.resolve_therapist_booking_change_v1(
       (select id from public.booking_reschedule_requests
         where request_id = 'therapist-change-reschedule-0001'),
-      'aaaaaaaa-0000-4000-8000-000000000001',
+      'bbbbbbbb-0000-4000-8000-000000000001',
       'reschedule',
       (select starts_at from therapist_change_slots offset 1 limit 1),
       (select ends_at from therapist_change_slots offset 1 limit 1),
@@ -151,7 +151,7 @@ select is(
   (
     public.open_therapist_booking_change_v1(
       'f2000000-0000-4000-8000-000000000001',
-      'bbbbbbbb-0000-4000-8000-000000000001',
+      'aaaaaaaa-0000-4000-8000-000000000001',
       'cancellation', 'Não conseguirei conduzir a sessão.',
       'therapist-change-cancellation-0001',
       (select version from public.bookings where id = 'f2000000-0000-4000-8000-000000000001')

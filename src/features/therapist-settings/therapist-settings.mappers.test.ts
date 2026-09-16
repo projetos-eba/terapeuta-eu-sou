@@ -26,6 +26,10 @@ describe("therapist settings mappers", () => {
           slug: "ana-oliveira",
           status: "approved",
         },
+        publication: {
+          isPubliclyVisible: true,
+          needsReceivingAccount: false,
+        },
       }),
     ).toMatchObject({
       account: {
@@ -39,6 +43,10 @@ describe("therapist settings mappers", () => {
         isPublic: true,
         plan: "premium_plus",
         profileId,
+        publication: {
+          isPubliclyVisible: true,
+          needsReceivingAccount: false,
+        },
         publicUrl: "/terapeutas/ana-oliveira",
         status: "approved",
       },

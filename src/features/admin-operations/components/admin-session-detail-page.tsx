@@ -26,6 +26,7 @@ import {
   findSection,
   formatStatusLabel,
 } from "./admin-operation-display";
+import { AdminSessionAttendanceResolution } from "./admin-session-attendance-resolution";
 
 export function AdminSessionDetailPage({
   data,
@@ -320,6 +321,22 @@ function SessionFeedbackAuditSection({
         ) : null}
       </div>
 
+      {data.attendance.classification ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-status-warning/25 bg-status-warningBg p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-extrabold text-brand-deep">
+              {formatAttendanceClassification(data.attendance.classification)}
+            </p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              {data.attendance.resolution
+                ? `Desfecho registrado: ${formatAttendanceResolution(data.attendance.resolution)}.`
+                : "Pagamento bloqueado até a decisão administrativa."}
+            </p>
+          </div>
+          <AdminSessionAttendanceResolution attendance={data.attendance} />
+        </div>
+      ) : null}
+
       {data.pendingRoles.length > 0 ? (
         <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
           Pendente: {data.pendingRoles.map(feedbackRoleLabel).join(" e ")} ainda
@@ -327,25 +344,44 @@ function SessionFeedbackAuditSection({
         </p>
       ) : null}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <AuditStatusCard
-          label="Entrada do cliente"
+          label="Chegada do cliente até T+10"
+          value={
+            data.attendance.patientPresentAtTolerance
+              ? "Registrada"
+              : "Não registrada"
+          }
+          tone={
+            data.attendance.patientPresentAtTolerance ? "success" : "neutral"
+          }
+        />
+        <AuditStatusCard
+          label="Entrada do cliente na sala"
           value={
             data.attendance.patientJoined ? "Confirmada" : "Não confirmada"
           }
           tone={data.attendance.patientJoined ? "success" : "neutral"}
         />
         <AuditStatusCard
-          label="Entrada do terapeuta"
+          label="Chegada do terapeuta até T+10"
+          value={
+            data.attendance.therapistPresentAtTolerance
+              ? "Registrada"
+              : "Não registrada"
+          }
+          tone={
+            data.attendance.therapistPresentAtTolerance
+              ? "success"
+              : "neutral"
+          }
+        />
+        <AuditStatusCard
+          label="Entrada do terapeuta na sala"
           value={
             data.attendance.therapistJoined ? "Confirmada" : "Não confirmada"
           }
           tone={data.attendance.therapistJoined ? "success" : "neutral"}
-        />
-        <AuditStatusCard
-          label="Sala encerrada"
-          value={data.attendance.sessionClosed ? "Sim" : "Ainda não"}
-          tone={data.attendance.sessionClosed ? "success" : "neutral"}
         />
       </div>
 
@@ -592,6 +628,29 @@ function FeedbackAuditCard({
 
 function feedbackRoleLabel(role: "patient" | "therapist") {
   return role === "patient" ? "o cliente" : "o terapeuta";
+}
+
+function formatAttendanceClassification(value: string) {
+  const labels: Record<string, string> = {
+    no_show_both: "Sessão não realizada — cliente e terapeuta não chegaram",
+    no_show_therapist: "Sessão não realizada — terapeuta não compareceu",
+    participant_report: "Sessão contestada por um participante",
+    requires_review: "Sessão não realizada — evidência inconclusiva",
+  };
+  return labels[value] ?? "Presença em análise";
+}
+
+function formatAttendanceResolution(value: string) {
+  const labels: Record<string, string> = {
+    performed: "sessão confirmada como realizada",
+    platform_failure: "falha atribuída à plataforma",
+    platform_refund: "reembolso por falha da plataforma",
+    platform_reschedule: "reagendamento por falha da plataforma",
+    refund: "reembolso integral",
+    reschedule: "reagendamento sem nova cobrança",
+    retain: "retenção autorizada pela política",
+  };
+  return labels[value] ?? "análise concluída";
 }
 
 function formatFeedbackReason(reason: string) {

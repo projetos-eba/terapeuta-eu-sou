@@ -84,6 +84,9 @@ function harness(options: {
       if (name === "complete_therapist_change_refund_v1") {
         return Promise.resolve({ completed: false });
       }
+      if (name === "finalize_attendance_refund_financials_v1") {
+        return Promise.resolve({ status: "no_attendance_incident" });
+      }
       if (name.startsWith("reconcile_session_")) return Promise.resolve({});
       throw new Error(`unexpected_rpc:${name}`);
     },

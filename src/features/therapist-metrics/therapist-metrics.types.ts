@@ -167,7 +167,8 @@ export type TherapistSessionOutcomeKey =
   | "cancelled_by_therapist"
   | "completed"
   | "no_show_patient"
-  | "no_show_therapist";
+  | "no_show_therapist"
+  | "no_show_both";
 
 export type TherapistSessionMetrics = {
   cancellationReasons: {

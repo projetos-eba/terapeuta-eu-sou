@@ -56,7 +56,7 @@ export async function createTherapistAccount(value: TherapistSignupValue) {
     }
 
     if (error instanceof SupabaseFunctionError) {
-      throw new TherapistAuthSupabaseError(error.status);
+      throw new TherapistAuthSupabaseError(error.status, error.code);
     }
 
     throw error;
@@ -130,7 +130,7 @@ export class TherapistAuthEmailUnconfirmedError extends Error {
 export class TherapistAuthSupabaseError extends Error {
   constructor(
     readonly status: number,
-    readonly safeDetails?: string,
+    readonly safeCode?: string,
   ) {
     super("Supabase therapist auth request failed.");
   }

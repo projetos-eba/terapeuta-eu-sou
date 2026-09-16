@@ -93,6 +93,11 @@ export function SessionOperationActions({
   const canCancelPending =
     pendingReschedule?.status === "pending" &&
     pendingReschedule.requestedByCurrentUser;
+  const cancellationBlockedByReschedule = Boolean(pendingReschedule);
+  const cancellationDisabledReason = cancellationBlockedByReschedule
+    ? "Conclua ou retire a solicitação de reagendamento antes de cancelar a sessão."
+    : cancelDisabledReason;
+  const canCancelCurrentBooking = canCancel && !cancellationBlockedByReschedule;
 
   async function submitCancel(reason: string) {
     const requestId = cancellationRequestId.current ?? crypto.randomUUID();
@@ -389,15 +394,15 @@ export function SessionOperationActions({
         </button>
         <button
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-status-danger/30 bg-white px-4 text-sm font-extrabold text-status-danger transition hover:bg-status-dangerBg disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canCancel}
+          disabled={!canCancelCurrentBooking}
           onClick={() => {
             cancellationRequestId.current = crypto.randomUUID();
             setError(null);
             setDialog("cancel");
           }}
-          title={cancelDisabledReason ?? undefined}
+          title={cancellationDisabledReason ?? undefined}
           aria-describedby={
-            !canCancel && cancelDisabledReason
+            !canCancelCurrentBooking && cancellationDisabledReason
               ? `${bookingId}-cancel-disabled-reason`
               : undefined
           }
@@ -412,12 +417,12 @@ export function SessionOperationActions({
           Reagendamento indisponível: {rescheduleDisabledReason}
         </p>
       ) : null}
-      {!canCancel && cancelDisabledReason ? (
+      {!canCancelCurrentBooking && cancellationDisabledReason ? (
         <p
           className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary"
           id={`${bookingId}-cancel-disabled-reason`}
         >
-          Cancelamento indisponível: {cancelDisabledReason}
+          Cancelamento indisponível: {cancellationDisabledReason}
         </p>
       ) : null}
 

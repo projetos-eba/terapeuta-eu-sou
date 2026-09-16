@@ -92,8 +92,8 @@ export function TherapistProfileEditorPage({
     [baselineFields, fields],
   );
   const hasDraft = Boolean(editor.draft);
-  const isPublished = editor.derived.publicStatus === "published";
-  const isFirstConfiguration = !isPublished;
+  const hasPublishedContent = editor.derived.publicStatus === "published";
+  const isFirstConfiguration = !hasPublishedContent;
   const requiresInitialReview =
     editor.derived.verificationStatus !== "approved";
   const mustSaveBeforePublishing =
@@ -356,7 +356,7 @@ export function TherapistProfileEditorPage({
             onUnpublish={() => setConfirmAction("unpublish")}
             pendingAction={pendingAction}
             propagationNotice={editor.propagationNotice}
-            published={isPublished}
+        published={hasPublishedContent}
             requiresInitialReview={requiresInitialReview}
           />
         </AppPageMain>

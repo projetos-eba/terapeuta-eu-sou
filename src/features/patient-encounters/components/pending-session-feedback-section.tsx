@@ -1,44 +1,16 @@
-"use client";
-
 import Image from "next/image";
 import { CheckCircle2, Clock3 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
 
 import { TESButton } from "@/components/tes";
-import { PatientSessionFeedbackDialog } from "@/features/session-feedback";
+import { routes } from "@/lib/routes";
 
 import type { PatientPendingFeedbackSession } from "../patient-encounters.types";
 
 export function PendingSessionFeedbackSection({
-  initialBookingId,
-  sessions: initialSessions,
+  sessions,
 }: {
-  initialBookingId?: string | null;
   sessions: PatientPendingFeedbackSession[];
 }) {
-  const router = useRouter();
-  const [sessions, setSessions] = useState(initialSessions);
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(() =>
-    initialSessions.some((session) => session.bookingId === initialBookingId)
-      ? (initialBookingId ?? null)
-      : null,
-  );
-  const selected = useMemo(
-    () => sessions.find((session) => session.bookingId === selectedId) ?? null,
-    [selectedId, sessions],
-  );
-
-  useEffect(() => {
-    if (
-      initialBookingId &&
-      initialSessions.some((session) => session.bookingId === initialBookingId)
-    ) {
-      setSelectedId(initialBookingId);
-    }
-  }, [initialBookingId, initialSessions]);
-
   if (sessions.length === 0) return null;
 
   return (
@@ -108,46 +80,15 @@ export function PendingSessionFeedbackSection({
               </div>
               <TESButton
                 className="w-full sm:w-auto"
-                onClick={() => setSelectedId(session.bookingId)}
-                type="button"
+                href={`${routes.patient.encounterDetail(session.bookingId)}?feedback=1`}
                 variant="gradient"
               >
-                Confirmar encontro
+                Ver detalhes do encontro
               </TESButton>
             </article>
           );
         })}
       </div>
-
-      {selected ? (
-        <PatientSessionFeedbackDialog
-          onClose={() => {
-            setSelectedId(null);
-            if (submittedId) {
-              setSessions((current) =>
-                current.filter((session) => session.bookingId !== submittedId),
-              );
-              setSubmittedId(null);
-            }
-          }}
-          onSessionSubmitted={() => {
-            setSubmittedId(selected.bookingId);
-            router.refresh();
-          }}
-          session={{
-            bookingId: selected.bookingId,
-            dateLabel: formatSessionDate(selected.startsAt, selected.timezone)
-              .dateLabel,
-            serviceLabel: selected.serviceLabel,
-            therapist: {
-              id: selected.therapist.id,
-              name: selected.therapist.name,
-            },
-            timeLabel: formatSessionDate(selected.startsAt, selected.timezone)
-              .timeLabel,
-          }}
-        />
-      ) : null}
     </section>
   );
 }

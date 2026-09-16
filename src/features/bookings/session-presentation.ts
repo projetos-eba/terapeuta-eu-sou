@@ -21,6 +21,7 @@ const closedBookingStatuses: ReadonlySet<BookingStatus> = new Set([
   BookingStatus.CancelledByTherapist,
   BookingStatus.NoShowPatient,
   BookingStatus.NoShowTherapist,
+  BookingStatus.NoShowBoth,
   BookingStatus.CancelledByPayment,
   BookingStatus.Refunded,
 ]);
@@ -141,6 +142,50 @@ export function mapSessionPresentation(
       "Cancelada",
       "O pagamento desta sessão foi cancelado e ela não pode mais acontecer.",
       "medium",
+      "danger",
+      actions,
+    );
+  }
+
+  if (session.attendanceStatus === AttendanceStatus.RequiresReview) {
+    return presentation(
+      "requires_attention",
+      "Sessão não realizada — acesso em análise",
+      "O TES está verificando as chegadas e entradas registradas antes de definir o desfecho.",
+      "critical",
+      "warning",
+      actions,
+    );
+  }
+
+  if (session.attendanceStatus === AttendanceStatus.TherapistNoShow) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada — terapeuta não compareceu",
+      "O pagamento está bloqueado enquanto o TES analisa o reagendamento ou reembolso.",
+      "critical",
+      "danger",
+      actions,
+    );
+  }
+
+  if (session.attendanceStatus === AttendanceStatus.PatientNoShow) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada — cliente não compareceu",
+      "A chegada do terapeuta foi registrada dentro da tolerância.",
+      "medium",
+      "danger",
+      actions,
+    );
+  }
+
+  if (session.attendanceStatus === AttendanceStatus.BothNoShow) {
+    return presentation(
+      "requires_attention",
+      "Sessão não realizada — ninguém acessou a sala",
+      "O pagamento está em análise pelo TES antes de qualquer decisão financeira.",
+      "critical",
       "danger",
       actions,
     );

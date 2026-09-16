@@ -35,9 +35,12 @@ export function AdminVerificationDetailPage({
   const verification = findSection(data, "Verificação");
   const traceability = findSection(data, "Rastreabilidade");
   const fields = fieldMap(verification?.fields ?? []);
-  const status = formatStatusLabel(fields.get("Status"));
   const therapistName = fields.get("Terapeuta") || data.title;
   const publication = fields.get("Elegibilidade pública") ?? "";
+  const status = displayVerificationStatus(
+    formatStatusLabel(fields.get("Status")),
+    publication,
+  );
   const blockers = fields.get("Bloqueadores reais") ?? "";
   const progress = buildVerificationProgress({
     createdAt: traceability?.fields.find((field) => field.label === "Criado em")
@@ -163,7 +166,10 @@ export function AdminVerificationDetailPage({
               title="Resumo da verificação"
             />
 
-            <AdminProfileReviewPanel review={data.profileReview} />
+            <AdminProfileReviewPanel
+              publicationStatus={publication}
+              review={data.profileReview}
+            />
 
             <VerificationDocuments
               professionalId={data.relatedProfessionalId ?? null}
@@ -420,8 +426,16 @@ function progressLabel(state: ProgressState) {
         ? "Atenção"
         : "Pendente";
 }
+function displayVerificationStatus(status: string, publication: string) {
+  if (status !== "Aprovado") return status;
+
+  return publication === "Publicado e elegível"
+    ? publication
+    : "Aprovado · falta publicar";
+}
+
 function statusTone(status: string) {
-  return status === "Aprovado"
+  return status === "Publicado e elegível"
     ? ("success" as const)
     : status === "Não aprovado"
       ? ("danger" as const)

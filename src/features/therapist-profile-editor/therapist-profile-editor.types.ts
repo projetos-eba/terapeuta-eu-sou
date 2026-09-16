@@ -157,6 +157,11 @@ export type TherapistProfileDerivedData = {
   verificationStatus: TherapistProfileVerificationStatus;
 };
 
+export type TherapistProfilePublicationState = {
+  isPubliclyVisible: boolean;
+  needsReceivingAccount: boolean;
+};
+
 export type TherapistProfileEditorData = {
   capabilities: TherapistProfileCapabilities;
   completeness: TherapistProfileCompleteness;
@@ -164,6 +169,7 @@ export type TherapistProfileEditorData = {
   draft: TherapistProfileVersionedContent | null;
   privateDocuments: TherapistPrivateDocumentSummary[];
   privateLocation?: TherapistProfilePrivateLocation | null;
+  publication: TherapistProfilePublicationState;
   propagationNotice: string;
   publicProfileHref: string;
   publicProfileSlug: string;

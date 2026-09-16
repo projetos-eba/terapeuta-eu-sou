@@ -8,7 +8,7 @@ import {
   ChevronRight,
   Clock3,
   CreditCard,
-  Star,
+  CheckCircle2,
   Video,
 } from "lucide-react";
 
@@ -45,6 +45,7 @@ export function SessionOverviewCard({
     data.booking.status,
     data.booking.canJoin,
     paymentConfirmed,
+    data.attendanceReview?.isOpen === true,
   );
 
   return (
@@ -107,7 +108,8 @@ export function SessionOverviewCard({
           <div
             className={`grid gap-4 border-t border-border pt-5 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0 ${
               data.booking.status === BookingStatus.Confirmed &&
-              paymentConfirmed
+              paymentConfirmed &&
+              !data.attendanceReview?.isOpen
                 ? "rounded-2xl border-status-success/25 bg-status-successBg/45 p-4 xl:ml-3 xl:border xl:pl-4"
                 : ""
             }`}
@@ -135,7 +137,7 @@ export function SessionOverviewCard({
       </section>
 
       <div className="grid gap-3 xl:hidden">
-        <HeroAction action={primaryAction} data={data} showFeedback={false} />
+        <HeroAction action={primaryAction} data={data} showFeedback />
       </div>
     </>
   );
@@ -298,11 +300,11 @@ function HeroAction({
         <Link
           className="inline-flex min-h-11 items-center justify-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={
-            `${routes.patient.encounterVideo(data.booking.id)}?feedback=1` as Route<string>
+            `${routes.patient.encounterDetail(data.booking.id)}?feedback=1` as Route<string>
           }
         >
-          <Star aria-hidden="true" size={17} />
-          Avaliar encontro
+          <CheckCircle2 aria-hidden="true" size={17} />
+          Confirmar encontro
         </Link>
       ) : null}
     </div>
@@ -316,6 +318,12 @@ function getRoomLabel(data: PatientSessionDetailPageData) {
 }
 
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
+  if (data.attendanceReview?.isOpen) {
+    return data.attendanceReview.financialResolution === "refund_pending"
+      ? "Reembolso em análise pelo TES. Nenhuma movimentação será concluída antes da decisão administrativa."
+      : "Pagamento em análise pelo TES. Estamos verificando os registros de chegada e entrada na sala.";
+  }
+
   if (data.paymentRecovery?.checkoutAvailable) {
     return "O pagamento não foi concluído. Continue para tentar novamente e confirmar o horário.";
   }
@@ -342,6 +350,15 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
   const paymentRetryHref =
     `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>;
+
+  if (data.attendanceReview?.isOpen) {
+    return {
+      href: supportHref,
+      kind: "support",
+      label: "Acompanhar com o Suporte",
+      variant: "secondary",
+    };
+  }
 
   if (data.paymentRecovery?.checkoutAvailable) {
     return {
@@ -459,7 +476,8 @@ function canReviewFeedback(
   return (
     status === BookingStatus.Completed ||
     status === BookingStatus.NoShowPatient ||
-    status === BookingStatus.NoShowTherapist
+    status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.NoShowBoth
   );
 }
 
@@ -467,7 +485,9 @@ function getStatusTone(
   status: PatientSessionDetailPageData["booking"]["status"],
   canJoin: boolean,
   paymentConfirmed: boolean,
+  attendanceReviewOpen: boolean,
 ) {
+  if (attendanceReviewOpen) return "danger";
   if (
     canJoin ||
     status === "live" ||
@@ -481,6 +501,7 @@ function getStatusTone(
     status === "cancelled_by_therapist" ||
     status === "no_show_patient" ||
     status === "no_show_therapist" ||
+    status === "no_show_both" ||
     status === "refunded"
   ) {
     return "danger";

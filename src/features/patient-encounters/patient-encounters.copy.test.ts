@@ -16,7 +16,7 @@ describe("patient encounter copy", () => {
     );
 
     expect(mapper).toContain("Entrar no encontro");
-    expect(mapper).toContain("Avaliar encontro");
+    expect(mapper).toContain("Ver detalhes do encontro");
     expect(mapper).not.toContain("Abrir sessão");
     expect(mapper).not.toContain("Avaliar sessão");
   });

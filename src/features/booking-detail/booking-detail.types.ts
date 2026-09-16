@@ -8,6 +8,16 @@ export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 export type BookingDetailStatus = BookingStatus | "live";
 
 export type BookingDetailPageData = {
+  attendanceReview?: {
+    classification:
+      | "no_show_therapist"
+      | "no_show_both"
+      | "requires_review"
+      | "participant_report";
+    financialResolution: string | null;
+    isOpen: boolean;
+    reviewDueAt: string | null;
+  } | null;
   delayNotice?: SessionDelayNoticeState;
   booking: {
     canJoin: boolean;

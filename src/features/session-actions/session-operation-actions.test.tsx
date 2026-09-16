@@ -156,6 +156,41 @@ describe("SessionOperationActions", () => {
     ).toBeInTheDocument();
   });
 
+  it("requires a pending proposal to be resolved before cancellation", () => {
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000003"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule={false}
+        cancelDisabledReason={null}
+        cancellationImpactLabel="A sessão não pode ser alterada simultaneamente."
+        reschedule={{
+          expiresAt: "2026-09-20T12:00:00.000Z",
+          id: "a1000000-0000-4000-8000-000000000003",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: "Preciso reorganizar minha agenda.",
+          requestedByCurrentUser: true,
+          status: "pending",
+        }}
+        rescheduleDisabledReason="Já existe uma proposta em aberto."
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Solicitar cancelamento" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        /Conclua ou retire a solicitação de reagendamento antes de cancelar/,
+      ),
+    ).toBeVisible();
+  });
+
   it("keeps the booking service fixed and reuses the direct patient command id", async () => {
     vi.stubGlobal("crypto", {
       randomUUID: vi

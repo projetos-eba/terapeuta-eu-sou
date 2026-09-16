@@ -3,6 +3,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
+import { PatientSessionFeedbackDialog } from "@/features/session-feedback";
 
 import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
@@ -21,9 +22,11 @@ import type { PatientSessionDetailPageData } from "./patient-session-detail.type
 
 export function PatientSessionDetailPage({
   data,
+  feedbackOpen = false,
   stripePublishableKey,
 }: {
   data: PatientSessionDetailPageData;
+  feedbackOpen?: boolean;
   stripePublishableKey: string;
 }) {
   const showContextAside = data.booking.status !== "completed";
@@ -89,6 +92,20 @@ export function PatientSessionDetailPage({
           />
         </div>
       </AppPageGrid>
+      {feedbackOpen ? (
+        <PatientSessionFeedbackDialog
+          session={{
+            bookingId: data.booking.id,
+            dateLabel: data.booking.dateLabel,
+            serviceLabel: data.service.title,
+            therapist: {
+              id: data.therapist.id,
+              name: data.therapist.name,
+            },
+            timeLabel: data.booking.timeRangeLabel,
+          }}
+        />
+      ) : null}
     </AppPageContainer>
   );
 }

@@ -45,8 +45,17 @@ export function mapTherapistSettingsData(
       publicUrl: slug
         ? routes.public.therapistProfile(slug)
         : routes.therapist.profile,
+      publication: mapPublicationState(value.publication),
       status: status(profile.status),
     },
+  };
+}
+
+function mapPublicationState(value: unknown) {
+  const state = asObject(value);
+  return {
+    isPubliclyVisible: Boolean(state.isPubliclyVisible),
+    needsReceivingAccount: Boolean(state.needsReceivingAccount),
   };
 }
 

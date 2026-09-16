@@ -6,81 +6,81 @@ const UUID =
 
 export type RescheduleCommandBody =
   | {
-    action?: "availability";
-    anchor?: string;
-    bookingId?: string;
-    scope?: "day" | "month" | "next";
-  }
+      action?: "availability";
+      anchor?: string;
+      bookingId?: string;
+      scope?: "day" | "month" | "next";
+    }
   | {
-    action?: "request";
-    bookingId?: string;
-    expectedBookingVersion?: number;
-    proposedStartsAt?: string;
-    reason?: string | null;
-    requestId?: string;
-  }
+      action?: "request";
+      bookingId?: string;
+      expectedBookingVersion?: number;
+      proposedStartsAt?: string;
+      reason?: string | null;
+      requestId?: string;
+    }
   | {
-    action?: "resolve";
-    expectedBookingVersion?: number;
-    requestId?: string;
-    rescheduleRequestId?: string;
-    resolution?: "accepted" | "cancelled" | "rejected";
-  }
+      action?: "resolve";
+      expectedBookingVersion?: number;
+      requestId?: string;
+      rescheduleRequestId?: string;
+      resolution?: "accepted" | "cancelled" | "rejected";
+    }
   | {
-    action?: "therapist_change";
-    bookingId?: string;
-    expectedBookingVersion?: number;
-    kind?: "cancellation" | "reschedule";
-    reason?: string | null;
-    requestId?: string;
-  }
+      action?: "therapist_change";
+      bookingId?: string;
+      expectedBookingVersion?: number;
+      kind?: "cancellation" | "reschedule";
+      reason?: string | null;
+      requestId?: string;
+    }
   | {
-    action?: "resolve_therapist_change";
-    expectedBookingVersion?: number;
-    proposedStartsAt?: string;
-    requestId?: string;
-    rescheduleRequestId?: string;
-    resolution?: "refund" | "reschedule";
-  };
+      action?: "resolve_therapist_change";
+      expectedBookingVersion?: number;
+      proposedStartsAt?: string;
+      requestId?: string;
+      rescheduleRequestId?: string;
+      resolution?: "refund" | "reschedule";
+    };
 
 export type ValidRescheduleCommand =
   | {
-    action: "availability";
-    anchor: string | null;
-    bookingId: string;
-    scope: "day" | "month" | "next";
-  }
+      action: "availability";
+      anchor: string | null;
+      bookingId: string;
+      scope: "day" | "month" | "next";
+    }
   | {
-    action: "request";
-    bookingId: string;
-    expectedBookingVersion: number | null;
-    proposedStartsAt: string;
-    reason: string | null;
-    requestId: string;
-  }
+      action: "request";
+      bookingId: string;
+      expectedBookingVersion: number | null;
+      proposedStartsAt: string;
+      reason: string | null;
+      requestId: string;
+    }
   | {
-    action: "resolve";
-    expectedBookingVersion: number | null;
-    requestId: string;
-    rescheduleRequestId: string;
-    resolution: "accepted" | "cancelled" | "rejected";
-  }
+      action: "resolve";
+      expectedBookingVersion: number | null;
+      requestId: string;
+      rescheduleRequestId: string;
+      resolution: "accepted" | "cancelled" | "rejected";
+    }
   | {
-    action: "therapist_change";
-    bookingId: string;
-    expectedBookingVersion: number | null;
-    kind: "cancellation" | "reschedule";
-    reason: string | null;
-    requestId: string;
-  }
+      action: "therapist_change";
+      bookingId: string;
+      expectedBookingVersion: number | null;
+      kind: "cancellation" | "reschedule";
+      reason: string | null;
+      requestId: string;
+    }
   | {
-    action: "resolve_therapist_change";
-    expectedBookingVersion: number | null;
-    proposedStartsAt: string | null;
-    requestId: string;
-    rescheduleRequestId: string;
-    resolution: "refund" | "reschedule";
-  };
+      action: "resolve_therapist_change";
+      expectedBookingVersion: number | null;
+      proposedStartsAt: string | null;
+      requestId: string;
+      rescheduleRequestId: string;
+      resolution: "refund" | "reschedule";
+    };
 
 export function validateRescheduleCommand(
   body: RescheduleCommandBody,
@@ -196,7 +196,10 @@ export function validateRescheduleCommand(
     const proposedStartsAt = needsSlot
       ? new Date(body.proposedStartsAt!).toISOString()
       : null;
-    if (proposedStartsAt && new Date(proposedStartsAt).getTime() <= Date.now()) {
+    if (
+      proposedStartsAt &&
+      new Date(proposedStartsAt).getTime() <= Date.now()
+    ) {
       throw new DomainError(
         "invalid_reschedule_payload",
         422,
@@ -262,6 +265,18 @@ export function mapRescheduleDatabaseError(error: unknown) {
     details.includes("BOOKING_RESCHEDULE_ALREADY_PENDING") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED") ||
     details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT") ||
+    details.includes(
+      "SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_REQUIRES_SUPPORT",
+    ) ||
+    details.includes(
+      "SESSION_PRECHARGE_THERAPIST_CANCEL_V10_REQUIRES_SUPPORT",
+    ) ||
+    details.includes(
+      "SESSION_PRECHARGE_THERAPIST_CANCEL_V10_PAYMENT_CHANGED",
+    ) ||
+    details.includes(
+      "SESSION_PRECHARGE_THERAPIST_CANCEL_V10_RESCHEDULE_PENDING",
+    ) ||
     details.includes("IDEMPOTENCY_KEY_REUSED") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED")
   ) {
@@ -275,6 +290,8 @@ export function mapRescheduleDatabaseError(error: unknown) {
     details.includes("BOOKING_ACTOR_FORBIDDEN") ||
     details.includes("BOOKING_ACTOR_NOT_PATIENT") ||
     details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_FORBIDDEN") ||
+    details.includes("SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_FORBIDDEN") ||
+    details.includes("SESSION_PRECHARGE_THERAPIST_CANCEL_V10_FORBIDDEN") ||
     details.includes("BOOKING_PROPOSAL_REQUIRES_THERAPIST") ||
     details.includes("BOOKING_NOT_FOUND") ||
     details.includes("BOOKING_RESCHEDULE_NOT_FOUND")
@@ -289,6 +306,8 @@ export function mapRescheduleDatabaseError(error: unknown) {
     details.includes("INVALID_IDEMPOTENCY_KEY") ||
     details.includes("INVALID_RESCHEDULE_RESOLUTION") ||
     details.includes("SESSION_PRECHARGE_RESCHEDULE_V10_INVALID") ||
+    details.includes("SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_INVALID") ||
+    details.includes("SESSION_PRECHARGE_THERAPIST_CANCEL_V10_INVALID") ||
     details.includes("INVALID_TIMEZONE") ||
     details.includes("INVALID_THERAPIST_CHANGE_REQUEST") ||
     details.includes("INVALID_THERAPIST_CHANGE_RESOLUTION")

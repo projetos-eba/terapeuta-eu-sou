@@ -59,7 +59,12 @@ values
     'bbbbbbbb-0000-4000-8000-000000000002',
     'b1000000-0000-4000-8000-000000000002',
     'patient', 'test', 'cus_test_v10_115_2', 'patient-2@example.test', false
-  );
+  )
+on conflict (profile_id, role, environment) do update
+set patient_profile_id = excluded.patient_profile_id,
+    stripe_customer_id = excluded.stripe_customer_id,
+    email = excluded.email,
+    livemode = excluded.livemode;
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -119,7 +124,7 @@ values
 select is(
   public.prepare_session_payment_v10(
     'b1150000-0000-4000-8000-000000000011',
-    'b1150000-0000-4000-8000-000000000002'
+    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
   ) ->> 'paymentFlowVersion',
   'v10',
   'a future reservation is prepared under the frozen V10 policy'
@@ -128,7 +133,7 @@ select is(
   (
     public.prepare_session_payment_v10(
       'b1150000-0000-4000-8000-000000000011',
-      'b1150000-0000-4000-8000-000000000002'
+      (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
     ) ->> 'bookingVersion'
   )::bigint,
   (
@@ -140,7 +145,7 @@ select is(
 select is(
   public.prepare_session_payment_v10(
     'b1150000-0000-4000-8000-000000000011',
-    'b1150000-0000-4000-8000-000000000002'
+    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
   ) ->> 'sessionPaymentId',
   (
     select id::text from public.session_payments
@@ -153,7 +158,7 @@ select lives_ok(
   $$
     select public.prepare_session_payment_v10(
       'b1150000-0000-4000-8000-000000000012',
-      'b1150000-0000-4000-8000-000000000003'
+      (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000002' and role = 'patient' and environment = 'test')
     )
   $$,
   'a second reservation creates its own V10 payment snapshot'
@@ -374,7 +379,7 @@ select lives_ok(
   $$
     select public.prepare_session_payment_v10(
       'b1150000-0000-4000-8000-000000000013',
-      'b1150000-0000-4000-8000-000000000002'
+      (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
     )
   $$,
   'a zero-total promotional reservation still starts from the canonical V10 snapshot'
@@ -444,7 +449,7 @@ select lives_ok(
   $$
     select public.prepare_session_payment_v10(
       'b1150000-0000-4000-8000-000000000016',
-      'b1150000-0000-4000-8000-000000000002'
+      (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
     )
   $$,
   'an immediate V10 checkout starts from the same frozen payment contract'
@@ -797,7 +802,7 @@ select ok(
 select lives_ok(
   $$select public.prepare_session_payment_v10(
     'b1150000-0000-4000-8000-000000000014',
-    'b1150000-0000-4000-8000-000000000002'
+    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
   )$$,
   'a recovery fixture starts with its own immutable V10 payment'
 );
@@ -1009,7 +1014,7 @@ select is(
 select is(
   public.prepare_session_payment_v10(
     'b1150000-0000-4000-8000-000000000014',
-    'b1150000-0000-4000-8000-000000000002'
+    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
   ) ->> 'paymentFlowVersion',
   'v10',
   'the reopened booking can create a replacement V10 Checkout session'
@@ -1019,7 +1024,7 @@ select lives_ok(
   $$
     select public.prepare_session_payment_v10(
       'b1150000-0000-4000-8000-000000000015',
-      'b1150000-0000-4000-8000-000000000002'
+      (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
     )
   $$,
   'an initial V10 attempt can be prepared for the expiry-retry regression'

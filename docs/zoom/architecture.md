@@ -237,3 +237,22 @@ emitido, nunca pede JWT adicional e executa no maximo tres `join`s dentro da
 janela de recuperacao. Isso impede que uma flag publica deixe o ambiente de
 homologacao/producao sem recuperacao justamente quando o singleton do SDK esta
 em transicao.
+
+## Consolidação de presença em T+10
+
+Cada solicitação autenticada de acesso registra a chegada do respectivo papel
+entre T-15 e T+10. A maintenance chama primeiro o classificador de presença e
+só depois reserva encerramentos. Chegada à espera e join confiável são mantidos
+separados na auditoria; emissão de JWT, preflight ou câmera ativa não contam.
+
+Na falta exclusiva do paciente, o classificador cria o fence idempotente de
+encerramento e adia a transição final até o provider confirmar o fechamento. A
+maintenance executa uma segunda passagem no mesmo ciclo para consolidar o
+estado e o gate financeiro assim que esse fechamento termina.
+
+Em T+10, a combinação das chegadas define `no_show_patient`,
+`no_show_therapist` ou `no_show_both`. Se ambos chegaram, a sessão continua
+reentrante; quando o horário termina sem joins bilaterais, abre
+`requires_review`. Falta do terapeuta, falta de ambos e evidência inconclusiva
+bloqueiam a sala e o financeiro, mas não executam efeitos Stripe. A decisão
+pertence ao Admin conforme a ADR-022.
