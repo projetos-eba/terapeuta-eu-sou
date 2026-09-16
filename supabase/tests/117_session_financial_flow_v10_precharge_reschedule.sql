@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(34);
 
 select ok(has_function_privilege('service_role',
   'public.reschedule_uncharged_session_v10(uuid,uuid,timestamptz,timestamptz,text,text,text,integer)',
@@ -264,6 +264,51 @@ select is((select status from public.session_payment_schedules
 select is((select count(*)::integer from public.session_transfer_jobs
   where booking_id = 'b1170000-0000-4000-8000-000000000011'), 1,
   'the approved replacement charge enqueues exactly one direct Transfer job');
+
+insert into public.stripe_transfers (
+  id, session_payment_id, therapist_profile_id, connect_account_id,
+  stripe_transfer_id, idempotency_key, request_fingerprint,
+  amount_cents, status, stripe_source_charge_id, transfer_origin,
+  therapist_gross_amount_cents, debt_offset_amount_cents
+)
+select
+  'b1170000-0000-4000-8000-000000000031', payment.id,
+  payment.therapist_profile_id, payment.connect_account_id_snapshot,
+  'tr_test_v10_117_rescheduled', 'tes:v10:transfer:117',
+  'fingerprint:117', payment.therapist_amount_cents, 'transferred',
+  payment.stripe_charge_id, 'session_direct', payment.therapist_amount_cents, 0
+from public.session_payments payment
+where payment.booking_id = 'b1170000-0000-4000-8000-000000000011';
+
+update public.session_payments
+set transfer_status = 'transferred'
+where booking_id = 'b1170000-0000-4000-8000-000000000011';
+
+select is(public.record_session_payment_intent_v10(
+  (select id from public.session_payment_schedules
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'
+      and status = 'paid'),
+  (select id from public.session_payments
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'),
+  'b1170000-0000-4000-8000-000000000011',
+  (select booking_version from public.session_payment_schedules
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'
+      and status = 'paid'),
+  'test', 'pi_test_v10_117_rescheduled', 'succeeded', 17000, 'brl',
+  'cus_test_v10_117', 'pm_test_v10_117_11', 'ch_test_v10_117_rescheduled',
+  'evt_test_v10_117_rescheduled', '2099-09-01 11:00:00+00'
+) ->> 'transferStatus', 'transferred',
+  'a replay reports the completed direct Transfer state');
+select is((select transfer_status::text from public.session_payments
+  where booking_id = 'b1170000-0000-4000-8000-000000000011'), 'transferred',
+  'a replay cannot regress a completed direct Transfer to pending');
+select is((select count(*)::integer from public.stripe_transfers
+  where session_payment_id = (select id from public.session_payments
+    where booking_id = 'b1170000-0000-4000-8000-000000000011')), 1,
+  'a replay cannot create a second direct Transfer record');
+select is((select status from public.session_transfer_jobs
+  where booking_id = 'b1170000-0000-4000-8000-000000000011'), 'queued',
+  'a replay leaves the existing outbox job unchanged');
 
 update public.session_payment_schedules
 set status = 'claimed', attempt_count = 1,
