@@ -49,6 +49,10 @@ const contract = {
     city: "Campinas",
     state: "SP",
   },
+  publication: {
+    isPubliclyVisible: true,
+    needsReceivingAccount: false,
+  },
   propagationNotice: "Propaga em ate 2 a 3 horas.",
   publicProfileHref: "/terapeutas/ana-oliveira",
   published: {

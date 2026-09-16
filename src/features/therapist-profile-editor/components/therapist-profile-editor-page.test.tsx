@@ -101,6 +101,10 @@ function makeEditor(
       status: "published",
       updatedAt: "2026-07-27T12:00:00.000Z",
     },
+    publication: {
+      isPubliclyVisible: true,
+      needsReceivingAccount: false,
+    },
     therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     updatedAt: "2026-07-28T12:00:00.000Z",
     verificationSummary: null,

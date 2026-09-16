@@ -210,6 +210,14 @@ export function parseSessionReadModelItem(
   const row = requiredRecord(value);
 
   return {
+    attendanceFinancialResolution: nullableString(
+      row.attendanceFinancialResolution,
+    ),
+    attendanceIncidentId: nullableString(row.attendanceIncidentId),
+    attendanceResolution: nullableString(row.attendanceResolution),
+    attendanceResponsibility: nullableString(row.attendanceResponsibility),
+    attendanceReviewDueAt: nullableString(row.attendanceReviewDueAt),
+    attendanceReviewStatus: nullableString(row.attendanceReviewStatus),
     attendanceSource: attendanceSource(row.attendanceSource),
     attendanceStatus: attendanceStatus(row.attendanceStatus),
     bookingId: requiredString(row.bookingId),

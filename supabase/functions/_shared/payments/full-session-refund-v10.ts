@@ -156,6 +156,9 @@ export async function runFullSessionRefundV10(input: {
     const reconciliation = await client.rpc<{ status: string }>(
       "reconcile_full_session_refund_debt_v10_v2", { p_session_payment_id: paymentId },
     );
+    await client.rpc("finalize_attendance_refund_financials_v1", {
+      p_session_payment_id: paymentId,
+    });
     const completed = reconciliation.status === "reconciled" && !recoveryUncertain;
     if (completed) {
       await client.rpc("complete_therapist_change_refund_v1", {

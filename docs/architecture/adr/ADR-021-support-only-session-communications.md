@@ -4,6 +4,10 @@ Data: 2026-09-15
 Status: aceita; implementação concluída em código e pendente de validação local do PostgreSQL.
 Substitui a ADR-016 sem apagar seu histórico.
 
+> A classificação de presença, ausência e seus efeitos financeiros foi
+> detalhada posteriormente na ADR-022. Esta ADR continua autoritativa para os
+> canais de Suporte e comunicações vinculadas à sessão.
+
 ## Contexto
 
 A central anterior mesclava chamados TES, avisos da plataforma e mensagens

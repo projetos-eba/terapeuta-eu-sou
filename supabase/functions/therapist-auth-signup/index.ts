@@ -281,7 +281,10 @@ therapistSignupRuntime.serve(async (request) => {
 
     const status = getSignupFailureStatus(error);
 
-    return jsonResponse({ error: signupErrorCodeForStatus(status) }, status);
+    return jsonResponse(
+      { error: signupErrorCodeForFailure(error, status) },
+      status,
+    );
   }
 });
 
@@ -438,10 +441,20 @@ function isDuplicateEmailError(error: SupabaseHttpError) {
   );
 }
 
-function signupErrorCodeForStatus(status: number) {
+function signupErrorCodeForFailure(error: unknown, status: number) {
+  if (error instanceof SupabaseHttpError && isPhoneAlreadyInUse(error)) {
+    return "phone_already_in_use";
+  }
   if (status === 409) return "email_already_registered";
   if (status === 503) return "signup_dependencies_unavailable";
   return "signup_failed";
+}
+
+function isPhoneAlreadyInUse(error: SupabaseHttpError) {
+  return (
+    error.status === 409 &&
+    error.safeDetails?.includes("PHONE_ALREADY_IN_USE")
+  );
 }
 
 class SupabaseHttpError extends Error {

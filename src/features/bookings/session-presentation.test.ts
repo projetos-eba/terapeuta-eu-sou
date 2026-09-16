@@ -154,6 +154,33 @@ describe("mapSessionPresentation", () => {
     );
   });
 
+  it.each([
+    [
+      AttendanceStatus.PatientNoShow,
+      "Sessão não realizada — cliente não compareceu",
+    ],
+    [
+      AttendanceStatus.TherapistNoShow,
+      "Sessão não realizada — terapeuta não compareceu",
+    ],
+    [
+      AttendanceStatus.BothNoShow,
+      "Sessão não realizada — ninguém acessou a sala",
+    ],
+    [
+      AttendanceStatus.RequiresReview,
+      "Sessão não realizada — acesso em análise",
+    ],
+  ])("presents the authoritative attendance outcome %s", (attendanceStatus, label) => {
+    const result = mapSessionPresentation(
+      sessionFixture({ attendanceStatus }),
+      now,
+    );
+
+    expect(result.label).toBe(label);
+    expect(result.actions.canAccessZoom).toBe(false);
+  });
+
   it("identifies a paid session whose video session is still being prepared", () => {
     const result = mapSessionPresentation(
       sessionFixture({

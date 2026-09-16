@@ -165,6 +165,26 @@ describe("therapist settings route", () => {
       message: "Este documento já está em uso em outra conta.",
     });
   });
+
+  it("maps an already used therapist phone to a safe conflict response", async () => {
+    const fetchMock = makeFetchMock({ profilePatchError: "PHONE_ALREADY_IN_USE" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await PATCH(
+      makeRequest({
+        displayName: "Ana Oliveira",
+        phone: "11999999999",
+        phoneCountryCode: "55",
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toEqual({
+      code: "PHONE_IN_USE",
+      message: "Este telefone já está em uso em outra conta de terapeuta.",
+    });
+  });
 });
 
 function validSettingsPayload() {
@@ -195,9 +215,11 @@ function makeRequest(body: unknown) {
 
 function makeFetchMock({
   identityError,
+  profilePatchError,
   role = "therapist",
 }: {
   identityError?: "CPF_ALREADY_IN_USE";
+  profilePatchError?: "PHONE_ALREADY_IN_USE";
   role?: string;
 } = {}) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -212,6 +234,12 @@ function makeFetchMock({
     }
 
     if (url.includes("/rest/v1/profiles?") && init?.method === "PATCH") {
+      if (profilePatchError) {
+        return jsonResponse(
+          { code: "23505", message: profilePatchError },
+          { status: 409 },
+        );
+      }
       return jsonResponse([
         {
           display_name: "Ana Oliveira",

@@ -90,6 +90,16 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   `scheduled_ends_at`; todo join do paciente continua exigindo presença atual
   do terapeuta. Portanto um paciente pontual pode esperar e entrar com o
   terapeuta mesmo que ele só chegue após T+10.
+- Antes de reservar encerramentos, a maintenance consolida a presença da
+  versão da reserva: terapeuta presente/cliente ausente é `no_show_patient`;
+  cliente presente/terapeuta ausente é `no_show_therapist`; ambos ausentes é
+  `no_show_both`. Ambos presentes sem joins bilaterais até o fim abrem
+  `requires_review`. Os três últimos casos bloqueiam efeitos financeiros e
+  exigem decisão administrativa; Zoom nunca decide Refund, Reversal ou dívida.
+- Para `no_show_patient`, o classificador cria primeiro o job idempotente de
+  encerramento e só consolida o status/financeiro depois da confirmação do
+  provider. A maintenance faz uma segunda passagem no mesmo ciclo; não marque
+  a falta antes de preservar esse fence técnico.
 - Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
   agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
   provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.

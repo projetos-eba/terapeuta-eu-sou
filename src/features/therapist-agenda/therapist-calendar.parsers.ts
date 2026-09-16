@@ -26,6 +26,7 @@ const colorKeys = new Set<TherapyCalendarColorKey>([
 const calendarViews = new Set<TherapistCalendarView>(["day", "month", "week"]);
 
 const attentionKinds = new Set<TherapistCalendarAttentionItem["kind"]>([
+  "attendance_review",
   "reschedule",
 ]);
 
@@ -35,20 +36,39 @@ export function parseTherapistCalendarReadModel(
   const row = record(value);
   const range = record(row.range);
   const summary = record(row.summary);
+  const bookings = array(row.bookings).map((item) => {
+    const booking = record(item);
+    return {
+      ...parseSessionReadModelItem(booking),
+      colorKey: color(booking.colorKey),
+      therapyId: string(booking.therapyId),
+      therapyName: string(booking.therapyName),
+    };
+  });
+  const attentionItems = array(row.attentionItems).map(parseAttention);
+  const knownAttentionIds = new Set(attentionItems.map((item) => item.id));
+  for (const booking of bookings) {
+    if (
+      booking.attendanceReviewStatus === "open" &&
+      booking.attendanceIncidentId &&
+      !knownAttentionIds.has(booking.attendanceIncidentId)
+    ) {
+      attentionItems.push({
+        bookingId: booking.bookingId,
+        description: attendanceReviewDescription(booking.attendanceStatus),
+        id: booking.attendanceIncidentId,
+        kind: "attendance_review",
+        startsAt: booking.startsAt,
+        title: booking.patientName,
+      });
+    }
+  }
 
   return {
     anchorDate: string(row.anchorDate),
-    attentionItems: array(row.attentionItems).map(parseAttention),
+    attentionItems,
     blocks: array(row.blocks).map(parseBlock),
-    bookings: array(row.bookings).map((item) => {
-      const booking = record(item);
-      return {
-        ...parseSessionReadModelItem(booking),
-        colorKey: color(booking.colorKey),
-        therapyId: string(booking.therapyId),
-        therapyName: string(booking.therapyName),
-      };
-    }),
+    bookings,
     contractVersion: version(row.contractVersion),
     demand: array(row.demand).map(parseDemand),
     holds: array(row.holds).map(parseHold),
@@ -63,12 +83,22 @@ export function parseTherapistCalendarReadModel(
     summary: {
       activeHolds: number(summary.activeHolds),
       bookings: number(summary.bookings),
-      pendingAttention: number(summary.pendingAttention),
+      pendingAttention: attentionItems.length,
     },
     therapistProfileId: string(row.therapistProfileId),
     timezone: string(row.timezone),
     view: view(row.view),
   };
+}
+
+function attendanceReviewDescription(status: string) {
+  if (status === "therapist_no_show") {
+    return "Sessão não realizada — sua presença está em análise";
+  }
+  if (status === "both_no_show") {
+    return "Sessão não realizada — ninguém acessou a sala";
+  }
+  return "Sessão não realizada — acesso em análise";
 }
 
 function parseService(value: unknown): TherapistCalendarService {

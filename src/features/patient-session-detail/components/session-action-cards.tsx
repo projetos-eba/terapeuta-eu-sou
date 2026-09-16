@@ -22,12 +22,15 @@ export function SessionActionCards({
         bookingId={data.booking.id}
         bookingVersion={data.booking.operationalVersion}
         bookingConfirmed={
-          data.booking.status === "confirmed" || data.booking.status === "live"
+          !data.attendanceReview?.isOpen &&
+          (data.booking.status === "confirmed" || data.booking.status === "live")
         }
         delayNotice={data.delayNotice}
         scheduledStartsAt={data.booking.startsAt}
-        canCancel={cancellation.allowed}
-        canRequestReschedule={reschedule.allowed}
+        canCancel={!data.attendanceReview?.isOpen && cancellation.allowed}
+        canRequestReschedule={
+          !data.attendanceReview?.isOpen && reschedule.allowed
+        }
         cancellationImpactLabel={cancellation.impactLabel}
         cancelDisabledReason={cancellation.disabledReason}
         rescheduleDisabledReason={reschedule.disabledReason}

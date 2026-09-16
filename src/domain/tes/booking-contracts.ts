@@ -22,6 +22,8 @@ export const AttendanceStatus = {
   PatientNoShow: "patient_no_show",
   Pending: "pending",
   TherapistNoShow: "therapist_no_show",
+  BothNoShow: "both_no_show",
+  RequiresReview: "requires_review",
 } as const;
 
 export type AttendanceStatus =
@@ -29,6 +31,8 @@ export type AttendanceStatus =
 
 export const AttendanceSource = {
   BookingCompatibility: "booking_compatibility",
+  AuthoritativeEvidence: "authoritative_evidence",
+  AdministrativeReview: "administrative_review",
   Unavailable: "unavailable",
 } as const;
 
@@ -193,6 +197,7 @@ const bookingTransitions: Record<BookingStatus, BookingStatus[]> = {
     BookingStatusValue.CancelledByTherapist,
     BookingStatusValue.NoShowPatient,
     BookingStatusValue.NoShowTherapist,
+    BookingStatusValue.NoShowBoth,
     BookingStatusValue.Refunded,
   ],
   [BookingStatusValue.Completed]: [BookingStatusValue.Refunded],
@@ -200,6 +205,10 @@ const bookingTransitions: Record<BookingStatus, BookingStatus[]> = {
   [BookingStatusValue.CancelledByTherapist]: [BookingStatusValue.Refunded],
   [BookingStatusValue.NoShowPatient]: [BookingStatusValue.Refunded],
   [BookingStatusValue.NoShowTherapist]: [BookingStatusValue.Refunded],
+  [BookingStatusValue.NoShowBoth]: [
+    BookingStatusValue.Confirmed,
+    BookingStatusValue.Refunded,
+  ],
   [BookingStatusValue.CancelledByPayment]: [],
   [BookingStatusValue.Refunded]: [],
 };

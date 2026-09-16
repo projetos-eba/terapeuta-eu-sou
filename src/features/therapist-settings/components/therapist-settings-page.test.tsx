@@ -161,6 +161,35 @@ describe("TherapistSettingsPage", () => {
     expect(addressGrid).toContainElement(screen.getByLabelText("Endereço"));
   });
 
+  it("does not present an unavailable profile as public while receiving setup is pending", () => {
+    const settings = settingsFixture();
+    settings.profile.isAcceptingBookings = true;
+    settings.profile.isPublic = true;
+    settings.profile.publicStatus = "published";
+    settings.profile.publication = {
+      isPubliclyVisible: false,
+      needsReceivingAccount: true,
+    };
+
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.getByText("Ainda não disponível")).toBeInTheDocument();
+    expect(
+      screen.getByText("Aguardando conta de recebimento"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Concluir conta de recebimento" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=account");
+    expect(
+      screen.queryByRole("link", { name: "Ver perfil público" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("saves edited account settings through the authenticated command", async () => {
     render(
       <TherapistSettingsPage
@@ -522,6 +551,10 @@ function settingsFixture(): TherapistSettingsData {
       publicName: "Ana Oliveira",
       publicStatus: "draft",
       publicUrl: "/terapeutas/ana-oliveira",
+      publication: {
+        isPubliclyVisible: false,
+        needsReceivingAccount: false,
+      },
       status: "draft",
     },
   };

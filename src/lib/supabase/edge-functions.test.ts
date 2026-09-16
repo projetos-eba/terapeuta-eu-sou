@@ -38,4 +38,26 @@ describe("invokeSupabaseFunction", () => {
       status: 409,
     } satisfies Partial<SupabaseFunctionError>);
   });
+
+  it("preserves a legacy scalar Edge Function error code", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(JSON.stringify({ error: "phone_already_in_use" }), {
+          status: 409,
+        });
+      }),
+    );
+
+    await expect(
+      invokeSupabaseFunction(
+        { apiKey: "publishable", url: "http://127.0.0.1:54321" },
+        "therapist-auth-signup",
+      ),
+    ).rejects.toMatchObject({
+      code: "phone_already_in_use",
+      functionName: "therapist-auth-signup",
+      status: 409,
+    } satisfies Partial<SupabaseFunctionError>);
+  });
 });

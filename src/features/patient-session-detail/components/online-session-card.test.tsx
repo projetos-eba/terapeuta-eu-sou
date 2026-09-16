@@ -85,7 +85,7 @@ describe("OnlineSessionCard", () => {
     ).toHaveAttribute("href", "https://example.com/meeting");
   });
 
-  it("reopens private feedback from a terminal encounter detail", () => {
+  it("keeps confirmation for a terminal encounter within its details", () => {
     render(
       <SessionOverviewCard
         data={makeData({
@@ -96,11 +96,14 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: /avaliar encontro/i }),
-    ).toHaveAttribute(
-      "href",
-      "/app/encontros/f2000000-0000-4000-8000-000000000001/video?feedback=1",
-    );
+      screen
+        .getAllByRole("link", { name: /confirmar encontro/i })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/app/encontros/f2000000-0000-4000-8000-000000000001?feedback=1",
+        ),
+    ).toBe(true);
   });
 
   it("does not offer feedback for an encounter cancelled before it happened", () => {
@@ -118,7 +121,7 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.queryByRole("link", { name: /avaliar encontro/i }),
+      screen.queryByRole("link", { name: /confirmar encontro/i }),
     ).toBeNull();
     expect(screen.getByText(/a sala não será liberada/i)).toBeInTheDocument();
     expect(screen.queryByText("Seu encontro online")).toBeNull();

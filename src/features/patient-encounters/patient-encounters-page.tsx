@@ -9,10 +9,8 @@ import type { PatientEncountersPageData } from "./patient-encounters.types";
 
 export function PatientEncountersPage({
   data,
-  initialFeedbackBookingId,
 }: {
   data: PatientEncountersPageData;
-  initialFeedbackBookingId?: string | null;
 }) {
   const followingEncounters = data.upcomingEncounters.slice(1);
 
@@ -20,10 +18,7 @@ export function PatientEncountersPage({
     <AppPageContainer className="max-w-[1080px] gap-9 pb-12 sm:gap-11">
       <PatientEncountersHero />
       <NextEncounterSpotlight encounter={data.nextEncounter} />
-      <PendingSessionFeedbackSection
-        initialBookingId={initialFeedbackBookingId}
-        sessions={data.pendingFeedbackSessions}
-      />
+      <PendingSessionFeedbackSection sessions={data.pendingFeedbackSessions} />
 
       {followingEncounters.length > 0 ? (
         <UpcomingEncountersSection encounters={followingEncounters} />

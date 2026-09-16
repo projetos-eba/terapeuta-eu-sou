@@ -69,6 +69,7 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `verification-${index}`;
   const professionalId = asText(row.therapist_profile_id);
   const status = asText(row.status);
+  const publication = publicationLabel(row.publication_eligibility);
 
   return {
     detailHref:
@@ -78,7 +79,7 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
     fields: compactFields([
       field("Enviado", formatDate(row.submitted_at)),
       field("Revisado", formatDate(row.reviewed_at)),
-      field("Publicação", publicationLabel(row.publication_eligibility)),
+      field("Publicação", publication),
       field(
         "Pendências de publicação",
         publicationBlockers(row.publication_blockers),
@@ -86,7 +87,7 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
       field("Atualizado", formatDate(row.updated_at)),
     ]),
     id,
-    statusLabel: asText(row.status),
+    statusLabel: verificationStatusLabel(status, publication),
     subtitle: "Documentos privados não são exibidos nesta lista.",
     title: therapistName || `Verificação ${shortId(asText(row.id))}`,
   } satisfies AdminOperationRow;
@@ -265,12 +266,28 @@ function mapAdminSessionAttendance(value: unknown) {
   const record = isRecord(value) ? value : {};
   return {
     bothJoined: record.bothJoined === true,
+    classification: asText(record.classification) || null,
+    classificationSource: asText(record.classificationSource) || null,
+    financialResolution: asText(record.financialResolution) || null,
+    incidentId: asText(record.incidentId) || null,
+    patientArrivedAt: asText(record.patientArrivedAt) || null,
     patientJoined: record.patientJoined === true,
+    patientJoinedAt: asText(record.patientJoinedAt) || null,
+    patientPresentAtTolerance: record.patientPresentAtTolerance === true,
+    processingCostRecoveryAuthorized:
+      record.processingCostRecoveryAuthorized === true,
+    resolution: asText(record.resolution) || null,
+    responsibility: asText(record.responsibility) || null,
+    retentionAuthorized: record.retentionAuthorized === true,
+    reviewDueAt: asText(record.reviewDueAt) || null,
     sessionClosed: record.sessionClosed === true,
     sessionEndedAt: asText(record.sessionEndedAt) || null,
     sessionEndsAt: asText(record.sessionEndsAt) || null,
     sessionStartedAt: asText(record.sessionStartedAt) || null,
     therapistJoined: record.therapistJoined === true,
+    therapistArrivedAt: asText(record.therapistArrivedAt) || null,
+    therapistJoinedAt: asText(record.therapistJoinedAt) || null,
+    therapistPresentAtTolerance: record.therapistPresentAtTolerance === true,
   } satisfies import("./admin-operations.types").AdminSessionAttendance;
 }
 
@@ -575,7 +592,14 @@ function publicationLabel(value: unknown) {
   if (!isRecord(value)) return "";
   return value.eligible === true
     ? "Publicado e elegível"
-    : "Aprovado · publicação pendente";
+    : "Aprovado · falta publicar";
+}
+
+function verificationStatusLabel(status: string, publication: string) {
+  if (status !== "approved") return status;
+  if (publication === "Publicado e elegível") return publication;
+
+  return "Aprovado · falta publicar";
 }
 
 function publicationBlockers(value: unknown) {

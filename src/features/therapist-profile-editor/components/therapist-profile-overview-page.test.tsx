@@ -69,6 +69,10 @@ function makeEditor(
         validationState: "not_scanned",
       },
     ],
+    publication: {
+      isPubliclyVisible: true,
+      needsReceivingAccount: false,
+    },
     propagationNotice:
       "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
@@ -247,6 +251,25 @@ describe("TherapistProfileOverviewPage", () => {
     expect(screen.queryByText(/documento/i)).not.toBeInTheDocument();
   });
 
+  it("does not offer the public profile link while the receiving account gate is pending", () => {
+    renderOverview(
+      makeEditor({
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: true,
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.queryByRole("link", { name: "Ver perfil público" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Perfil aguardando conta de recebimento"),
+    ).toBeInTheDocument();
+  });
+
   it("marks the submission as 100% complete while documents are under review", () => {
     renderOverview(
       makeEditor({
@@ -375,6 +398,10 @@ describe("TherapistProfileOverviewPage", () => {
         derived: {
           ...makeEditor().derived,
           publicStatus: "unpublished",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
         },
       }),
       { status: "not_published" },

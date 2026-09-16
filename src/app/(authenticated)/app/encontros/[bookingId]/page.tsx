@@ -9,10 +9,13 @@ import { requirePatientSession } from "@/lib/auth/patient-session";
 
 export default async function PatientEncounterDetailRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ bookingId: string }>;
+  searchParams?: Promise<{ feedback?: string | string[] }>;
 }) {
   const { bookingId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const session = await requirePatientSession();
 
   try {
@@ -25,6 +28,7 @@ export default async function PatientEncounterDetailRoute({
     return (
       <PatientSessionDetailPage
         data={data}
+        feedbackOpen={firstString(resolvedSearchParams.feedback) === "1"}
         stripePublishableKey={
           process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? ""
         }
@@ -37,4 +41,8 @@ export default async function PatientEncounterDetailRoute({
 
     throw error;
   }
+}
+
+function firstString(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }

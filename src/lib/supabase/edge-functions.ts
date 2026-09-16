@@ -74,25 +74,30 @@ function parseSupabaseFunctionFailure(text: string) {
 
   try {
     const payload = JSON.parse(text) as {
-      error?: {
-        code?: unknown;
-        message?: unknown;
-        requestId?: unknown;
-      };
+      error?:
+        | string
+        | {
+            code?: unknown;
+            message?: unknown;
+            requestId?: unknown;
+          };
     };
+    const error = payload.error;
 
     return {
       code:
-        typeof payload.error?.code === "string"
-          ? payload.error.code
+        typeof error === "string"
+          ? error
+          : typeof error?.code === "string"
+            ? error.code
           : undefined,
       message:
-        typeof payload.error?.message === "string"
-          ? payload.error.message
+        typeof error === "object" && typeof error?.message === "string"
+          ? error.message
           : undefined,
       requestId:
-        typeof payload.error?.requestId === "string"
-          ? payload.error.requestId
+        typeof error === "object" && typeof error?.requestId === "string"
+          ? error.requestId
           : undefined,
     };
   } catch {
