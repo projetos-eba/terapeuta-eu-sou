@@ -77,3 +77,20 @@ Deno.test("maps a non-pristine V10 cancellation to a support message", () => {
     "Para alterar este encontro, fale com nossa equipe de suporte.",
   );
 });
+
+Deno.test("maps a stale pre-charge modal to a safe payment update error", () => {
+  const error = mapCancellationDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "SESSION_PRECHARGE_CANCEL_V10_PAYMENT_CHANGED",
+    ),
+  );
+
+  assertEquals(error instanceof DomainError, true);
+  assertEquals((error as DomainError).code, "cancellation_payment_updated");
+  assertEquals((error as DomainError).status, 409);
+  assertEquals(
+    (error as DomainError).message,
+    "O pagamento desta sessão foi atualizado. Recarregue a página e, se ainda precisar cancelar, fale com nossa equipe de suporte.",
+  );
+});

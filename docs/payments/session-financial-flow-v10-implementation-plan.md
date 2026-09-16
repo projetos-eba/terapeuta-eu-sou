@@ -68,6 +68,14 @@ pagamento do cliente ficou explicitamente separada da data de pagamento ao
 banco. O catálogo de e-mails, a recuperação de pagamento e os alertas
 financeiros foram revisados para usar somente linguagem de produto, inclusive
 quando o banco exige confirmação ou outro cartão.
+A comunicação local também separa reserva de confirmação: em reservas acima
+de 24 horas, o horário ocupado aparece como “Reservado” enquanto o pagamento
+está pendente ou em processamento. Ao salvar o cartão, paciente e terapeuta
+recebem mensagens de reserva. Quando a cobrança agendada é aprovada, o paciente
+recebe a confirmação do pagamento e ambos recebem a confirmação do encontro.
+Se a cobrança não for aprovada, o paciente recebe uma orientação para abrir o
+detalhe do encontro e revisar o pagamento. A outbox impede duplicidade em
+reexecuções e os testes locais não entregam mensagens ao provedor real.
 A
 migration local
 `20260914183000_session_financial_flow_v10_feedback_projection.sql` separa
@@ -403,6 +411,14 @@ definitivo de resposta ambígua e permite a conciliação independente do
 reembolso e da recuperação do terapeuta. Nenhum reembolso V10 é declarado
 concluído apenas pela resposta síncrona da API.
 
+No cancelamento V10 anterior à cobrança, o texto de produto informa que o
+pagamento ainda não ocorreu e que o agendamento da cobrança também será
+cancelado. A confirmação nunca confia no estado exibido quando o modal foi
+aberto: o servidor relê e bloqueia pagamento, reserva e agendamento. Se o worker
+tiver reivindicado a cobrança, criado a tentativa ou confirmado o pagamento
+nesse intervalo, o comando falha fechado, preserva o estado financeiro e orienta
+o cliente a atualizar a página e procurar o suporte.
+
 ### 8.3 Disputas
 
 Disputas debitam a plataforma no modelo Separate Charges and Transfers. O TES
@@ -629,7 +645,7 @@ terapeuta.
 - `/reserva`: preservar composição visual, campo promocional, resumo, hold e
   formulário oficial Stripe. Para reservas acima de 24h, confirmar o salvamento
   do cartão e informar de forma simples quando ocorrerá a cobrança.
-- `/reserva/sucesso`: distinguir reserva confirmada com cobrança futura de
+- `/reserva/sucesso`: distinguir horário reservado com cobrança futura de
   pagamento já confirmado, sem afirmar sucesso financeiro pelo redirect.
 - `/app/encontros` e detalhe do encontro: mostrar estado útil da cobrança,
   permitir ação de autenticação/novo cartão e explicar bloqueio da sala em
@@ -737,10 +753,12 @@ Todas as métricas devem ler a política e a origem do pagamento.
 
 Eventos mínimos:
 
-- cartão salvo e reserva confirmada;
+- cartão salvo e horário reservado, com uma mensagem para cada participante;
 - lembrete da cobrança futura, quando exigido pela política aprovada;
-- cobrança confirmada;
-- cobrança recusada;
+- cobrança confirmada, com confirmação de pagamento ao paciente e confirmação
+  do encontro aos dois participantes;
+- cobrança não aprovada, com orientação ao paciente para revisar o pagamento
+  no detalhe do encontro;
 - autenticação ou atualização do cartão necessária;
 - prazo para regularização antes do encontro;
 - encontro bloqueado por pagamento não concluído;

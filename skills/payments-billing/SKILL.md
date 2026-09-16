@@ -32,6 +32,15 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   enqueue the therapist Transfer as soon as Stripe confirms payment. Session
   confirmation and evaluation remain auditable product signals but are not a
   V10 financial gate.
+- A future V10 booking may keep `bookings.status=confirmed` internally to hold
+  the slot, but every patient and therapist projection must call it
+  `Reservado` until `session_payments.financial_status=paid`. Completing the
+  card setup queues one reservation message for each participant. Successful
+  scheduled charging queues one payment-approved message for the patient and
+  one encounter-confirmed message for each participant. A failed charge queues
+  one actionable patient message that links to the encounter detail. These
+  messages are idempotent and never expose scheduler, provider-object or
+  architecture terminology.
 - The local-only Phase 2 and Phase 3 flows are behind an explicit flag and default to
   V9. A successful future SetupIntent is bound to the exact booking version,
   Customer and PaymentMethod only by the signed `checkout.session.completed`
@@ -106,7 +115,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `scheduled`, has zero attempts and no PaymentIntent, Charge, lease, Transfer
   job or Transfer. The transaction cancels the schedule and setup, releases a
   reserved promotion, closes the payment without Refund and cancels the
-  booking. Claimed, retried, ambiguous or paid states go to support.
+  booking. The confirmation command must lock and reread the payment, booking
+  and schedule instead of trusting the modal snapshot. If charging starts or
+  succeeds while the modal is open, fail closed with a user-safe conflict,
+  preserve the financial state and direct the patient to refresh or contact
+  support. Claimed, retried, ambiguous or paid states go to support.
 - A V10 patient reschedule before charging must reuse the SetupIntent and
   PaymentMethod bound to that booking; never create or replace a global default
   card. It supersedes the old schedule and leaves exactly one active schedule

@@ -699,6 +699,98 @@ export const emailActionRegistry: Record<
       dashboard_url: "https://example.test/terapeuta",
     },
   },
+  booking_reserved_patient: {
+    actionKey: "booking_reserved_patient",
+    category: "Encontros",
+    label: "Encontro reservado — pessoa",
+    description:
+      "Confirma que o horário foi reservado e informa quando o pagamento será realizado.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu encontro foi reservado",
+      preheader:
+        "O horário está guardado para você. Confira os próximos passos.",
+      text: "Seu encontro foi reservado.\n\nOlá, {{recipient_name}}.\n\nSeu horário com {{counterparty_name}} está reservado. O pagamento será realizado 24 horas antes do encontro com o cartão informado.\n\nInformações do encontro:\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nQuando o pagamento for aprovado, enviaremos uma nova confirmação. Você pode acompanhar tudo pela sua área no TES.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Seu encontro foi reservado",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu horário com {{counterparty_name}} está reservado. O pagamento será realizado 24 horas antes do encontro com o cartão informado.",
+          ),
+          accountParagraph("<strong>Informações do encontro:</strong>"),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Quando o pagamento for aprovado, enviaremos uma nova confirmação. Você pode acompanhar tudo pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
+  booking_reserved_therapist: {
+    actionKey: "booking_reserved_therapist",
+    category: "Encontros",
+    label: "Sessão reservada — terapeuta",
+    description:
+      "Informa que um horário foi reservado e ainda aguarda a confirmação do pagamento.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Uma nova sessão foi reservada",
+      preheader:
+        "O horário já está reservado na sua agenda. Confira as informações.",
+      text: "Uma nova sessão foi reservada.\n\nOlá, {{recipient_name}}.\n\nO horário abaixo foi reservado para {{counterparty_name}} e já aparece na sua agenda. A confirmação final será enviada quando o pagamento for aprovado.\n\nInformações da sessão:\nPessoa: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nVocê pode acompanhar as informações pela sua área no TES.\n\nEquipe TES\n\nVer sessão: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Uma nova sessão foi reservada",
+        ctaLabel: "Ver sessão",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "O horário abaixo foi reservado para {{counterparty_name}} e já aparece na sua agenda. A confirmação final será enviada quando o pagamento for aprovado.",
+          ),
+          accountParagraph("<strong>Informações da sessão:</strong>"),
+          emailDetailList([
+            ["Pessoa", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Você pode acompanhar as informações pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      counterparty_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
+    },
+  },
   booking_confirmed_patient: {
     actionKey: "booking_confirmed_patient",
     category: "Encontros",

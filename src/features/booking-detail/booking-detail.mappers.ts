@@ -170,6 +170,12 @@ export function mapBookingDetail(
     status: input.booking.status,
   });
   const provider = getMeetingProvider(input.booking.meeting_provider);
+  const isReservedAwaitingPayment =
+    input.sessionPayment?.payment_flow_version === "v10" &&
+    input.booking.status === "confirmed" &&
+    (input.sessionPayment.financial_status === SessionFinancialStatus.Pending ||
+      input.sessionPayment.financial_status ===
+        SessionFinancialStatus.Processing);
   const canJoin =
     status === "live" &&
     input.sessionPayment?.financial_status === SessionFinancialStatus.Paid &&
@@ -238,7 +244,9 @@ export function mapBookingDetail(
       paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       startsAt: input.booking.starts_at,
       status,
-      statusLabel: getBookingDetailStatusLabel(status),
+      statusLabel: isReservedAwaitingPayment
+        ? "Reservado"
+        : getBookingDetailStatusLabel(status),
       timeRangeLabel: formatSessionTimeRange(
         input.booking.starts_at,
         input.booking.ends_at,

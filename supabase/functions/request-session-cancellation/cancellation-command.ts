@@ -73,6 +73,14 @@ export function mapCancellationDatabaseError(error: unknown) {
     );
   }
 
+  if (details.includes("SESSION_PRECHARGE_CANCEL_V10_PAYMENT_CHANGED")) {
+    return new DomainError(
+      "cancellation_payment_updated",
+      409,
+      "O pagamento desta sessão foi atualizado. Recarregue a página e, se ainda precisar cancelar, fale com nossa equipe de suporte.",
+    );
+  }
+
   if (details.includes("SESSION_PRECHARGE_CANCEL_V10_REQUIRES_SUPPORT")) {
     return new DomainError(
       "cancellation_requires_support",

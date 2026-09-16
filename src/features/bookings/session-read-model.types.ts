@@ -226,6 +226,7 @@ export type SessionPresentation = {
     | "in_progress"
     | "payment_pending"
     | "ready"
+    | "reserved"
     | "refunded"
     | "reschedule_requested"
     | "room_preparing"

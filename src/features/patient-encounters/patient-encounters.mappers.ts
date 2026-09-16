@@ -235,9 +235,7 @@ function mapPatientEncounter(
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
-    statusLabel: paymentScheduled
-      ? "Cobrança programada"
-      : getStatusLabel(status),
+    statusLabel: paymentScheduled ? "Reservado" : getStatusLabel(status),
     summaryId,
     therapist: {
       avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {

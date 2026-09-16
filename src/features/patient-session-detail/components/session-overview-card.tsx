@@ -40,7 +40,12 @@ export function SessionOverviewCard({
   const ratingLabel = getRatingLabel(data);
   const guidance = getGuidanceMessage(data);
   const primaryAction = getPrimaryAction(data);
-  const statusTone = getStatusTone(data.booking.status, data.booking.canJoin);
+  const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
+  const statusTone = getStatusTone(
+    data.booking.status,
+    data.booking.canJoin,
+    paymentConfirmed,
+  );
 
   return (
     <>
@@ -101,7 +106,8 @@ export function SessionOverviewCard({
 
           <div
             className={`grid gap-4 border-t border-border pt-5 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0 ${
-              data.booking.status === BookingStatus.Confirmed
+              data.booking.status === BookingStatus.Confirmed &&
+              paymentConfirmed
                 ? "rounded-2xl border-status-success/25 bg-status-successBg/45 p-4 xl:ml-3 xl:border xl:pl-4"
                 : ""
             }`}
@@ -460,8 +466,13 @@ function canReviewFeedback(
 function getStatusTone(
   status: PatientSessionDetailPageData["booking"]["status"],
   canJoin: boolean,
+  paymentConfirmed: boolean,
 ) {
-  if (canJoin || status === BookingStatus.Confirmed || status === "live") {
+  if (
+    canJoin ||
+    status === "live" ||
+    (status === BookingStatus.Confirmed && paymentConfirmed)
+  ) {
     return "success";
   }
   if (status === "pending_payment") return "warning";

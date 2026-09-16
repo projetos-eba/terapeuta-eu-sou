@@ -2,6 +2,16 @@ begin;
 
 select plan(28);
 
+-- The public slot contract requires a published therapist. Establish the
+-- fixture explicitly instead of depending on mutable local browser data.
+update public.therapist_profiles
+set status = 'approved',
+    public_status = 'published',
+    is_public = true,
+    is_accepting_bookings = true,
+    accepts_online_sessions = true
+where id = 'c1000000-0000-4000-8000-000000000001';
+
 select has_column(
   'public',
   'therapies',
@@ -138,11 +148,7 @@ select ok(
       and exception.status = 'active'
       and not exception.is_available
       and tstzrange(exception.starts_at, exception.ends_at, '[)')
-        && tstzrange(
-          slot.starts_at - interval '10 minutes',
-          slot.ends_at + interval '10 minutes',
-          '[)'
-        )
+        && tstzrange(slot.starts_at, slot.ends_at, '[)')
   ),
   'active unavailable exceptions are subtracted from slots'
 );
@@ -151,14 +157,18 @@ select ok(
   not exists (
     select 1
     from a5_slot_fixture as slot
+    join public.therapist_service_booking_settings as settings
+      on settings.service_id = 'd1000000-0000-4000-8000-000000000001'
     join public.bookings as booking
       on booking.therapist_profile_id =
         'c1000000-0000-4000-8000-000000000001'
       and booking.status in ('draft', 'pending_payment', 'confirmed')
       and booking.occupied_during
         && tstzrange(
-          slot.starts_at - interval '10 minutes',
-          slot.ends_at + interval '10 minutes',
+          slot.starts_at
+            - settings.buffer_before_minutes * interval '1 minute',
+          slot.ends_at
+            + settings.buffer_after_minutes * interval '1 minute',
           '[)'
         )
   ),
@@ -169,6 +179,8 @@ select ok(
   not exists (
     select 1
     from a5_slot_fixture as slot
+    join public.therapist_service_booking_settings as settings
+      on settings.service_id = 'd1000000-0000-4000-8000-000000000001'
     join public.booking_holds as hold
       on hold.therapist_profile_id =
         'c1000000-0000-4000-8000-000000000001'
@@ -176,8 +188,10 @@ select ok(
       and hold.expires_at > now()
       and hold.occupied_during
         && tstzrange(
-          slot.starts_at - interval '10 minutes',
-          slot.ends_at + interval '10 minutes',
+          slot.starts_at
+            - settings.buffer_before_minutes * interval '1 minute',
+          slot.ends_at
+            + settings.buffer_after_minutes * interval '1 minute',
           '[)'
         )
   ),

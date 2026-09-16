@@ -101,7 +101,7 @@ describe("patient encounters mapper", () => {
         "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
       paymentScheduled: true,
       status: "pending_payment",
-      statusLabel: "Cobrança programada",
+      statusLabel: "Reservado",
       primaryAction: {
         href: `/app/encontros/${booking.id}`,
         label: "Ver detalhes",
