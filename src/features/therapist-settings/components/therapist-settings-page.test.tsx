@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -159,6 +160,44 @@ describe("TherapistSettingsPage", () => {
       "md:grid-cols-[minmax(120px,152px)_minmax(0,1fr)_180px]",
     );
     expect(addressGrid).toContainElement(screen.getByLabelText("Endereço"));
+  });
+
+  it("does not present raw publication flags as public before eligibility is confirmed", () => {
+    const settings = settingsFixture();
+    settings.profile = {
+      ...settings.profile,
+      isPublic: true,
+      isPubliclyAvailable: false,
+      publicStatus: "published",
+      status: "submitted",
+    };
+
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settings}
+      />,
+    );
+
+    const privacySection = screen
+      .getByRole("heading", { name: "Privacidade e publicação" })
+      .closest("section");
+
+    expect(privacySection).not.toBeNull();
+    expect(
+      within(privacySection!).getByText("Aguardando aprovação"),
+    ).toBeInTheDocument();
+    expect(
+      within(privacySection!).getByText("Não visível ao público"),
+    ).toBeInTheDocument();
+    expect(
+      within(privacySection!).getByText("Ainda não recebendo sessões"),
+    ).toBeInTheDocument();
+    expect(
+      within(privacySection!).queryByRole("link", {
+        name: "Ver perfil público",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("saves edited account settings through the authenticated command", async () => {
@@ -517,6 +556,7 @@ function settingsFixture(): TherapistSettingsData {
     profile: {
       isAcceptingBookings: false,
       isPublic: false,
+      isPubliclyAvailable: false,
       plan: "premium_plus",
       profileId: "d1000000-0000-4000-8000-000000000001",
       publicName: "Ana Oliveira",

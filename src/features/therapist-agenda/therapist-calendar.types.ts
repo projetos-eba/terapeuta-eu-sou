@@ -82,6 +82,7 @@ export type TherapistCalendarReadModel = {
     pendingAttention: number;
   };
   therapistProfileId: string;
+  todayBookings: TherapistCalendarBooking[];
   timezone: string;
   view: TherapistCalendarView;
 };

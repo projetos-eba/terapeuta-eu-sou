@@ -90,6 +90,7 @@ describe("TherapistCalendar", () => {
   it("shows explicit empty operational states without inventing encounters", () => {
     const fixture = calendarFixture();
     fixture.bookings = [];
+    fixture.todayBookings = [];
     fixture.attentionItems = [];
 
     render(<TherapistCalendar data={fixture} />);
@@ -174,6 +175,32 @@ describe("TherapistCalendar", () => {
       .getByRole("heading", { name: "Sessões de hoje" })
       .closest("article");
     expect(todayCard).not.toBeNull();
+    expect(within(todayCard!).getByText("Beatriz Almeida")).toBeInTheDocument();
+  });
+
+  it("keeps today's operational sessions when the visible calendar moves to another week", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-27T15:00:00.000Z"));
+
+    const fixture = calendarFixture();
+    fixture.anchorDate = "2026-08-03";
+    fixture.bookings = [];
+    fixture.range = {
+      ...fixture.range,
+      end: "2026-08-10T03:00:00.000Z",
+      localEndExclusive: "2026-08-10",
+      localStart: "2026-08-03",
+      start: "2026-08-03T03:00:00.000Z",
+    };
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const todayCard = screen
+      .getByRole("heading", { name: "Sessões de hoje" })
+      .closest("article");
+
+    expect(todayCard).not.toBeNull();
+    expect(within(todayCard!).getByText("1 sessão(ões)")).toBeInTheDocument();
     expect(within(todayCard!).getByText("Beatriz Almeida")).toBeInTheDocument();
   });
 
@@ -293,12 +320,11 @@ describe("TherapistCalendar", () => {
     );
   });
 
-  it("constrains month bookings to the width of their day cell", () => {
+  it("shows therapy and exposes the session details in month bookings", () => {
     const fixture = calendarFixture();
     fixture.view = "month";
-    fixture.bookings[0]!.patientName =
-      "Paciente com nome suficientemente longo para exigir truncamento";
-    fixture.bookings[0]!.sessionReference = "26LONGREFERENCE";
+    fixture.bookings[0]!.therapyName =
+      "Terapia com nome suficientemente longo para exigir truncamento";
 
     render(<TherapistCalendar data={fixture} />);
 
@@ -306,18 +332,30 @@ describe("TherapistCalendar", () => {
     const monthBooking = document.querySelector(
       `[data-calendar-month-booking="${fixture.bookings[0]!.bookingId}"]`,
     );
-    const patientName = monthBooking?.children[1];
-    const sessionReference = monthBooking?.children[2];
+    const therapyName = monthBooking?.children[1];
+    const tooltip = screen.getByRole("tooltip");
 
-    expect(dayCell).toHaveClass("min-w-0", "overflow-hidden");
+    expect(dayCell).toHaveClass("min-w-0", "overflow-visible");
     expect(monthBooking).toHaveClass("w-full", "min-w-0", "overflow-hidden");
-    expect(patientName).toHaveClass("min-w-0", "flex-1", "truncate");
-    expect(sessionReference).toHaveClass("min-w-0", "max-w-20", "truncate");
+    expect(therapyName).toHaveClass("min-w-0", "flex-1", "truncate");
+    expect(monthBooking).toHaveAccessibleName(
+      /Sessão de Terapia com nome suficientemente longo para exigir truncamento: Beatriz Almeida, 09:00 – 09:50, Confirmada/,
+    );
+    expect(monthBooking).toHaveAttribute("aria-describedby", tooltip.id);
+    expect(tooltip).toHaveTextContent("Beatriz Almeida");
+    expect(tooltip).toHaveTextContent("09:00 – 09:50");
+    expect(tooltip).toHaveTextContent(
+      "Terapia: Terapia com nome suficientemente longo para exigir truncamento",
+    );
+    expect(tooltip).toHaveClass(
+      "group-hover:visible",
+      "group-focus-within:visible",
+    );
   });
 });
 
 function calendarFixture(): TherapistCalendarReadModel {
-  return {
+  const fixture = {
     anchorDate: "2026-07-27",
     attentionItems: [
       {
@@ -400,5 +438,7 @@ function calendarFixture(): TherapistCalendarReadModel {
     therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     timezone: "America/Sao_Paulo",
     view: "week",
-  };
+  } satisfies Omit<TherapistCalendarReadModel, "todayBookings">;
+
+  return { ...fixture, todayBookings: fixture.bookings };
 }

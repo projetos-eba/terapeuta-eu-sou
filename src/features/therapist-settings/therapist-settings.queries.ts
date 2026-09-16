@@ -52,14 +52,23 @@ export async function queryTherapistSettings({
   const profile = Array.isArray(profileValue)
     ? (profileValue[0] as Record<string, unknown> | undefined)
     : (profileValue as Record<string, unknown> | undefined);
-  const [identity, documentCenter] = await Promise.all([
-    profile?.id ? fetchPrivateIdentity({ accessToken, config }) : {},
-    profile?.id
+  const therapistProfileId =
+    typeof profile?.id === "string" ? profile.id : null;
+  const [identity, documentCenter, publicationEligibility] = await Promise.all([
+    therapistProfileId ? fetchPrivateIdentity({ accessToken, config }) : {},
+    therapistProfileId
       ? fetchPrivateDocumentCenter({ accessToken, config })
       : { documents: [], verificationStatus: "draft" },
+    therapistProfileId
+      ? fetchPublicationEligibility({
+          accessToken,
+          config,
+          therapistProfileId,
+        })
+      : false,
   ]);
 
-  return { ...row, documentCenter, identity };
+  return { ...row, documentCenter, identity, publicationEligibility };
 }
 
 export async function updateTherapistAccountSettings({
@@ -209,6 +218,37 @@ async function fetchPrivateIdentity({
   }
 
   return (await response.json().catch(() => ({}))) as unknown;
+}
+
+async function fetchPublicationEligibility({
+  accessToken,
+  config,
+  therapistProfileId,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  therapistProfileId: string;
+}) {
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/is_therapist_publication_eligible_v1`,
+    {
+      body: JSON.stringify({ p_therapist_profile_id: therapistProfileId }),
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401 || response.status === 403) {
+    throw new TherapistSettingsQueryError("forbidden");
+  }
+  if (!response.ok) throw new TherapistSettingsQueryError("unavailable");
+
+  return (await response.json().catch(() => false)) === true;
 }
 
 async function fetchPrivateDocumentCenter({

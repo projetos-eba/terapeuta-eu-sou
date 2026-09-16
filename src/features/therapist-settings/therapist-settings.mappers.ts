@@ -38,6 +38,7 @@ export function mapTherapistSettingsData(
     profile: {
       isAcceptingBookings: Boolean(profile.isAcceptingBookings),
       isPublic: Boolean(profile.isPublic),
+      isPubliclyAvailable: Boolean(value.publicationEligibility),
       plan: plan(profile.plan),
       profileId: requiredString(profile.id),
       publicName: stringOr(profile.publicName, ""),

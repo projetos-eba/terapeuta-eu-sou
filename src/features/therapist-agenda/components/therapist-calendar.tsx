@@ -141,6 +141,15 @@ export function TherapistCalendar({
     [data.range.localEndExclusive, data.range.localStart],
   );
   const todayKey = dateKeyForInstant(new Date().toISOString(), data.timezone);
+  const todayBookings = useMemo(
+    () =>
+      data.todayBookings.filter(
+        (booking) =>
+          booking.bookingStatus === BookingStatus.Confirmed &&
+          booking.financialStatus === SessionFinancialStatus.Paid,
+      ),
+    [data.todayBookings],
+  );
   const filteredBookings = useMemo(
     () =>
       data.bookings.filter((booking) =>
@@ -155,12 +164,6 @@ export function TherapistCalendar({
   const filteredBlocks = useMemo(
     () => data.blocks.filter((block) => matchesBlockFilters(block, filters)),
     [data.blocks, filters],
-  );
-  const todayBookings = data.bookings.filter(
-    (booking) =>
-      dateKeyForInstant(booking.startsAt, data.timezone) === todayKey &&
-      booking.bookingStatus === BookingStatus.Confirmed &&
-      booking.financialStatus === SessionFinancialStatus.Paid,
   );
   const periodLabel = formatPeriodLabel(data);
   const step = data.view === "day" ? 1 : data.view === "week" ? 7 : 42;
@@ -838,7 +841,7 @@ function MonthCalendar({
               );
               return (
                 <div
-                  className="min-h-[126px] min-w-0 overflow-hidden border-b border-r border-brand-lavender/60 p-2"
+                  className="min-h-[126px] min-w-0 overflow-visible border-b border-r border-brand-lavender/60 p-2"
                   data-calendar-day={day}
                   key={day}
                 >
@@ -859,27 +862,41 @@ function MonthCalendar({
                         presentation.state,
                         booking.financialStatus,
                       );
+                      const tooltipId = `month-booking-${booking.bookingId}-details`;
                       return (
-                        <button
-                          aria-label={`Sessão ${booking.sessionReference}: ${formatTime(booking.startsAt, timezone)}, ${booking.patientName}, ${presentation.label}`}
-                          className={`flex min-h-11 w-full min-w-0 items-center gap-1.5 overflow-hidden rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
-                          data-calendar-month-booking={booking.bookingId}
-                          data-session-state={presentation.state}
+                        <div
+                          className="group relative z-0 min-w-0 hover:z-30 focus-within:z-30"
                           key={booking.bookingId}
-                          onClick={() => onSelect(booking)}
-                          style={isClosed ? closedBookingPattern : undefined}
-                          type="button"
                         >
-                          <span className="shrink-0">
-                            {formatTime(booking.startsAt, timezone)}
+                          <button
+                            aria-describedby={tooltipId}
+                            aria-label={`Sessão de ${booking.therapyName}: ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}, ${presentation.label}`}
+                            className={`flex min-h-11 w-full min-w-0 items-center gap-1.5 overflow-hidden rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
+                            data-calendar-month-booking={booking.bookingId}
+                            data-session-state={presentation.state}
+                            onClick={() => onSelect(booking)}
+                            style={isClosed ? closedBookingPattern : undefined}
+                            type="button"
+                          >
+                            <span className="shrink-0">
+                              {formatTime(booking.startsAt, timezone)}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">
+                              {booking.therapyName}
+                            </span>
+                          </button>
+                          <span
+                            className="pointer-events-none invisible absolute left-0 top-full z-40 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border border-brand-lavender bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-tesText-secondary opacity-0 shadow-card transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                            id={tooltipId}
+                            role="tooltip"
+                          >
+                            <span className="block font-extrabold text-brand-deep">
+                              {booking.patientName}
+                            </span>
+                            <span className="block">{formatTimeRange(booking.startsAt, booking.endsAt, timezone)}</span>
+                            <span className="block">Terapia: {booking.therapyName}</span>
                           </span>
-                          <span className="min-w-0 flex-1 truncate">
-                            {booking.patientName}
-                          </span>
-                          <span className="ml-auto min-w-0 max-w-20 shrink truncate font-mono text-[10px] font-semibold opacity-80 md:text-[11px]">
-                            #{booking.sessionReference}
-                          </span>
-                        </button>
+                        </div>
                       );
                     })}
                     {dayBookings.length > 3 ? (

@@ -531,9 +531,7 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           icon={CheckCircle2}
           label="Perfil público"
-          value={
-            settings.profile.isPublic ? "Publicado" : "Ainda não publicado"
-          }
+          value={publicationStatusLabel(settings.profile)}
         />
         <ReadOnlyFact
           icon={CalendarDays}
@@ -547,17 +545,23 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           icon={ExternalLink}
           label="Visibilidade do perfil"
-          value={publicStatusLabel(settings.profile.publicStatus)}
+          value={
+            settings.profile.isPubliclyAvailable
+              ? "Visível para pessoas"
+              : "Não visível ao público"
+          }
         />
       </div>
       <AppPageActions>
-        <TESButton
-          className="rounded-lg"
-          href={settings.profile.publicUrl}
-          variant="secondary"
-        >
-          Ver perfil público
-        </TESButton>
+        {settings.profile.isPubliclyAvailable ? (
+          <TESButton
+            className="rounded-lg"
+            href={settings.profile.publicUrl}
+            variant="secondary"
+          >
+            Ver perfil público
+          </TESButton>
+        ) : null}
         <TESButton
           className="rounded-lg"
           href={routes.therapist.profileEdit}
@@ -657,9 +661,9 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           label="Perfil público"
           value={
-            settings.profile.isPublic
+            settings.profile.isPubliclyAvailable
               ? "Perfil publicado"
-              : "Ainda não publicado"
+              : publicationStatusLabel(settings.profile)
           }
         />
         <ReadOnlyFact
@@ -937,14 +941,15 @@ function profileStatusLabel(
   return labels[status];
 }
 
-function publicStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    archived: "Arquivado",
-    draft: "Rascunho",
-    published: "Publicado",
-    suspended: "Suspenso",
-    unpublished: "Despublicado",
-  };
-
-  return labels[status] ?? "Rascunho";
+function publicationStatusLabel(
+  profile: TherapistSettingsData["profile"],
+) {
+  if (profile.isPubliclyAvailable) return "Publicado";
+  if (profile.status === "submitted" || profile.status === "in_review") {
+    return "Aguardando aprovação";
+  }
+  if (profile.status === "changes_requested") return "Ajustes necessários";
+  if (profile.status === "rejected") return "Cadastro não aprovado";
+  if (profile.status === "suspended") return "Suspenso";
+  return "Ainda não publicado";
 }

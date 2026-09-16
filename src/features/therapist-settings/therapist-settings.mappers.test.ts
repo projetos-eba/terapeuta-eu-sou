@@ -16,6 +16,7 @@ describe("therapist settings mappers", () => {
         email: "ana@example.test",
         id: userId,
         phone: "+55 11 99999-9999",
+        publicationEligibility: true,
         therapistProfile: {
           id: profileId,
           isAcceptingBookings: true,
@@ -37,6 +38,7 @@ describe("therapist settings mappers", () => {
       profile: {
         isAcceptingBookings: true,
         isPublic: true,
+        isPubliclyAvailable: true,
         plan: "premium_plus",
         profileId,
         publicUrl: "/terapeutas/ana-oliveira",

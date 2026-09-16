@@ -40,15 +40,7 @@ export function parseTherapistCalendarReadModel(
     anchorDate: string(row.anchorDate),
     attentionItems: array(row.attentionItems).map(parseAttention),
     blocks: array(row.blocks).map(parseBlock),
-    bookings: array(row.bookings).map((item) => {
-      const booking = record(item);
-      return {
-        ...parseSessionReadModelItem(booking),
-        colorKey: color(booking.colorKey),
-        therapyId: string(booking.therapyId),
-        therapyName: string(booking.therapyName),
-      };
-    }),
+    bookings: array(row.bookings).map(parseBooking),
     contractVersion: version(row.contractVersion),
     demand: array(row.demand).map(parseDemand),
     holds: array(row.holds).map(parseHold),
@@ -66,8 +58,19 @@ export function parseTherapistCalendarReadModel(
       pendingAttention: number(summary.pendingAttention),
     },
     therapistProfileId: string(row.therapistProfileId),
+    todayBookings: array(row.todayBookings).map(parseBooking),
     timezone: string(row.timezone),
     view: view(row.view),
+  };
+}
+
+function parseBooking(value: unknown) {
+  const booking = record(value);
+  return {
+    ...parseSessionReadModelItem(booking),
+    colorKey: color(booking.colorKey),
+    therapyId: string(booking.therapyId),
+    therapyName: string(booking.therapyName),
   };
 }
 
