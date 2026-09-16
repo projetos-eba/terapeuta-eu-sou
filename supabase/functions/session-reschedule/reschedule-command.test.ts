@@ -80,20 +80,23 @@ Deno.test("validates booking-scoped availability", () => {
   });
 });
 
-Deno.test("routes only V10 patient reschedules through the pristine charge command", () => {
-  assertEquals(
-    resolvePatientRescheduleRpc("v10"),
-    "reschedule_uncharged_session_v10",
-  );
-  assertEquals(
-    resolvePatientRescheduleRpc("v9"),
-    "apply_patient_booking_reschedule_v1",
-  );
-  assertEquals(
-    resolvePatientRescheduleRpc(null),
-    "apply_patient_booking_reschedule_v1",
-  );
-});
+Deno.test(
+  "routes only V10 patient reschedules through the pristine charge command",
+  () => {
+    assertEquals(
+      resolvePatientRescheduleRpc("v10"),
+      "reschedule_uncharged_session_v10",
+    );
+    assertEquals(
+      resolvePatientRescheduleRpc("v9"),
+      "apply_patient_booking_reschedule_v1",
+    );
+    assertEquals(
+      resolvePatientRescheduleRpc(null),
+      "apply_patient_booking_reschedule_v1",
+    );
+  },
+);
 
 Deno.test("rejects invalid request payloads", () => {
   assertDomainError(() =>
@@ -102,7 +105,7 @@ Deno.test("rejects invalid request payloads", () => {
       bookingId,
       proposedStartsAt: "not-a-date",
       requestId,
-    })
+    }),
   );
 });
 
@@ -148,7 +151,7 @@ Deno.test("requires a slot only when the patient chooses rescheduling", () => {
       requestId,
       rescheduleRequestId,
       resolution: "reschedule",
-    })
+    }),
   );
 });
 
@@ -193,7 +196,39 @@ Deno.test("maps a therapist direct-apply attempt as forbidden", () => {
 
 Deno.test("maps a claimed V10 charge to the support-safe response", () => {
   const result = mapRescheduleDatabaseError(
-    new SupabaseHttpError(400, "SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT"),
+    new SupabaseHttpError(
+      400,
+      "SESSION_PRECHARGE_RESCHEDULE_V10_REQUIRES_SUPPORT",
+    ),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "reschedule_not_allowed");
+  assertEquals((result as DomainError).status, 409);
+});
+
+Deno.test(
+  "keeps therapist V10 actions fail-closed after a payment race",
+  () => {
+    const result = mapRescheduleDatabaseError(
+      new SupabaseHttpError(
+        400,
+        "SESSION_PRECHARGE_THERAPIST_CANCEL_V10_PAYMENT_CHANGED",
+      ),
+    );
+
+    assertEquals(result instanceof DomainError, true);
+    assertEquals((result as DomainError).code, "reschedule_not_allowed");
+    assertEquals((result as DomainError).status, 409);
+  },
+);
+
+Deno.test("keeps therapist V10 cancellation closed while a request is pending", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "SESSION_PRECHARGE_THERAPIST_CANCEL_V10_RESCHEDULE_PENDING",
+    ),
   );
 
   assertEquals(result instanceof DomainError, true);

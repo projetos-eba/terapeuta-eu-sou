@@ -10,12 +10,24 @@ type TherapistSessionPaymentStatus = {
 
 export function getTherapistSessionPaymentStatus({
   financialStatus,
+  now = new Date(),
   sessionState,
+  startsAt,
 }: {
   financialStatus: SessionFinancialStatus | null;
+  now?: Date;
   sessionState: SessionPresentation["state"];
+  startsAt?: string;
 }): TherapistSessionPaymentStatus {
-  if (sessionState === "reserved") {
+  const startsAtMs = startsAt ? Date.parse(startsAt) : Number.NaN;
+  const paymentScheduled =
+    sessionState === "reserved" ||
+    (sessionState === "reschedule_requested" &&
+      financialStatus === SessionFinancialStatus.Pending &&
+      Number.isFinite(startsAtMs) &&
+      startsAtMs - now.getTime() > 24 * 60 * 60_000);
+
+  if (paymentScheduled) {
     return {
       description: "A cobrança será realizada 24 horas antes da sessão.",
       label: "Agendado",
