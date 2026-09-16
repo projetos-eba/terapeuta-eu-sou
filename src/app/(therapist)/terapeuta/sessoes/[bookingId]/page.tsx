@@ -287,6 +287,7 @@ function SessionStatusStrip({
   const paymentStatus = getTherapistSessionPaymentStatus({
     financialStatus: booking.financialStatus,
     sessionState: presentation.state,
+    startsAt: booking.startsAt,
   });
   return (
     <section
