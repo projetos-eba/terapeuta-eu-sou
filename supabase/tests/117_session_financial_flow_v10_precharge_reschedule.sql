@@ -1,5 +1,5 @@
 begin;
-select plan(26);
+select plan(30);
 
 select ok(has_function_privilege('service_role',
   'public.reschedule_uncharged_session_v10(uuid,uuid,timestamptz,timestamptz,text,text,text,integer)',
@@ -37,7 +37,10 @@ insert into public.stripe_customers (
   'bbbbbbbb-0000-4000-8000-000000000010',
   'b1000000-0000-4000-8000-000000000010',
   'patient', 'test', 'cus_test_v10_117', 'patient@example.test', false
-);
+) on conflict (profile_id, role, environment) do update
+set stripe_customer_id = excluded.stripe_customer_id,
+    email = excluded.email,
+    livemode = excluded.livemode;
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -58,7 +61,9 @@ insert into public.bookings (
    'America/Sao_Paulo', 'draft', 'not_started', now());
 
 select public.prepare_session_payment_v10(id,
-  'b1170000-0000-4000-8000-000000000002')
+  (select id from public.stripe_customers
+   where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010'
+     and role = 'patient' and environment = 'test'))
 from public.bookings where id in (
   'b1170000-0000-4000-8000-000000000011',
   'b1170000-0000-4000-8000-000000000012');
@@ -232,6 +237,33 @@ select is((select count(*)::integer from public.session_payment_schedules
   where booking_id = 'b1170000-0000-4000-8000-000000000011'
     and status = 'superseded'), 1,
   'the superseded schedule can never be reclaimed');
+
+select is(public.record_session_payment_intent_v10(
+  (select id from public.session_payment_schedules
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'
+      and status = 'claimed'),
+  (select id from public.session_payments
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'),
+  'b1170000-0000-4000-8000-000000000011',
+  (select booking_version from public.session_payment_schedules
+    where booking_id = 'b1170000-0000-4000-8000-000000000011'
+      and status = 'claimed'),
+  'test', 'pi_test_v10_117_rescheduled', 'succeeded', 17000, 'brl',
+  'cus_test_v10_117', 'pm_test_v10_117_11', 'ch_test_v10_117_rescheduled',
+  'evt_test_v10_117_rescheduled', '2099-09-01 11:00:00+00'
+) ->> 'scheduleStatus', 'paid',
+  'a succeeded replacement charge records payment after a pre-charge reschedule');
+select is((select count(*)::integer from public.session_payment_schedules
+  where booking_id = 'b1170000-0000-4000-8000-000000000011'
+    and status = 'superseded'), 1,
+  'successful reconciliation preserves the superseded schedule as history');
+select is((select status from public.session_payment_schedules
+  where booking_id = 'b1170000-0000-4000-8000-000000000011'
+    and stripe_payment_intent_id = 'pi_test_v10_117_rescheduled'), 'paid',
+  'only the replacement schedule receives the provider payment identity');
+select is((select count(*)::integer from public.session_transfer_jobs
+  where booking_id = 'b1170000-0000-4000-8000-000000000011'), 1,
+  'the approved replacement charge enqueues exactly one direct Transfer job');
 
 update public.session_payment_schedules
 set status = 'claimed', attempt_count = 1,
