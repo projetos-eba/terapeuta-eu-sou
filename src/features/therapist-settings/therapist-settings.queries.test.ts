@@ -73,6 +73,10 @@ describe("queryTherapistSettings", () => {
     ).resolves.toMatchObject({
       displayName: "Ana Oliveira",
       therapistProfile: { id: therapistProfileId, plan: "premium" },
+      publication: {
+        isPubliclyVisible: true,
+        needsReceivingAccount: false,
+      },
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(4);

@@ -185,7 +185,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/botanico.png",
+    backgroundAsset: "/therapists/profile-themes/library/botanico-hero.png",
     description: "Formas naturais para uma apresentação orgânica.",
     id: "botanico",
     label: "Botânico",

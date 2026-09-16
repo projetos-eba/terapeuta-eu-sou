@@ -86,8 +86,19 @@ export function parseTherapistCalendarReadModel(
       pendingAttention: attentionItems.length,
     },
     therapistProfileId: string(row.therapistProfileId),
+    todayBookings: array(row.todayBookings).map(parseBooking),
     timezone: string(row.timezone),
     view: view(row.view),
+  };
+}
+
+function parseBooking(value: unknown) {
+  const booking = record(value);
+  return {
+    ...parseSessionReadModelItem(booking),
+    colorKey: color(booking.colorKey),
+    therapyId: string(booking.therapyId),
+    therapyName: string(booking.therapyName),
   };
 }
 

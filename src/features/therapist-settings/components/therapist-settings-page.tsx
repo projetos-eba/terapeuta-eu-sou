@@ -668,7 +668,7 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           label="Perfil público"
           value={
-            settings.profile.isPublic
+            settings.profile.publication.isPubliclyVisible
               ? "Perfil publicado"
               : "Ainda não publicado"
           }

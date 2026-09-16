@@ -41,6 +41,7 @@ describe("therapist settings mappers", () => {
       profile: {
         isAcceptingBookings: true,
         isPublic: true,
+        isPubliclyAvailable: true,
         plan: "premium_plus",
         profileId,
         publication: {

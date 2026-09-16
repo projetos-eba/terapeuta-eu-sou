@@ -66,7 +66,7 @@ describe("parseTherapistCalendarReadModel", () => {
 });
 
 function calendarPayload() {
-  return {
+  const payload = {
     anchorDate: "2026-07-27",
     attentionItems: [
       {
@@ -150,4 +150,6 @@ function calendarPayload() {
     timezone: "America/Sao_Paulo",
     view: "week",
   };
+
+  return { ...payload, todayBookings: payload.bookings };
 }

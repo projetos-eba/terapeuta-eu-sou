@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(9);
 
 set local role authenticated;
 select set_config(
@@ -27,6 +27,58 @@ select ok(
       and item ->> 'bookingStatus' = 'pending_payment'
   ),
   'a pending-payment booking remains visible in the calendar grid read model'
+);
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload from agenda_calendar_payload) -> 'todayBookings'
+    ) as booking(item)
+    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000001'
+      and item ->> 'bookingStatus' = 'confirmed'
+      and item ->> 'financialStatus' = 'paid'
+  ),
+  'todayBookings contains today confirmed paid sessions'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload from agenda_calendar_payload) -> 'todayBookings'
+    ) as booking(item)
+    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000005'
+  ),
+  'todayBookings excludes pending-payment reservations'
+);
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_therapist_calendar_v1(
+        (now() at time zone 'America/Sao_Paulo')::date + 7,
+        'week'
+      ) -> 'todayBookings'
+    ) as booking(item)
+    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'todayBookings remains populated after moving the visible calendar to next week'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_therapist_calendar_v1(
+        (now() at time zone 'America/Sao_Paulo')::date + 7,
+        'week'
+      ) -> 'bookings'
+    ) as booking(item)
+    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'the next-week grid remains scoped to its selected range'
 );
 
 select ok(

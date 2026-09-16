@@ -62,16 +62,17 @@ export async function queryTherapistSettings({
   const profile = Array.isArray(profileValue)
     ? (profileValue[0] as Record<string, unknown> | undefined)
     : (profileValue as Record<string, unknown> | undefined);
-  const [identity, documentCenter] = await Promise.all([
-    profile?.id ? fetchPrivateIdentity({ accessToken, config }) : {},
-    profile?.id
+  const therapistProfileId =
+    typeof profile?.id === "string" ? profile.id : null;
+  const [identity, documentCenter, publication] = await Promise.all([
+    therapistProfileId ? fetchPrivateIdentity({ accessToken, config }) : {},
+    therapistProfileId
       ? fetchPrivateDocumentCenter({ accessToken, config })
       : { documents: [], verificationStatus: "draft" },
+    therapistProfileId
+      ? fetchPrivatePublicationState({ accessToken, config })
+      : { isPubliclyVisible: false, needsReceivingAccount: false },
   ]);
-
-  const publication = profile?.id
-    ? await fetchPrivatePublicationState({ accessToken, config })
-    : { isPubliclyVisible: false, needsReceivingAccount: false };
 
   return { ...row, documentCenter, identity, publication };
 }

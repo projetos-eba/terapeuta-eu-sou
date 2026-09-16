@@ -73,6 +73,7 @@ function Hero({
             data-theme-hero-background={theme.id}
             fill
             priority
+            quality={85}
             sizes="100vw"
             src={theme.backgroundAsset ?? theme.heroBackgroundSrc ?? ""}
           />

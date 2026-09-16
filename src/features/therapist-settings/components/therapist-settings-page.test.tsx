@@ -546,6 +546,7 @@ function settingsFixture(): TherapistSettingsData {
     profile: {
       isAcceptingBookings: false,
       isPublic: false,
+      isPubliclyAvailable: false,
       plan: "premium_plus",
       profileId: "d1000000-0000-4000-8000-000000000001",
       publicName: "Ana Oliveira",

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -27,6 +27,27 @@ describe("public profile theme catalog", () => {
         );
       }
     }
+  });
+
+  it("keeps the botanical hero source wide enough for the public profile banner", () => {
+    const botanicalTheme = publicProfileThemes.find(
+      (theme) => theme.id === "botanico",
+    );
+
+    expect(botanicalTheme?.backgroundAsset).toBe(
+      "/therapists/profile-themes/library/botanico-hero.png",
+    );
+
+    const asset = readFileSync(
+      resolve(
+        process.cwd(),
+        "public",
+        botanicalTheme!.backgroundAsset!.slice(1),
+      ),
+    );
+
+    expect(asset.readUInt32BE(16)).toBeGreaterThanOrEqual(1920);
+    expect(asset.readUInt32BE(20)).toBeGreaterThanOrEqual(640);
   });
 
   it("applies entitlement consistently across current therapist plans", () => {
