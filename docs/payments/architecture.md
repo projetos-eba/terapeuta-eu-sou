@@ -155,8 +155,12 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   reserva, terapeuta, PaymentIntent, valor bruto e conta Stripe, além da Charge
   de origem e dos dados do job. A migration
   `20260917180000_restore_v10_transfer_claim_contract.sql` restaura esses
-  campos sem retirar os bloqueios por reembolso, disputa, contestação ou
-  decisão administrativa. Jobs que já falharam com
+  campos sem retirar os bloqueios por reembolso ou disputa real da cobrança.
+  Ocorrências, presença, confirmação e avaliação permanecem auditáveis, mas
+  não interrompem o Transfer V10. A migration
+  `20260917193000_decouple_v10_attendance_from_transfer.sql` aplica essa
+  separação também aos registros antigos sem reembolso ou disputa. Jobs que já
+  falharam com
   `session_transfer_claim_validation_failed` não são retomados automaticamente
   pela migration: após verificar individualmente que não houve preparo,
   Transfer, reembolso ou bloqueio, a operação pode usar a RPC restrita

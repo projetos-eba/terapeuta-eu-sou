@@ -1,6 +1,6 @@
 begin;
 
-select plan(74);
+select plan(75);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -442,6 +442,22 @@ select is(
   'idempotent confirmation leaves exactly one logical Transfer job'
 );
 
+update public.session_payments
+set admin_blocked_at = now(),
+    internal_contested_at = now(),
+    transfer_blocked_reason = 'participant_reported_not_performed'
+where id = 'b1140000-0000-4000-8000-000000000021';
+
+select ok(
+  (select admin_blocked_at is null
+      and internal_contested_at is null
+      and transfer_blocked_reason is null
+      and transfer_status = 'transfer_pending'
+   from public.session_payments
+   where id = 'b1140000-0000-4000-8000-000000000021'),
+  'attendance evidence is audited without blocking the V10 Transfer'
+);
+
 select is(
   (
     select count(*)::integer
@@ -477,7 +493,7 @@ select is(
 );
 
 update public.session_payments
-set admin_blocked_at = now()
+set refund_pending = true
 where id = 'b1140000-0000-4000-8000-000000000021';
 
 select is(
@@ -487,11 +503,11 @@ select is(
     1
   ) ->> 'resumed',
   'false',
-  'an administratively blocked payment cannot resume a failed Transfer'
+  'an explicit refund request prevents a failed Transfer from resuming'
 );
 
 update public.session_payments
-set admin_blocked_at = null
+set refund_pending = false
 where id = 'b1140000-0000-4000-8000-000000000021';
 
 select is(
@@ -501,7 +517,7 @@ select is(
     1
   ) ->> 'resumed',
   'true',
-  'the operator may resume an unprepared claim-validation failure'
+  'attendance evidence does not prevent an unprepared V10 claim from resuming'
 );
 
 select is(
