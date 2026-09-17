@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(7);
 
 insert into public.profiles (id, role, display_name)
@@ -182,6 +184,24 @@ where interest.is_active
   )
 order by interest.sort_order
 limit 1;
+
+do $$
+declare v_profile_id uuid;
+begin
+  foreach v_profile_id in array array[
+    'f9810000-0000-4000-8000-000000000001'::uuid,
+    'f9810000-0000-4000-8000-000000000002'::uuid,
+    'f9810000-0000-4000-8000-000000000003'::uuid,
+    'f9810000-0000-4000-8000-000000000004'::uuid
+  ] loop
+    perform pg_temp.prepare_public_profile(v_profile_id);
+    insert into public.availability_rules
+      (therapist_profile_id, service_id, day_of_week, start_time, end_time, timezone, is_active)
+    select v_profile_id, service.id, 1, '08:00', '18:00', 'America/Sao_Paulo', true
+    from public.therapist_services service
+    where service.therapist_profile_id = v_profile_id and service.status = 'active';
+  end loop;
+end $$;
 
 select is(
   public.get_public_therapy_therapists_v1(

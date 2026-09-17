@@ -123,3 +123,138 @@ as regras de negócio ou reduzir assertions apenas para obter uma suíte verde.
    aprovação de produção apenas pelo sucesso de checkout ou status de Function.
 
 Nenhum novo evento Stripe é necessário para esta correção de persistência SQL.
+
+## Reteste após o PR — persistência e reconciliação em HML
+
+O PR manual posterior publicou a migration `20260917213000`. O novo dry-run
+remoto retornou `upToDate: true`, sem alterações aplicadas pelo agente. Foram
+baixados novamente o reconciliador e suas oito dependências, por API, em
+diretório `.codex-*` ignorado: **9 correspondências, zero divergências** após
+normalização apenas de finais de linha e espaços finais do arquivo.
+
+A reconciliação do estado existente persistiu a primeira observação pendente:
+`balanceAvailabilityKnown: true` e `balanceStatus: pending`. O observador
+sanitizado confirmou pagamento pago, exatamente um Transfer registrado,
+destino, valor e cobrança de origem corretos, uma tentativa paga e um webhook
+processado uma vez, sem erro ou entregas pendentes. Não foi recriado Transfer.
+
+O job ainda está `pending_source`, mas isso não representa ausência do repasse:
+o pagamento e o Transfer já estão `transferred`. A leitura da Stripe Test
+confirma disponibilidade do valor na conta conectada em
+**23/09/2026 às 00:00 UTC (22/09 às 21h de Brasília)**. O observador bancário
+retornou `waiting_transfer_availability`, zero alocações para esse Transfer e
+zero Payouts automáticos posteriores à sua disponibilidade. A conta tem agenda
+diária habilitada. Payouts históricos pagos não comprovam este canário.
+
+No IAB, cliente e administrador foram recarregados no deploy HML atual:
+
+- cliente: pagamento confirmado, independentemente da análise do atendimento;
+- administrador: Transfer único de R$ 102,00, sem reembolso e botão de
+  reembolso integral ativo; modal de R$ 120,00 exige motivo e foi fechado
+  sem confirmar a operação;
+- logs Postgres: ao atualizar às 19:12 de Brasília, o filtro de erros das últimas
+  três horas ainda mostrava somente as cinco consultas `mgmt-api` incorretas
+  documentadas acima; nenhum registro posterior ao das 17:07:09 foi observado.
+
+O acompanhamento diário existente foi atualizado, sem criar automação
+duplicada. Ele continua somente leitura, silencioso enquanto não houver mudança
+relevante, e inclui o job deste encontro e o canário agendado de 15/09. Não
+autoriza cobrança, Transfer, reembolso, deploy ou encerramento sem evidências.
+
+## Gate SQL global — resolvido localmente
+
+As execuções integrais, serializadas no Docker preservado, evoluíram de
+35 arquivos com falha/aborto para 20, 8, 4 e finalmente **zero**. A primeira
+execução verde teve `Files=163, Tests=3160, Result: PASS`. Após acrescentar três
+assertions de regressão, a repetição terminou com
+**`Files=163, Tests=3163, Result: PASS`**, em 33 segundos.
+
+As correções desta rodada estão somente em testes, dois includes de fixtures e
+este registro. Nenhum contrato da aplicação, migration, Function, política
+financeira ou dado HML foi alterado para fazer os testes passarem.
+
+Preparação e isolamento corrigidos:
+
+- requisitos atuais de publicação (perfil, foto, conteúdo/guia e conta de
+  recebimento) satisfeitos em fixtures transacionais, sem relaxar o predicado;
+- disponibilidade de serviço explicitamente vinculada a `service_id`;
+- horários históricos, criação efetiva da tentativa e entradas confiáveis de
+  paciente/terapeuta alinhados, sem desligar proteções de tentativa ou época;
+- cenários manuais isolados dos momentos em que o scheduler pode confirmar
+  automaticamente o mesmo fixture;
+- comandos de publicação testados com payload completo e perfil determinístico;
+- chave de notificações e booking/request usados em contagens, não todo o
+  histórico persistido no banco local;
+- fixture captura o identificador de verificação antes de mudar para o papel
+  autenticado; nenhuma permissão privada foi ampliada;
+- apenas views pertencentes à extensão **pgTAP** ficam fora da auditoria de
+  grants das views de aplicação; demais extensões e views continuam auditadas;
+- o teste de consistência de configurações de serviço cobre o conjunto
+  canônico do seed, não os serviços inseridos diretamente por testes manuais
+  antigos. Isso não atesta esses dados manuais. Separadamente, a leitura HML
+  observou 30 serviços ativos e **zero** sem configurações de reserva;
+- a proteção de encerramento de sala reconhece tanto `pending` quanto
+  `pending_admin_review`, como o contrato vigente exige.
+
+Contratos antigos atualizados em `075`, `076`, `089`, `105`, `113` e `120`:
+
+- avaliação privada de qualidade usa o contrato atual, vinculado à tentativa;
+- opiniões diferentes não constituem divergência de presença;
+- avaliação não substitui confirmação manual nem cria bloqueio financeiro;
+- prazos operacionais de confirmação são sete dias para paciente e trinta
+  para terapeuta, independentes do snapshot financeiro histórico;
+- resposta pública ao solicitante atende a revisão privada; não recalcula
+  pagamento ou Transfer;
+- cobertura de compatibilidade financeira antiga permanece explícita, com
+  pagamento legado e comando legado, sem atribuir esses efeitos à confirmação
+  operacional atual ou à V10;
+- auditoria histórica imutável, validação, idempotência, conflito de payload,
+  autorização e privacidade continuam verificadas;
+- assertion nova prova que o writer antigo falha fechado com
+  `FEEDBACK_CONTRACT_VERSION_REQUIRED`;
+- duas assertions novas comparam **todo o registro** do pagamento V10 antes e
+  depois da avaliação negativa e da resposta TES: nenhum campo, flag de
+  bloqueio ou metadata financeira foi alterado.
+
+Todos os includes são carregados após `BEGIN`; os arquivos terminam com
+`ROLLBACK`. O Docker permaneceu saudável, sem reset ou exclusão de volumes;
+dry-run local retornou `upToDate: true`, cron local ativo permaneceu **zero** e
+o lint validou **340 migrations com versões únicas**. Foram acompanhados CPU
+dos containers e RAM antes/durante/depois das rodadas; havia aproximadamente
+2,1–2,3 GiB livres nas repetições finais. Não foram executados build ou outras
+cargas pesadas paralelas.
+
+## Higiene e próximos gates atualizados
+
+O `.gitignore` já cobre `.codex-*`. Foi encontrado um dump de diagnóstico
+anterior já rastreado: `.codex-hml-public-schema.sql`. Ele foi retirado **somente
+do índice Git**, mantendo a cópia local; a exclusão do versionamento está
+preparada para o próximo PR manual. Nenhum outro arquivo foi staged, nenhum
+commit, push ou PR foi realizado. A auditoria subsequente não encontrou outro
+artefato `.codex-*` rastreado.
+
+O gate da suíte SQL completa está fechado para esta revisão local. A Fase 7
+**não** está fechada e a aprovação de produção continua pendente de:
+
+1. confirmação do Payout relevante, alocação e reconciliação dos canários,
+   após a disponibilidade real informada pela Stripe;
+2. comprovação de drenagem segura das obrigações V9 remanescentes, sem
+   conversão, duplicação ou perda;
+3. observação de estabilização e fechamento dos demais critérios do plano,
+   incluindo os ainda não comprovados; autorização de produção é separada.
+
+Na leitura agregada V9 desta rodada foram observados 282 pagamentos legados:
+107 cancelados, 24 reembolsados, três falhos e 148 marcados pagos. Destes pagos,
+13 estão `transferred`; as outras **135 posições** estão em
+`waiting_confirmation` (73), `blocked` (44), `eligible` (16), `failed` (uma) e
+`waiting_settlement` (uma). Dessas 135, 134 têm identificadores de cobrança e
+PaymentIntent preenchidos, e uma não tem esses vínculos. Isso é inventário de
+estado HML, **não** validação individual dos objetos Stripe ou prova de dívida
+efetiva: fixtures antigos precisam ser distinguidos de obrigações reais por
+reconciliação. Não é seguro converter essas linhas para V10, apagar histórico,
+remover bloqueios ou disparar 135 repasses com base somente nessa contagem.
+Nenhuma dessas operações foi realizada; a drenagem V9 não foi declarada concluída.
+
+Estas alterações de testes/documentação aguardam PR manual. Nenhum teste de
+envio real de e-mail, novo reembolso ou novo evento Stripe foi necessário nesta
+rodada. Produção permaneceu intocada.

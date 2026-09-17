@@ -169,6 +169,16 @@ delete from public.booking_events
 where booking_id = (select id from target_booking)
   and event_type = 'zoom_waiting_room_entered';
 
+-- Create the effective attempt before inserting its evidence: moving the
+-- booking afterwards would correctly leave the join on a historical attempt.
+update public.bookings
+set starts_at = now() - interval '10 minutes 1 millisecond',
+    ends_at = now() + interval '40 minutes', version = 73
+where id = (select id from target_booking);
+update public.booking_session_attempts
+set created_at = now() - interval '1 day'
+where id = public.current_session_attempt_id_v1((select id from target_booking));
+
 insert into public.video_session_participations (
   video_session_id, booking_id, participant_correlation_key,
   participant_role, event_type, joined_at, metadata

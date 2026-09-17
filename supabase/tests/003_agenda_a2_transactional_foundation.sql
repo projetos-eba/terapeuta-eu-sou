@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(43);
 
 -- Keep this foundational test independent from the mutable local publication

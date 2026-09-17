@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(8);
 
 create temporary table payment_failure_test_window on commit drop as

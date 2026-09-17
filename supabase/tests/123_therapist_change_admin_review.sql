@@ -90,7 +90,7 @@ select is(
 
 select ok(
   position(
-    'request.status = ''pending''' in pg_get_functiondef(
+    'request.status in (''pending'', ''pending_admin_review'')' in pg_get_functiondef(
       'public.reserve_video_session_control_jobs_v1(text,integer,integer)'::regprocedure
     )
   ) > 0,

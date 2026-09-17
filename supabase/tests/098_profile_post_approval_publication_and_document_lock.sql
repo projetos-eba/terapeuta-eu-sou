@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(15);
 
 select has_function(
@@ -116,6 +118,7 @@ select lives_ok(
         'shortIntro', 'Uma apresentação completa para a primeira análise administrativa.',
         'essenceBody', 'Cuidado online com presença, clareza e responsabilidade.',
         'bio', 'Atendimento online com linguagem clara e responsável.',
+        'photoUrl', '/images/avatar-terapeuta.jpeg',
         'guideItems', jsonb_build_array(jsonb_build_object('icon', 'sparkles', 'label', 'Escuta acolhedora')),
         'reflections', '[]'::jsonb
       )
@@ -171,6 +174,7 @@ select lives_ok(
       (select profile_version from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001'),
       jsonb_build_object(
         'publicName', 'Ana Oliveira Atualizada',
+        'photoUrl', '/images/avatar-terapeuta.jpeg',
         'shortIntro', 'Uma apresentação atualizada após a aprovação inicial.',
         'essenceBody', 'Cuidado online com presença, clareza e responsabilidade.',
         'bio', 'Atendimento online com linguagem clara e responsável.',
