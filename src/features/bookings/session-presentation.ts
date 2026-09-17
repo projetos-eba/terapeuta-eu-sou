@@ -147,8 +147,10 @@ export function mapSessionPresentation(
     );
   }
 
-  if (session.attendanceStatus === AttendanceStatus.BothNoShow ||
-      session.bookingStatus === BookingStatus.NoShowBoth) {
+  if (
+    session.attendanceStatus === AttendanceStatus.BothNoShow ||
+    session.bookingStatus === BookingStatus.NoShowBoth
+  ) {
     return presentation(
       "cancelled",
       "Sessão não realizada",
@@ -170,12 +172,14 @@ export function mapSessionPresentation(
     );
   }
 
-  if (session.attendanceStatus === AttendanceStatus.TherapistNoShow ||
-      session.bookingStatus === BookingStatus.NoShowTherapist) {
+  if (
+    session.attendanceStatus === AttendanceStatus.TherapistNoShow ||
+    session.bookingStatus === BookingStatus.NoShowTherapist
+  ) {
     return presentation(
       "cancelled",
       "Sessão não realizada — terapeuta não compareceu",
-      "O TES analisará a ocorrência em até 5 dias corridos. Um eventual reembolso integral depende de autorização do Admin; não há reagendamento por ausência do terapeuta.",
+      "O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.",
       "critical",
       "danger",
       actions,
@@ -386,7 +390,8 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
     [ZoomAccessReason.TooLate]: "Janela de acesso encerrada",
     [ZoomAccessReason.SessionEnded]: "Sessão encerrada",
     [ZoomAccessReason.ArrivalWindowExpired]: "Prazo de chegada encerrado",
-    [ZoomAccessReason.TherapistArrivalWindowExpired]: "Terapeuta não compareceu",
+    [ZoomAccessReason.TherapistArrivalWindowExpired]:
+      "Terapeuta não compareceu",
     [ZoomAccessReason.BothNoShow]: "Encontro não realizado",
     [ZoomAccessReason.TechnicalUnavailable]: "Vídeo indisponível no momento",
     [ZoomAccessReason.Unknown]: "Acesso indisponível",

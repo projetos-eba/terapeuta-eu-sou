@@ -27,6 +27,7 @@ export type EmailActionKey =
   | "booking_rescheduled_therapist"
   | "booking_reschedule_requested_patient"
   | "booking_reschedule_requested_therapist"
+  | "booking_therapist_reschedule_requested_patient"
   | "booking_reschedule_rejected_patient"
   | "booking_reschedule_rejected_therapist"
   | "booking_reschedule_withdrawn_patient"

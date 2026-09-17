@@ -209,7 +209,7 @@ select is(
       where incident.booking_id = 'f2000000-0000-4000-8000-000000000002'
       order by incident.booking_version desc limit 1
     )),
-  'O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.',
+  'O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.',
   'the double no-show notification is neutral for the patient'
 );
 
@@ -221,7 +221,7 @@ select is(
       where incident.booking_id = 'f2000000-0000-4000-8000-000000000002'
       order by incident.booking_version desc limit 1
     )),
-  'O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.',
+  'O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.',
   'the double no-show notification is neutral for the therapist'
 );
 

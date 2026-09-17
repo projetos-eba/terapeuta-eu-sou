@@ -485,6 +485,7 @@ function isBookingAction(actionKey: EmailActionKey) {
     "booking_rescheduled_therapist",
     "booking_reschedule_requested_patient",
     "booking_reschedule_requested_therapist",
+    "booking_therapist_reschedule_requested_patient",
     "booking_reschedule_rejected_patient",
     "booking_reschedule_rejected_therapist",
     "booking_reschedule_withdrawn_patient",
@@ -607,8 +608,8 @@ async function loadRescheduleTiming(
   }
   const [request] = await client.get<
     Array<{
-      proposed_starts_at: string;
-      proposed_timezone: string;
+      proposed_starts_at: string | null;
+      proposed_timezone: string | null;
     }>
   >(
     `/rest/v1/booking_reschedule_requests?select=proposed_starts_at,proposed_timezone&id=eq.${encodeURIComponent(requestId)}&limit=1`,

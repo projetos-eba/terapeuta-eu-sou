@@ -137,11 +137,12 @@ export function getPatientEncounterPresentationState({
         waitingRoom.kind !== "both_no_show" &&
         waitingRoom.kind !== "operational_unavailable",
       title:
-        waitingRoom.kind === "therapist_no_show" || waitingRoom.kind === "both_no_show"
+        waitingRoom.kind === "therapist_no_show" ||
+        waitingRoom.kind === "both_no_show"
           ? "Acompanhe a análise do encontro"
           : payment.kind === "confirmed" || payment.kind === "scheduled"
-          ? "Prepare seu encontro"
-          : "Confirme o pagamento para preparar a sala",
+            ? "Prepare seu encontro"
+            : "Confirme o pagamento para preparar a sala",
     },
     waitingRoom,
   };
@@ -160,15 +161,17 @@ function getPaymentState({
   paymentFlowVersion: string;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
-  if (financialStatus === SessionFinancialStatus.Paid &&
-      (bookingStatus === BookingStatus.NoShowTherapist ||
-        bookingStatus === BookingStatus.NoShowBoth)) {
+  if (
+    financialStatus === SessionFinancialStatus.Paid &&
+    (bookingStatus === BookingStatus.NoShowTherapist ||
+      bookingStatus === BookingStatus.NoShowBoth)
+  ) {
     return {
       kind: "confirmed",
       message:
         bookingStatus === BookingStatus.NoShowBoth
           ? "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
-          : "O pagamento foi confirmado. O encontro não foi realizado e está em análise pelo TES; um eventual reembolso integral depende de autorização do Admin.",
+          : "O encontro não foi realizado e está em análise pelo TES. Avisaremos você sobre o resultado.",
       retryAllowed: false,
       slotState: "review",
       title: "Pagamento confirmado",
@@ -338,7 +341,8 @@ function getWaitingRoomState({
   if (bookingStatus === BookingStatus.NoShowTherapist) {
     return {
       kind: "therapist_no_show",
-      message: "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
+      message:
+        "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
       title: "Encontro não realizado",
     };
   }
@@ -419,7 +423,8 @@ function getWaitingRoomState({
     return {
       kind: "therapist_no_show",
       title: "Encontro não realizado",
-      message: "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
+      message:
+        "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
     };
   }
 
@@ -538,7 +543,10 @@ function getActions(
     return [...actions];
   }
 
-  if (waitingRoomKind === "therapist_no_show" || waitingRoomKind === "both_no_show") {
+  if (
+    waitingRoomKind === "therapist_no_show" ||
+    waitingRoomKind === "both_no_show"
+  ) {
     return ["contact_support"];
   }
 
@@ -623,8 +631,7 @@ export function getZoomWaitingRoomStatusFromAccess(
   if (access.reason === ZoomAccessReason.TooEarly) return "too_early";
   if (access.reason === ZoomAccessReason.TherapistArrivalWindowExpired)
     return "therapist_no_show";
-  if (access.reason === ZoomAccessReason.BothNoShow)
-    return "both_no_show";
+  if (access.reason === ZoomAccessReason.BothNoShow) return "both_no_show";
   if (
     access.reason === ZoomAccessReason.SessionEnded ||
     access.videoSessionStatus === ZoomVideoSessionStatus.Ended ||
@@ -660,7 +667,11 @@ export function getZoomRecoveryActionLabels(
 ) {
   const base = ["Tentar novamente", "Revisar permissões", "Verificar conexão"];
 
-  if (kind === "therapist_absent_prolonged" || kind === "therapist_no_show" || kind === "both_no_show") {
+  if (
+    kind === "therapist_absent_prolonged" ||
+    kind === "therapist_no_show" ||
+    kind === "both_no_show"
+  ) {
     return [...base, "Copiar referência", "Falar com suporte"];
   }
 

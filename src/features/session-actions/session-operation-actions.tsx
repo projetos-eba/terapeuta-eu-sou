@@ -111,28 +111,28 @@ export function SessionOperationActions({
           ? "/api/session/reschedule"
           : "/api/session/cancel",
         {
-        body: JSON.stringify({
-          ...(actorRole === "therapist"
-            ? {
-                actorRole,
-                command: {
-                  action: "therapist_change",
+          body: JSON.stringify({
+            ...(actorRole === "therapist"
+              ? {
+                  actorRole,
+                  command: {
+                    action: "therapist_change",
+                    bookingId,
+                    expectedBookingVersion: bookingVersion,
+                    kind: "cancellation",
+                    reason: reason || null,
+                    requestId,
+                  },
+                }
+              : {
+                  actorRole,
                   bookingId,
-                  expectedBookingVersion: bookingVersion,
-                  kind: "cancellation",
-                  reason: reason || null,
+                  userReason: reason || undefined,
                   requestId,
-                },
-              }
-            : {
-                actorRole,
-                bookingId,
-                userReason: reason || undefined,
-                requestId,
-              }),
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
+                }),
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         },
       );
       const payload = (await response.json().catch(() => null)) as
@@ -188,7 +188,9 @@ export function SessionOperationActions({
                 action: "request",
                 bookingId,
                 expectedBookingVersion: bookingVersion,
-                proposedStartsAt: new Date(input.proposedStartsAt!).toISOString(),
+                proposedStartsAt: new Date(
+                  input.proposedStartsAt!,
+                ).toISOString(),
                 reason: input.reason || null,
                 requestId,
               },
@@ -308,7 +310,10 @@ export function SessionOperationActions({
       method: "POST",
     }).catch(() => null);
     const payload = response
-      ? ((await response.json().catch(() => null)) as ApiFailure | { ok: true } | null)
+      ? ((await response.json().catch(() => null)) as
+          | ApiFailure
+          | { ok: true }
+          | null)
       : null;
     if (!response || !response.ok || payload?.ok !== true) {
       setError(
@@ -341,6 +346,7 @@ export function SessionOperationActions({
 
       {pendingReschedule ? (
         <PendingReschedulePanel
+          actorRole={actorRole}
           canCancelPending={canCancelPending}
           canResolvePending={canResolvePending}
           isSubmitting={isSubmitting}
@@ -409,7 +415,9 @@ export function SessionOperationActions({
           type="button"
         >
           <CircleX aria-hidden="true" size={18} />
-          {actorRole === "therapist" ? "Solicitar cancelamento" : `Cancelar ${userFacingSubject}`}
+          {actorRole === "therapist"
+            ? "Solicitar cancelamento"
+            : `Cancelar ${userFacingSubject}`}
         </button>
       </div>
       {!canRequestReschedule && rescheduleDisabledReason ? (
@@ -471,7 +479,10 @@ export function SessionOperationActions({
           onClose={() => setDialog(null)}
           onSubmitCancel={submitCancel}
           onSubmitReschedule={(input) =>
-            resolveTherapistChange("reschedule", input.proposedStartsAt ?? undefined)
+            resolveTherapistChange(
+              "reschedule",
+              input.proposedStartsAt ?? undefined,
+            )
           }
         />
       ) : null}
@@ -480,6 +491,7 @@ export function SessionOperationActions({
 }
 
 function PendingReschedulePanel({
+  actorRole,
   canCancelPending,
   canResolvePending,
   isSubmitting,
@@ -488,14 +500,13 @@ function PendingReschedulePanel({
   onResolveTherapistChange,
   reschedule,
 }: {
+  actorRole: ActorRole;
   canCancelPending: boolean;
   canResolvePending: boolean;
   isSubmitting: boolean;
   onOpenTherapistReschedule: () => void;
   onResolve: (resolution: "accepted" | "cancelled" | "rejected") => void;
-  onResolveTherapistChange: (
-    resolution: "refund" | "reschedule",
-  ) => void;
+  onResolveTherapistChange: (resolution: "refund" | "reschedule") => void;
   reschedule: NonNullable<RescheduleState>;
 }) {
   if (reschedule.status === "pending_admin_review") {
@@ -505,7 +516,8 @@ function PendingReschedulePanel({
           Reembolso em análise pelo TES
         </p>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          O encontro foi encerrado e nossa equipe está verificando a solução financeira.
+          O encontro foi encerrado e nossa equipe está verificando a solução
+          financeira.
         </p>
       </div>
     );
@@ -514,20 +526,32 @@ function PendingReschedulePanel({
   const therapistChange =
     reschedule.kind === "therapist_reschedule" ||
     reschedule.kind === "therapist_cancellation";
+  const therapistRequestedThisChange =
+    therapistChange &&
+    actorRole === "therapist" &&
+    reschedule.requestedByCurrentUser;
+  const panelTitle = therapistRequestedThisChange
+    ? reschedule.kind === "therapist_cancellation"
+      ? "Solicitação de cancelamento enviada"
+      : "Solicitação de reagendamento enviada"
+    : "Proposta de reagendamento em aberto";
+  const panelMessage = therapistRequestedThisChange
+    ? reschedule.kind === "therapist_cancellation"
+      ? "A pessoa atendida pode confirmar o cancelamento desta sessão."
+      : "A pessoa atendida pode escolher outro horário ou cancelar a sessão."
+    : therapistChange
+      ? reschedule.kind === "therapist_cancellation"
+        ? "Seu terapeuta solicitou o cancelamento deste encontro."
+        : "Seu terapeuta pediu que você escolha outro horário."
+      : reschedule.proposedStartsAt
+        ? `Novo horário sugerido: ${formatDateTime(reschedule.proposedStartsAt, reschedule.proposedTimezone)}`
+        : "Aguardando definição do próximo passo.";
 
   return (
     <div className="mt-5 rounded-xl border border-status-warning/30 bg-status-warningBg p-4">
-      <p className="text-sm font-extrabold text-brand-deep">
-        Proposta de reagendamento em aberto
-      </p>
+      <p className="text-sm font-extrabold text-brand-deep">{panelTitle}</p>
       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-        {therapistChange
-          ? reschedule.kind === "therapist_cancellation"
-            ? "Seu terapeuta solicitou o cancelamento deste encontro."
-            : "Seu terapeuta pediu que você escolha outro horário."
-          : reschedule.proposedStartsAt
-            ? `Novo horário sugerido: ${formatDateTime(reschedule.proposedStartsAt, reschedule.proposedTimezone)}`
-            : "Aguardando definição do próximo passo."}
+        {panelMessage}
       </p>
       {reschedule.reason ? (
         <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">

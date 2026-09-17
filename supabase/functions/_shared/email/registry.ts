@@ -189,6 +189,53 @@ function bookingRescheduleLifecycleEntry(input: {
   };
 }
 
+function therapistRescheduleRequestPatientEntry(): EmailActionRegistryEntry {
+  return {
+    actionKey: "booking_therapist_reschedule_requested_patient",
+    adminConfigurable: true,
+    allowedTokens: bookingTokens,
+    category: "Encontros",
+    currentTemplateVersion: "v1",
+    defaults: {
+      html: defaultEmailHtml({
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu terapeuta pediu que você escolha um novo horário para o encontro.",
+          ),
+          emailDetailList([
+            ["Outra parte", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Horário atual", "{{meeting_date_time}} ({{meeting_timezone}})"],
+          ]),
+          accountParagraph(
+            "O horário atual permanece confirmado até que você escolha outro horário.",
+          ),
+        ].join(""),
+        ctaLabel: "Escolher outro horário",
+        ctaUrlToken: "encounter_url",
+        title: "Escolha um novo horário",
+      }),
+      preheader:
+        "Seu terapeuta pediu que você escolha um novo horário para o encontro.",
+      subject: "Escolha um novo horário para seu encontro",
+      text: "Escolha um novo horário\n\nOlá, {{recipient_name}}.\n\nSeu terapeuta pediu que você escolha um novo horário para o encontro.\n\nOutra parte: {{counterparty_name}}\nTerapia: {{service_title}}\nHorário atual: {{meeting_date_time}} ({{meeting_timezone}})\n\nO horário atual permanece confirmado até que você escolha outro horário.\n\nEquipe TES\n\nEscolher outro horário: {{encounter_url}}",
+    },
+    description:
+      "Pede que a pessoa escolha um novo horário após uma solicitação do terapeuta.",
+    label: "Escolher novo horário — pessoa",
+    previewFixture: {
+      counterparty_name: "Terapeuta de exemplo",
+      encounter_url: "https://example.test/encontros/exemplo",
+      meeting_date_time: "21 de agosto de 2026 às 16:00",
+      meeting_timezone: "America/Sao_Paulo",
+      recipient_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+    },
+    supportsAutomaticDispatch: true,
+  };
+}
+
 export const emailActionRegistry: Record<
   EmailActionKey,
   EmailActionRegistryEntry
@@ -1236,6 +1283,8 @@ export const emailActionRegistry: Record<
     subject: "Você recebeu uma proposta de novo horário",
     title: "Nova proposta de reagendamento",
   }),
+  booking_therapist_reschedule_requested_patient:
+    therapistRescheduleRequestPatientEntry(),
   booking_reschedule_requested_therapist: bookingRescheduleLifecycleEntry({
     actionKey: "booking_reschedule_requested_therapist",
     description: "Avisa a terapeuta sobre uma proposta de novo horário.",

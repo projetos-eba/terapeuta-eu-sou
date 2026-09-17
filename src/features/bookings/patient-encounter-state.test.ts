@@ -78,7 +78,10 @@ describe("getPatientEncounterPresentationState", () => {
     expect(state.payment.title).toBe("Pagamento confirmado");
     expect(state.payment.message).not.toContain("bloqueado");
     expect(state.payment.message).not.toContain("reagendamento");
-    expect(state.waitingRoom.message).toContain("Não houve confirmação de atendimento");
+    expect(state.payment.message).not.toMatch(/Admin|reembolso|repasse/i);
+    expect(state.waitingRoom.message).toContain(
+      "Não houve confirmação de atendimento",
+    );
     expect(state.actions).not.toContain("join_zoom");
     expect(state.actions).toContain("contact_support");
   });
