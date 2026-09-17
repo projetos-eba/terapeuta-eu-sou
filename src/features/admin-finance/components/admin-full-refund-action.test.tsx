@@ -22,9 +22,11 @@ describe("admin full-session refund action", () => {
     expect(screen.queryByRole("button", { name: "Solicitar reembolso integral" })).toBeNull();
   });
 
-  it("does not expose a financial action when the case is unavailable", () => {
-    const { container } = render(<AdminFullRefundAction paymentId="payment" amount="R$ 100,00"
+  it("explains an unavailable case without exposing a financial action", () => {
+    render(<AdminFullRefundAction paymentId="payment" amount="R$ 100,00"
       status={{ available: false, state: "unavailable" }} />);
-    expect(container.textContent).toBe("");
+    expect(screen.getByText("Apoio ao cliente")).toBeTruthy();
+    expect(screen.getByText(/não está disponível para uma solicitação/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Solicitar reembolso integral" })).toBeNull();
   });
 });

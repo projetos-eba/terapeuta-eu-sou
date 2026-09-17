@@ -262,6 +262,7 @@ function PaymentIndicatorCard({ metric }: { metric: AdminFinanceMetric }) {
 
 function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
   const fields = fieldMap(row.fields);
+  const canOpenRefundReview = isRefundReviewAvailable(row, fields);
 
   return (
     <tr className="border-t border-brand-lavender/60 align-top transition hover:bg-surface-soft/70">
@@ -317,13 +318,24 @@ function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
       </td>
       <td className="px-5 py-4 text-right">
         {row.detailHref ? (
-          <Link
-            aria-label="Ver detalhes do registro financeiro"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-            href={row.detailHref as Route<string>}
-          >
-            Ver detalhes
-          </Link>
+          <div className="flex flex-col items-end gap-2">
+            <Link
+              aria-label="Ver detalhes do registro financeiro"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+              href={row.detailHref as Route<string>}
+            >
+              Ver detalhes
+            </Link>
+            {canOpenRefundReview ? (
+              <Link
+                aria-label="Abrir avaliação de reembolso da sessão"
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-extrabold text-white outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
+                href={row.detailHref as Route<string>}
+              >
+                Reembolso
+              </Link>
+            ) : null}
+          </div>
         ) : (
           <span className="text-sm font-semibold text-tesText-muted">—</span>
         )}
@@ -334,6 +346,7 @@ function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
 
 function MobilePaymentRow({ row }: { row: AdminFinanceRow }) {
   const fields = fieldMap(row.fields);
+  const canOpenRefundReview = isRefundReviewAvailable(row, fields);
 
   return (
     <article className="p-5">
@@ -364,7 +377,7 @@ function MobilePaymentRow({ row }: { row: AdminFinanceRow }) {
         </dl>
 
         {row.detailHref ? (
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
             <Link
               className="inline-flex min-h-10 items-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
               href={row.detailHref as Route<string>}
@@ -372,11 +385,26 @@ function MobilePaymentRow({ row }: { row: AdminFinanceRow }) {
               Ver detalhes
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
+            {canOpenRefundReview ? (
+              <Link
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-brand-primary px-4 text-sm font-extrabold text-white outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
+                href={row.detailHref as Route<string>}
+              >
+                Reembolso
+              </Link>
+            ) : null}
           </div>
         ) : null}
       </div>
     </article>
   );
+}
+
+function isRefundReviewAvailable(
+  row: AdminFinanceRow,
+  fields: Record<string, string>,
+) {
+  return row.statusLabel === "paid" && fields["Reembolso pendente"] !== "Sim";
 }
 
 function Pagination({ data }: { data: AdminFinancePageData }) {
