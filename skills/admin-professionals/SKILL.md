@@ -60,7 +60,10 @@ agendamento`, separando claramente aprovação administrativa, publicação e
 
 ## Regra de publicação
 
-`get_therapist_publication_eligibility_v1` é a única regra: perfil aprovado, público, aceitando reservas online e com serviço ativo/reservável/online cuja terapia seja publicada, visível e de categoria ativa.
+`get_therapist_publication_eligibility_v1` é a única regra: perfil aprovado,
+100% completo, com disponibilidade recorrente ativa, público, aceitando
+reservas online, conta de recebimento pronta e serviço ativo/reservável/online
+cuja terapia seja publicada, visível e de categoria ativa.
 
 Verificação aprovada não altera switches públicos por si só. O admin com
 `admin.professionals.verify` pode executar `professional.publish`, sempre com
@@ -69,6 +72,12 @@ três switches que o próprio comando ativa (`public_status`, `is_public` e
 `is_accepting_bookings`). O comando então publica o perfil e libera reservas
 na mesma transação. Qualquer outro blocker mantém “Aprovado · publicação
 pendente” e impede a ação.
+
+O Admin não aprova verificação abaixo de 100%. A remoção da última
+disponibilidade de um perfil público cria revisão `availability_removed`,
+exibida como “Agenda sem horários”. Adicionar horários remove o bloqueio de
+completude, mas a publicação só volta após nova aprovação autoritativa; reservas
+existentes permanecem intactas.
 
 ## Navegação correlacionada
 

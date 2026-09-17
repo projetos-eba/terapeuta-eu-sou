@@ -2222,6 +2222,54 @@ export type Database = {
           },
         ]
       }
+      booking_session_attempts: {
+        Row: {
+          booking_id: string
+          booking_version: number
+          created_at: string
+          ends_at: string
+          id: string
+          sequence: number
+          starts_at: string
+          timezone: string
+        }
+        Insert: {
+          booking_id: string
+          booking_version: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          sequence: number
+          starts_at: string
+          timezone: string
+        }
+        Update: {
+          booking_id?: string
+          booking_version?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          sequence?: number
+          starts_at?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_session_attempts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_session_attempts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+        ]
+      }
       booking_session_reference_counters: {
         Row: {
           last_sequence: number
@@ -5895,6 +5943,7 @@ export type Database = {
           responsibility: string | null
           retention_authorized: boolean
           review_due_at: string | null
+          session_attempt_id: string | null
           session_payment_id: string
           status: string
           therapist_arrived_at: string | null
@@ -5924,6 +5973,7 @@ export type Database = {
           responsibility?: string | null
           retention_authorized?: boolean
           review_due_at?: string | null
+          session_attempt_id?: string | null
           session_payment_id: string
           status?: string
           therapist_arrived_at?: string | null
@@ -5953,6 +6003,7 @@ export type Database = {
           responsibility?: string | null
           retention_authorized?: boolean
           review_due_at?: string | null
+          session_attempt_id?: string | null
           session_payment_id?: string
           status?: string
           therapist_arrived_at?: string | null
@@ -5993,6 +6044,13 @@ export type Database = {
             columns: ["resolved_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_confirmation_incidents_session_attempt_id_fkey"
+            columns: ["session_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "booking_session_attempts"
             referencedColumns: ["id"]
           },
           {
@@ -6227,6 +6285,7 @@ export type Database = {
           payload_hash: string
           policy_version_id: string
           request_id: string
+          session_attempt_id: string | null
           source: string
           updated_at: string
         }
@@ -6242,6 +6301,7 @@ export type Database = {
           payload_hash: string
           policy_version_id: string
           request_id: string
+          session_attempt_id?: string | null
           source: string
           updated_at?: string
         }
@@ -6257,6 +6317,7 @@ export type Database = {
           payload_hash?: string
           policy_version_id?: string
           request_id?: string
+          session_attempt_id?: string | null
           source?: string
           updated_at?: string
         }
@@ -6287,6 +6348,13 @@ export type Database = {
             columns: ["policy_version_id"]
             isOneToOne: false
             referencedRelation: "financial_policy_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_participant_confirmations_session_attempt_id_fkey"
+            columns: ["session_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "booking_session_attempts"
             referencedColumns: ["id"]
           },
         ]
@@ -7050,6 +7118,152 @@ export type Database = {
             columns: ["session_payment_id"]
             isOneToOne: false
             referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_quality_feedback: {
+        Row: {
+          author_profile_id: string
+          author_role: Database["public"]["Enums"]["user_role"]
+          booking_id: string
+          comment: string
+          created_at: string
+          id: string
+          payload_hash: string
+          quality_reason: string | null
+          rating: number | null
+          request_id: string
+          session_attempt_id: string
+          successful: boolean
+        }
+        Insert: {
+          author_profile_id: string
+          author_role: Database["public"]["Enums"]["user_role"]
+          booking_id: string
+          comment?: string
+          created_at?: string
+          id?: string
+          payload_hash: string
+          quality_reason?: string | null
+          rating?: number | null
+          request_id: string
+          session_attempt_id: string
+          successful: boolean
+        }
+        Update: {
+          author_profile_id?: string
+          author_role?: Database["public"]["Enums"]["user_role"]
+          booking_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          payload_hash?: string
+          quality_reason?: string | null
+          rating?: number | null
+          request_id?: string
+          session_attempt_id?: string
+          successful?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_quality_feedback_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_feedback_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_feedback_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "session_quality_feedback_session_attempt_id_fkey"
+            columns: ["session_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "booking_session_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_quality_reviews: {
+        Row: {
+          answered_at: string | null
+          due_at: string
+          feedback_id: string
+          id: string
+          opened_at: string
+          requester_profile_id: string
+          response_message_id: string | null
+          session_attempt_id: string
+          ticket_id: string
+        }
+        Insert: {
+          answered_at?: string | null
+          due_at?: string
+          feedback_id: string
+          id?: string
+          opened_at?: string
+          requester_profile_id: string
+          response_message_id?: string | null
+          session_attempt_id: string
+          ticket_id: string
+        }
+        Update: {
+          answered_at?: string | null
+          due_at?: string
+          feedback_id?: string
+          id?: string
+          opened_at?: string
+          requester_profile_id?: string
+          response_message_id?: string | null
+          session_attempt_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_quality_reviews_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: true
+            referencedRelation: "session_quality_feedback"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_reviews_requester_profile_id_fkey"
+            columns: ["requester_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_reviews_response_message_id_fkey"
+            columns: ["response_message_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_reviews_session_attempt_id_fkey"
+            columns: ["session_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "booking_session_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quality_reviews_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -10777,11 +10991,14 @@ export type Database = {
       }
       therapist_schedule_events: {
         Row: {
+          active_rule_count: number | null
           actor_user_id: string | null
           created_at: string
           event_type: string
           id: string
+          previous_active_rule_count: number | null
           previous_version: number
+          publication_impact: string
           request_id: string
           resulting_version: number
           rule_count: number
@@ -10790,11 +11007,14 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          active_rule_count?: number | null
           actor_user_id?: string | null
           created_at?: string
           event_type: string
           id?: string
+          previous_active_rule_count?: number | null
           previous_version: number
+          publication_impact?: string
           request_id: string
           resulting_version: number
           rule_count: number
@@ -10803,11 +11023,14 @@ export type Database = {
           timezone: string
         }
         Update: {
+          active_rule_count?: number | null
           actor_user_id?: string | null
           created_at?: string
           event_type?: string
           id?: string
+          previous_active_rule_count?: number | null
           previous_version?: number
+          publication_impact?: string
           request_id?: string
           resulting_version?: number
           rule_count?: number
@@ -11997,8 +12220,13 @@ export type Database = {
           documents_metadata: Json
           id: string
           rejection_reason: string | null
+          restore_publication_on_approval: boolean
+          review_origin: string
           reviewed_at: string | null
           reviewed_by: string | null
+          source_connect_account_id: string | null
+          source_schedule_event_id: string | null
+          source_stripe_event_id: string | null
           status: Database["public"]["Enums"]["therapist_status"]
           submitted_at: string
           therapist_profile_id: string
@@ -12010,8 +12238,13 @@ export type Database = {
           documents_metadata?: Json
           id?: string
           rejection_reason?: string | null
+          restore_publication_on_approval?: boolean
+          review_origin?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_connect_account_id?: string | null
+          source_schedule_event_id?: string | null
+          source_stripe_event_id?: string | null
           status?: Database["public"]["Enums"]["therapist_status"]
           submitted_at?: string
           therapist_profile_id: string
@@ -12023,8 +12256,13 @@ export type Database = {
           documents_metadata?: Json
           id?: string
           rejection_reason?: string | null
+          restore_publication_on_approval?: boolean
+          review_origin?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_connect_account_id?: string | null
+          source_schedule_event_id?: string | null
+          source_stripe_event_id?: string | null
           status?: Database["public"]["Enums"]["therapist_status"]
           submitted_at?: string
           therapist_profile_id?: string
@@ -12036,6 +12274,20 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_verifications_source_connect_account_id_fkey"
+            columns: ["source_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_connect_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_verifications_source_schedule_event_id_fkey"
+            columns: ["source_schedule_event_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_schedule_events"
             referencedColumns: ["id"]
           },
           {
@@ -13350,6 +13602,7 @@ export type Database = {
           participant_role: Database["public"]["Enums"]["video_session_participant_role"]
           provider_user_id: string | null
           provider_user_key: string | null
+          session_attempt_id: string | null
           updated_at: string
           video_session_id: string
         }
@@ -13366,6 +13619,7 @@ export type Database = {
           participant_role?: Database["public"]["Enums"]["video_session_participant_role"]
           provider_user_id?: string | null
           provider_user_key?: string | null
+          session_attempt_id?: string | null
           updated_at?: string
           video_session_id: string
         }
@@ -13382,6 +13636,7 @@ export type Database = {
           participant_role?: Database["public"]["Enums"]["video_session_participant_role"]
           provider_user_id?: string | null
           provider_user_key?: string | null
+          session_attempt_id?: string | null
           updated_at?: string
           video_session_id?: string
         }
@@ -13399,6 +13654,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapist_session_read_model_v1"
             referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "video_session_participations_session_attempt_id_fkey"
+            columns: ["session_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "booking_session_attempts"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "video_session_participations_video_session_id_fkey"
@@ -14829,6 +15091,7 @@ export type Database = {
           theme_names: string[] | null
           theme_slugs: string[] | null
           therapist_bio: string | null
+          therapist_essence: string | null
           therapist_headline: string | null
           therapist_profile_id: string | null
           therapy_id: string | null
@@ -14864,6 +15127,7 @@ export type Database = {
           theme_names: string[] | null
           theme_slugs: string[] | null
           therapist_bio: string | null
+          therapist_essence: string | null
           therapist_headline: string | null
           therapist_profile_id: string | null
           therapy_id: string | null
@@ -16014,6 +16278,15 @@ export type Database = {
         }
         Returns: Json
       }
+      cancel_therapist_uncharged_session_v10: {
+        Args: {
+          p_booking_id: string
+          p_reason: string
+          p_request_id: string
+          p_therapist_user_id: string
+        }
+        Returns: Json
+      }
       cancel_uncharged_session_v10: {
         Args: {
           p_booking_id: string
@@ -16574,6 +16847,10 @@ export type Database = {
         Args: { p_booking_id: string; p_environment: string }
         Returns: string
       }
+      current_session_attempt_id_v1: {
+        Args: { p_booking_id: string }
+        Returns: string
+      }
       dashboard_kpi_json: {
         Args: { current_value: number; previous_value: number }
         Returns: Json
@@ -17025,8 +17302,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_session_attempt_attendance_batch_v1: {
+        Args: { p_booking_ids: string[] }
+        Returns: Json
+      }
       get_session_feedback_v1: { Args: { p_booking_id: string }; Returns: Json }
       get_session_feedback_v2: { Args: { p_booking_id: string }; Returns: Json }
+      get_session_quality_feedback_v1: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
       get_therapist_agenda_v1: {
         Args: { p_range_end?: string; p_range_start?: string }
         Returns: Json
@@ -17054,6 +17339,10 @@ export type Database = {
           p_search?: string
           p_status?: string
         }
+        Returns: Json
+      }
+      get_therapist_calendar_range_v1: {
+        Args: { p_anchor_date?: string; p_view?: string }
         Returns: Json
       }
       get_therapist_calendar_v1: {
@@ -17167,6 +17456,10 @@ export type Database = {
       }
       get_therapist_reviews_v1: { Args: never; Returns: Json }
       get_therapist_schedule_v1: { Args: never; Returns: Json }
+      get_therapist_schedule_v1_before_completion_gate: {
+        Args: never
+        Returns: Json
+      }
       get_therapist_service_request_replay_v1: {
         Args: {
           p_operation: string
@@ -17387,6 +17680,16 @@ export type Database = {
         }
         Returns: Json
       }
+      open_therapist_booking_reschedule_v10: {
+        Args: {
+          p_booking_id: string
+          p_expected_booking_version?: number
+          p_reason: string
+          p_request_id: string
+          p_therapist_user_id: string
+        }
+        Returns: Json
+      }
       patient_has_schedule_conflict_v1: {
         Args: {
           p_ends_at: string
@@ -17433,6 +17736,7 @@ export type Database = {
         Args: { p_session_payment_id: string }
         Returns: Json
       }
+      private_get_therapist_reviews_v1_legacy: { Args: never; Returns: Json }
       private_patient_session_feedback_queue_v1_v9_legacy: {
         Args: never
         Returns: Json
@@ -18200,6 +18504,19 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_therapist_booking_reschedule_v10: {
+        Args: {
+          p_expected_booking_version?: number
+          p_patient_user_id: string
+          p_proposed_ends_at: string
+          p_proposed_starts_at: string
+          p_proposed_timezone: string
+          p_request_id: string
+          p_reschedule_request_id: string
+          p_resolution: string
+        }
+        Returns: Json
+      }
       resubmit_therapy_catalog_request_v2: {
         Args: {
           p_actor_user_id: string
@@ -18285,6 +18602,17 @@ export type Database = {
         Returns: Json
       }
       save_therapist_schedule_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_expected_version: number
+          p_request_id: string
+          p_rules: Json
+          p_service_settings: Json
+          p_timezone: string
+        }
+        Returns: Json
+      }
+      save_therapist_schedule_v1_before_completion_gate: {
         Args: {
           p_actor_user_id: string
           p_expected_version: number
@@ -18413,6 +18741,10 @@ export type Database = {
         Args: { p_service_id: string }
         Returns: Json
       }
+      session_attempt_evidence_v1: {
+        Args: { p_booking_id: string; p_now?: string }
+        Returns: Json
+      }
       session_attendance_state_v1: {
         Args: { p_booking_id: string; p_now?: string }
         Returns: Json
@@ -18434,6 +18766,16 @@ export type Database = {
         Args: {
           p_feedback: Database["public"]["Tables"]["session_feedback"]["Row"]
         }
+        Returns: Json
+      }
+      session_quality_feedback_payload_v1: {
+        Args: {
+          p_feedback: Database["public"]["Tables"]["session_quality_feedback"]["Row"]
+        }
+        Returns: Json
+      }
+      session_quality_review_state_v1: {
+        Args: { p_attempt_id: string; p_now?: string }
         Returns: Json
       }
       set_weekly_payout_scheduler_active_v1: {
@@ -18460,6 +18802,19 @@ export type Database = {
           p_outcome: string
           p_rating: number
           p_request_id: string
+        }
+        Returns: Json
+      }
+      submit_session_quality_feedback_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_booking_id: string
+          p_comment: string
+          p_quality_reason: string
+          p_rating: number
+          p_request_id: string
+          p_session_attempt_id: string
+          p_successful: boolean
         }
         Returns: Json
       }
@@ -18827,6 +19182,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      withdraw_therapist_booking_reschedule_v10: {
+        Args: {
+          p_expected_booking_version?: number
+          p_request_id: string
+          p_reschedule_request_id: string
+          p_therapist_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       auth_action_purpose: "email_verification" | "password_reset"
@@ -19022,6 +19386,7 @@ export type Database = {
         | "end_therapist_absent"
         | "reconcile_orphan"
         | "confirm_end"
+        | "end_attendance_no_show"
       video_session_participant_role: "patient" | "therapist" | "unknown"
       video_session_status: "ready" | "active" | "ended" | "canceled" | "failed"
       zoom_video_webhook_processing_status:
@@ -19371,6 +19736,7 @@ export const Constants = {
         "end_therapist_absent",
         "reconcile_orphan",
         "confirm_end",
+        "end_attendance_no_show",
       ],
       video_session_participant_role: ["patient", "therapist", "unknown"],
       video_session_status: ["ready", "active", "ended", "canceled", "failed"],

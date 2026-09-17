@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 -- Keep the schedule fixture independent of other confirmed local bookings.
 update public.bookings set status = 'cancelled_by_patient'
@@ -199,6 +199,30 @@ select is(
     )),
   2,
   'each reviewed incident notifies its therapist exactly once'
+);
+
+select is(
+  (select body from public.notifications
+    where event_key = (
+      select 'attendance-review:' || incident.id::text || ':patient'
+      from public.session_confirmation_incidents incident
+      where incident.booking_id = 'f2000000-0000-4000-8000-000000000002'
+      order by incident.booking_version desc limit 1
+    )),
+  'O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.',
+  'the double no-show notification is neutral for the patient'
+);
+
+select is(
+  (select body from public.notifications
+    where event_key = (
+      select 'attendance-review:' || incident.id::text || ':therapist'
+      from public.session_confirmation_incidents incident
+      where incident.booking_id = 'f2000000-0000-4000-8000-000000000002'
+      order by incident.booking_version desc limit 1
+    )),
+  'O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.',
+  'the double no-show notification is neutral for the therapist'
 );
 
 select is(

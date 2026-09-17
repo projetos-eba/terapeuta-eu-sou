@@ -30,6 +30,10 @@ ambos.
   duplica, estorna nem libera Transfer. Ausência do terapeuta, isolada ou conjunta,
   admite somente reembolso integral por decisão explícita e justificada do Admin;
   a ausência exclusiva do cliente preserva o procedimento existente.
+- Na ausência dupla, paciente e terapeuta recebem somente o estado neutro de
+  encontro/sessão não realizada e a orientação para o TES. A classificação
+  `no_show_both`, as chegadas, joins, evidências e a decisão financeira ficam
+  visíveis somente à operação administrativa.
 - O finalizador filtra evidências classificáveis antes do limite da fila;
   sessões antigas com entrada bilateral e trabalhos de encerramento ainda
   pendentes não podem impedir a análise das demais. Após `no_show_therapist`
@@ -70,6 +74,9 @@ ambos.
 - Paciente, terapeuta e Admin recebem estados explícitos de sessão não
   realizada, qualidade e financeiro separados; uma sala lógica ainda `ready`/`active`
   durante o encerramento técnico não é apresentada como disponível.
+- O badge e a rail de pendências do terapeuta não tratam ausência dupla como
+  “Atenção”; a sessão permanece visível como não realizada, enquanto a fila
+  detalhada permanece exclusiva do Admin.
 - Chegada e join permanecem evidências distintas. Token, preflight, mídia local
   ou ausência temporária não contam como presença confiável.
 - Reservas V9 continuam sob o mecanismo semanal e exigem a conciliação própria

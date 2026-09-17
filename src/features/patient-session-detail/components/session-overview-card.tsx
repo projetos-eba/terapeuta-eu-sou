@@ -319,6 +319,9 @@ function getRoomLabel(data: PatientSessionDetailPageData) {
 
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
   if (data.attendanceReview?.isOpen) {
+    if (data.attendanceReview.classification === "no_show_both") {
+      return "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.";
+    }
     return data.attendanceReview.financialResolution === "refund_pending"
       ? "Reembolso em análise pelo TES. Nenhuma movimentação será concluída antes da decisão administrativa."
       : "Pagamento em análise pelo TES. Estamos verificando os registros de chegada e entrada na sala.";

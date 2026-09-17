@@ -377,7 +377,7 @@ function getStatusLabel(
     return "Não realizado — terapeuta ausente";
   }
   if (bookingStatus === "no_show_both") {
-    return "Não realizado — ninguém acessou";
+    return "Encontro não realizado";
   }
 
   const labels: Record<PatientEncounterStatus, string> = {

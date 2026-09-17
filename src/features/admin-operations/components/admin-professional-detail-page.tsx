@@ -1046,6 +1046,10 @@ function buildProfessionalProgressStages({
   const createdAt = traceabilityMap.get("Criado em");
   const submittedAt = verificationSummary?.submittedAt;
   const reviewedAt = verificationSummary?.reviewedAt;
+  const closureReview =
+    verificationSummary?.reviewOrigin === "connect_account_closed";
+  const availabilityReview =
+    verificationSummary?.reviewOrigin === "availability_removed";
   const published = profile.get("Publicado") === "Sim";
   const publicStatus = formatStatusLabel(profile.get("Perfil público"));
   const canReceiveBookings = profile.get("Recebe reservas") === "Sim";
@@ -1062,7 +1066,11 @@ function buildProfessionalProgressStages({
     },
     {
       detail: submittedAt
-        ? `Enviado para revisão em ${formatDateTime(submittedAt)}.`
+        ? closureReview
+          ? `Conta de recebimento encerrada; nova revisão aberta em ${formatDateTime(submittedAt)}.`
+          : availabilityReview
+            ? `Agenda ficou sem horários; nova revisão aberta em ${formatDateTime(submittedAt)}.`
+          : `Enviado para revisão em ${formatDateTime(submittedAt)}.`
         : reflectsProfileDecision
           ? "A situação atual do cadastro confirma o encaminhamento para análise."
           : verificationStatus === "none" || verificationStatus === "draft"

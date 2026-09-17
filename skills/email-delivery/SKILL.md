@@ -42,6 +42,12 @@ Use esta skill ao implementar, auditar ou refatorar e-mails transacionais, confi
 - `email_rate_limit_events`: eventos persistentes com identificadores hashados.
 - `profiles.email_confirmed_at`: espelho transacional da confirmacao do Supabase Auth para polling e bloqueio server-side; Auth continua sendo fonte autoritativa.
 
+O ciclo profissional também possui a ação
+`therapist_availability_removed`: ela nasce da verificação
+`availability_removed` criada ao remover a última disponibilidade recorrente de
+um perfil público. O e-mail aponta somente para a Agenda, não inclui dados de
+pacientes ou sessões e preserva as reservas existentes.
+
 As acoes essenciais de Auth sao provisionadas pela migration, sem sobrescrever
 um estado operacional que tenha sido desativado deliberadamente. Remetente e
 habilitacao por acao continuam configuracao operacional do ambiente.

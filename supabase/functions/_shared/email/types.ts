@@ -7,6 +7,8 @@ export type EmailActionKey =
   | "patient_welcome"
   | "therapist_welcome"
   | "password_changed"
+  | "therapist_availability_removed"
+  | "therapist_receiving_account_closed"
   | "therapist_profile_submitted_for_review"
   | "therapist_documents_requested"
   | "therapist_profile_approved"

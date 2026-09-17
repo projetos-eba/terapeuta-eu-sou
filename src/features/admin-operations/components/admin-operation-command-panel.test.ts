@@ -24,6 +24,16 @@ describe("admin verification command flow", () => {
     ]);
   });
 
+  it("keeps approval visible but disabled while the profile is incomplete", () => {
+    expect(
+      getCommandOptions({
+        canApprove: false,
+        module: "verifications",
+        statusLabel: "in_review",
+      }).find((option) => option.action === "verification.approve"),
+    ).toEqual(expect.objectContaining({ disabled: true }));
+  });
+
   it("does not expose decisions after approval", () => {
     expect(getCommandOptions({ module: "verifications", statusLabel: "approved" })).toEqual([]);
   });

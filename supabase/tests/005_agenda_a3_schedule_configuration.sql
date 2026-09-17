@@ -82,8 +82,8 @@ select is(
 
 select is(
   public.get_therapist_schedule_v1() ->> 'contractVersion',
-  '1',
-  'the schedule read model publishes contract version 1'
+  '2',
+  'the schedule read model publishes contract version 2'
 );
 
 select is(

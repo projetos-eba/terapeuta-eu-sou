@@ -254,6 +254,117 @@ describe("TherapistScheduleHours", () => {
     expect(navigationMocks.refresh).toHaveBeenCalledOnce();
   });
 
+  it("confirms before removing the last public availability range", async () => {
+    renderSchedule();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Excluir faixa 1 de Segunda-feira" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Remover o último horário disponível?",
+    });
+    expect(dialog).toHaveTextContent(
+      "seu perfil deixará de aparecer para novos agendamentos",
+    );
+    expect(
+      screen.getByLabelText("Início de Segunda-feira"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Manter horário" }),
+    );
+    expect(
+      screen.getByLabelText("Início de Segunda-feira"),
+    ).toBeInTheDocument();
+  });
+
+  it("also confirms before deactivating the final available day", async () => {
+    renderSchedule();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Desativar Segunda-feira" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Remover o último horário disponível?",
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Remover horário" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Ativar Segunda-feira" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByRole("button", { name: "Salvar alterações" }),
+    ).toBeEnabled();
+  });
+
+  it("removes a range directly when another active range remains", () => {
+    const initialSchedule = scheduleFixture();
+    initialSchedule.rules.push({
+      dayOfWeek: 2,
+      endTime: "12:00",
+      id: "e1000000-0000-4000-8000-000000000002",
+      isActive: true,
+      serviceId,
+      startTime: "09:00",
+    });
+    initialSchedule.activeRuleCount = 2;
+    renderSchedule(initialSchedule);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Excluir faixa 1 de Segunda-feira" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Início de Terça-feira"),
+    ).toBeInTheDocument();
+  });
+
+  it("reports the authoritative reapproval impact after saving", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: {
+              activeRuleCount: 0,
+              idempotentReplay: false,
+              publicationImpact: "reapproval_required",
+              scheduleVersion: 2,
+              timezone: "America/Sao_Paulo",
+            },
+            ok: true,
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        ),
+      ),
+    );
+    renderSchedule();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Excluir faixa 1 de Segunda-feira" }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Remover horário",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    expect(
+      await screen.findByText(
+        "Horários salvos. Seu perfil ficou indisponível para novos agendamentos e foi enviado para uma nova análise do TES.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("keeps a historical post-session interval visible until the therapist changes it", () => {
     const initialSchedule = scheduleFixture();
     initialSchedule.services[0]!.settings.bufferAfterMinutes = 7;
@@ -361,7 +472,9 @@ function renderSchedule(initialSchedule = scheduleFixture()) {
 
 function scheduleFixture(): TherapistScheduleReadModel {
   return {
-    contractVersion: 1,
+    activeRuleCount: 1,
+    contractVersion: 2,
+    isPubliclyVisible: true,
     rules: [
       {
         dayOfWeek: 1,

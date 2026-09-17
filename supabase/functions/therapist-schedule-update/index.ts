@@ -15,7 +15,9 @@ import {
 } from "./schedule-command.ts";
 
 type SaveResult = {
+  activeRuleCount: number;
   idempotentReplay: boolean;
+  publicationImpact: "none" | "reapproval_required";
   scheduleVersion: number;
   timezone: string;
 };

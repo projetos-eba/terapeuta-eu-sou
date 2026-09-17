@@ -230,7 +230,7 @@ export const getPatientSessionDetailPage = cache(
               canJoin: false,
               statusLabel:
                 attendanceReview.classification === "no_show_both"
-                  ? "Encontro não realizado — ninguém acessou a sala"
+                  ? "Encontro não realizado"
                   : attendanceReview.classification === "no_show_therapist"
                     ? "Encontro não realizado — terapeuta não compareceu"
                     : "Encontro não realizado — acesso em análise",

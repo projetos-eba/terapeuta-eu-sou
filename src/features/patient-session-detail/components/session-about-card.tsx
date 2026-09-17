@@ -18,8 +18,8 @@ export function SessionAboutCard({
         </h2>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
-        <div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
+        <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
             Contexto principal
           </p>
@@ -36,15 +36,7 @@ export function SessionAboutCard({
           </p>
         </div>
 
-        <div className="border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
-            Objetivo da terapia
-          </p>
-          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-            {data.service.objective}
-          </p>
-        </div>
-        <div className="border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+        <div className="min-w-0 border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
             Continuidade
           </p>
@@ -57,6 +49,15 @@ export function SessionAboutCard({
           </p>
           <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
             Acompanhamento desde {data.journey.startedAtLabel}.
+          </p>
+        </div>
+
+        <div className="min-w-0 border-t border-border pt-5 lg:col-span-2 lg:pt-6">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
+            Objetivo da terapia
+          </p>
+          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
+            {data.service.objective}
           </p>
         </div>
       </div>
