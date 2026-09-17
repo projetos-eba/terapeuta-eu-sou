@@ -171,6 +171,13 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `cancel_at_period_end` and can be reversed without removing already-paid
   benefits.
 - Separate transfers require the session Charge as `source_transaction`.
+- The V10 Transfer claim RPC must return every field the worker validates
+  before Stripe preflight (booking, therapist, PaymentIntent, gross amount,
+  connected account and source Charge). Preserve refund, dispute, internal
+  contest and admin-block gates when changing the claim. Never automatically
+  resume failed historical jobs; a confirmed pre-provider claim-validation
+  failure may be manually resumed only after checking no preparation,
+  Transfer or refund exists, with first-attempt semantics.
 - Under V9, do not mark a session payment `eligible` until its source Charge Balance
   Transaction is `available`, `available_on` has passed, and the Stripe snapshot
   is recent. Use `waiting_settlement` before that gate; reconcile hourly and

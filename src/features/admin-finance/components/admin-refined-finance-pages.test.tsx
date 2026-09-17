@@ -51,6 +51,7 @@ describe("refined admin finance pages", () => {
         data={financeData({
           rows: [
             {
+              detailHref: "/admin/pagamentos/payment-v10",
               id: "payment-v10",
               fields: [
                 { label: "Valor bruto", value: "R$ 100,00" },
@@ -72,6 +73,7 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Compensação: R$ 10,00");
     expect(html).toContain("Valor encaminhado: R$ 75,00");
     expect(html).toContain("A caminho do banco");
+    expect(html).toContain("Reembolso");
     expect(html).not.toMatch(
       /source_transaction|transfer reversal|payout_display_status/i,
     );

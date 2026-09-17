@@ -151,6 +151,20 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   compensa dividas abertas antes da chamada e cria um unico Transfer com a
   Charge original em `source_transaction`. Resposta ambigua exige conciliacao;
   falha definitiva usa backoff, circuito e retomada manual autorizada.
+- O contrato de `claim_session_transfer_jobs_v10` precisa entregar ao worker
+  reserva, terapeuta, PaymentIntent, valor bruto e conta Stripe, além da Charge
+  de origem e dos dados do job. A migration
+  `20260917180000_restore_v10_transfer_claim_contract.sql` restaura esses
+  campos sem retirar os bloqueios por reembolso, disputa, contestação ou
+  decisão administrativa. Jobs que já falharam com
+  `session_transfer_claim_validation_failed` não são retomados automaticamente
+  pela migration: após verificar individualmente que não houve preparo,
+  Transfer, reembolso ou bloqueio, a operação pode usar a RPC restrita
+  `resume_session_transfer_job_v10` com o contador esperado. Só essa falha
+  comprovadamente anterior ao provedor volta a contar como primeira tentativa;
+  resultados ambíguos continuam em conciliação manual. A retomada pode efetuar
+  o repasse no próximo worker e deve ser autorizada depois da publicação em
+  HML, com observação do saldo e do Payout da plataforma.
 - A criacao do Transfer grava o debito financeiro uma unica vez, mas o estado
   bancario continua pendente. O repasse direto so conclui depois de
   `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.

@@ -1,6 +1,6 @@
 begin;
 
-select plan(69);
+select plan(74);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -454,9 +454,73 @@ select is(
       ) -> 'claims'
     ) as claim
     where claim ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000021'
+      and claim ->> 'bookingId' = 'b1140000-0000-4000-8000-000000000011'
+      and claim ->> 'therapistProfileId' = 'c1000000-0000-4000-8000-000000000001'
+      and claim ->> 'paymentIntentId' = 'pi_test_v10_114_1'
+      and (claim ->> 'grossAmountCents')::integer = 10000
+      and claim ->> 'stripeAccountId' = 'acct_test_v10_114'
+      and claim ->> 'sourceChargeId' = 'ch_test_v10_114_1'
   ),
   1,
-  'the direct Transfer worker claims the fixture job exactly once'
+  'the direct Transfer worker receives every field required for Stripe preflight'
+);
+
+select is(
+  public.fail_session_transfer_job_v10(
+    (select id from public.session_transfer_jobs
+      where session_payment_id = 'b1140000-0000-4000-8000-000000000021'),
+    'b1140000-0000-4000-8000-000000000032',
+    'session_transfer_claim_validation_failed', false
+  ) ->> 'status',
+  'failed',
+  'a definitive pre-provider claim failure records a failed job'
+);
+
+update public.session_payments
+set admin_blocked_at = now()
+where id = 'b1140000-0000-4000-8000-000000000021';
+
+select is(
+  public.resume_session_transfer_job_v10(
+    (select id from public.session_transfer_jobs
+      where session_payment_id = 'b1140000-0000-4000-8000-000000000021'),
+    1
+  ) ->> 'resumed',
+  'false',
+  'an administratively blocked payment cannot resume a failed Transfer'
+);
+
+update public.session_payments
+set admin_blocked_at = null
+where id = 'b1140000-0000-4000-8000-000000000021';
+
+select is(
+  public.resume_session_transfer_job_v10(
+    (select id from public.session_transfer_jobs
+      where session_payment_id = 'b1140000-0000-4000-8000-000000000021'),
+    1
+  ) ->> 'resumed',
+  'true',
+  'the operator may resume an unprepared claim-validation failure'
+);
+
+select is(
+  (select attempt_count from public.session_transfer_jobs
+    where session_payment_id = 'b1140000-0000-4000-8000-000000000021'),
+  0,
+  'the safe pre-provider failure resumes with first-attempt semantics'
+);
+
+select is(
+  (select count(*)::integer from jsonb_array_elements(
+    public.claim_session_transfer_jobs_v10(
+      '2098-09-13 13:04:00+00',
+      'b1140000-0000-4000-8000-000000000032', 10, 5
+    ) -> 'claims'
+  ) as claim where claim ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000021'
+    and (claim ->> 'attemptCount')::integer = 1),
+  1,
+  'the resumed job is claimed once as a first provider attempt'
 );
 
 select throws_ok(

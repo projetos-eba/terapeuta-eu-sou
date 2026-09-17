@@ -53,15 +53,15 @@ export function AdminFullRefundAction({
     }
   }
 
-  if (!status.available && !status.followup) return null;
-
   return (
     <div className="rounded-[24px] border border-brand-lavender/60 bg-white p-5">
       <h2 className="text-lg font-extrabold text-brand-deep">Apoio ao cliente</h2>
       <p className="mt-2 text-sm leading-6 text-tesText-secondary">
         {status.available
           ? `Se a análise indicar reembolso, o valor integral da sessão (${amount}) pode ser solicitado aqui.`
-          : "A solicitação já foi registrada. Continue a conferência até a confirmação final."}
+          : status.followup
+            ? "A solicitação já foi registrada. Continue a conferência até a confirmação final."
+            : "Esta sessão não está disponível para uma solicitação de reembolso agora. Confira a situação financeira antes de tomar uma nova decisão."}
       </p>
       {status.available ? (
         <button className="mt-4 rounded-xl bg-brand-primary px-5 py-3 text-sm font-bold text-white"
