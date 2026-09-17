@@ -1,5 +1,5 @@
 begin;
-select plan(26);
+select plan(31);
 
 select ok(has_function_privilege('service_role',
   'public.claim_full_session_refund_v10_v3(uuid,uuid,text,text)', 'EXECUTE'),
@@ -233,6 +233,99 @@ select is((select count(*)::integer from public.session_refunds
     'b1190000-0000-4000-8000-000000000021',
     'b1190000-0000-4000-8000-000000000022') and amount_cents <> 10000), 0,
   'TES decisions create no partial customer refund');
+
+-- A failed job is refundable only when it stopped before preparing a provider
+-- transfer. It must not create a fictional therapist debt. Conversely, a job
+-- that reached preparation remains unavailable until reconciliation proves its
+-- provider outcome.
+insert into public.bookings (
+  id, patient_profile_id, therapist_profile_id, service_id,
+  starts_at, ends_at, timezone, status, payment_status
+) values
+  ('b1190000-0000-4000-8000-000000000014',
+   'b1000000-0000-4000-8000-000000000001',
+   'c1000000-0000-4000-8000-000000000001',
+   'd1000000-0000-4000-8000-000000000001',
+   '2098-09-17 13:00:00+00', '2098-09-17 13:50:00+00',
+   'America/Sao_Paulo', 'confirmed', 'paid'),
+  ('b1190000-0000-4000-8000-000000000015',
+   'b1000000-0000-4000-8000-000000000001',
+   'c1000000-0000-4000-8000-000000000001',
+   'd1000000-0000-4000-8000-000000000001',
+   '2098-09-18 13:00:00+00', '2098-09-18 13:50:00+00',
+   'America/Sao_Paulo', 'confirmed', 'paid');
+
+insert into public.session_payments (
+  id, booking_id, patient_profile_id, therapist_profile_id, service_id,
+  policy_version_id, gross_amount_cents, platform_commission_bps,
+  platform_gross_commission_cents, therapist_amount_cents,
+  financial_status, service_status, transfer_status, payment_flow_version,
+  connect_account_id_snapshot, stripe_connect_account_id_snapshot,
+  stripe_charge_id, stripe_payment_intent_id, paid_at, payment_due_at
+)
+select
+  ('b1190000-0000-4000-8000-00000000002' || n)::uuid,
+  ('b1190000-0000-4000-8000-00000000001' || n)::uuid,
+  'b1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  policy.id, 10000, 1500, 1500, 8500,
+  'paid', 'scheduled', 'failed', 'v10',
+  account.id, account.stripe_account_id,
+  'ch_test_v10_119_' || n, 'pi_test_v10_119_' || n,
+  now(), '2098-09-13 13:00:00+00'
+from generate_series(4,5) n
+cross join public.financial_policy_versions policy
+cross join lateral (
+  select id, stripe_account_id from public.therapist_connect_accounts
+  where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+    and is_current order by created_at desc limit 1
+) account
+where policy.policy_key = 'tes-payments-v10-setup-t24-immediate-transfer';
+
+insert into public.session_transfer_jobs (
+  id, session_payment_id, booking_id, policy_version_id, connect_account_id,
+  stripe_environment, stripe_source_charge_id, therapist_gross_amount_cents,
+  debt_offset_amount_cents, transfer_amount_cents, status,
+  idempotency_key, request_fingerprint, prepared_at
+)
+select ('b1190000-0000-4000-8000-00000000004' || n)::uuid,
+  payment.id, payment.booking_id, payment.policy_version_id,
+  payment.connect_account_id_snapshot, 'test', payment.stripe_charge_id,
+  8500, 0, 8500,
+  case when n = 4 then 'failed' else 'reconciliation_required' end,
+  'tes:v10:job:119:' || n, 'job-fingerprint:119:' || n,
+  case when n = 4 then null else now() end
+from generate_series(4,5) n
+join public.session_payments payment
+  on payment.id = ('b1190000-0000-4000-8000-00000000002' || n)::uuid;
+
+select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000090', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select is(public.admin_get_full_session_refund_status_v11(
+  'b1190000-0000-4000-8000-000000000024') ->> 'available', 'true',
+  'a pre-provider transfer failure is available for the admin refund action');
+select is(coalesce(public.claim_full_session_refund_v10_v3(
+  'aaaaaaaa-0000-4000-8000-000000000090',
+  'b1190000-0000-4000-8000-000000000024',
+  'b1190000-0000-4000-8000-000000000054',
+  'Repasse não iniciado e devolução integral aprovada pelo suporte.')
+  ->> 'transferId', ''), '',
+  'a pre-provider transfer failure creates a refund decision without a Transfer');
+select is((select therapist_exposure_cents from public.session_refund_decisions_v10
+  where session_payment_id = 'b1190000-0000-4000-8000-000000000024'), 0,
+  'a pre-provider transfer failure creates no therapist debt exposure');
+select throws_ok($$
+  select public.claim_full_session_refund_v10_v3(
+    'aaaaaaaa-0000-4000-8000-000000000090',
+    'b1190000-0000-4000-8000-000000000025',
+    'b1190000-0000-4000-8000-000000000055',
+    'Resultado do repasse ainda requer conferência antes da devolução integral.')
+$$, '23514', 'FULL_REFUND_TRANSFER_REQUIRES_REVIEW',
+  'a provider-prepared failure stays closed until reconciliation');
+select is(public.admin_get_full_session_refund_status_v11(
+  'b1190000-0000-4000-8000-000000000025') ->> 'available', 'false',
+  'a provider-prepared failure is not exposed as an admin refund action');
 
 select * from finish();
 rollback;

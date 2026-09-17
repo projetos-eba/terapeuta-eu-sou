@@ -10,7 +10,9 @@ function harness(options: {
   reversalError?: unknown;
   existingPartialRefund?: boolean;
   existingDecision?: boolean;
+  transferId?: string | null;
 } = {}) {
+  const transferId = "transferId" in options ? options.transferId ?? null : "tr_original";
   const calls: Array<{ name: string; args: unknown }> = [];
   const state = {
     reversal: options.existingDecision ? "unknown" : "not_attempted",
@@ -39,7 +41,7 @@ function harness(options: {
               reason,
               amount_cents: 10_000,
               stripe_charge_id: "ch_original",
-              stripe_transfer_id: "tr_original",
+              stripe_transfer_id: transferId,
               reversal_state: state.reversal,
               refund_state: state.refund,
             }]
@@ -62,8 +64,8 @@ function harness(options: {
           decisionId: "decision_1",
           amountCents: 10_000,
           chargeId: "ch_original",
-          transferId: "tr_original",
-          reversalState: "not_attempted",
+          transferId,
+          reversalState: transferId ? "not_attempted" : "not_needed",
           refundState: "not_attempted",
           existing: false,
         });
@@ -196,6 +198,21 @@ Deno.test("insufficient connected balance does not prevent the full customer ref
   assertEquals(
     h.calls.filter((call) => call.name === "reconcile_full_session_refund_debt_v10_v2")
       .length,
+    1,
+  );
+});
+
+Deno.test("a definitive no-Transfer outcome refunds the customer without a reversal or therapist debt", async () => {
+  const h = harness({ transferId: null });
+  const result = await run(h);
+  assertEquals(result.status, "completed");
+  assertEquals(h.counts(), { reversalPosts: 0, refundPosts: 1 });
+  assertEquals(
+    h.calls.filter((call) => call.name === "reconcile_session_transfer_reversal_v10").length,
+    0,
+  );
+  assertEquals(
+    h.calls.filter((call) => call.name === "reconcile_full_session_refund_debt_v10_v2").length,
     1,
   );
 });
