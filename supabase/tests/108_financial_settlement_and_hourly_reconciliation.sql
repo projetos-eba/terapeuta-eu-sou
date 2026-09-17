@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(27);
+select plan(37);
 
 select ok(
   'waiting_settlement' = any(enum_range(null::public.session_transfer_status)::text[]),
@@ -102,6 +102,33 @@ select is(
   'missing settlement proof fails closed'
 );
 
+select is(
+  public.record_session_payment_stripe_reconciliation_v2(
+    'fa100000-0000-4000-8000-000000000001',
+    'evt_settlement_first_pending', '2026-08-25T04:15:00Z',
+    'ch_tes_local_weekly_fixture', 'txn_tes_local_weekly_fixture',
+    null, null, null, 'stripe_checkout', null,
+    'pending', '2026-08-26T12:00:00Z', 'brl', 12000,
+    'ch_tes_local_weekly_fixture'
+  )->>'settlementRecorded',
+  'true',
+  'first pending snapshot is recorded when prior settlement status is null'
+);
+
+select is(
+  (select stripe_balance_status from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  'pending',
+  'initial pending status is persisted rather than discarded by SQL null semantics'
+);
+
+select is(
+  (select stripe_balance_available_on from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  '2026-08-26T12:00:00Z'::timestamptz,
+  'initial pending snapshot retains its provider availability instant'
+);
+
 select public.record_session_payment_stripe_reconciliation_v2(
   'fa100000-0000-4000-8000-000000000001',
   'evt_settlement_available', '2026-08-25T04:30:00Z',
@@ -148,6 +175,74 @@ select is(
     where id='fa100000-0000-4000-8000-000000000001'),
   '2026-08-25T04:45:00Z'::timestamptz,
   'a repeated authoritative available check refreshes snapshot freshness'
+);
+
+select is(
+  public.record_session_payment_stripe_reconciliation_v2(
+    'fa100000-0000-4000-8000-000000000001',
+    'evt_settlement_newer_pending', '2026-08-25T04:50:00Z',
+    'ch_tes_local_weekly_fixture', 'txn_tes_local_weekly_fixture',
+    null, null, null, 'stripe_checkout', null,
+    'pending', '2026-08-26T12:00:00Z', 'brl', 12000,
+    'ch_tes_local_weekly_fixture'
+  )->>'settlementRecorded',
+  'false',
+  'even a newer pending observation cannot regress available settlement'
+);
+
+select is(
+  (select stripe_balance_status from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  'available',
+  'available status remains authoritative after a newer pending observation'
+);
+
+select is(
+  (select stripe_balance_checked_at from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  '2026-08-25T04:45:00Z'::timestamptz,
+  'a rejected regression does not advance snapshot freshness'
+);
+
+update public.session_payments
+set transfer_status = 'transferred',
+    stripe_balance_status = null,
+    stripe_balance_available_on = null,
+    stripe_balance_checked_at = null
+where id = 'fa100000-0000-4000-8000-000000000001';
+
+select is(
+  public.record_session_payment_stripe_reconciliation_v2(
+    'fa100000-0000-4000-8000-000000000001',
+    'evt_settlement_transferred_pending', '2026-08-25T05:00:00Z',
+    'ch_tes_local_weekly_fixture', 'txn_tes_local_weekly_fixture',
+    null, null, null, 'stripe_checkout', null,
+    'pending', '2026-08-26T12:00:00Z', 'brl', 12000,
+    'ch_tes_local_weekly_fixture'
+  )->>'settlementRecorded',
+  'true',
+  'provider settlement is reconciled even after the Transfer was recorded'
+);
+
+select is(
+  (select stripe_balance_status from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  'pending',
+  'transferred payment still records its initial pending provider snapshot'
+);
+
+select is(
+  (select transfer_status::text from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  'transferred',
+  'pending charge settlement does not reopen or block a completed Transfer'
+);
+
+select is(
+  (select financial_status::text from public.session_payments
+    where id='fa100000-0000-4000-8000-000000000001'),
+  'paid',
+  'pending provider availability does not unconfirm the customer payment'
 );
 
 select is(
