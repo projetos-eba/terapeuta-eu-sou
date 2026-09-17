@@ -69,6 +69,7 @@ type TherapistVerificationRecord = {
   changes_requested?: string | null;
   id: string;
   rejection_reason?: string | null;
+  review_origin?: string | null;
   reviewed_at?: string | null;
   status: string;
   submitted_at?: string | null;
@@ -692,7 +693,7 @@ async function readVerificationSummary(
   const rows = await client.get<TherapistVerificationRecord[]>(
     `/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(
       therapistProfileId,
-    )}&select=id,status,submitted_at,reviewed_at,changes_requested,rejection_reason&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
+    )}&select=id,status,submitted_at,reviewed_at,changes_requested,rejection_reason,review_origin&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
   );
   const row = Array.isArray(rows) ? rows[0] : null;
 
@@ -702,6 +703,10 @@ async function readVerificationSummary(
     changesRequested: normalizeNullableText(row.changes_requested),
     id: row.id,
     rejectionReason: normalizeNullableText(row.rejection_reason),
+    reviewOrigin:
+      row.review_origin === "connect_account_closed"
+        ? "connect_account_closed"
+        : "profile_submission",
     reviewedAt: row.reviewed_at ?? null,
     status: normalizeVerificationStatus(row.status),
     submittedAt: row.submitted_at ?? null,

@@ -225,6 +225,7 @@ async function resolveDelivery(
     return {
       templateData: {
         dashboard_url: `${baseUrl}/terapeuta`,
+        finance_url: `${baseUrl}/terapeuta/financeiro?tab=conta`,
         profile_edit_url: `${baseUrl}/terapeuta/perfil/editar`,
         profile_url: `${baseUrl}/terapeuta/perfil`,
         recipient_name: recipient.display_name ?? "Terapeuta",
@@ -458,6 +459,7 @@ async function resolveDelivery(
 
 function isTherapistLifecycleAction(actionKey: EmailActionKey) {
   return [
+    "therapist_receiving_account_closed",
     "therapist_profile_submitted_for_review",
     "therapist_documents_requested",
     "therapist_profile_approved",

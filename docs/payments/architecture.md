@@ -11,6 +11,12 @@ O TES separa dois fluxos Stripe:
   hospedado como contingencia.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
 
+O encerramento confirmado de uma conta Connect de recebimento despublica um
+perfil aprovado que estava público, bloqueia novos agendamentos e abre uma nova
+análise administrativa. A retirada não altera reservas já confirmadas nem
+redireciona Transfers ou Payouts históricos; a publicação só pode voltar após
+nova conta pronta e nova aprovação TES.
+
 O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho.
 O estado local muda por webhooks assinados, reservados atomicamente e
 idempotentes. Quando o retorno chega antes do webhook, a tela chama uma rota

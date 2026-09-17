@@ -369,9 +369,9 @@ function SessionsFilterBar({
   return (
     <form
       action={routes.therapist.sessions}
-      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(142px,0.58fr)_minmax(150px,0.62fr)_112px]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 2xl:grid-cols-[minmax(220px,1fr)_minmax(142px,0.58fr)_minmax(150px,0.62fr)_minmax(176px,0.72fr)]"
     >
-      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
+      <div className="col-span-2 flex items-center justify-between gap-3 2xl:col-span-4">
         <div>
           <h2 className="text-base font-extrabold text-brand-deep">Sessões</h2>
           <p className="mt-1 text-xs font-semibold text-tesText-secondary">
@@ -385,7 +385,7 @@ function SessionsFilterBar({
           size={20}
         />
       </div>
-      <label className="relative col-span-2 block min-w-0 xl:col-span-1">
+      <label className="relative col-span-2 block min-w-0 2xl:col-span-1">
         <span className="sr-only">Buscar por pessoa ou terapia</span>
         <Search
           aria-hidden="true"
@@ -413,9 +413,9 @@ function SessionsFilterBar({
         options={periodOptions}
         value={periodPreset ?? "30"}
       />
-      <div className="col-span-2 flex gap-2 xl:col-span-1">
+      <div className="col-span-2 flex gap-2 2xl:col-span-1">
         <button
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary xl:flex-none"
+          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary 2xl:flex-none"
           type="submit"
         >
           Filtrar

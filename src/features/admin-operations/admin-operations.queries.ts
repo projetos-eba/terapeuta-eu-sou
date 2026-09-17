@@ -776,7 +776,7 @@ async function fetchAdminProfessionalVerificationSummary({
 }): Promise<AdminProfessionalVerificationSummary | null> {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=status,submitted_at,reviewed_at&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
+      `${config.url}/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=status,submitted_at,reviewed_at,review_origin&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
       {
         cache: "no-store",
         headers: adminReadHeaders({ accessToken, config }),
@@ -791,6 +791,10 @@ async function fetchAdminProfessionalVerificationSummary({
     if (!row) return null;
 
     return {
+      reviewOrigin:
+        asString(row.review_origin) === "connect_account_closed"
+          ? "connect_account_closed"
+          : "profile_submission",
       reviewedAt: asString(row.reviewed_at) ?? null,
       source: "verification",
       status: normalizeVerificationStatus(asString(row.status)),

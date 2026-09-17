@@ -1,6 +1,6 @@
 # ADR-010 — Meu Perfil: rascunho privado e publicação pelo terapeuta
 
-Status: aceito em 2026-07-28; ampliado em 2026-08-18, 2026-09-02 e 2026-09-15.
+Status: aceito em 2026-07-28; ampliado em 2026-08-18, 2026-09-02, 2026-09-15 e 2026-09-17.
 
 ## Contexto
 
@@ -23,10 +23,18 @@ público existente já derivava de `therapist_profiles` e de
   encerrada e plenamente pronta para o fluxo financeiro V10: cadastro enviado
   e pronto, nenhuma exigência atual, operação pronta, Transfers ativos e Payout
   habilitado no intervalo diário. A verificação falha fechada.
-- Perder essa prontidão não altera o estado de publicação armazenado nem
-  cancela reservas existentes. O perfil, a busca, os serviços, novos horários e
-  novos holds ficam automaticamente indisponíveis até a conta voltar a estar
-  pronta.
+- Exigências temporárias de uma conta Connect preservam o estado editorial e
+  apenas bloqueiam novos agendamentos até a prontidão voltar. Já o encerramento
+  confirmado da conta (`v2.core.account.closed`, ou sincronização autoritativa
+  equivalente) é uma mudança de confiança: para um perfil aprovado e público,
+  a mesma transação o despublica, interrompe novos agendamentos e cria uma nova
+  `therapist_verifications` com origem `connect_account_closed`. A aprovação
+  anterior e a conta histórica permanecem imutáveis para auditoria.
+- Depois de uma nova conta pronta e da aprovação administrativa dessa revisão,
+  o TES restaura automaticamente a publicação anterior somente se todos os
+  demais critérios atuais ainda forem atendidos. Reservas existentes, Transfers
+  já criados e Payouts históricos não são cancelados, redirecionados ou
+  reclassificados por esse fluxo.
 - A primeira publicação de um perfil ainda não aprovado entra na análise
   administrativa. Depois de `therapist_profiles.status = approved`, publicar
   uma nova versão editorial não reabre `therapist_verifications`, não remove a

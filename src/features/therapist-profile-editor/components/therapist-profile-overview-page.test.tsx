@@ -308,6 +308,45 @@ describe("TherapistProfileOverviewPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("explains the reconnection and reapproval path after a receiving account closes", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: true,
+        },
+        verificationSummary: {
+          id: "verification-account-closed",
+          rejectionReason: null,
+          reviewOrigin: "connect_account_closed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Conecte uma nova conta de recebimento",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Conta de recebimento encerrada")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Conectar conta de recebimento" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=conta");
+    expect(
+      screen.getAllByText(/nova análise antes de liberar novos agendamentos/i),
+    ).not.toHaveLength(0);
+  });
+
   it("returns documents to in-progress when the TES team requests resubmission", () => {
     const editor = makeEditor({
       derived: {

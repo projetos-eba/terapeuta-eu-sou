@@ -154,6 +154,7 @@ export type AdminProfessionalProfileReview = {
 };
 
 export type AdminProfessionalVerificationSummary = {
+  reviewOrigin?: "connect_account_closed" | "profile_submission";
   reviewedAt: string | null;
   /**
    * Usada somente para explicar a linha do tempo sem inventar registros de

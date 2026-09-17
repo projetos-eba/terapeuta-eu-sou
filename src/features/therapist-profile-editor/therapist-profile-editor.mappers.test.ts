@@ -111,6 +111,21 @@ describe("therapist profile editor mappers", () => {
     );
   });
 
+  it("preserves the account-closure origin for the private recovery journey", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      verificationSummary: {
+        ...contract.verificationSummary,
+        reviewOrigin: "connect_account_closed",
+        status: "submitted",
+      },
+    });
+
+    expect(editor.verificationSummary?.reviewOrigin).toBe(
+      "connect_account_closed",
+    );
+  });
+
   it("keeps an approved legacy profile approved when its verification history is absent", () => {
     const editor = mapTherapistProfileEditorContract({
       ...contract,

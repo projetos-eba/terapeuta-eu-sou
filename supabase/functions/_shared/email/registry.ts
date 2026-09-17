@@ -442,6 +442,47 @@ export const emailActionRegistry: Record<
       support_url: "https://example.test/ajuda",
     },
   },
+  therapist_receiving_account_closed: {
+    actionKey: "therapist_receiving_account_closed",
+    category: "Terapeutas",
+    label: "Conta de recebimento encerrada",
+    description:
+      "Informa que a conta de recebimento foi encerrada e que uma nova análise é necessária.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Sua conta de recebimento foi encerrada",
+      preheader:
+        "Conecte uma nova conta para que a equipe TES possa concluir uma nova análise.",
+      text: "Sua conta de recebimento foi encerrada.\n\nOlá, {{recipient_name}}.\n\nIdentificamos que a conta usada para receber seus repasses foi encerrada. Por segurança, seu perfil ficou indisponível para novos agendamentos.\n\nConecte uma nova conta de recebimento no Financeiro. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.\n\nOs encontros já confirmados e os registros financeiros anteriores permanecem preservados.\n\nEquipe TES\n\nAbrir conta de recebimento: {{finance_url}}",
+      html: defaultEmailHtml({
+        title: "Sua conta de recebimento foi encerrada.",
+        ctaLabel: "Abrir conta de recebimento",
+        ctaUrlToken: "finance_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Identificamos que a conta usada para receber seus repasses foi encerrada. Por segurança, seu perfil ficou indisponível para novos agendamentos.",
+          ),
+          accountParagraph(
+            "Conecte uma nova conta de recebimento no Financeiro. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+          ),
+          accountParagraph(
+            "Os encontros já confirmados e os registros financeiros anteriores permanecem preservados.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: [
+      ...accountTokens,
+      { key: "finance_url", label: "Link do Financeiro", kind: "url" },
+    ],
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      finance_url: "https://example.test/terapeuta/financeiro?tab=conta",
+    },
+  },
   therapist_profile_submitted_for_review: {
     actionKey: "therapist_profile_submitted_for_review",
     category: "Terapeutas",

@@ -226,6 +226,13 @@ encerramento remove o item da reserva e devolve o pagamento à elegibilidade.
 Se a intenção já existe, inclusive em estado ambíguo, o vínculo original é
 preservado para reconciliação e falha fechada.
 
+Para um terapeuta que estava aprovado e publicado, o mesmo encerramento também
+despublica o perfil, bloqueia novos agendamentos e abre uma nova análise
+administrativa. A nova conta pronta não restaura a visibilidade por si só: a
+aprovação TES é obrigatória. Depois dela, a publicação anterior só volta se os
+demais critérios autoritativos continuarem válidos. Reservas existentes e
+movimentações financeiras históricas permanecem preservadas.
+
 ## Eventos obrigatórios
 
 Snapshot Connect, escopo `@accounts`:
