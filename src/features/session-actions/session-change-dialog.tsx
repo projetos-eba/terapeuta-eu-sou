@@ -155,18 +155,11 @@ export function SessionChangeDialog({
             : actorRole === "patient"
               ? "Reagendar encontro"
               : "Solicitar reagendamento";
-  const description =
-    screen === "cancel"
-      ? "Confira as condições deste encontro antes de confirmar o cancelamento."
-      : screen === "therapist_change"
-        ? "A pessoa poderá escolher outro horário disponível ou solicitar análise de reembolso."
-        : screen === "confirm"
-        ? actorRole === "patient"
-          ? "O novo horário será confirmado imediatamente após a validação final da agenda."
-          : "O reagendamento só será concluído depois que a outra parte aceitar a proposta."
-        : mode === "cancel" && screen === "schedule"
-          ? "Antes de cancelar, podemos tentar um horário que combine melhor com sua rotina."
-          : "A terapia, a duração e o valor contratados permanecem os mesmos.";
+  const description = getSessionChangeDialogDescription({
+    actorRole,
+    mode,
+    screen,
+  });
 
   function choose(slot: RescheduleSlot) {
     setSelectedSlot(slot);
@@ -400,6 +393,32 @@ export function SessionChangeDialog({
       ) : null}
     </TESDialog>
   );
+}
+
+export function getSessionChangeDialogDescription({
+  actorRole,
+  mode,
+  screen,
+}: {
+  actorRole: ActorRole;
+  mode: DialogMode;
+  screen: Screen;
+}) {
+  if (screen === "cancel") {
+    return "Confira as condições deste encontro antes de confirmar o cancelamento.";
+  }
+  if (screen === "therapist_change") {
+    return "A pessoa poderá escolher outro horário disponível ou cancelar a sessão.";
+  }
+  if (screen === "confirm") {
+    return actorRole === "patient"
+      ? "O novo horário será confirmado imediatamente após a validação final da agenda."
+      : "O reagendamento só será concluído depois que a outra parte aceitar a proposta.";
+  }
+  if (mode === "cancel" && screen === "schedule") {
+    return "Antes de cancelar, podemos tentar um horário que combine melhor com sua rotina.";
+  }
+  return "A terapia, a duração e o valor contratados permanecem os mesmos.";
 }
 
 function LockedServiceSummary({

@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(31);
 
 select ok(has_function_privilege('service_role',
   'public.open_therapist_booking_reschedule_v10(uuid,uuid,text,text,integer)',
@@ -270,6 +270,15 @@ select is((select status from public.booking_reschedule_requests
 select is((select status from public.session_payment_schedules
   where booking_id = 'b1240000-0000-4000-8000-000000000012'),
   'scheduled', 'expiry releases the untouched schedule for its normal future due time');
+
+savepoint therapist_v10_expiry_before_claim;
+select is(jsonb_array_length(public.claim_due_session_payment_schedules_v10(
+  (select payment_due_at from public.session_payments
+   where booking_id = 'b1240000-0000-4000-8000-000000000012'),
+  'b1240000-0000-4000-8000-000000000098', 20, 5
+) -> 'claims'), 1,
+  'the payment worker can claim the original schedule only after the expired proposal is closed');
+rollback to savepoint therapist_v10_expiry_before_claim;
 
 select is(public.cancel_therapist_uncharged_session_v10(
   'b1240000-0000-4000-8000-000000000012',
