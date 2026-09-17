@@ -1,6 +1,7 @@
 import {
   extractChargeSettlementSnapshot,
   isChargeSettlementAvailable,
+  reconcileChargeSettlements,
   refreshRecoverableConnectPayments,
 } from "./charge-settlement.ts";
 import type { SupabaseRestClient } from "../auth/supabase-rest.ts";
@@ -34,10 +35,33 @@ Deno.test(
 );
 
 Deno.test(
+  "reconciles an unsettled charge independently of the transfer lifecycle",
+  async () => {
+    const requests: Array<{ path?: string }> = [];
+    const client = {
+      get: (path: string) => {
+        requests.push({ path });
+        return Promise.resolve([]);
+      },
+    } as unknown as SupabaseRestClient;
+
+    const results = await reconcileChargeSettlements({
+      client,
+      stripe: {} as never,
+    });
+
+    assertEquals(results.length, 0);
+    assertEquals(
+      requests[0]?.path,
+      "/rest/v1/session_payments?select=id,stripe_charge_id&financial_status=in.(paid,partially_refunded)&stripe_charge_id=not.is.null&or=(stripe_balance_transaction_id.is.null,stripe_balance_status.is.null,stripe_balance_status.eq.pending)&order=stripe_balance_checked_at.asc.nullsfirst,updated_at.asc&limit=500",
+    );
+  },
+);
+
+Deno.test(
   "rechecks payments blocked only because Connect was not ready",
   async () => {
-    const requests: Array<{ body?: unknown; name?: string; path?: string }> =
-      [];
+    const requests: Array<{ body?: unknown; name?: string; path?: string }> = [];
     const client = {
       get: (path: string) => {
         requests.push({ path });
