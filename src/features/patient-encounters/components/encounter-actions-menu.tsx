@@ -49,7 +49,7 @@ export function EncounterActionsMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Abrir ações do encontro"
-        className="grid size-9 place-items-center rounded-md border border-brand-lavender bg-white text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="grid size-10 place-items-center rounded-md border border-brand-lavender bg-white text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         onClick={() => setOpen((value) => !value)}
         type="button"
       >

@@ -1,4 +1,4 @@
-import { SessionFinancialStatus } from "@/domain/tes";
+import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 
 import type { SessionPresentation } from "@/features/bookings";
 
@@ -14,6 +14,7 @@ export function getTherapistSessionPaymentStatus({
   sessionState,
   startsAt,
 }: {
+  bookingStatus?: BookingStatus;
   financialStatus: SessionFinancialStatus | null;
   now?: Date;
   sessionState: SessionPresentation["state"];

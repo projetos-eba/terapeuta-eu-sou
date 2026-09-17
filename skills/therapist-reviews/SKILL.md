@@ -1,5 +1,15 @@
 # Therapist Reviews
 
+## Contrato vigente de qualidade — ADR-023
+
+As regras aprovadas em 2026-09-17 prevalecem sobre descrições legadas:
+qualidade não confirma realização nem altera financeiro; a lista privada
+mostra apenas respostas do próprio terapeuta, com relatos antigos marcados
+como históricos. O cliente nunca tem seu relato privado exposto ao terapeuta.
+Pendências individuais levam a “Ver sessão”, sem sugerir que o formulário de
+qualidade realiza confirmação manual. Confirmação automática observa 30 dias
+do fim previsto e a suspensão por análise de qualidade ainda dentro de 5 dias.
+
 Use esta skill ao alterar a página de Avaliações do shell do terapeuta.
 
 ## Fontes Obrigatórias
@@ -61,8 +71,8 @@ altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
 - Cada pendência mostra a referência operacional imutável `Sessão #AAMNNNNNN`,
   paciente, terapia e horário. O código identifica a sessão; UUID continua
   sendo usado somente por navegação e comandos autorizados.
-- Feedback privado das próprias sessões e pendências podem aparecer na gestão,
-  mas a resposta do paciente é imutável e somente leitura para o terapeuta.
+- Feedback privado do próprio terapeuta e pendências podem aparecer na gestão.
+  A resposta privada do paciente não é exposta ao terapeuta.
 - Não inventar deltas percentuais quando não houver base confiável.
 - TES é exclusivamente online; não sugerir atendimento fora do fluxo online da
   plataforma.
@@ -92,8 +102,8 @@ altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
   próximas dos resultados. Cada item expõe identidade limitada, terapia ou
   serviço, nota, data, comentário, estado e a próxima ação.
 - A rota é dividida em duas abas acessíveis: `Avaliações públicas`, com
-  indicadores, filtros, respostas, resumo e orientação; e `Avaliações da
-  sessão`, com feedbacks privados somente leitura e confirmações operacionais.
+  indicadores, filtros, respostas, resumo e orientação; e `Sessões e
+  confirmações`, com as próprias respostas privadas e confirmações individuais.
   A segunda aba mostra um contador amarelo igual ao número de confirmações
   pendentes; esses conteúdos não se misturam à lista pública.
 - O nó Figma `13366:5844` é a referência visual; o card de confirmação mantém

@@ -199,6 +199,7 @@ export type AdminOperationDetailPageData = {
 };
 
 export type AdminSessionFeedbackItem = {
+  successful?: boolean;
   authorRole: "patient" | "therapist";
   comment: string;
   createdAt: string;
@@ -247,6 +248,9 @@ export type AdminSessionFinancialAudit = {
 };
 
 export type AdminSessionFeedbackData = {
+  qualityReview?: { isOpen: boolean; overdue: boolean; allAnswered: boolean };
+  qualityReports?: Array<{ id: string; authorRole: "patient" | "therapist"; ticketId: string; dueAt: string; answeredAt: string | null; overdue: boolean }>;
+  legacyFeedback?: AdminSessionFeedbackItem[];
   attendance: AdminSessionAttendance;
   confirmation: {
     patient: AdminSessionConfirmation | null;

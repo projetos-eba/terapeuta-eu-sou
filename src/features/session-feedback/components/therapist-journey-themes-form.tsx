@@ -161,7 +161,7 @@ export function TherapistJourneyThemesForm({
       setErrorMessage(
         error instanceof Error && error.message !== "themes_save_failed"
           ? error.message
-          : "Não foi possível registrar os temas agora. Sua confirmação permanece registrada.",
+          : "Não foi possível registrar os temas agora. Sua avaliação permanece registrada.",
       );
     }
   }

@@ -24,7 +24,7 @@ export function PatientReviewPrompt({
       >
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-brand-primary">
           <CalendarCheck2 aria-hidden="true" size={16} />
-          Confirmação pendente
+          Avaliação disponível
         </span>
         <h2
           id="patient-review-title"
@@ -52,7 +52,9 @@ export function PatientReviewPrompt({
           </div>
         </div>
         <p className="mt-4 text-sm font-semibold leading-6 text-[var(--tes-color-text-secondary-app)]">
-          Confirme se o encontro aconteceu. Sua resposta privada é separada da avaliação pública do terapeuta.
+          Conte como foi o encontro. Sua resposta é privada, separada da
+          avaliação pública do terapeuta e não interfere no pagamento nem no
+          repasse.
         </p>
         <TESButton
           className="mt-4 w-full"

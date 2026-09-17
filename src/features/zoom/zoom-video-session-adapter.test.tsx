@@ -292,6 +292,125 @@ describe("ZoomVideoSessionAdapter", () => {
     );
   });
 
+  it("offers only a page update for a recoverable mobile camera failure", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockStream.startVideo.mockResolvedValueOnce({
+      errorCode: 104,
+      reason: "video_device_needs_restart",
+      type: "VIDEO_ERROR",
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ativar câmera" }),
+    );
+
+    expect(
+      await screen.findByText("A câmera não respondeu no celular"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Atualize esta página para reiniciar somente o vídeo. Seu encontro e horário continuam preservados.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Atualizar página" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /tentar novamente/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /copiar referência/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /ajuda e suporte/i }),
+    ).toBeNull();
+    expect(mockClient.leave).not.toHaveBeenCalled();
+  });
+
+  it("keeps mobile camera permissions separate from the page-update recovery", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockStream.startVideo.mockResolvedValueOnce({
+      errorCode: 103,
+      reason: "camera_denied",
+      type: "VIDEO_ERROR",
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ativar câmera" }),
+    );
+
+    expect(
+      await screen.findByText(/permissão da câmera está bloqueada/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Atualizar página" }),
+    ).toBeNull();
+    expect(screen.queryByText("A câmera não respondeu no celular")).toBeNull();
+  });
+
+  it("requires confirmation before sending mobile users to WhatsApp support", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ajuda e suporte" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Falar com o suporte" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/seu encontro continua aberto aqui/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir WhatsApp" }),
+    ).toHaveAttribute("target", "_blank");
+  });
+
   it("keeps the therapist in the room when initial audio setup resolves with a transient failure", async () => {
     vi.stubGlobal("fetch", accessResponse(1));
     mockStream.startAudio.mockResolvedValueOnce({
@@ -1202,9 +1321,7 @@ describe("ZoomVideoSessionAdapter", () => {
       vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
       mockStream.startVideo.mockImplementation(async () => {
         expect(
-          screen
-            .getByTestId("zoom-local-video")
-            .querySelector("video-player"),
+          screen.getByTestId("zoom-local-video").querySelector("video-player"),
         ).toBeInTheDocument();
         return undefined;
       });
@@ -2320,9 +2437,7 @@ describe("ZoomVideoSessionAdapter", () => {
       within(dialog).getByRole("button", { name: /encerrar para todos/i }),
     );
 
-    expect(
-      await screen.findByText(/você já pode compartilhar seu feedback/i),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(destroyClient).toHaveBeenCalled());
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/zoom/video-session-access",
       expect.objectContaining({

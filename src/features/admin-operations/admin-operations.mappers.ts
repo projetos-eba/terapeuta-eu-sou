@@ -252,6 +252,19 @@ function mapAdminSessionFeedback(value: unknown) {
     data: {
       attendance,
       confirmation,
+      ...(isRecord(value.qualityReview) ? { qualityReview: {
+        isOpen: value.qualityReview.isOpen === true,
+        overdue: value.qualityReview.overdue === true,
+        allAnswered: value.qualityReview.allAnswered === true,
+      } } : {}),
+      ...(Array.isArray(value.qualityReports) ? { qualityReports: value.qualityReports.filter(isRecord).map((report) => ({
+        id: asText(report.id), authorRole: report.authorRole === "therapist" ? "therapist" as const : "patient" as const,
+        ticketId: asText(report.ticketId), dueAt: asText(report.dueAt), answeredAt: asText(report.answeredAt) || null,
+        overdue: report.overdue === true,
+      })) } : {}),
+      ...(Array.isArray(value.legacyFeedback) ? { legacyFeedback: value.legacyFeedback.map((feedback) =>
+        mapAdminSessionFeedbackItem(feedback, isRecord(feedback) && feedback.authorRole === "therapist" ? "therapist" : "patient"))
+        .filter((feedback): feedback is NonNullable<typeof feedback> => feedback !== null) } : {}),
       divergent: value.divergent === true,
       financial,
       patient,
@@ -325,16 +338,17 @@ function mapAdminSessionFeedbackItem(
   authorRole: "patient" | "therapist",
 ) {
   if (!isRecord(value)) return null;
-  const outcome = asText(value.outcome);
+  const outcome = typeof value.successful === "boolean" ? "completed" : asText(value.outcome);
   if (outcome !== "completed" && outcome !== "not_performed") return null;
 
   const rating = typeof value.rating === "number" ? value.rating : null;
 
   return {
     authorRole,
+    ...(typeof value.successful === "boolean" ? { successful: value.successful } : {}),
     comment: asText(value.comment),
     createdAt: asText(value.createdAt),
-    notPerformedReason: asText(value.notPerformedReason) || null,
+    notPerformedReason: asText(value.qualityReason ?? value.notPerformedReason) || null,
     outcome,
     rating,
   } satisfies import("./admin-operations.types").AdminSessionFeedbackItem;

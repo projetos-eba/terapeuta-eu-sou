@@ -29,7 +29,7 @@ describe("PendingSessionFeedbackSection", () => {
     render(<PendingSessionFeedbackSection sessions={manySessions} />);
 
     const scrollRegion = screen.getByRole("region", {
-      name: "Lista de confirmações pendentes",
+      name: "Lista de avaliações pendentes",
     });
     expect(scrollRegion).toHaveAttribute(
       "data-testid",
@@ -43,6 +43,20 @@ describe("PendingSessionFeedbackSection", () => {
       "overflow-y-auto",
     );
     expect(screen.getAllByRole("article")).toHaveLength(5);
+  });
+
+  it("frames the private assessment as independent from payments and transfers", () => {
+    render(<PendingSessionFeedbackSection sessions={sessions} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Encontros aguardando sua avaliação",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/não interfere no pagamento nem no repasse/i),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Aguardando sua avaliação")).toHaveLength(2);
   });
 
 });

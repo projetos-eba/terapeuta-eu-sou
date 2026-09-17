@@ -304,7 +304,7 @@ function HeroAction({
           }
         >
           <CheckCircle2 aria-hidden="true" size={17} />
-          Confirmar encontro
+          Avaliar encontro
         </Link>
       ) : null}
     </div>

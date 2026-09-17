@@ -175,6 +175,14 @@ anotação.
 
 ## QA
 
+- Após T+10 estrito sem chegada ou entrada pontual do terapeuta, comunicar
+  `Encontro não realizado` e análise pelo TES, sem entrada nem promessa de
+  reembolso. A chegada do cliente não autoriza o terapeuta atrasado. Cada
+  participante mantém reentrada pelo próprio registro pontual até o fim;
+  reagendamento não herda evidência de versões/horários anteriores.
+- `no_show_therapist` e `no_show_both` mantêm pagamento em análise pelo Admin:
+  classificação não executa Refund, Reversal ou nova tentativa de repasse.
+
 - Run `npm run typecheck`, `npm run lint`, `npm run build`.
 - Run focused tests for patient detail components when changing access or state presentation.
 - Preserve o volume local: use migration dry-run/push e pgTAP focado; não use
@@ -187,6 +195,14 @@ anotação.
 - Verify the notification popover renders above page content without text bleed or stacking overlap.
 
 ## Copy Safety
+
+- Regra vigente ADR-023: a presença do cliente no detalhe e na lista usa a
+  evidência autenticada da tentativa atual, nunca uma participação antiga ou
+  a presença do terapeuta. Após T+10 ultrapassado, a ausência é classificada
+  sem aguardar o Zoom. Só joins bilaterais encerrados liberam avaliação.
+- Exibir realização, qualidade, confirmação individual e pagamento em campos
+  separados. “Realizada, em análise” de qualidade não bloqueia Transfer nem
+  autoriza reembolso/reagendamento; o ticket do próprio cliente é privado.
 
 - Keep language supportive and responsible.
 - Do not promise cure, diagnosis, or guaranteed outcomes.

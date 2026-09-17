@@ -62,7 +62,9 @@ describe("PatientPublicReviewForm", () => {
         therapistProfileId="10000000-0000-4000-8000-000000000001"
       />,
     );
-    expect(await screen.findByText(/será liberada após a confirmação/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/será liberada após o registro privado/i),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /publicar avaliação/i })).not.toBeInTheDocument();
   });
 });

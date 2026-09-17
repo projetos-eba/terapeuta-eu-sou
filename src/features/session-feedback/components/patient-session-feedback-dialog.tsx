@@ -48,7 +48,7 @@ export function PatientSessionFeedbackDialog({
       className="max-w-[820px]"
       description={`${session.therapist.name} · ${session.dateLabel}, ${session.timeLabel}`}
       onClose={closeDialog}
-      title={step === "session" ? "Confirme seu encontro" : "Avaliação pública opcional"}
+      title={step === "session" ? "Avalie seu encontro" : "Avaliação pública opcional"}
     >
       {step === "session" ? (
         <div className="grid gap-4">
@@ -57,7 +57,7 @@ export function PatientSessionFeedbackDialog({
             bookingId={session.bookingId}
             introductoryMessage={`${session.serviceLabel} com ${session.therapist.name}`}
             onSubmitted={(feedback: SessionFeedbackRecord) => {
-              setCompletedFeedback(feedback.outcome === "completed");
+              setCompletedFeedback(feedback.successful === true || (feedback.successful === undefined && feedback.outcome === "completed"));
               onSessionSubmitted?.();
             }}
             sessionLabel={`${session.dateLabel} · ${session.timeLabel}`}
@@ -68,9 +68,11 @@ export function PatientSessionFeedbackDialog({
                 Concluir agora
               </TESButton>
             ) : null}
-            <TESButton onClick={() => setStep("public-review")} type="button" variant="secondary">
-              Avaliar terapeuta (opcional)
-            </TESButton>
+            {completedFeedback ? (
+              <TESButton onClick={() => setStep("public-review")} type="button" variant="secondary">
+                Avaliar terapeuta (opcional)
+              </TESButton>
+            ) : null}
           </div>
         </div>
       ) : (

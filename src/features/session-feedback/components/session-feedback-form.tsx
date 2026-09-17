@@ -46,8 +46,8 @@ export function SessionFeedbackForm({
     useState<SessionFeedbackRecord | null>(null);
   const [readPayload, setReadPayload] =
     useState<SessionFeedbackReadPayload | null>(null);
-  const [selectedOutcome, setSelectedOutcome] = useState<
-    "completed" | "not_performed" | ""
+  const [selectedQuality, setSelectedQuality] = useState<
+    "successful" | "unsuccessful" | ""
   >("");
   const [rating, setRating] = useState(0);
   const [reason, setReason] = useState<SessionFeedbackReason | "">("");
@@ -64,7 +64,7 @@ export function SessionFeedbackForm({
 
       try {
         const response = await fetch(
-          `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
+          `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}&actorRole=${actorRole}`,
           { cache: "no-store" },
         );
         const payload = (await response.json().catch(() => null)) as {
@@ -83,7 +83,7 @@ export function SessionFeedbackForm({
         setStatus(payload.data.feedback ? "sent" : payload.data.status);
         if (payload.data.feedback) {
           setRating(payload.data.feedback.rating ?? 0);
-          setReason(payload.data.feedback.notPerformedReason ?? "");
+          setReason(payload.data.feedback.qualityReason ?? payload.data.feedback.notPerformedReason ?? "");
           setComment(payload.data.feedback.comment);
         }
       } catch {
@@ -100,21 +100,20 @@ export function SessionFeedbackForm({
     return () => {
       cancelled = true;
     };
-  }, [bookingId]);
+  }, [actorRole, bookingId]);
 
   const isSubmitting = status === "sent" && !existingFeedback;
   const isQualityEligible = status === "eligible";
-  const isIncidentOnly = status === "incident_only";
   const canSubmit = useMemo(() => {
-    if (!isQualityEligible && !isIncidentOnly) return false;
-    if (selectedOutcome === "completed") return rating >= 1 && rating <= 5;
-    if (selectedOutcome === "not_performed" || isIncidentOnly)
+    if (!isQualityEligible) return false;
+    if (selectedQuality === "successful") return rating >= 1 && rating <= 5;
+    if (selectedQuality === "unsuccessful")
       return Boolean(reason);
     return false;
-  }, [isIncidentOnly, isQualityEligible, rating, reason, selectedOutcome]);
+  }, [isQualityEligible, rating, reason, selectedQuality]);
 
   async function submitFeedback() {
-    if (!canSubmit || isSubmitting || existingFeedback) return;
+    if (!canSubmit || isSubmitting || existingFeedback || !readPayload?.sessionAttemptId) return;
 
     setStatus("sent");
     setErrorMessage(null);
@@ -123,17 +122,14 @@ export function SessionFeedbackForm({
     try {
       const response = await fetch("/api/session-feedback", {
         body: JSON.stringify({
+          actorRole,
           bookingId,
+          contractVersion: 2,
+          sessionAttemptId: readPayload.sessionAttemptId,
+          successful: selectedQuality === "successful",
           comment: comment.trim(),
-          notPerformedReason:
-            selectedOutcome === "not_performed" || isIncidentOnly
-              ? reason
-              : null,
-          outcome:
-            selectedOutcome === "not_performed" || isIncidentOnly
-              ? "not_performed"
-              : "completed",
-          rating: selectedOutcome === "completed" ? rating : null,
+          qualityReason: selectedQuality === "unsuccessful" ? reason : null,
+          rating: selectedQuality === "successful" ? rating : null,
           requestId: requestIdRef.current,
         }),
         headers: { "Content-Type": "application/json" },
@@ -151,7 +147,7 @@ export function SessionFeedbackForm({
 
       setExistingFeedback(payload.data.feedback);
       setStatus("sent");
-      const refreshed = await loadReadPayload(bookingId);
+      const refreshed = await loadReadPayload(bookingId, actorRole);
       if (refreshed) setReadPayload(refreshed);
       onSubmitted?.(payload.data.feedback, refreshed);
     } catch (error) {
@@ -174,6 +170,8 @@ export function SessionFeedbackForm({
     actorRole === "patient" ? "este encontro" : "esta sessão";
   const subjectWithPreposition =
     actorRole === "patient" ? "deste encontro" : "desta sessão";
+
+  if (readPayload && !existingFeedback && !isQualityEligible && !isSubmitting) return null;
 
   return (
     <section
@@ -198,8 +196,7 @@ export function SessionFeedbackForm({
       </div>
 
       <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        Sua resposta é privada e ajuda a equipe a acompanhar a qualidade da sala
-        online.
+        Sua avaliação é privada e ajuda a equipe a acompanhar a qualidade da sala online. Ela não interfere no pagamento, reembolso ou repasse.
       </p>
 
       {introductoryMessage ? (
@@ -235,8 +232,8 @@ export function SessionFeedbackForm({
             className="mt-0.5 shrink-0 text-brand-primary"
             size={18}
           />
-          Ainda estamos confirmando os dados {subjectWithPreposition}. O
-          feedback ficará disponível quando houver pagamento confirmado.
+          Ainda estamos preparando os dados {subjectWithPreposition}. A
+          avaliação ficará disponível quando o encontro estiver elegível.
         </div>
       ) : null}
 
@@ -256,9 +253,9 @@ export function SessionFeedbackForm({
 
       {status === "attendance_pending" ? (
         <FeedbackInfoState>
-          {subjectEnded}, mas ainda estamos confirmando a presença dos dois
-          participantes. Esta tela será atualizada quando houver uma confirmação
-          segura.
+          {subjectEnded}, mas ainda estamos verificando a presença dos dois
+          participantes. Esta tela será atualizada quando houver dados seguros
+          para a avaliação.
         </FeedbackInfoState>
       ) : null}
 
@@ -285,37 +282,33 @@ export function SessionFeedbackForm({
           payload={readPayload}
           showJourneyThemes={showJourneyThemes}
         />
-      ) : isQualityEligible || isIncidentOnly ? (
+      ) : isQualityEligible ? (
         <div className="mt-6 grid gap-6">
-          {isQualityEligible ? (
-            <fieldset>
+          <fieldset>
               <legend className="text-base font-extrabold text-brand-deep">
-                {subjectWithArticle.charAt(0).toUpperCase() +
-                  subjectWithArticle.slice(1)}{" "}
-                aconteceu?
+                Essa sessão foi bem-sucedida?
               </legend>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <OutcomeButton
-                  checked={selectedOutcome === "completed"}
-                  label="Sim, foi realizado"
+                  checked={selectedQuality === "successful"}
+                  label="Sim"
                   onClick={() => {
-                    setSelectedOutcome("completed");
+                    setSelectedQuality("successful");
                     setReason("");
                   }}
                 />
                 <OutcomeButton
-                  checked={selectedOutcome === "not_performed"}
-                  label="Não foi realizado"
+                  checked={selectedQuality === "unsuccessful"}
+                  label="Não"
                   onClick={() => {
-                    setSelectedOutcome("not_performed");
+                    setSelectedQuality("unsuccessful");
                     setRating(0);
                   }}
                 />
               </div>
-            </fieldset>
-          ) : null}
+          </fieldset>
 
-          {isQualityEligible && selectedOutcome === "completed" ? (
+          {selectedQuality === "successful" ? (
             <fieldset>
               <legend className="text-base font-extrabold text-brand-deep">
                 Como você avalia {subjectWithArticle}?
@@ -352,14 +345,14 @@ export function SessionFeedbackForm({
                 })}
               </div>
             </fieldset>
-          ) : isIncidentOnly || selectedOutcome === "not_performed" ? (
+          ) : selectedQuality === "unsuccessful" ? (
             <fieldset>
               <legend className="text-base font-extrabold text-brand-deep">
                 O que aconteceu?
               </legend>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                Este relato é separado da avaliação de qualidade e permanece
-                privado.
+                Seu relato é privado. O TES responderá pelo suporte em até 5 dias corridos,
+                sem alterar a realização da sessão ou o financeiro.
               </p>
               <div className="mt-3 grid gap-2">
                 {SESSION_FEEDBACK_REASONS.map((item) => (
@@ -490,11 +483,6 @@ function FeedbackSentState({
   payload: SessionFeedbackReadPayload | null;
   showJourneyThemes: boolean;
 }) {
-  const waitingForCounterpart =
-    payload?.confirmationState === "awaiting_patient" ||
-    payload?.confirmationState === "awaiting_therapist" ||
-    payload?.confirmationState === "awaiting_both";
-
   return (
     <div className="mt-6 grid gap-4 rounded-2xl border border-status-success/30 bg-status-successBg/60 p-5">
       <p className="flex items-center gap-2 text-base font-extrabold text-brand-deep">
@@ -503,18 +491,20 @@ function FeedbackSentState({
           className="text-status-success"
           size={20}
         />
-        Sua confirmação foi registrada
+        Sua avaliação foi registrada
       </p>
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-        {waitingForCounterpart
-          ? `Sua resposta permanece privada. Ainda falta a confirmação ${payload?.confirmationState === "awaiting_patient" ? "do paciente" : "do terapeuta"}.`
-          : payload?.confirmationState === "blocked_for_review"
-            ? `Sua resposta permanece privada e ${actorRole === "patient" ? "o encontro foi bloqueado" : "a sessão foi bloqueada"} para análise da equipe.`
-            : "Sua resposta permanece privada. Obrigado por compartilhar como foi."}
+        {payload?.qualityReview?.isOpen
+          ? payload.qualityReview.overdue
+            ? "Realizada, em análise. O prazo de 5 dias do TES venceu; seu relato continua disponível no suporte. O financeiro não foi alterado."
+            : "Realizada, em análise. O TES responderá pelo suporte em até 5 dias corridos. O financeiro não foi alterado."
+          : payload?.qualityReview?.allAnswered
+            ? "Realizada (confirmada). O TES respondeu aos relatos. As confirmações individuais permanecem separadas."
+            : "Sua resposta permanece privada e não interfere no pagamento nem no repasse. Obrigado por compartilhar como foi."}
       </p>
       <div className="flex flex-wrap gap-2 text-sm font-extrabold text-brand-deep">
         <span className="rounded-full bg-white px-3 py-2">
-          {feedback.outcome === "completed"
+          {feedback.successful !== undefined || feedback.outcome === "completed"
             ? actorRole === "patient"
               ? "Encontro realizado"
               : "Sessão realizada"
@@ -530,17 +520,17 @@ function FeedbackSentState({
       </div>
       {showJourneyThemes &&
       actorRole === "therapist" &&
-      feedback.outcome === "completed" ? (
+      (feedback.successful === true || (feedback.successful === undefined && feedback.outcome === "completed")) ? (
         <TherapistJourneyThemesForm bookingId={bookingId} />
       ) : null}
     </div>
   );
 }
 
-async function loadReadPayload(bookingId: string) {
+async function loadReadPayload(bookingId: string, actorRole: "patient" | "therapist") {
   try {
     const response = await fetch(
-      `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
+      `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}&actorRole=${actorRole}`,
       { cache: "no-store" },
     );
     const payload = (await response.json().catch(() => null)) as {

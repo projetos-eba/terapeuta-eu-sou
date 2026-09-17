@@ -26,10 +26,12 @@ type ControlJob = {
   booking_id: string;
   id: string;
   max_attempts: number;
+  metadata: { bookingVersion?: number; scheduledStartsAt?: string } | null;
   operation:
     | "end_scheduled"
     | "end_hard_timeout"
     | "end_patient_no_show"
+    | "end_attendance_no_show"
     | "end_therapist_absent"
     | "reconcile_orphan"
     | "confirm_end";
@@ -182,6 +184,53 @@ async function processJob(input: {
       p_video_session_id: input.job.video_session_id,
     });
 
+    if (
+      input.job.operation === "end_attendance_no_show" ||
+      input.job.operation === "end_patient_no_show"
+    ) {
+      const [room] = await input.client.get<
+        Array<{
+          scheduled_starts_at: string;
+          termination_reason: string | null;
+          termination_requested_at: string | null;
+        }>
+      >(
+        `/rest/v1/video_sessions?select=scheduled_starts_at,termination_reason,termination_requested_at&id=eq.${encodeURIComponent(input.job.video_session_id)}&limit=1`,
+      );
+      const [booking] = await input.client.get<
+        Array<{
+          starts_at: string;
+          status: string;
+          version: number;
+        }>
+      >(
+        `/rest/v1/bookings?select=starts_at,status,version&id=eq.${encodeURIComponent(input.job.booking_id)}&limit=1`,
+      );
+      const currentStatus =
+        input.job.operation === "end_patient_no_show"
+          ? booking?.status === "confirmed"
+          : booking?.status === "no_show_patient" || booking?.status === "no_show_therapist" ||
+            booking?.status === "no_show_both";
+      if (
+        !room ||
+        !booking ||
+        !currentStatus ||
+        input.job.metadata?.bookingVersion !==
+          (input.job.operation === "end_patient_no_show"
+            ? booking.version
+            : booking.version - 1) ||
+        Date.parse(input.job.metadata?.scheduledStartsAt ?? "") !==
+          Date.parse(booking.starts_at) ||
+        Date.parse(room.scheduled_starts_at) !==
+          Date.parse(booking.starts_at) ||
+        room.termination_reason !== reason ||
+        !room.termination_requested_at
+      ) {
+        await completeJob(input.client, input.job.id, true);
+        return { ok: true, operation: input.job.operation, superseded: true };
+      }
+    }
+
     if (input.job.operation === "confirm_end") {
       await input.client.rpc("mark_video_session_termination_confirmed_v1", {
         p_reason: reason,
@@ -218,7 +267,8 @@ async function processJob(input: {
 
       if (
         providerSessionId === null &&
-        input.job.operation === "end_patient_no_show" &&
+        (input.job.operation === "end_patient_no_show" ||
+          input.job.operation === "end_attendance_no_show") &&
         session?.session_name
       ) {
         const resolution = resolveExactLiveSessionId(
@@ -315,6 +365,7 @@ function getTerminationReason(operation: ControlJob["operation"]) {
   if (operation === "end_scheduled") return "scheduled_end";
   if (operation === "end_hard_timeout") return "hard_timeout";
   if (operation === "end_patient_no_show") return "patient_no_show";
+  if (operation === "end_attendance_no_show") return "attendance_no_show";
   if (operation === "end_therapist_absent") return "therapist_absent";
   if (operation === "reconcile_orphan") return "reconcile_orphan";
   return "manual_end";

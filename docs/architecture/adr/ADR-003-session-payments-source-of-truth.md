@@ -18,6 +18,10 @@ O projeto contém representações legadas em `payments`,
 - Representações legadas são projeções temporárias, nunca autoridade.
 - Webhook assinado confirma pagamento; redirect não confirma nada.
 - Toda operação monetária usa centavos, idempotência e RLS.
+- ADR-023: no fluxo V10, Transfer pode ser enviado antes de qualquer
+  confirmação individual e não a substitui. Presença, qualidade, análise do
+  TES e confirmação automática não bloqueiam, duplicam ou revertem Transfer.
+  Somente uma decisão financeira explícita do Admin usa o comando próprio.
 
 ## Alternativas
 

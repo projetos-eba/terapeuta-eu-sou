@@ -42,10 +42,12 @@ export type TherapistSessionPendingReschedule = {
 export type TherapistSessionFeedbackStatus =
   | "before_session"
   | "eligible"
+  | "incident_only"
   | "submitted"
   | "unavailable";
 
 export type TherapistSessionFeedbackSummary = {
+  quality?: import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
   outcome: "completed" | "not_performed" | null;
   status: TherapistSessionFeedbackStatus;
 };
@@ -158,15 +160,16 @@ export async function getTherapistSessionFeedbackSummary(input: {
     );
     const status = getFeedbackStatus(payload);
     const outcome = getFeedbackOutcome(payload);
+    const quality = payload as import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
 
-    if (status === "eligible" || status === "before_session") {
-      return { outcome: null, status };
+    if (status === "eligible" || status === "before_session" || status === "incident_only") {
+      return { outcome: null, status, quality };
     }
     if (status === "submitted") {
-      return { outcome, status };
+      return { outcome, status, quality };
     }
 
-    return { outcome: null, status: "unavailable" };
+    return { outcome: null, status: "unavailable", quality };
   } catch {
     return { outcome: null, status: "unavailable" };
   }
@@ -243,6 +246,7 @@ function getFeedbackOutcome(value: unknown) {
     return null;
   }
   const outcome = Reflect.get(feedback, "outcome");
+  if (typeof Reflect.get(feedback, "successful") === "boolean") return "completed";
   return outcome === "completed" || outcome === "not_performed"
     ? outcome
     : null;

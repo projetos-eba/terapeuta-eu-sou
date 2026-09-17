@@ -35,7 +35,7 @@ export function PatientAppointmentCard({
   }, [appointment]);
 
   return (
-    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 pr-14 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center sm:pr-14">
+    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center">
       <span className="relative inline-flex size-[52px] overflow-hidden rounded-full bg-brand-lavenderSoft">
         {appointment.professional.avatarUrl ? (
           <Image
@@ -88,24 +88,16 @@ export function PatientAppointmentCard({
           </dd>
         </div>
       </dl>
-      <div className="flex flex-col gap-2 sm:items-end">
+      <div className="flex items-center justify-center gap-2 sm:justify-self-end">
         {isLive ? (
-          <>
-            <Link
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={
-                routes.patient.encounterDetail(appointment.id) as Route<string>
-              }
-            >
-              Entrar no encontro
-            </Link>
-            <Link
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={routes.patient.support as Route<string>}
-            >
-              Abrir chamado
-            </Link>
-          </>
+          <Link
+            className="inline-flex min-h-10 w-[145px] items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20"
+            href={
+              routes.patient.encounterDetail(appointment.id) as Route<string>
+            }
+          >
+            Entrar no encontro
+          </Link>
         ) : (
           <Link
             className="inline-flex min-h-9 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-[var(--tes-color-primary-dark)] outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
@@ -116,11 +108,11 @@ export function PatientAppointmentCard({
             Ver detalhes
           </Link>
         )}
+        <EncounterActionsMenu
+          bookingId={appointment.id}
+          className="relative shrink-0"
+        />
       </div>
-      <EncounterActionsMenu
-        bookingId={appointment.id}
-        className="absolute right-3 top-3"
-      />
     </article>
   );
 }

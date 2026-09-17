@@ -355,7 +355,10 @@ function TherapistResultCard({
           </div>
 
           <div>
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            <p
+              className="line-clamp-2 text-sm font-semibold leading-6 text-tesText-secondary"
+              title={therapist.description}
+            >
               {therapist.description}
             </p>
           </div>

@@ -8,6 +8,7 @@ export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 export type BookingDetailStatus = BookingStatus | "live";
 
 export type BookingDetailPageData = {
+  sessionQuality?: import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
   attendanceReview?: {
     classification:
       | "no_show_therapist"

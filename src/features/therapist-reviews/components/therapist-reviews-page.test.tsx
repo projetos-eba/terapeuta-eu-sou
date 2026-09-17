@@ -82,15 +82,18 @@ describe("TherapistReviewsPage", () => {
           ],
           privateFeedback: [
             {
-              authorRole: "patient",
+              authorRole: "therapist",
               bookingId: "a0000000-0000-4000-8000-000000000003",
               comment: "A sessão transcorreu bem.",
               createdAt: "2026-08-20T15:00:00.000Z",
               id: "a0000000-0000-4000-8000-000000000004",
+              historical: false,
               notPerformedReason: null,
               outcome: "completed",
               patientName: "Carolina Lima",
               rating: 5,
+              successful: true,
+              qualityReason: null,
               serviceTitle: "Reiki online",
               startsAt: "2026-08-20T14:30:00.000Z",
             },
@@ -100,7 +103,7 @@ describe("TherapistReviewsPage", () => {
     );
 
     const sessionTab = screen.getByRole("tab", {
-      name: "Avaliações da sessão, 2 confirmações pendentes",
+      name: "Sessões e confirmações, 2 confirmações pendentes",
     });
     expect(sessionTab).toBeInTheDocument();
 
@@ -109,7 +112,7 @@ describe("TherapistReviewsPage", () => {
     expect(screen.getByText("Sessão #26G000001")).toBeInTheDocument();
     expect(screen.getByText(/27 de ago\. de 2026/i)).toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: "Confirmar sessão" })[0],
+      screen.getAllByRole("link", { name: "Ver sessão" })[0],
     ).toHaveAttribute(
       "href",
       "/terapeuta/sessoes/a0000000-0000-4000-8000-000000000001/video?feedback=1",
@@ -118,13 +121,13 @@ describe("TherapistReviewsPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Confirmações de atendimentos",
+        name: "Confirmações individuais pendentes",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Feedbacks privados das sessões",
+        name: "Suas respostas privadas das sessões",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Carolina Lima")).toBeInTheDocument();
@@ -153,7 +156,7 @@ describe("TherapistReviewsPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Confirmações de atendimentos",
+        name: "Confirmações individuais pendentes",
       }),
     ).toBeInTheDocument();
     expect(

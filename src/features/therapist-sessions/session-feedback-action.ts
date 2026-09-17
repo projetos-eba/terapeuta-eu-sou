@@ -1,5 +1,6 @@
 export type TherapistPostSessionAction =
   | "confirm"
+  | "report_incident"
   | "room"
   | "submitted"
   | "unavailable";
@@ -17,6 +18,7 @@ export function getTherapistPostSessionAction(input: {
   }
 
   if (input.feedbackStatus === "eligible") return "confirm";
+  if (input.feedbackStatus === "incident_only") return "report_incident";
   if (input.feedbackStatus === "submitted") return "submitted";
 
   return "unavailable";

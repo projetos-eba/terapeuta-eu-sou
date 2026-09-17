@@ -76,6 +76,8 @@ export const ZoomAccessReason = {
   TooLate: "TOO_LATE",
   SessionEnded: "SESSION_ENDED",
   ArrivalWindowExpired: "ARRIVAL_WINDOW_EXPIRED",
+  TherapistArrivalWindowExpired: "THERAPIST_ARRIVAL_WINDOW_EXPIRED",
+  BothNoShow: "BOTH_NO_SHOW",
   TechnicalUnavailable: "TECHNICAL_UNAVAILABLE",
   Unknown: "UNKNOWN",
 } as const;

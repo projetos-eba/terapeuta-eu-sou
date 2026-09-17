@@ -57,7 +57,7 @@ describe("public therapist search fallback contract", () => {
     expect(result.therapists).toEqual([]);
   });
 
-  it("uses the therapist presentation instead of the service description", async () => {
+  it("uses the published therapist essence instead of the service description", async () => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
@@ -88,6 +88,8 @@ describe("public therapist search fallback contract", () => {
             theme_names: ["Autoconhecimento"],
             theme_slugs: ["autoconhecimento"],
             therapist_profile_id: "c1000000-0000-4000-8000-000000000001",
+            therapist_essence:
+              "Apoio com presença para você se reconectar à sua essência.",
             therapist_headline: "Acolhimento online com escuta cuidadosa.",
             therapy_id: "therapy-1",
             therapy_name: "Reiki",
@@ -101,10 +103,13 @@ describe("public therapist search fallback contract", () => {
     const result = await getPublicTherapistSearchResult(filters);
 
     expect(result.therapists[0]?.description).toBe(
-      "Acolhimento online com escuta cuidadosa.",
+      "Apoio com presença para você se reconectar à sua essência.",
     );
     expect(result.therapists[0]?.description).not.toBe(
       "Descrição da prática de Reiki.",
+    );
+    expect(result.therapists[0]?.description).not.toBe(
+      "Acolhimento online com escuta cuidadosa.",
     );
     expect(result.therapists[0]?.therapistProfileId).toBe(
       "c1000000-0000-4000-8000-000000000001",
