@@ -1,5 +1,5 @@
 begin;
-select plan(34);
+select plan(35);
 
 select ok(has_function_privilege('service_role',
   'public.open_therapist_booking_reschedule_v10(uuid,uuid,text,text,integer)',
@@ -306,7 +306,7 @@ rollback to savepoint therapist_v10_expiry_before_claim;
 select is(public.cancel_therapist_uncharged_session_v10(
   'b1240000-0000-4000-8000-000000000012',
   'aaaaaaaa-0000-4000-8000-000000000001',
-  'tes:v10:therapist-cancel:124', 'Não conseguirei conduzir a sessão.'
+  'tes:v10:therapist-cancel:124', ''
 ) ->> 'applied', 'true', 'the therapist cancels a pristine V10 reservation');
 select is((select status from public.session_payment_schedules
   where booking_id = 'b1240000-0000-4000-8000-000000000012'),
@@ -317,6 +317,10 @@ select is((select financial_status::text from public.session_payments
 select is((select status::text from public.bookings
   where id = 'b1240000-0000-4000-8000-000000000012'),
   'cancelled_by_therapist', 'the cancelled booking is attributed to the therapist');
+select is((select cancellation_reason from public.bookings
+  where id = 'b1240000-0000-4000-8000-000000000012'),
+  'Cancelamento solicitado pelo terapeuta.',
+  'a blank optional note receives the neutral therapist cancellation audit reason');
 select is((select count(*)::integer from public.session_transfer_jobs
   where booking_id = 'b1240000-0000-4000-8000-000000000012'), 0,
   'therapist pre-charge cancellation creates no transfer obligation');
