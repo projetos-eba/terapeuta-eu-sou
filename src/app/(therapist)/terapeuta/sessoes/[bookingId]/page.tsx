@@ -29,6 +29,7 @@ import {
   type SessionPresentation,
   type TherapistSessionDetailReadModel,
 } from "@/features/bookings";
+import { AttendanceStatus, BookingStatus } from "@/domain/tes";
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
 import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
@@ -301,6 +302,7 @@ function SessionStatusStrip({
   });
   const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
+  const isDoubleNoShow = isDoubleNoShowBooking(booking);
   const paymentStatus = getTherapistSessionPaymentStatus({
     bookingStatus: booking.bookingStatus,
     financialStatus: booking.financialStatus,
@@ -347,7 +349,7 @@ function SessionStatusStrip({
       <StatusStripItem
         description={
           sessionEnded
-            ? feedbackStatusDescription(postSessionAction)
+            ? feedbackStatusDescription(postSessionAction, isDoubleNoShow)
             : presentation.description
         }
         icon={sessionEnded ? CheckCheck : ShieldCheck}
@@ -645,6 +647,7 @@ function SessionOnlineAccess({
   });
   const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
+  const isDoubleNoShow = isDoubleNoShowBooking(booking);
 
   if (roomUnavailable) {
     return (
@@ -682,7 +685,7 @@ function SessionOnlineAccess({
             </p>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
               {sessionEnded
-                ? feedbackStatusDescription(postSessionAction)
+                ? feedbackStatusDescription(postSessionAction, isDoubleNoShow)
                 : "Confira a disponibilidade da sala ao se preparar para entrar."}
             </p>
           </div>
@@ -741,6 +744,7 @@ function SessionPrimaryAction({
     endsAt: booking.endsAt,
     feedbackStatus,
   });
+  const isDoubleNoShow = isDoubleNoShowBooking(booking);
 
   if (postSessionAction === "report_incident") {
     return (
@@ -776,7 +780,7 @@ function SessionPrimaryAction({
   if (postSessionAction !== "room") {
     return (
       <p className="rounded-[22px] bg-surface-soft px-4 py-3 text-center text-sm font-semibold leading-5 text-tesText-secondary">
-        {feedbackStatusDescription(postSessionAction)}
+        {feedbackStatusDescription(postSessionAction, isDoubleNoShow)}
       </p>
     );
   }
@@ -812,17 +816,27 @@ function feedbackStatusLabel(
 
 function feedbackStatusDescription(
   status: ReturnType<typeof getTherapistPostSessionAction>,
+  isDoubleNoShow = false,
 ) {
   if (status === "confirm") {
     return "Conte se a sessão foi bem-sucedida. Sua resposta é privada e não altera o financeiro ou as confirmações individuais.";
   }
   if (status === "report_incident") {
-    return "Não há evidência de entrada de ambos na sala. Registre o que ocorreu; o TES analisará o encontro.";
+    return isDoubleNoShow
+      ? "A sessão não foi realizada. O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
+      : "Não há evidência de entrada de ambos na sala. Registre o que ocorreu; o TES analisará o encontro.";
   }
   if (status === "submitted") {
     return "Sua avaliação privada desta sessão já foi registrada.";
   }
   return "A avaliação desta sessão exige o registro de entrada de ambos. Para acompanhamento, use o Suporte.";
+}
+
+function isDoubleNoShowBooking(booking: TherapistSessionDetailReadModel) {
+  return (
+    booking.attendanceStatus === AttendanceStatus.BothNoShow ||
+    booking.bookingStatus === BookingStatus.NoShowBoth
+  );
 }
 
 function StatusStripItem({

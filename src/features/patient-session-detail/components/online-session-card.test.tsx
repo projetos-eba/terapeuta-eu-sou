@@ -283,6 +283,36 @@ describe("OnlineSessionCard", () => {
       screen.queryByRole("link", { name: "Tentar pagamento novamente" }),
     ).toBeNull();
   });
+
+  it("uses neutral guidance while a double no-show is under review", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.NoShowBoth,
+    });
+    data.attendanceReview = {
+      classification: "no_show_both",
+      financialResolution: null,
+      isOpen: true,
+      reviewDueAt: null,
+    };
+    data.booking.statusLabel = "Encontro não realizado";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getAllByText("Encontro não realizado")).not.toHaveLength(0);
+    expect(
+      screen.getAllByText(
+        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
+    expect(screen.queryByText(/ninguém acessou|ambos ausentes/i)).toBeNull();
+  });
 });
 
 function makeData({

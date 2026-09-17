@@ -126,6 +126,21 @@ describe("therapist profile editor mappers", () => {
     );
   });
 
+  it("preserves the availability-removal origin for schedule reapproval", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      verificationSummary: {
+        ...contract.verificationSummary,
+        reviewOrigin: "availability_removed",
+        status: "submitted",
+      },
+    });
+
+    expect(editor.verificationSummary?.reviewOrigin).toBe(
+      "availability_removed",
+    );
+  });
+
   it("keeps an approved legacy profile approved when its verification history is absent", () => {
     const editor = mapTherapistProfileEditorContract({
       ...contract,

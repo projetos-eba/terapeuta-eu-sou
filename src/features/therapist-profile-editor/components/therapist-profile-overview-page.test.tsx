@@ -347,6 +347,71 @@ describe("TherapistProfileOverviewPage", () => {
     ).not.toHaveLength(0);
   });
 
+  it("guides the therapist to restore an empty schedule before reapproval", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          availabilityRuleCount: 0,
+          hasAvailability: false,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
+        },
+        verificationSummary: {
+          id: "verification-availability-removed",
+          rejectionReason: null,
+          reviewOrigin: "availability_removed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Cadastre novos horários" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Agenda sem horários disponíveis")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Configurar horários" }),
+    ).toHaveAttribute("href", "/terapeuta/agenda?aba=horarios");
+  });
+
+  it("keeps the restored schedule private while the new review is pending", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
+        },
+        verificationSummary: {
+          id: "verification-availability-restored",
+          rejectionReason: null,
+          reviewOrigin: "availability_removed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Horários em nova análise" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Horários enviados para análise")).toBeInTheDocument();
+  });
+
   it("returns documents to in-progress when the TES team requests resubmission", () => {
     const editor = makeEditor({
       derived: {

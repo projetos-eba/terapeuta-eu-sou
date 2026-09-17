@@ -165,7 +165,7 @@ describe("mapSessionPresentation", () => {
     ],
     [
       AttendanceStatus.BothNoShow,
-      "Sessão não realizada — ninguém acessou a sala",
+      "Sessão não realizada",
     ],
     [
       AttendanceStatus.RequiresReview,
@@ -179,6 +179,34 @@ describe("mapSessionPresentation", () => {
 
     expect(result.label).toBe(label);
     expect(result.actions.canAccessZoom).toBe(false);
+  });
+
+  it("keeps a double no-show out of the therapist attention state", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({ attendanceStatus: AttendanceStatus.BothNoShow }),
+      now,
+    );
+
+    expect(result.state).toBe("cancelled");
+    expect(result.description).toBe(
+      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+    );
+    expect(result.description).not.toContain("repasse");
+  });
+
+  it("prioritizes the persisted double no-show over stale review metadata", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        attendanceStatus: AttendanceStatus.RequiresReview,
+        bookingStatus: BookingStatus.NoShowBoth,
+      }),
+      now,
+    );
+
+    expect(result).toMatchObject({
+      label: "Sessão não realizada",
+      state: "cancelled",
+    });
   });
 
   it("identifies a paid session whose video session is still being prepared", () => {

@@ -15,7 +15,9 @@ describe("therapist schedule contracts", () => {
   it("parses the versioned read model without changing service authorities", () => {
     const result = parseTherapistScheduleReadModel(readModelFixture());
 
-    expect(result.contractVersion).toBe(1);
+    expect(result.contractVersion).toBe(2);
+    expect(result.activeRuleCount).toBe(1);
+    expect(result.isPubliclyVisible).toBe(true);
     expect(result.therapistProfileId).toBe(therapistProfileId);
     expect(result.services[0]).toMatchObject({
       durationMinutes: 50,
@@ -32,7 +34,7 @@ describe("therapist schedule contracts", () => {
     expect(() =>
       parseTherapistScheduleReadModel({
         ...readModelFixture(),
-        contractVersion: 2,
+        contractVersion: 3,
       }),
     ).toThrow(TherapistScheduleContractError);
   });
@@ -92,12 +94,16 @@ describe("therapist schedule contracts", () => {
   it("parses idempotent command results explicitly", () => {
     expect(
       parseSaveTherapistScheduleResult({
+        activeRuleCount: 0,
         idempotentReplay: true,
+        publicationImpact: "reapproval_required",
         scheduleVersion: 4,
         timezone: "America/Sao_Paulo",
       }),
     ).toEqual({
+      activeRuleCount: 0,
       idempotentReplay: true,
+      publicationImpact: "reapproval_required",
       scheduleVersion: 4,
       timezone: "America/Sao_Paulo",
     });
@@ -106,7 +112,9 @@ describe("therapist schedule contracts", () => {
 
 function readModelFixture() {
   return {
-    contractVersion: 1,
+    activeRuleCount: 1,
+    contractVersion: 2,
+    isPubliclyVisible: true,
     rules: [
       {
         dayOfWeek: 1,

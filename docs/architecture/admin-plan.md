@@ -128,12 +128,20 @@ Capacidades a consolidar antes ou durante a Fase 1:
 
 `professional.publish` reutiliza `admin.professionals.verify`. É um comando
 auditado, idempotente e com motivo obrigatório que pode ativar publicação e
-reservas somente para perfil aprovado, online e com serviço publicável. A
-validação autoritativa não permite contornar bloqueadores de serviço, terapia
-ou categoria; os únicos blockers removidos pelo comando são os próprios
+reservas somente para perfil aprovado, online, 100% completo, com ao menos uma
+disponibilidade recorrente ativa, serviço publicável e conta de recebimento
+pronta. A validação autoritativa não permite contornar bloqueadores de
+completude, agenda, serviço, terapia, categoria ou recebimento; os únicos
+blockers removidos pelo comando são os próprios
 switches públicos ativados na mesma transação. A lista de profissionais e a
 fila de verificações carregam referências internas seguras para direcionar o
 admin ao detalhe correto, sem renderizar identificadores técnicos.
+
+Quando um perfil aprovado e público remove a última disponibilidade recorrente,
+o salvamento da agenda o despublica e cria uma nova revisão com origem
+`availability_removed`. O Admin vê “Agenda sem horários”, não pode aprovar
+enquanto a completude permanecer abaixo de 100% e só restaura a publicação após
+recalcular todos os gates. Reservas existentes não são modificadas.
 - `admin.matching.manage`
 - `admin.reviews.read`
 - `admin.reviews.moderate`

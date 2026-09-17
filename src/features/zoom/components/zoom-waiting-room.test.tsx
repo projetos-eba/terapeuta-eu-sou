@@ -68,6 +68,31 @@ describe("ZoomWaitingRoom", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps a double no-show neutral for either participant", () => {
+    const { rerender } = render(
+      <ZoomWaitingRoom {...baseProps} kind="both_no_show" />,
+    );
+
+    expect(
+      screen.getByText(
+        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/ninguém acessou|ambos ausentes/i)).toBeNull();
+
+    rerender(
+      <ZoomWaitingRoom
+        {...baseProps}
+        actorRole="therapist"
+        kind="both_no_show"
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Sessão não realizada" }),
+    ).toBeVisible();
+  });
+
   it("opens a local camera preview without asking for microphone access", async () => {
     const track = { stop: vi.fn() };
     const stream = { getTracks: () => [track] } as unknown as MediaStream;

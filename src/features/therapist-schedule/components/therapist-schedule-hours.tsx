@@ -54,6 +54,10 @@ type EditableRule = Omit<TherapistScheduleRule, "id"> & {
 
 type SaveFeedback = { message: string; tone: "error" | "success" } | null;
 
+type LastAvailabilityAction =
+  | { kind: "deactivate-day"; dayOfWeek: number }
+  | { kind: "remove-range"; target: EditableRule };
+
 export function TherapistScheduleHours({
   agenda,
   initialSchedule,
@@ -67,6 +71,9 @@ export function TherapistScheduleHours({
   const [scheduleVersion, setScheduleVersion] = useState(
     initialSchedule.scheduleVersion,
   );
+  const [isPubliclyVisible, setIsPubliclyVisible] = useState(
+    initialSchedule.isPubliclyVisible,
+  );
   const [rules, setRules] = useState<EditableRule[]>(() =>
     toEditableRules(initialSchedule.rules),
   );
@@ -78,7 +85,11 @@ export function TherapistScheduleHours({
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<SaveFeedback>(null);
-  const [dialog, setDialog] = useState<"add" | "copy" | null>(null);
+  const [dialog, setDialog] = useState<
+    "add" | "copy" | "remove-last" | null
+  >(null);
+  const [lastAvailabilityAction, setLastAvailabilityAction] =
+    useState<LastAvailabilityAction | null>(null);
   const [addDay, setAddDay] = useState(1);
   const [copySourceDay, setCopySourceDay] = useState(1);
   const [copyTargetDays, setCopyTargetDays] = useState<number[]>([]);
@@ -97,6 +108,7 @@ export function TherapistScheduleHours({
           ),
     );
     setScheduleVersion(initialSchedule.scheduleVersion);
+    setIsPubliclyVisible(initialSchedule.isPubliclyVisible);
     setIsDirty(false);
   }, [initialSchedule, scheduleVersion]);
 
@@ -174,6 +186,16 @@ export function TherapistScheduleHours({
       return;
     }
 
+    if (
+      !shouldActivate &&
+      rules.some((rule) => rule.isActive) &&
+      !nextRules.some((rule) => rule.isActive)
+    ) {
+      setLastAvailabilityAction({ kind: "deactivate-day", dayOfWeek });
+      setDialog("remove-last");
+      return;
+    }
+
     setRules(nextRules);
     markChanged();
   }
@@ -194,8 +216,45 @@ export function TherapistScheduleHours({
   }
 
   function removeRange(target: EditableRule) {
+    if (
+      target.isActive &&
+      rules.filter((rule) => rule.isActive).length === 1
+    ) {
+      setLastAvailabilityAction({ kind: "remove-range", target });
+      setDialog("remove-last");
+      return;
+    }
+
     setRules((current) => current.filter((rule) => rule !== target));
     markChanged();
+  }
+
+  function confirmLastAvailabilityRemoval() {
+    if (!lastAvailabilityAction) return;
+
+    if (lastAvailabilityAction.kind === "remove-range") {
+      setRules((current) =>
+        current.filter((rule) => rule !== lastAvailabilityAction.target),
+      );
+    } else {
+      setRules((current) =>
+        current.map((rule) =>
+          rule.serviceId === scope &&
+          rule.dayOfWeek === lastAvailabilityAction.dayOfWeek
+            ? { ...rule, isActive: false }
+            : rule,
+        ),
+      );
+    }
+
+    markChanged();
+    setLastAvailabilityAction(null);
+    setDialog(null);
+  }
+
+  function closeDialog() {
+    setDialog(null);
+    setLastAvailabilityAction(null);
   }
 
   function updateServiceSetting(
@@ -300,7 +359,11 @@ export function TherapistScheduleHours({
         method: "POST",
       });
       const result = (await response.json().catch(() => null)) as {
-        data?: { scheduleVersion?: number };
+        data?: {
+          activeRuleCount?: number;
+          publicationImpact?: "none" | "reapproval_required";
+          scheduleVersion?: number;
+        };
         error?: { code?: string; message?: string };
         ok?: boolean;
       } | null;
@@ -319,9 +382,14 @@ export function TherapistScheduleHours({
 
       const nextVersion = result.data?.scheduleVersion;
       if (typeof nextVersion === "number") setScheduleVersion(nextVersion);
+      const requiresReapproval =
+        result.data?.publicationImpact === "reapproval_required";
+      if (requiresReapproval) setIsPubliclyVisible(false);
       setIsDirty(false);
       setFeedback({
-        message: "Horários salvos com sucesso.",
+        message: requiresReapproval
+          ? "Horários salvos. Seu perfil ficou indisponível para novos agendamentos e foi enviado para uma nova análise do TES."
+          : "Horários salvos com sucesso.",
         tone: "success",
       });
       router.refresh();
@@ -625,11 +693,19 @@ export function TherapistScheduleHours({
           description={
             dialog === "add"
               ? "Escolha o dia que receberá a nova faixa."
-              : "As faixas dos dias escolhidos serão substituídas."
+              : dialog === "copy"
+                ? "As faixas dos dias escolhidos serão substituídas."
+                : isPubliclyVisible
+                  ? "Ao salvar, seu perfil deixará de aparecer para novos agendamentos e precisará passar por uma nova análise do TES. As sessões já agendadas não serão alteradas."
+                  : "Ao salvar, seu cadastro ficará sem horários disponíveis e não poderá ser aprovado ou publicado até que uma nova disponibilidade seja cadastrada."
           }
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
           title={
-            dialog === "add" ? "Adicionar faixa de horário" : "Copiar horários"
+            dialog === "add"
+              ? "Adicionar faixa de horário"
+              : dialog === "copy"
+                ? "Copiar horários"
+                : "Remover o último horário disponível?"
           }
         >
           {dialog === "add" ? (
@@ -664,7 +740,7 @@ export function TherapistScheduleHours({
                 Adicionar faixa
               </button>
             </div>
-          ) : (
+          ) : dialog === "copy" ? (
             <div>
               <label
                 className="text-sm font-extrabold text-brand-deep"
@@ -724,6 +800,23 @@ export function TherapistScheduleHours({
               >
                 <Copy aria-hidden="true" size={17} />
                 Copiar horários
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onClick={closeDialog}
+                type="button"
+              >
+                Manter horário
+              </button>
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-status-danger px-4 text-sm font-extrabold text-white transition hover:bg-status-danger/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger"
+                onClick={confirmLastAvailabilityRemoval}
+                type="button"
+              >
+                Remover horário
               </button>
             </div>
           )}

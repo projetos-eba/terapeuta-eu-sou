@@ -224,6 +224,7 @@ async function resolveDelivery(
     const baseUrl = getSiteUrl(runtime);
     return {
       templateData: {
+        agenda_url: `${baseUrl}/terapeuta/agenda?aba=horarios`,
         dashboard_url: `${baseUrl}/terapeuta`,
         finance_url: `${baseUrl}/terapeuta/financeiro?tab=conta`,
         profile_edit_url: `${baseUrl}/terapeuta/perfil/editar`,
@@ -459,6 +460,7 @@ async function resolveDelivery(
 
 function isTherapistLifecycleAction(actionKey: EmailActionKey) {
   return [
+    "therapist_availability_removed",
     "therapist_receiving_account_closed",
     "therapist_profile_submitted_for_review",
     "therapist_documents_requested",

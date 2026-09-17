@@ -165,7 +165,10 @@ function getPaymentState({
         bookingStatus === BookingStatus.NoShowBoth)) {
     return {
       kind: "confirmed",
-      message: "O pagamento foi confirmado. O encontro não foi realizado e está em análise pelo TES; um eventual reembolso integral depende de autorização do Admin.",
+      message:
+        bookingStatus === BookingStatus.NoShowBoth
+          ? "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
+          : "O pagamento foi confirmado. O encontro não foi realizado e está em análise pelo TES; um eventual reembolso integral depende de autorização do Admin.",
       retryAllowed: false,
       slotState: "review",
       title: "Pagamento confirmado",
@@ -342,7 +345,8 @@ function getWaitingRoomState({
   if (bookingStatus === BookingStatus.NoShowBoth) {
     return {
       kind: "both_no_show",
-      message: "Não houve registro de chegada de nenhum participante dentro da tolerância. O TES analisará este encontro; não houve confirmação de atendimento.",
+      message:
+        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
       title: "Encontro não realizado",
     };
   }
@@ -423,7 +427,8 @@ function getWaitingRoomState({
     return {
       kind: "both_no_show",
       title: "Encontro não realizado",
-      message: "Não houve registro de chegada de nenhum participante dentro da tolerância. O TES analisará este encontro; não houve confirmação de atendimento.",
+      message:
+        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
     };
   }
 

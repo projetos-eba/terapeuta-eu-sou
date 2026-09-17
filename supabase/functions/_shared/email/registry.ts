@@ -483,6 +483,45 @@ export const emailActionRegistry: Record<
       finance_url: "https://example.test/terapeuta/financeiro?tab=conta",
     },
   },
+  therapist_availability_removed: {
+    actionKey: "therapist_availability_removed",
+    category: "Terapeutas",
+    label: "Agenda sem horários disponíveis",
+    description:
+      "Informa que o perfil ficou indisponível após a remoção da última faixa de disponibilidade.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu perfil ficou sem horários disponíveis",
+      preheader:
+        "Cadastre novos horários para que a equipe TES possa concluir uma nova análise.",
+      text: "Seu perfil ficou sem horários disponíveis.\n\nOlá, {{recipient_name}}.\n\nIdentificamos que sua agenda ficou sem horários disponíveis. Por isso, seu perfil deixou de aparecer para novos agendamentos.\n\nCadastre ao menos um novo horário na Agenda. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.\n\nAs sessões já confirmadas permanecem preservadas.\n\nEquipe TES\n\nConfigurar horários: {{agenda_url}}",
+      html: defaultEmailHtml({
+        title: "Seu perfil ficou sem horários disponíveis.",
+        ctaLabel: "Configurar horários",
+        ctaUrlToken: "agenda_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Identificamos que sua agenda ficou sem horários disponíveis. Por isso, seu perfil deixou de aparecer para novos agendamentos.",
+          ),
+          accountParagraph(
+            "Cadastre ao menos um novo horário na Agenda. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+          ),
+          accountParagraph("As sessões já confirmadas permanecem preservadas."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: [
+      ...accountTokens,
+      { key: "agenda_url", label: "Link da Agenda", kind: "url" },
+    ],
+    previewFixture: {
+      agenda_url: "https://example.test/terapeuta/agenda?aba=horarios",
+      recipient_name: "Terapeuta de exemplo",
+    },
+  },
   therapist_profile_submitted_for_review: {
     actionKey: "therapist_profile_submitted_for_review",
     category: "Terapeutas",

@@ -82,6 +82,25 @@ describe("getPatientEncounterPresentationState", () => {
     expect(state.actions).not.toContain("join_zoom");
     expect(state.actions).toContain("contact_support");
   });
+
+  it("uses neutral guidance for a double no-show", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.NoShowBoth,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T15:01:00.000Z"),
+    });
+
+    expect(state.waitingRoom).toMatchObject({
+      kind: "both_no_show",
+      title: "Encontro não realizado",
+    });
+    expect(state.waitingRoom.message).toBe(
+      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+    );
+    expect(state.payment.message).toBe(state.waitingRoom.message);
+    expect(state.actions).toEqual(["contact_support"]);
+  });
   it("derives honest copy when the detail has not fetched Zoom access yet", () => {
     const before = getPatientEncounterPresentationState({
       ...baseInput,

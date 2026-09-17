@@ -50,6 +50,8 @@ export function parseTherapistCalendarReadModel(
   for (const booking of bookings) {
     if (
       booking.attendanceReviewStatus === "open" &&
+      booking.attendanceStatus !== "both_no_show" &&
+      booking.bookingStatus !== "no_show_both" &&
       booking.attendanceIncidentId &&
       !knownAttentionIds.has(booking.attendanceIncidentId)
     ) {
@@ -105,9 +107,6 @@ function parseBooking(value: unknown) {
 function attendanceReviewDescription(status: string) {
   if (status === "therapist_no_show") {
     return "Sessão não realizada — sua presença está em análise";
-  }
-  if (status === "both_no_show") {
-    return "Sessão não realizada — ninguém acessou a sala";
   }
   return "Sessão não realizada — acesso em análise";
 }

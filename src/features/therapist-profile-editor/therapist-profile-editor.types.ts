@@ -72,7 +72,10 @@ export type TherapistProfileVerificationSummary = {
   changesRequested?: string | null;
   id: string;
   rejectionReason: string | null;
-  reviewOrigin?: "connect_account_closed" | "profile_submission";
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   reviewedAt: string | null;
   status: TherapistProfileVerificationStatus;
   submittedAt: string | null;

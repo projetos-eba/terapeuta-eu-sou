@@ -32,6 +32,7 @@ type CommandAction =
 
 type CommandOption = {
   action: CommandAction;
+  disabled?: boolean;
   entityId?: string;
   label: string;
   tone: "danger" | "neutral" | "success" | "warning";
@@ -151,7 +152,7 @@ export function AdminOperationCommandPanel({
         {options.map((option) => (
           <button
             className={commandButtonClass(option.tone)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || option.disabled}
             key={option.action}
             onClick={() => void submitCommand(option)}
             type="button"
@@ -174,10 +175,20 @@ export function AdminOperationCommandPanel({
 export function getCommandOptions(
   data: Pick<
     AdminOperationDetailPageData,
-    "canPublish" | "module" | "relatedProfessionalId" | "statusLabel"
+    | "canApprove"
+    | "canPublish"
+    | "module"
+    | "relatedProfessionalId"
+    | "statusLabel"
   >,
 ): CommandOption[] {
-  const { canPublish, module, relatedProfessionalId, statusLabel } = data;
+  const {
+    canApprove,
+    canPublish,
+    module,
+    relatedProfessionalId,
+    statusLabel,
+  } = data;
   if (module === "professionals") {
     if (statusLabel === "suspended") {
       return [
@@ -226,6 +237,7 @@ export function getCommandOptions(
       return [
         {
           action: "verification.approve",
+          disabled: canApprove === false,
           label: "Aprovar verificação",
           tone: "success",
         },
@@ -369,12 +381,15 @@ function publicationEligibility(value: Record<string, unknown>) {
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
   const labels: Record<string, string> = {
+    no_active_availability: "nenhum horário disponível",
     no_active_bookable_online_service: "nenhum serviço publicável",
     not_accepting_bookings: "não aceita novos agendamentos",
     profile_not_public: "perfil público desativado",
     profile_not_published: "perfil ainda não publicado",
+    profile_incomplete: "perfil ainda não está 100% completo",
     receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_not_public: "terapia não publicada ou não visível",
+    therapy_without_active_theme: "terapia sem tema ativo",
   };
   return value
     .filter((item): item is string => typeof item === "string")

@@ -792,8 +792,11 @@ async function fetchAdminProfessionalVerificationSummary({
 
     return {
       reviewOrigin:
-        asString(row.review_origin) === "connect_account_closed"
-          ? "connect_account_closed"
+        asString(row.review_origin) === "connect_account_closed" ||
+        asString(row.review_origin) === "availability_removed"
+          ? (asString(row.review_origin) as
+              | "availability_removed"
+              | "connect_account_closed")
           : "profile_submission",
       reviewedAt: asString(row.reviewed_at) ?? null,
       source: "verification",

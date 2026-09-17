@@ -82,6 +82,14 @@ que possível. A publicação continua sendo uma ação separada.
   `Perfil completo` (conteúdo editorial preenchido), `Cadastro aprovado`
   (análise administrativa concluída) e `Perfil publicado` (versão visível para
   o público).
+- Aprovação e publicação exigem 100% dos seis itens canônicos de completude,
+  incluindo terapia ativa e disponibilidade recorrente ativa. A conta de
+  recebimento e os documentos continuam gates adicionais separados.
+- Remover a última disponibilidade recorrente de um perfil aprovado e público
+  despublica o perfil e abre revisão `availability_removed`. Restaurar horários
+  não republica automaticamente; nova aprovação do TES é obrigatória e deve
+  recalcular todos os gates. Reservas existentes e bloqueios temporários não
+  são alterados.
 - A primeira publicação de perfil ainda não aprovado envia atomicamente o
   conteúdo para a fila administrativa e remove visibilidade/recebimento de
   reservas até a decisão. Depois de aprovado, o terapeuta pode publicar uma

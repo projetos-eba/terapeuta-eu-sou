@@ -154,7 +154,10 @@ export type AdminProfessionalProfileReview = {
 };
 
 export type AdminProfessionalVerificationSummary = {
-  reviewOrigin?: "connect_account_closed" | "profile_submission";
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   reviewedAt: string | null;
   /**
    * Usada somente para explicar a linha do tempo sem inventar registros de
@@ -187,6 +190,8 @@ export type AdminOperationDetailPageData = {
   relatedVerificationId?: string | null;
   /** Indica se a publicação administrativa pode ser solicitada agora. */
   canPublish?: boolean;
+  /** Indica se a verificação pode ser aprovada com o cadastro atual. */
+  canApprove?: boolean;
   privateDocuments?: AdminProfessionalDocumentReviewData | null;
   profileReview?: AdminProfessionalProfileReview | null;
   safetyNotes: string[];

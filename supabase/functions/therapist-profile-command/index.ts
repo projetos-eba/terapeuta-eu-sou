@@ -704,8 +704,9 @@ async function readVerificationSummary(
     id: row.id,
     rejectionReason: normalizeNullableText(row.rejection_reason),
     reviewOrigin:
-      row.review_origin === "connect_account_closed"
-        ? "connect_account_closed"
+      row.review_origin === "connect_account_closed" ||
+      row.review_origin === "availability_removed"
+        ? row.review_origin
         : "profile_submission",
     reviewedAt: row.reviewed_at ?? null,
     status: normalizeVerificationStatus(row.status),

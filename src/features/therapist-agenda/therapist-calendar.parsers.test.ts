@@ -63,6 +63,21 @@ describe("parseTherapistCalendarReadModel", () => {
     );
     expect(result.summary.pendingAttention).toBe(2);
   });
+
+  it("keeps a double no-show out of the agenda attention rail", () => {
+    const payload = calendarPayload();
+    Object.assign(payload.bookings[0], {
+      attendanceIncidentId: "a5000000-0000-4000-8000-000000000099",
+      attendanceReviewStatus: "open",
+      attendanceStatus: "requires_review",
+      bookingStatus: "no_show_both",
+    });
+
+    const result = parseTherapistCalendarReadModel(payload);
+
+    expect(result.attentionItems).toHaveLength(1);
+    expect(result.summary.pendingAttention).toBe(1);
+  });
 });
 
 function calendarPayload() {

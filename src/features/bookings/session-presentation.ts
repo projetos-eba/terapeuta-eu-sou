@@ -147,6 +147,18 @@ export function mapSessionPresentation(
     );
   }
 
+  if (session.attendanceStatus === AttendanceStatus.BothNoShow ||
+      session.bookingStatus === BookingStatus.NoShowBoth) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada",
+      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      "critical",
+      "danger",
+      actions,
+    );
+  }
+
   if (session.attendanceStatus === AttendanceStatus.RequiresReview) {
     return presentation(
       "requires_attention",
@@ -176,18 +188,6 @@ export function mapSessionPresentation(
       "Sessão não realizada — cliente não compareceu",
       "A chegada do terapeuta foi registrada dentro da tolerância.",
       "medium",
-      "danger",
-      actions,
-    );
-  }
-
-  if (session.attendanceStatus === AttendanceStatus.BothNoShow ||
-      session.bookingStatus === BookingStatus.NoShowBoth) {
-    return presentation(
-      "requires_attention",
-      "Sessão não realizada — ninguém acessou a sala",
-      "O TES analisará a ausência em até 5 dias corridos. Um eventual reembolso integral depende de autorização do Admin; a classificação não altera o repasse realizado.",
-      "critical",
       "danger",
       actions,
     );

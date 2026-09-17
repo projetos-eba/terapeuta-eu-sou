@@ -29,6 +29,18 @@ describe("therapist session status badge", () => {
       ),
     ).toEqual({ label: "Não realizada", tone: "danger" });
   });
+
+  it("does not turn a double no-show into an attention badge", () => {
+    expect(
+      getTherapistSessionStatusBadge(
+        presentation({
+          label: "Sessão não realizada",
+          state: "cancelled",
+          tone: "danger",
+        }),
+      ),
+    ).toEqual({ label: "Sessão não realizada", tone: "danger" });
+  });
 });
 
 function presentation(

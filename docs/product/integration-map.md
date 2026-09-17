@@ -84,6 +84,20 @@ autorização, navegação e comandos.
 
 ## Atualizações transversais
 
+### Perfil completo e agenda publicável — 2026-09-17
+
+- `get_therapist_publication_eligibility_v1` exige completude canônica em 100%,
+  ao menos uma disponibilidade recorrente ativa, serviço publicável e conta de
+  recebimento pronta. Admin, busca, perfil público, Match, slots e reserva usam
+  a mesma decisão autoritativa.
+- `save_therapist_schedule_v1` v2 devolve `activeRuleCount` e
+  `publicationImpact`. A remoção da última regra ativa de um perfil aprovado e
+  público despublica, bloqueia novos agendamentos e cria revisão
+  `availability_removed` atomicamente.
+- Restaurar horários não restaura visibilidade. A reaprovação administrativa
+  recalcula todos os gates; reservas existentes, histórico e financeiro não
+  são alterados.
+
 ### Suporte — anexos privados
 
 O solicitante prepara até cinco arquivos por mensagem na Central, mas os

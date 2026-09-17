@@ -207,6 +207,7 @@ export function mapAdminOperationDetail({
     module,
     relatedProfessionalId,
     relatedVerificationId,
+    canApprove: canApproveVerification(record),
     canPublish: canPublishAdministratively(record),
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
@@ -383,6 +384,10 @@ function getDetailSections(
           "Bloqueadores reais",
           publicationBlockers(record.publication_blockers),
         ),
+        field(
+          "Itens incompletos",
+          incompleteProfileItems(record.publication_eligibility),
+        ),
         field("Última verificação", asText(record.verification_status)),
       ]),
       section("Operação", [
@@ -521,6 +526,10 @@ function getDetailSections(
         "Bloqueadores reais",
         publicationBlockers(record.publication_blockers),
       ),
+      field(
+        "Itens incompletos",
+        incompleteProfileItems(record.publication_eligibility),
+      ),
     ]),
     timestampSection(record),
   ];
@@ -573,6 +582,23 @@ function canPublishAdministratively(record: UnknownRecord) {
   );
 }
 
+function canApproveVerification(record: UnknownRecord) {
+  const eligibility = asRecordOrNull(record.publication_eligibility);
+  if (!eligibility) return true;
+
+  const blockers = Array.isArray(eligibility.blockers)
+    ? eligibility.blockers.filter(
+        (blocker): blocker is string => typeof blocker === "string",
+      )
+    : [];
+
+  return !blockers.some(
+    (blocker) =>
+      blocker === "profile_incomplete" ||
+      blocker === "no_active_availability",
+  );
+}
+
 function asRecordOrNull(value: unknown): UnknownRecord | null {
   return isRecord(value) ? value : null;
 }
@@ -619,18 +645,32 @@ function verificationStatusLabel(status: string, publication: string) {
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
   const labels: Record<string, string> = {
+    no_active_availability: "nenhum horário disponível",
     no_active_bookable_online_service: "nenhum serviço publicável",
     not_accepting_bookings: "não aceita novos agendamentos",
     online_sessions_disabled: "atendimento online desativado",
+    profile_incomplete: "perfil ainda não está 100% completo",
     profile_not_approved: "cadastro ainda não aprovado",
     profile_not_public: "perfil público desativado",
     receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_category_inactive: "categoria da terapia inativa",
     therapy_not_public: "terapia não publicada ou não visível",
+    therapy_without_active_theme: "terapia sem tema ativo",
   };
   return value
     .filter((item): item is string => typeof item === "string")
     .map((item) => labels[item] ?? item)
+    .join(" · ");
+}
+
+function incompleteProfileItems(value: unknown) {
+  const eligibility = asRecordOrNull(value);
+  if (!Array.isArray(eligibility?.incompleteItems)) return "";
+
+  return eligibility.incompleteItems
+    .filter(isRecord)
+    .map((item) => asText(item.label))
+    .filter(Boolean)
     .join(" · ");
 }
 

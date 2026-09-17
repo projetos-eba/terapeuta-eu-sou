@@ -20,10 +20,12 @@ export function parseTherapistScheduleReadModel(
   const row = requiredRecord(value);
   const summary = requiredRecord(row.summary);
 
-  if (row.contractVersion !== 1) fail();
+  if (row.contractVersion !== 2) fail();
 
   return {
-    contractVersion: 1,
+    activeRuleCount: nonNegativeInteger(row.activeRuleCount),
+    contractVersion: 2,
+    isPubliclyVisible: requiredBoolean(row.isPubliclyVisible),
     rules: requiredArray(row.rules).map(parseRule),
     scheduleVersion: positiveInteger(row.scheduleVersion),
     services: requiredArray(row.services).map(parseService),
@@ -97,10 +99,19 @@ export function parseSaveTherapistScheduleResult(
   const row = requiredRecord(value);
 
   return {
+    activeRuleCount: nonNegativeInteger(row.activeRuleCount),
     idempotentReplay: requiredBoolean(row.idempotentReplay),
+    publicationImpact: requiredPublicationImpact(row.publicationImpact),
     scheduleVersion: positiveInteger(row.scheduleVersion),
     timezone: requiredBrasiliaTimezone(row.timezone),
   };
+}
+
+function requiredPublicationImpact(
+  value: unknown,
+): SaveTherapistScheduleResult["publicationImpact"] {
+  if (value !== "none" && value !== "reapproval_required") fail();
+  return value;
 }
 
 function parseRule(value: unknown): TherapistScheduleRule {

@@ -346,8 +346,9 @@ function mapVerificationSummary(
     id: requiredString(value.id),
     rejectionReason: stringOrNull(value.rejectionReason),
     reviewOrigin:
-      value.reviewOrigin === "connect_account_closed"
-        ? "connect_account_closed"
+      value.reviewOrigin === "connect_account_closed" ||
+      value.reviewOrigin === "availability_removed"
+        ? value.reviewOrigin
         : "profile_submission",
     reviewedAt: stringOrNull(value.reviewedAt),
     status: verificationStatus(value.status),

@@ -296,6 +296,11 @@ export function ZoomWaitingRoom({
                     : actorRole === "patient"
                       ? "Aguardando terapeuta entrar"
                       : "Aguardando paciente entrar";
+  const displayStatusTitle = isBothNoShow
+    ? actorRole === "patient"
+      ? "Encontro não realizado"
+      : "Sessão não realizada"
+    : statusTitle;
   const statusMessage = !isOnline
     ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
     : message ||
@@ -303,7 +308,7 @@ export function ZoomWaitingRoom({
         ? "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento."
         : null) ||
       (isBothNoShow
-        ? "Não houve registro de chegada de nenhum participante dentro da tolerância. O TES analisará este encontro; não houve confirmação de atendimento."
+        ? "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
         : null) ||
       (kind === "arrival_expired"
         ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
@@ -347,7 +352,7 @@ export function ZoomWaitingRoom({
               <h2 className="max-w-[16ch] font-display text-[2.3rem] font-light italic leading-[1.02] text-brand-deep sm:text-5xl">
                 {isTooEarly
                   ? `A sala estará pronta no horário ${audienceWithArticle}`
-                  : statusTitle}
+                  : displayStatusTitle}
               </h2>
               <p className="max-w-[62ch] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
                 {isTooEarly
