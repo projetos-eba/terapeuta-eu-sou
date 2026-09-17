@@ -996,6 +996,12 @@ pendências e a retomada aparece somente quando autorizada pelo servidor. O
 Payout bancário do canário, a drenagem das obrigações V9 e o período de
 estabilização continuam como gates abertos. Produção não foi alterada.
 
+Em 17/09/2026, o reteste de persistência pendente passou em HML e a suíte SQL
+local completa terminou com 163 arquivos e 3.163 verificações aprovadas. As
+correções de fixtures e contratos de teste estão locais, aguardando PR manual;
+isso não fecha os gates bancários ou de estabilização. Evidências e limites:
+[`session-financial-flow-v10-phase7-validation-2026-09-17.md`](session-financial-flow-v10-phase7-validation-2026-09-17.md).
+
 Evidências do canário HML de 15/09/2026:
 
 - a cobrança e o Transfer foram criados uma única vez, sem duplicidade na

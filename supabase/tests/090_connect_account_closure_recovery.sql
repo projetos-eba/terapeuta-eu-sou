@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(23);
 
 select ok(
@@ -278,6 +280,12 @@ select is(
   'new current account has a distinct generation'
 );
 
+create temporary table closure_verification_fixture as
+select id from public.therapist_verifications
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and review_origin = 'connect_account_closed';
+grant select on closure_verification_fixture to authenticated;
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -288,10 +296,7 @@ select set_config(
 select lives_ok(
   $$ select public.admin_execute_operation_command_v2(
     'verification.reopen_review',
-    (select id from public.therapist_verifications
-      where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
-        and review_origin = 'connect_account_closed'
-      limit 1),
+    (select id from closure_verification_fixture limit 1),
     'Nova conta de recebimento revisada pela equipe',
     'connect-closure-review-090'
   ) $$,
@@ -301,10 +306,7 @@ select lives_ok(
 select lives_ok(
   $$ select public.admin_execute_operation_command_v2(
     'verification.approve',
-    (select id from public.therapist_verifications
-      where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
-        and review_origin = 'connect_account_closed'
-      limit 1),
+    (select id from closure_verification_fixture limit 1),
     'Nova conta e perfil revisados e aprovados',
     'connect-closure-approve-090'
   ) $$,

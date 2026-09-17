@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(32);
 
 select ok(
@@ -145,6 +147,14 @@ select ok(
         or has_table_privilege('authenticated', c.oid, 'TRUNCATE')
         or has_table_privilege('authenticated', c.oid, 'REFERENCES')
         or has_table_privilege('authenticated', c.oid, 'TRIGGER')
+      )
+      -- pgTAP diagnostic views belong to an extension, not the application.
+      and not exists (
+        select 1 from pg_depend d
+        join pg_extension extension on extension.oid = d.refobjid
+        where d.classid = 'pg_class'::regclass and d.objid = c.oid
+          and d.refclassid = 'pg_extension'::regclass
+          and d.deptype = 'e' and extension.extname = 'pgtap'
       )
   ),
   'API roles have read-only access to every public-schema view'

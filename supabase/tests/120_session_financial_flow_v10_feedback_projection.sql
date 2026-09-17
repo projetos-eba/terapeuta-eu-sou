@@ -1,5 +1,6 @@
 begin;
-select plan(18);
+\ir fixtures/attended-attempt-local.inc
+select plan(20);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -82,6 +83,11 @@ cross join lateral (
   order by created_at desc limit 1
 ) account
 where policy.policy_key = 'tes-payments-v10-setup-t24-immediate-transfer';
+
+do $$ begin
+  perform pg_temp.prepare_attended_attempt('b1200000-0000-4000-8000-000000000011');
+  perform pg_temp.prepare_attended_attempt('b1200000-0000-4000-8000-000000000012');
+end $$;
 
 select is(
   public.refresh_session_transfer_eligibility(
@@ -168,22 +174,26 @@ select is(
   'bilateral confirmation does not rewrite the V10 transfer state'
 );
 
+create temporary table v10_payment_before_quality as
+select to_jsonb(payment) as snapshot from public.session_payments payment
+where payment.id = 'b1200000-0000-4000-8000-000000000022';
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     (select user_id from public.patient_profiles
      where id = 'b1000000-0000-4000-8000-000000000001'),
     'b1200000-0000-4000-8000-000000000012',
-    'not_performed', null, 'therapist_absent',
-    'O terapeuta nao entrou na sessao.',
+    public.current_session_attempt_id_v1('b1200000-0000-4000-8000-000000000012'),
+    false, null::smallint, 'internet_problem',
+    'A conexão prejudicou a experiência da sessão realizada.',
     'b1200000-0000-4000-8000-000000000041'
-  ) -> 'feedback' ->> 'outcome',
-  'not_performed',
+  ) -> 'feedback' ->> 'successful',
+  'false',
   'a V10 participant report remains auditable support evidence'
 );
 select is(
-  (select status from public.session_confirmation_incidents
-   where booking_id = 'b1200000-0000-4000-8000-000000000012'),
-  'open',
+  public.session_quality_review_state_v1(
+    public.current_session_attempt_id_v1('b1200000-0000-4000-8000-000000000012')) ->> 'isOpen',
+  'true',
   'a V10 negative report opens an administrative review'
 );
 select is(
@@ -193,9 +203,9 @@ select is(
   'a V10 review does not rewrite the direct transfer lifecycle'
 );
 select ok(
-  (select internal_contested_at is not null from public.session_payments
+  (select internal_contested_at is null from public.session_payments
    where id = 'b1200000-0000-4000-8000-000000000022'),
-  'a V10 review still records the operational hold used by the worker'
+  'a private quality review never introduces a V10 financial hold'
 );
 select is(
   public.get_session_feedback_v2('b1200000-0000-4000-8000-000000000012')
@@ -204,20 +214,31 @@ select is(
   'the participant sees a review state without financial implementation terms'
 );
 
+select is(
+  (select to_jsonb(payment) from public.session_payments payment
+   where payment.id = 'b1200000-0000-4000-8000-000000000022'),
+  (select snapshot from v10_payment_before_quality),
+  'negative quality leaves the entire canonical V10 payment unchanged'
+);
 select set_config('request.jwt.claim.sub',
   'aaaaaaaa-0000-4000-8000-000000000090', true);
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"service_role"}',
   true);
+insert into public.support_ticket_messages (
+  ticket_id, author_profile_id, author_role, body, visibility, request_id
+)
+select ticket_id, 'aaaaaaaa-0000-4000-8000-000000000090', 'admin',
+       'A análise da experiência foi respondida.', 'requester',
+       'b1200000-0000-4000-8000-000000000042'
+from public.session_quality_reviews
+where session_attempt_id = public.current_session_attempt_id_v1(
+  'b1200000-0000-4000-8000-000000000012');
 select is(
-  public.admin_resolve_session_confirmation_incident_v1(
-    'b1200000-0000-4000-8000-000000000012',
-    'not_performed_confirmed',
-    'A analise administrativa confirmou a ocorrencia.',
-    'b1200000-0000-4000-8000-000000000042'
-  ) ->> 'status',
-  'not_performed_confirmed',
-  'an audited admin decision resolves the V10 review'
+  public.session_quality_review_state_v1(
+    public.current_session_attempt_id_v1('b1200000-0000-4000-8000-000000000012')) ->> 'allAnswered',
+  'true',
+  'an audited requester-visible admin reply answers the private review'
 );
 select is(
   (select transfer_status::text from public.session_payments
@@ -226,5 +247,11 @@ select is(
   'admin resolution preserves the V10 provider transfer state'
 );
 
+select is(
+  (select to_jsonb(payment) from public.session_payments payment
+   where payment.id = 'b1200000-0000-4000-8000-000000000022'),
+  (select snapshot from v10_payment_before_quality),
+  'TES support reply leaves all financial fields, hold flags and metadata unchanged'
+);
 select * from finish();
 rollback;

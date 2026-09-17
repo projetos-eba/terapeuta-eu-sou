@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(31);
 
 -- Public cross-therapist reads are gated by publication state. Establish the

@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(20);
 
 select ok(
@@ -33,8 +35,7 @@ select
   (
     select id
     from public.therapist_profiles
-    order by id
-    limit 1
+    where id = 'c1000000-0000-4000-8000-000000000001'
   ) as therapist_profile_id,
   (
     select id

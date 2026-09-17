@@ -70,6 +70,19 @@ values
     now() - interval '4 years', now() - interval '4 years' + interval '1 hour', 'America/Sao_Paulo', 'completed', 'paid', now() - interval '4 years' + interval '1 hour'
   );
 
+insert into public.therapist_connect_accounts (
+  therapist_profile_id, stripe_account_id, onboarding_status, details_submitted,
+  charges_enabled, payouts_enabled, stripe_transfers_status, operational_status,
+  payout_status, payout_schedule_interval, pending_requirements, is_current
+) values (
+  '92000000-0000-4000-8000-000000000011', 'acct_test_journey_113',
+  'ready', true, true, true, 'active', 'ready', 'enabled', 'daily', '[]', true
+)
+on conflict (therapist_profile_id) where is_current do update
+set onboarding_status = 'ready', details_submitted = true,
+    charges_enabled = true, payouts_enabled = true, stripe_transfers_status = 'active',
+    operational_status = 'ready', payout_status = 'enabled', pending_requirements = '[]';
+
 insert into public.session_payments (
   id, booking_id, patient_profile_id, therapist_profile_id, service_id,
   policy_version_id, gross_amount_cents, platform_commission_bps,
@@ -106,16 +119,22 @@ select public.ensure_video_session_for_paid_booking_v1(
   'journey-themes-113'
 );
 
+-- Backdate the effective attempt before its historical evidence is written.
+update public.booking_session_attempts
+set created_at = (select starts_at - interval '1 day' from public.bookings
+                 where id = 'e9800000-0000-4000-8000-000000000001')
+where id = public.current_session_attempt_id_v1('e9800000-0000-4000-8000-000000000001');
+
 insert into public.video_session_participations (
   video_session_id, booking_id, participant_correlation_key,
   participant_role, event_type, joined_at, metadata
 )
-select id, booking_id, 'journey-themes-patient', 'patient',
+select id, booking_id, 'journey-themes-patient', 'patient'::public.video_session_participant_role,
   'session.user_joined', scheduled_starts_at + interval '1 minute', '{}'::jsonb
 from public.video_sessions
 where booking_id = 'e9800000-0000-4000-8000-000000000001'
 union all
-select id, booking_id, 'journey-themes-therapist', 'therapist',
+select id, booking_id, 'journey-themes-therapist', 'therapist'::public.video_session_participant_role,
   'session.user_joined', scheduled_starts_at + interval '1 minute', '{}'::jsonb
 from public.video_sessions
 where booking_id = 'e9800000-0000-4000-8000-000000000001';

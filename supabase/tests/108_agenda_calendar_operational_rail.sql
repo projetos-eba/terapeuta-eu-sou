@@ -2,6 +2,16 @@ begin;
 
 select plan(9);
 
+-- The persistent seed was created on a different day. Establish today's
+-- fixtures transactionally, rather than assuming the seed date is current.
+update public.bookings
+set starts_at = ((now() at time zone 'America/Sao_Paulo')::date + time '09:00') at time zone 'America/Sao_Paulo',
+    ends_at = ((now() at time zone 'America/Sao_Paulo')::date + time '09:50') at time zone 'America/Sao_Paulo',
+    status = 'confirmed', payment_status = 'paid'
+where id = 'f2000000-0000-4000-8000-000000000001';
+update public.session_payments set financial_status = 'paid'
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',

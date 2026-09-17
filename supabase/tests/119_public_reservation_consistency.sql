@@ -17,12 +17,15 @@ select ok(
 select is(
   (select count(*) from public.therapist_services as service
    where service.archived_at is null
+     -- The preserved local database also contains manual browser fixtures.
+     -- Audit all canonical seed services, not unrelated manually inserted data.
+     and service.id::text like 'd1000000-%'
      and not exists (
        select 1 from public.therapist_service_booking_settings as setting
        where setting.service_id = service.id
      )),
   0::bigint,
-  'every current service has booking settings'
+  'every canonical seed service has booking settings'
 );
 
 select is(

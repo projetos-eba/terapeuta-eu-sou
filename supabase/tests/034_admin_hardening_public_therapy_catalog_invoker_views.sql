@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(21);
 
 update public.therapist_profiles

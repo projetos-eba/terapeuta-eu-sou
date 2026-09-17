@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(42);
 
 -- The local stack intentionally preserves data between runs. Isolate the two

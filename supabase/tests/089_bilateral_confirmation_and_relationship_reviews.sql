@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/attended-attempt-local.inc
 
 select plan(55);
 
@@ -89,7 +90,7 @@ select
   '91000000-0000-4000-8000-000000000001',
   '92000000-0000-4000-8000-000000000011',
   '93000000-0000-4000-8000-000000000020',
-  (select id from public.financial_policy_versions where is_active),
+  (select id from public.financial_policy_versions where version = 'tes-payments-v2-session-attendance'),
   17000, 2000, 3400, 13600, 'BRL', 'paid',
   'ch_bilateral_' || series, 'txn_bilateral_' || series
 from generate_series(1, 9) series;
@@ -109,6 +110,15 @@ where booking_id = 'b8000000-0000-4000-8000-000000000007';
 update public.session_payments
 set admin_blocked_at = now(), transfer_blocked_reason = 'manual_admin_hold'
 where booking_id = 'b8000000-0000-4000-8000-000000000008';
+
+-- These historical payments exercise V9 compatibility only. Current attendance
+-- still requires attempt-bound bilateral evidence; financial flags do not create it.
+do $$ declare v_id uuid; begin
+  for v_id in select id from public.bookings where id::text like 'b8000000-%'
+    and status = 'confirmed'
+    and id <> 'b8000000-0000-4000-8000-000000000004'
+  loop perform pg_temp.prepare_attended_attempt(v_id); end loop;
+end $$;
 
 set local role service_role;
 
@@ -140,15 +150,20 @@ select is(
   'confirmed',
   'two performed responses finalize the bilateral service'
 );
+-- Explicit legacy financial command: modern participant finalization above
+-- deliberately no longer invokes this command.
+select public.confirm_session_service(
+ 'b8000000-0000-4000-8000-000000000001','bilateral',null,null,
+ jsonb_build_object('confirmedAt',now(),'confirmationModel','pgtap-explicit-v9'));
 select is(
   (select service_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001'),
   'confirmed_bilateral',
-  'bilateral status is explicit and canonical'
+  'explicit V9 financial confirmation retains its canonical bilateral status'
 );
 select is(
   (select eligible_at - service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001'),
   interval '0 days',
-  'eligible_at starts at the second confirmation without an extra delay'
+  'explicit V9 financial command starts eligibility without an extra delay'
 );
 select is(
   (select transfer_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000001'),
@@ -210,18 +225,18 @@ select ok(
 );
 select is(
   (select service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000002'),
-  (select due_at from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000002' and participant_role = 'therapist'),
-  'final financial confirmation uses the second contractual deadline'
+  null::timestamptz,
+  'automatic participant deadlines do not write financial confirmation'
 );
 select is(
   (select count(*)::integer from public.video_session_participations where booking_id = 'b8000000-0000-4000-8000-000000000002'),
-  0,
-  'fixture has no Zoom presence telemetry'
+  2,
+  'automatic confirmation fixture has bilateral trusted attempt-bound joins'
 );
 select is(
   (select service_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000002'),
-  'confirmed_bilateral',
-  'absence of Zoom telemetry does not block automatic confirmation'
+  'scheduled',
+  'automatic attendance confirmation leaves financial service state unchanged'
 );
 select public.auto_confirm_sessions((select ends_at + interval '31 days' from public.bookings where id = 'b8000000-0000-4000-8000-000000000002'));
 select is(
@@ -231,41 +246,49 @@ select is(
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000001',
     'b8000000-0000-4000-8000-000000000003',
-    'not_performed', null, 'therapist_absent', 'O terapeuta não entrou.',
+    public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003'),
+    false, null::smallint, 'internet_problem', 'A conexão prejudicou a experiência.',
     'b8200000-0000-4000-8000-000000000003'
-  )->'feedback'->>'outcome',
-  'not_performed',
-  'negative feedback remains immutable evidence'
+  )->'feedback'->>'successful',
+  'false',
+  'negative quality is private attempt-scoped evidence'
 );
 select is(
   (select transfer_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  'blocked',
-  'negative feedback blocks transfer immediately'
+  'not_eligible',
+  'negative quality leaves the legacy transfer state unchanged'
 );
 select is(
-  (select status from public.session_confirmation_incidents where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  'open',
-  'negative feedback opens an administrative incident'
+  public.session_quality_review_state_v1(public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003'))->>'isOpen',
+  'true',
+  'negative quality opens a private support review, not an attendance incident'
 );
 select public.auto_confirm_sessions((select ends_at + interval '40 days' from public.bookings where id = 'b8000000-0000-4000-8000-000000000003'));
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000003' and source = 'automatic'),
   0,
-  'automatic confirmation never overwrites an open negative incident'
+  'automatic confirmation pauses while the private quality review SLA has not elapsed'
 );
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000011',
     'b8000000-0000-4000-8000-000000000003',
-    'completed', 4::smallint, null, 'Minha confirmação operacional.',
+    public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003'),
+    true, 4::smallint, null, 'Minha avaliação privada da experiência.',
     'b8200000-0000-4000-8000-000000000004'
-  )->'feedback'->>'outcome',
-  'completed',
-  'the counterpart may still submit a manual response during review'
+  )->'feedback'->>'successful',
+  'true',
+  'the counterpart may still submit independent private quality during review'
 );
+-- Historical audit remains immutable even though its writer is retired.
+insert into public.session_feedback(booking_id,author_profile_id,author_role,
+ outcome,rating,comment,request_id,payload_hash)
+values('b8000000-0000-4000-8000-000000000003',
+ '90000000-0000-4000-8000-000000000001','patient','completed',5,
+ 'Resposta histórica preservada.','b8200000-0000-4000-8000-000000000099','historical');
 select throws_ok(
   $$update public.session_feedback set comment = 'alterado' where booking_id = 'b8000000-0000-4000-8000-000000000003'$$,
   '55000',
@@ -283,36 +306,30 @@ select set_config(
   '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"service_role"}',
   true
 );
-select is(
-  public.admin_resolve_session_confirmation_incident_v1(
-    'b8000000-0000-4000-8000-000000000003',
-    'performed_confirmed',
-    'Evidencias administrativas confirmaram a realizacao.',
-    'b8200000-0000-4000-8000-000000000008'
-  )->>'status',
-  'performed_confirmed',
-  'an audited admin decision can confirm a disputed session as performed'
-);
-select is(
-  (select eligible_at - service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  interval '0 days',
-  'admin performed resolution starts settlement verification immediately'
-);
-select is(
-  (select transfer_status::text from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000003'),
-  'waiting_settlement',
-  'admin performed resolution still requires Stripe settlement evidence'
-);
-select is(
-  public.admin_resolve_session_confirmation_incident_v1(
-    'b8000000-0000-4000-8000-000000000003',
-    'performed_confirmed',
-    'Evidencias administrativas confirmaram a realizacao.',
-    'b8200000-0000-4000-8000-000000000008'
-  )->>'idempotentReplay',
-  'true',
-  'admin incident resolution is idempotent for the same request id'
-);
+-- Populate the reply fixture as the test owner; do not broaden server grants.
+reset role;
+insert into public.support_ticket_messages(ticket_id,author_profile_id,author_role,body,visibility,request_id)
+select ticket_id,'aaaaaaaa-0000-4000-8000-000000000090','admin',
+ 'Resposta à análise da experiência.','requester','b8200000-0000-4000-8000-000000000008'
+from public.session_quality_reviews where session_attempt_id=
+ public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003');
+set local role service_role;
+select is(public.session_quality_review_state_v1(
+ public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003'))->>'allAnswered',
+ 'true','audited requester-visible TES reply answers the quality review');
+select is((select eligible_at - service_confirmed_at from public.session_payments
+ where booking_id='b8000000-0000-4000-8000-000000000003'),
+ null::interval,'TES reply does not introduce a financial eligibility clock');
+select is((select transfer_status::text from public.session_payments
+ where booking_id='b8000000-0000-4000-8000-000000000003'),
+ 'not_eligible','TES reply leaves the legacy transfer state unchanged');
+select is(public.submit_session_quality_feedback_v1(
+ '90000000-0000-4000-8000-000000000001',
+ 'b8000000-0000-4000-8000-000000000003',
+ public.current_session_attempt_id_v1('b8000000-0000-4000-8000-000000000003'),
+ false,null::smallint,'internet_problem','A conexão prejudicou a experiência.',
+ 'b8200000-0000-4000-8000-000000000003')->>'idempotentReplay',
+ 'true','answered quality retry does not create another report or ticket');
 
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000005'),
@@ -321,18 +338,18 @@ select is(
 );
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000006'),
-  0,
-  'automatic confirmation ignores a refund-pending payment'
+  2,
+  'attended session confirmation is independent of a refund-pending financial flag'
 );
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000007'),
-  0,
-  'automatic confirmation ignores a disputed payment'
+  2,
+  'attended session confirmation is independent of a disputed financial flag'
 );
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000008'),
-  0,
-  'automatic confirmation ignores an administratively blocked payment'
+  2,
+  'attended session confirmation is independent of an administrative financial flag'
 );
 
 delete from public.session_participant_confirmations
@@ -375,8 +392,8 @@ select is(
 );
 select is(
   (select service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000009'),
-  (select confirmed_at from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000009' and participant_role = 'patient'),
-  'the later patient response is the financial confirmation instant'
+  null::timestamptz,
+  'inverted participant response order does not write a financial confirmation instant'
 );
 select public.auto_confirm_sessions(
   (select ends_at + interval '31 days' from public.bookings where id = 'b8000000-0000-4000-8000-000000000002')
@@ -408,6 +425,9 @@ update public.session_payments
 set admin_blocked_at = null, transfer_blocked_reason = null
 where booking_id = 'b8000000-0000-4000-8000-000000000004';
 
+reset role;
+select pg_temp.prepare_attended_attempt('b8000000-0000-4000-8000-000000000004');
+set local role service_role;
 select is(
   public.record_session_participant_confirmation_v1(
     '90000000-0000-4000-8000-000000000001',

@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(20);
 
 -- Public cross-therapist reads are gated by publication state. Establish the
@@ -231,6 +233,7 @@ select ok(
         'shortIntro', 'Perfil salvo como rascunho sem alterar a area publica.',
         'essenceBody', 'Cuidado online com presenca e responsabilidade.',
         'bio', 'Atendimento online com linguagem clara e sem promessa de resultado.',
+        'photoUrl', '/images/avatar-terapeuta.jpeg',
         'guideItems', jsonb_build_array(jsonb_build_object('icon', 'sparkles', 'label', 'Escuta acolhedora')),
         'reflections', '[]'::jsonb
       )
@@ -267,6 +270,7 @@ select is(
   'approved',
   'an editorial publication preserves the existing administrative approval'
 );
+
 
 select throws_ok(
   $$
