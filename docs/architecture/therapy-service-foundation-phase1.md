@@ -95,7 +95,9 @@ terapeuta e passa `actor_user_id` derivado da sessão, não do navegador.
 - `therapist_private_services_v1`: lista privada do shell.
 - `therapist_service_metrics_v1`: agregados por serviço.
 - `public_therapies_v`: catálogo público.
-- `public_therapist_search`: busca pública.
+- `public_therapist_search`: busca pública segura de perfis elegíveis. A view
+  interna permanece sem acesso direto para visitantes; somente esta projeção
+  limitada é exposta ao catálogo.
 - `public_therapist_profile_services_v`: serviços do perfil público.
 - `public_matching_therapies_v`: Match, mantida separada via settings.
 
