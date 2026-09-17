@@ -95,10 +95,13 @@ Deno.test(
       failed: 0,
     });
     assertEquals(createCalls, 1);
-    assertEquals(calls[1].name, "record_session_payment_intent_v10");
-    assertEquals(calls[1].body.p_session_payment_id, claim.sessionPaymentId);
-    assertEquals(calls[1].body.p_booking_version, 2);
-    assertEquals(calls[1].body.p_event_created_at, "2026-09-15T02:00:00.000Z");
+    assertEquals(calls[0].name, "expire_booking_reschedule_requests_v1");
+    assertEquals(calls[0].body.p_now, input.now);
+    assertEquals(calls[1].name, "claim_due_session_payment_schedules_v10");
+    assertEquals(calls[2].name, "record_session_payment_intent_v10");
+    assertEquals(calls[2].body.p_session_payment_id, claim.sessionPaymentId);
+    assertEquals(calls[2].body.p_booking_version, 2);
+    assertEquals(calls[2].body.p_event_created_at, "2026-09-15T02:00:00.000Z");
   },
 );
 
@@ -140,8 +143,8 @@ Deno.test(
     });
     const result = await runSessionChargeWorker(input);
     assertEquals(result.retryScheduled, 1);
-    assertEquals(calls[1].name, "fail_session_payment_schedule_attempt_v10");
-    assertEquals(calls[1].body.p_error_code, "stripe_state_unknown");
+    assertEquals(calls[2].name, "fail_session_payment_schedule_attempt_v10");
+    assertEquals(calls[2].body.p_error_code, "stripe_state_unknown");
   },
 );
 
@@ -187,5 +190,34 @@ Deno.test(
     }
     assertEquals(rejected, true);
     assertEquals(called, false);
+  },
+);
+
+Deno.test(
+  "an expiry maintenance failure blocks claims before Stripe is called",
+  async () => {
+    let called = false;
+    const { input, calls } = makeInput({
+      onCreate: () => {
+        called = true;
+      },
+      onRecord: (name) => {
+        if (name === "expire_booking_reschedule_requests_v1") {
+          throw new Error("expiry maintenance unavailable");
+        }
+        return { scheduleStatus: "paid" };
+      },
+    });
+    let rejected = false;
+    try {
+      await runSessionChargeWorker(input);
+    } catch {
+      rejected = true;
+    }
+    assertEquals(rejected, true);
+    assertEquals(called, false);
+    assertEquals(calls.map((call) => call.name), [
+      "expire_booking_reschedule_requests_v1",
+    ]);
   },
 );

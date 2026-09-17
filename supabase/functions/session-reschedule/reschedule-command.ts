@@ -261,6 +261,17 @@ export function mapRescheduleDatabaseError(error: unknown) {
     );
   }
   if (
+    details.includes(
+      "SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_MINIMUM_NOTICE",
+    )
+  ) {
+    return new DomainError(
+      "reschedule_notice_window_required",
+      409,
+      "Para que a pessoa tenha tempo de responder, o reagendamento precisa ser solicitado com mais de 48 horas de antecedência.",
+    );
+  }
+  if (
     details.includes("BOOKING_CANNOT_BE_RESCHEDULED") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_PENDING") ||
     details.includes("BOOKING_RESCHEDULE_ALREADY_RESOLVED") ||

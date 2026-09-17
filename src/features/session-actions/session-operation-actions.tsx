@@ -552,7 +552,7 @@ function PendingReschedulePanel({
             type="button"
           >
             <CircleX aria-hidden="true" size={16} />
-            Solicitar reembolso integral
+            Cancelar encontro
           </button>
         </div>
       ) : canResolvePending || canCancelPending ? (

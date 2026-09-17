@@ -39,6 +39,7 @@ import {
   getTherapistSessionFeedbackSummary,
   getTherapistSessionPendingReschedule,
   getTherapistSessionPaymentStatus,
+  getTherapistSessionChangePolicy,
   shouldShowTherapistSessionJourneyThemes,
   type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
@@ -73,6 +74,12 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
+  const therapistChangePolicy = getTherapistSessionChangePolicy({
+    canCancelByLifecycle: presentation.actions.canCancel,
+    canRescheduleByLifecycle: presentation.actions.canReschedule,
+    financialStatus: booking.financialStatus,
+    startsAt: booking.startsAt,
+  });
   const [pendingReschedule, feedbackSummary, delayNotice] = await Promise.all([
     getTherapistSessionPendingReschedule({
       accessToken: therapist.accessToken,
@@ -143,19 +150,21 @@ export default async function TherapistSessionDetailPage({
             bookingConfirmed={booking.bookingStatus === "confirmed"}
             delayNotice={delayNotice}
             scheduledStartsAt={booking.startsAt}
-            canCancel={presentation.actions.canCancel}
-            canRequestReschedule={presentation.actions.canReschedule}
+            canCancel={therapistChangePolicy.canCancel}
+            canRequestReschedule={therapistChangePolicy.canReschedule}
             cancelDisabledReason={
-              presentation.actions.canCancel
+              therapistChangePolicy.cancelDisabledReason ??
+              (presentation.actions.canCancel
                 ? null
-                : getSessionOperationDisabledReason(booking, "cancel")
+                : getSessionOperationDisabledReason(booking, "cancel"))
             }
             cancellationImpactLabel="A política operacional será aplicada antes de alterar agenda, pagamento ou repasse."
             reschedule={pendingReschedule}
             rescheduleDisabledReason={
-              presentation.actions.canReschedule
+              therapistChangePolicy.rescheduleDisabledReason ??
+              (presentation.actions.canReschedule
                 ? null
-                : getSessionOperationDisabledReason(booking, "reschedule")
+                : getSessionOperationDisabledReason(booking, "reschedule"))
             }
           />
           <SessionAdditionalLinks booking={booking} />

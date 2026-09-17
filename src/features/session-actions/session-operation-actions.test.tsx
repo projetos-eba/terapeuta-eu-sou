@@ -373,6 +373,41 @@ describe("SessionOperationActions", () => {
       },
     });
   });
+
+  it("labels the pre-charge therapist proposal outcome as a cancellation", () => {
+    render(
+      <SessionOperationActions
+        actorRole="patient"
+        bookingId="b1000000-0000-4000-8000-000000000001"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule
+        cancelDisabledReason={null}
+        cancellationImpactLabel="Política aplicável."
+        reschedule={{
+          expiresAt: "2026-09-14T13:00:00.000Z",
+          id: "b1000000-0000-4000-8000-000000000009",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: null,
+          requestedByCurrentUser: false,
+          status: "pending",
+        }}
+        rescheduleDisabledReason={null}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("button", { name: "Cancelar encontro" })
+        .some((button) => !button.hasAttribute("disabled")),
+    ).toBe(true);
+    expect(
+      screen.queryByRole("button", { name: "Solicitar reembolso integral" }),
+    ).toBeNull();
+  });
 });
 
 function renderActions() {
