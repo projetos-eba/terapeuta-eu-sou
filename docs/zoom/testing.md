@@ -259,6 +259,14 @@ defensivos. Ela também reproduz a corrida em que o timestamp de
 A regressão `099_zoom_reentry_terminal_fences.sql` prova que jobs legados já
 enfileirados não são reservados e que fim agendado, hard timeout e fim manual
 previamente autorizado continuam terminais.
+
+A regressão `137_zoom_same_provider_reentry_epoch.sql` cobre uma saída bilateral
+seguida de `session.ended` técnico e retorno do terapeuta com o mesmo
+`provider_session_id`. Ela exige nova época operacional, restauração de presença
+do terapeuta, nova entrada do paciente e descarte de um encerramento atrasado da
+época anterior. Esse cenário deve ser repetido na homologação com paciente em
+desktop e terapeuta em mobile, tanto por refresh quanto por retorno pela página
+inicial.
 O teste de dois dispositivos usa duas montagens isoladas da espera e respostas
 controladas de access; não representa dois dispositivos físicos nem Zoom real.
 

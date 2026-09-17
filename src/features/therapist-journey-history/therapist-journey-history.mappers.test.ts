@@ -127,7 +127,7 @@ describe("therapist journey history", () => {
     expect(detail?.timeline[0].href).toContain("/terapeuta/sessoes/");
   });
 
-  it("keeps only realized historical sessions that have a shared summary in memory", () => {
+  it("keeps realized historical sessions even when no summary was shared", () => {
     const rows = createRows();
     rows.bookings.push({
       completed_at: "2026-07-26T15:00:00-03:00",
@@ -158,8 +158,15 @@ describe("therapist journey history", () => {
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     });
 
-    expect(detail?.timeline).toHaveLength(1);
-    expect(detail?.timeline[0]?.bookingId).toBe(
+    expect(detail?.timeline).toHaveLength(2);
+    expect(detail?.timeline[0]).toMatchObject({
+      bookingId: "f2000000-0000-4000-8000-000000000005",
+      confirmationStatus: "confirmed",
+      description: "Nenhum resumo foi compartilhado nesta sessão.",
+      hasSummary: false,
+      title: "Sem resumo compartilhado",
+    });
+    expect(detail?.timeline[1]?.bookingId).toBe(
       "f2000000-0000-4000-8000-000000000001",
     );
     expect(detail?.client.totalSharedMemories).toBe(1);
@@ -225,6 +232,60 @@ describe("therapist journey history", () => {
       "f2000000-0000-4000-8000-000000000001",
     ]);
     expect(detail?.client.totalSharedMemories).toBe(2);
+  });
+
+  it("prefers current attempt states over legacy financial fulfillment", () => {
+    const rows = createRows();
+    rows.bookings.push(
+      {
+        completed_at: null,
+        confirmationStatus: "pending",
+        created_at: "2026-07-21T09:00:00-03:00",
+        ends_at: "2026-07-25T15:00:00-03:00",
+        fulfillmentStatus: "scheduled",
+        id: "f2000000-0000-4000-8000-000000000008",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        payment_status: "paid",
+        realizationStatus: "performed",
+        service_id: "s1000000-0000-4000-8000-000000000001",
+        starts_at: "2026-07-25T14:00:00-03:00",
+        status: "confirmed",
+      },
+      {
+        completed_at: "2026-07-26T15:00:00-03:00",
+        confirmationStatus: "pending",
+        created_at: "2026-07-22T09:00:00-03:00",
+        ends_at: "2026-07-26T15:00:00-03:00",
+        fulfillmentStatus: "confirmed_bilateral",
+        id: "f2000000-0000-4000-8000-000000000009",
+        patient_profile_id: "b1000000-0000-4000-8000-000000000001",
+        payment_status: "paid",
+        realizationStatus: "not_performed",
+        service_id: "s1000000-0000-4000-8000-000000000001",
+        starts_at: "2026-07-26T14:00:00-03:00",
+        status: "completed",
+      },
+    );
+
+    const detail = mapJourneyHistoryDetail({
+      ...rows,
+      now,
+      patientId: "b1000000-0000-4000-8000-000000000001",
+      source: "supabase",
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    });
+
+    expect(detail?.timeline.map((item) => item.bookingId)).toContain(
+      "f2000000-0000-4000-8000-000000000008",
+    );
+    expect(detail?.timeline.map((item) => item.bookingId)).not.toContain(
+      "f2000000-0000-4000-8000-000000000009",
+    );
+    expect(
+      detail?.timeline.find(
+        (item) => item.bookingId === "f2000000-0000-4000-8000-000000000008",
+      ),
+    ).toMatchObject({ confirmationStatus: "pending", hasSummary: false });
   });
 });
 

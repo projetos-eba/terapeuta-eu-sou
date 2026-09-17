@@ -137,7 +137,7 @@ describe("SessionFeedbackForm", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("renders an unavailable state without exposing the feedback form", async () => {
+  it("renders a useful unavailable state without exposing the feedback form", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -156,7 +156,12 @@ describe("SessionFeedbackForm", () => {
       />,
     );
 
-    await waitFor(() => expect(screen.queryByText("Como foi seu encontro?")).not.toBeInTheDocument());
+    expect(
+      await screen.findByText(
+        "A avaliação ficará disponível depois do encerramento deste encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Como foi seu encontro?")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /enviar feedback/i }),
     ).not.toBeInTheDocument();

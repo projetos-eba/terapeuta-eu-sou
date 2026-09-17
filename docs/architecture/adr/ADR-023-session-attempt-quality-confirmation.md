@@ -50,7 +50,20 @@ vínculo, presença e versão são
 validados no servidor. Contrato antigo ou tentativa desatualizada não alteram
 a atual. Relatos legados ficam em seção histórica, sem conversão silenciosa.
 
+Para o Histórico da Jornada do Premium Plus, a mesma evidência operacional
+inclui a sessão passada realizada mesmo quando não houver resumo compartilhado.
+O histórico mostra a confirmação como pendente ou confirmada sem usar estado
+financeiro como substituto de presença. A seleção privada de até três temas
+fechados fica disponível ao terapeuta após sua avaliação positiva da tentativa
+atual, presença bilateral confiável e encerramento; a confirmação independente
+continua sem ser requisito para os temas.
+
 ## Operação e liberação
+
+Gate registrado em 2026-09-17: a evolução do read model privado da jornada e
+da RPC de temas foi aprovada antes da migration. A mudança não cria tabelas,
+não altera RLS existente e não muda pagamentos, repasses, Aura, métricas ou
+exportações.
 
 O finalizador filtra candidatos antes do limite. A manutenção da sala exclui
 jobs existentes antes do limite, respeita `next_run_at`, registra dead letters
@@ -64,3 +77,13 @@ Resolver a ocorrência de ausência ou autorizar seu reembolso não invalida o
 encerramento físico pendente da sala. O trabalho permanece limitado à tentativa
 atual e ao horário correspondente; o reagendamento concorrente invalida esse
 encerramento. Alterar apenas o fuso de apresentação não cria nova tentativa.
+
+### Reentrada técnica com identificador reutilizado
+
+O identificador remoto do Zoom não substitui a tentativa da reserva nem pode
+ser tratado como identidade permanente de uma sala. Uma reentrada posterior ao
+fechamento técnico abre uma época operacional sanitizada dentro da mesma
+tentativa, inclusive quando o provider reutiliza o identificador. A presença
+atual é derivada apenas da época aberta mais recente; eventos anteriores não
+podem retirar presença, reabrir encerramento terminal ou alterar a classificação
+operacional, qualidade, confirmação ou financeiro.
