@@ -128,7 +128,7 @@ export async function reconcileChargeSettlements(input: {
 }) {
   const limit = Math.min(Math.max(input.limit ?? 500, 1), 500);
   const rows = await input.client.get<SettlementCandidate[]>(
-    `/rest/v1/session_payments?select=id,stripe_charge_id&financial_status=in.(paid,partially_refunded)&stripe_charge_id=not.is.null&transfer_status=in.(waiting_safety_period,waiting_settlement,eligible)&order=stripe_balance_checked_at.asc.nullsfirst,updated_at.asc&limit=${limit}`,
+    `/rest/v1/session_payments?select=id,stripe_charge_id&financial_status=in.(paid,partially_refunded)&stripe_charge_id=not.is.null&or=(stripe_balance_transaction_id.is.null,stripe_balance_status.is.null,stripe_balance_status.eq.pending)&order=stripe_balance_checked_at.asc.nullsfirst,updated_at.asc&limit=${limit}`,
   );
   const observedAt = input.observedAt ?? new Date().toISOString();
   const results = [];
@@ -145,7 +145,8 @@ export async function reconcileChargeSettlements(input: {
     const persisted = await persistChargeSettlementSnapshot({
       client: input.client,
       eventCreatedAt: observedAt,
-      eventId: `settlement-reconcile:${row.id}:${snapshot.status}:${snapshot.balanceTransactionId}`,
+      eventId:
+        `settlement-reconcile:${row.id}:${snapshot.status}:${snapshot.balanceTransactionId}`,
       paymentId: row.id,
       snapshot,
     });
@@ -191,14 +192,14 @@ export function isChargeSettlementAvailable(
 ) {
   return Boolean(
     snapshot &&
-    snapshot.status === "available" &&
-    snapshot.amountCents === expected.amountCents &&
-    snapshot.balanceTransactionId === expected.balanceTransactionId &&
-    snapshot.sourceChargeId === expected.chargeId &&
-    snapshot.currency === (expected.currency ?? "brl").toLowerCase() &&
-    Date.parse(snapshot.availableOn) <=
-      (expected.operationInstant
-        ? Date.parse(expected.operationInstant)
-        : Date.now()),
+      snapshot.status === "available" &&
+      snapshot.amountCents === expected.amountCents &&
+      snapshot.balanceTransactionId === expected.balanceTransactionId &&
+      snapshot.sourceChargeId === expected.chargeId &&
+      snapshot.currency === (expected.currency ?? "brl").toLowerCase() &&
+      Date.parse(snapshot.availableOn) <=
+        (expected.operationInstant
+          ? Date.parse(expected.operationInstant)
+          : Date.now()),
   );
 }

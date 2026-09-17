@@ -23,7 +23,7 @@ export function SessionStatusStrip({
     !data.attendanceReview?.isOpen &&
     (data.booking.status === "confirmed" || data.booking.status === "live");
   const encounterReserved =
-    !encounterConfirmed && data.booking.status === "confirmed";
+    !paymentConfirmed && data.booking.status === "confirmed";
 
   return (
     <section
