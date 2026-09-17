@@ -345,7 +345,9 @@ describe("SessionOperationActions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar alteração" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Solicitar alteração" }),
+    );
 
     expect(
       screen.getByRole("heading", { name: "Solicitar alteração" }),
@@ -353,11 +355,11 @@ describe("SessionOperationActions", () => {
     expect(
       screen.getByRole("button", { name: "Enviar solicitação" }),
     ).toBeVisible();
-    expect(screen.queryByRole("button", { name: "10:00" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "10:00" }),
+    ).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Enviar solicitação" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
 
     await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
     const [requestUrl, request] = vi.mocked(fetch).mock.calls[0] as [
@@ -406,6 +408,44 @@ describe("SessionOperationActions", () => {
     ).toBe(true);
     expect(
       screen.queryByRole("button", { name: "Solicitar reembolso integral" }),
+    ).toBeNull();
+  });
+
+  it("uses therapist-owned language for the therapist's pending request", () => {
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000001"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule
+        cancelDisabledReason={null}
+        cancellationImpactLabel="Política aplicável."
+        reschedule={{
+          expiresAt: "2026-09-20T12:00:00.000Z",
+          id: "b1000000-0000-4000-8000-000000000009",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: null,
+          requestedByCurrentUser: true,
+          status: "pending",
+        }}
+        rescheduleDisabledReason={null}
+      />,
+    );
+
+    expect(
+      screen.getByText("Solicitação de reagendamento enviada"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "A pessoa atendida pode escolher outro horário ou cancelar a sessão.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Seu terapeuta pediu que você escolha outro horário."),
     ).toBeNull();
   });
 });

@@ -163,23 +163,23 @@ describe("mapSessionPresentation", () => {
       AttendanceStatus.TherapistNoShow,
       "Sessão não realizada — terapeuta não compareceu",
     ],
-    [
-      AttendanceStatus.BothNoShow,
-      "Sessão não realizada",
-    ],
+    [AttendanceStatus.BothNoShow, "Sessão não realizada"],
     [
       AttendanceStatus.RequiresReview,
       "Sessão não realizada — acesso em análise",
     ],
-  ])("presents the authoritative attendance outcome %s", (attendanceStatus, label) => {
-    const result = mapSessionPresentation(
-      sessionFixture({ attendanceStatus }),
-      now,
-    );
+  ])(
+    "presents the authoritative attendance outcome %s",
+    (attendanceStatus, label) => {
+      const result = mapSessionPresentation(
+        sessionFixture({ attendanceStatus }),
+        now,
+      );
 
-    expect(result.label).toBe(label);
-    expect(result.actions.canAccessZoom).toBe(false);
-  });
+      expect(result.label).toBe(label);
+      expect(result.actions.canAccessZoom).toBe(false);
+    },
+  );
 
   it("keeps a double no-show out of the therapist attention state", () => {
     const result = mapSessionPresentation(
@@ -192,6 +192,18 @@ describe("mapSessionPresentation", () => {
       "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
     );
     expect(result.description).not.toContain("repasse");
+  });
+
+  it("keeps attendance guidance free of operational financial language", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({ attendanceStatus: AttendanceStatus.TherapistNoShow }),
+      now,
+    );
+
+    expect(result.description).toBe(
+      "O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.",
+    );
+    expect(result.description).not.toMatch(/Admin|reembolso|repasse/i);
   });
 
   it("prioritizes the persisted double no-show over stale review metadata", () => {

@@ -208,6 +208,29 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "therapist V10 reschedule request asks the patient to choose without inventing a proposed time",
+  () => {
+    const rendered = renderEmailTemplate(
+      "booking_therapist_reschedule_requested_patient",
+      {
+        counterparty_name: "Terapeuta de exemplo",
+        encounter_url: "https://example.test/app/encontros/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Pessoa de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
+
+    assertEquals(rendered.subject, "Escolha um novo horário para seu encontro");
+    assert(rendered.html.includes("Escolher outro horário"));
+    assert(rendered.text.includes("Horário atual"));
+    assert(!rendered.text.includes("Horário proposto"));
+    assert(!rendered.text.includes("enviou uma proposta"));
+  },
+);
+
 Deno.test("booking templates reject an unknown token", () => {
   try {
     renderEmailTemplate(

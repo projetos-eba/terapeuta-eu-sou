@@ -1,5 +1,5 @@
 begin;
-select plan(31);
+select plan(34);
 
 select ok(has_function_privilege('service_role',
   'public.open_therapist_booking_reschedule_v10(uuid,uuid,text,text,integer)',
@@ -172,6 +172,29 @@ select is((select count(*)::integer from public.session_payment_schedules
   where booking_id = 'b1240000-0000-4000-8000-000000000011'
     and status = 'scheduled'), 1,
   'opening the request leaves one untouched charge schedule');
+select is(
+  (select body from public.notifications
+   where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010'
+     and event_key like 'booking-event:%:patient'
+   order by created_at desc
+   limit 1),
+  'Seu terapeuta pediu que você escolha outro horário para o encontro.',
+  'the patient notification explains that they choose the new slot'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_therapist_reschedule_requested_patient'
+     and related_entity_id = 'b1240000-0000-4000-8000-000000000011'),
+  1,
+  'the therapist V10 request queues the patient-choice email'
+);
+select is(
+  (select count(*)::integer from public.email_outbox
+   where action_key = 'booking_reschedule_requested_patient'
+     and related_entity_id = 'b1240000-0000-4000-8000-000000000011'),
+  0,
+  'the therapist V10 request does not queue the generic proposed-slot email'
+);
 select is(jsonb_array_length(public.claim_due_session_payment_schedules_v10(
   (select payment_due_at from public.session_payments
    where booking_id = 'b1240000-0000-4000-8000-000000000011'),
