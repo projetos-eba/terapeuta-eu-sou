@@ -207,6 +207,22 @@ Deno.test("maps a claimed V10 charge to the support-safe response", () => {
   assertEquals((result as DomainError).status, 409);
 });
 
+Deno.test("maps the therapist 48-hour notice requirement safely", () => {
+  const result = mapRescheduleDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_MINIMUM_NOTICE",
+    ),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals(
+    (result as DomainError).code,
+    "reschedule_notice_window_required",
+  );
+  assertEquals((result as DomainError).status, 409);
+});
+
 Deno.test(
   "keeps therapist V10 actions fail-closed after a payment race",
   () => {

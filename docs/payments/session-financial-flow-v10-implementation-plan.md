@@ -118,6 +118,15 @@ orientação ao suporte. Em HML, a política V10 e os workers de cobrança e rep
 estão ativos para novas reservas. A política e o scheduler V9 foram desativados
 para novas aquisições, mas os registros e as obrigações históricas V9 permanecem
 preservados para reconciliação e drenagem controlada. Produção não foi alterada.
+
+Para preservar uma janela útil de decisão ao paciente, o terapeuta só pode
+solicitar reagendamento com mais de 48 horas de antecedência. A solicitação
+vence na janela de 24 horas anterior ao horário original; se não houver decisão,
+ela é encerrada e a reserva original permanece válida. Entre 48 e 24 horas, o
+terapeuta pode cancelar somente uma reserva ainda não cobrada. A partir de 24
+horas, ou após qualquer início de cobrança, as alterações ordinárias ficam
+indisponíveis e exigem suporte.
+
 A existência deste arquivo não autoriza deploy, alteração remota, execução de
 cron ou movimentação financeira.
 

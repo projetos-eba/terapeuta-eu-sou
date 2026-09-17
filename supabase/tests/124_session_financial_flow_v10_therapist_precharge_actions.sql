@@ -1,5 +1,5 @@
 begin;
-select plan(28);
+select plan(30);
 
 select ok(has_function_privilege('service_role',
   'public.open_therapist_booking_reschedule_v10(uuid,uuid,text,text,integer)',
@@ -161,6 +161,13 @@ select is(public.open_therapist_booking_reschedule_v10(
   'Preciso reorganizar minha agenda.', 'tes:v10:therapist-open:124',
   (select version from public.bookings where id = 'b1240000-0000-4000-8000-000000000011')
 ) ->> 'status', 'pending', 'the therapist opens a V10 request before payment');
+select is(
+  (select expires_at from public.booking_reschedule_requests
+   where request_id = 'tes:v10:therapist-open:124'),
+  (select starts_at - interval '24 hours' from public.bookings
+   where id = 'b1240000-0000-4000-8000-000000000011'),
+  'the therapist request closes at the original payment window'
+);
 select is((select count(*)::integer from public.session_payment_schedules
   where booking_id = 'b1240000-0000-4000-8000-000000000011'
     and status = 'scheduled'), 1,
@@ -199,6 +206,22 @@ select is((select stripe_payment_method_id from public.session_payment_setups
 select is((select count(*)::integer from public.session_transfer_jobs
   where booking_id = 'b1240000-0000-4000-8000-000000000011'), 0,
   'a pre-charge therapist reschedule creates no transfer');
+
+savepoint therapist_v10_notice_window;
+update public.bookings
+set status = 'cancelled_by_therapist',
+    starts_at = now() + interval '36 hours',
+    ends_at = now() + interval '36 hours 50 minutes'
+where id = 'b1240000-0000-4000-8000-000000000012';
+select throws_ok($$select public.open_therapist_booking_reschedule_v10(
+  'b1240000-0000-4000-8000-000000000012',
+  'aaaaaaaa-0000-4000-8000-000000000001',
+  'O paciente precisa ter tempo para responder.', 'tes:v10:therapist-notice:124',
+  (select version from public.bookings where id = 'b1240000-0000-4000-8000-000000000012')
+)$$,
+  '23514', 'SESSION_PRECHARGE_THERAPIST_RESCHEDULE_V10_MINIMUM_NOTICE',
+  'the therapist cannot open a V10 request inside the 48-hour notice window');
+rollback to savepoint therapist_v10_notice_window;
 
 select is(public.open_therapist_booking_reschedule_v10(
   'b1240000-0000-4000-8000-000000000012',
