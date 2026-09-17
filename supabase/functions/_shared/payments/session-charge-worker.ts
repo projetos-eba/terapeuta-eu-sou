@@ -25,6 +25,14 @@ export async function runSessionChargeWorker(input: {
   workerId: string;
   limit: number;
 }) {
+  // A pending therapist-led reschedule fences the original scheduled charge.
+  // Expire decisions first so a request whose deadline is the payment window
+  // cannot keep the original booking unpaid indefinitely.  The database
+  // preserves the original appointment for an unchosen future reschedule.
+  await input.client.rpc<number>("expire_booking_reschedule_requests_v1", {
+    p_now: input.now,
+  });
+
   const claimed = await input.client.rpc<{ claims: unknown[] }>(
     "claim_due_session_payment_schedules_v10",
     {
