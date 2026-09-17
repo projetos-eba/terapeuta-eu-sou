@@ -17,14 +17,14 @@ export function queryTherapistFinancialOverview(
 }
 
 export function queryTherapistReceipts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_receipts_v2", {
+  return requestFinanceRpc("get_private_therapist_receipts_v3", {
     accessToken,
     body,
   });
 }
 
 export function queryTherapistPayouts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_payouts_v2", {
+  return requestFinanceRpc("get_private_therapist_payouts_v3", {
     accessToken,
     body,
   });

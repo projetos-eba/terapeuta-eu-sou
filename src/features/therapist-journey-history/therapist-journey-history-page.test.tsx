@@ -29,15 +29,15 @@ describe("TherapistJourneyDetailPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Os temas podem ser registrados por você após uma sessão realizada.",
+        "Os temas podem ser registrados nos detalhes de uma sessão realizada que você avaliou como bem-sucedida.",
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Memória das sessões" }),
+      screen.getByRole("heading", { name: "Histórico das sessões" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Memórias compartilhadas das sessões realizadas ou aguardando confirmação",
+        "Consulte as sessões realizadas nesta jornada, com ou sem resumo compartilhado, e abra os detalhes quando precisar de contexto.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -325,7 +325,8 @@ function detailFixture(): JourneyHistoryDetailData {
         href: "/terapeuta/sessoes/booking-1",
         id: "booking-1",
         serviceTitle: "Reiki",
-        status: "completed",
+        confirmationStatus: "confirmed",
+        hasSummary: true,
         title: "Clareza para o próximo encontro",
         topicLabels: [],
       },

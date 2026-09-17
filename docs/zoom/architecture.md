@@ -203,6 +203,14 @@ somente como parâmetro de compatibilidade e reconciliação técnica: não expi
 encontro. `manual_end`, `end_scheduled` e `end_hard_timeout` são operações
 terminais independentes.
 
+O identificador remoto do provider não define sozinho uma instância: ele pode
+ser reutilizado depois de uma sala vazia encerrar. `video_sessions.metadata`
+mantém uma época interna e seu horário de abertura. Um join confiável posterior
+ao último fechamento abre a época seguinte, mesmo com o mesmo identificador;
+um evento anterior à abertura atual é ignorado. A agregação de presença usa a
+época atual, preservando a reentrada host-first e impedindo que um encerramento
+atrasado remova o terapeuta que já retornou.
+
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes no fim agendado, por hard timeout, para confirmar
 um encerramento manual previamente autorizado ou quando o classificador

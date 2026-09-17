@@ -344,9 +344,9 @@ describe("therapist finance mappers", () => {
     expect(dashboard.revenueByTherapy[0]?.revenueSharePercent).toBe(100);
   });
 
-  it("maps receipt items with method, origin, refund and dispute fields separated", () => {
+  it("maps the charge-focused receipt contract", () => {
     const receipts = mapTherapistReceiptsContract({
-      contractVersion: 2,
+      contractVersion: 3,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -359,115 +359,19 @@ describe("therapist finance mappers", () => {
       items: [
         {
           bookingId: "f6100000-0000-4000-8000-000000000001",
+          chargeStatus: "refunded",
           createdAt: "2026-07-28T12:00:00.000Z",
-          disputeStatus: "needs_response",
           financialStatus: "partially_refunded",
           grossAmountCents: 5000,
           patientDisplayName: "Lucas",
-          paymentMethodType: "card",
-          paymentOrigin: "stripe_checkout",
           receiptUrl: null,
-          receiptStatus: "refunded",
-          receivedAt: null,
           refundedAmountCents: 1000,
+          scheduledChargeAt: null,
           sessionDate: "2026-07-28T13:00:00.000Z",
           sessionPaymentId: "f6200000-0000-4000-8000-000000000001",
           tesCommissionCents: 1000,
           therapistNetAmountCents: 3000,
           therapyNameSnapshot: "Reiki",
-        },
-        {
-          bookingId: "f6100000-0000-4000-8000-000000000002",
-          createdAt: "2026-07-28T12:05:00.000Z",
-          disputeStatus: null,
-          financialStatus: "paid",
-          grossAmountCents: 5000,
-          patientDisplayName: "Marina",
-          paymentMethodType: "card",
-          paymentOrigin: "stripe_checkout",
-          receiptUrl: null,
-          receiptStatus: "compensated",
-          receivedAt: null,
-          refundedAmountCents: 0,
-          sessionDate: "2026-07-28T14:00:00.000Z",
-          sessionPaymentId: "f6200000-0000-4000-8000-000000000002",
-          tesCommissionCents: 1000,
-          therapistNetAmountCents: 0,
-          therapyNameSnapshot: "Reiki",
-        },
-      ],
-      pagination: {
-        hasNextPage: false,
-        page: 1,
-        pageSize: 12,
-        totalCount: 2,
-        totalPages: 1,
-      },
-      monthlyTrend: [
-        {
-          month: "2026-07",
-          processingCents: 3000,
-          receivedCents: 0,
-        },
-      ],
-      statusDistribution: [
-        { amountCents: 3000, itemCount: 1, status: "refunded" },
-      ],
-      summary: {
-        disputedCents: 0,
-        processingCents: 0,
-        receivedCents: 0,
-        refundedCents: 1000,
-      },
-      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
-      therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],
-    });
-
-    expect(receipts.items[0]).toMatchObject({
-      disputeStatus: "needs_response",
-      paymentMethodType: "card",
-      paymentOrigin: "stripe_checkout",
-      refundedAmountCents: 1000,
-      therapistNetAmountCents: 3000,
-    });
-    expect(receipts.items[1]).toMatchObject({
-      receiptStatus: "compensated",
-      therapistNetAmountCents: 0,
-    });
-  });
-
-  it("maps payout batches with authoritative net cents and refund visibility", () => {
-    const payouts = mapTherapistPayoutsContract({
-      contractVersion: 2,
-      filters: {
-        periodEnd: "2026-07-28",
-        periodStart: "2026-06-29",
-        status: "paid",
-        timezone: "America/Sao_Paulo",
-      },
-      generatedAt: "2026-07-28T12:00:00.000Z",
-      items: [
-        {
-          blockedReason: null,
-          debtOffsetAmountCents: 0,
-          expectedTransferAt: "2026-07-30T12:00:00.000Z",
-          failedReason: null,
-          grossAmountCents: 10000,
-          payoutBatchId: "batch-1",
-          payoutItemId: "batch-1",
-          periodEnd: "2026-07-05",
-          periodStart: "2026-07-01",
-          reconciliationStatus: "paid",
-          reconciliationUpdatedAt: "2026-07-30T13:00:00.000Z",
-          refundedAmountCents: 0,
-          sessionCount: 1,
-          stripeSourceChargeId: "ch_test",
-          stripeTransferId: "tr_test",
-          sourceKind: "weekly_batch",
-          tesCommissionCents: 2000,
-          therapistNetAmountCents: 8000,
-          transferredAt: "2026-07-30T13:00:00.000Z",
-          transferStatus: "paid",
         },
       ],
       pagination: {
@@ -478,23 +382,86 @@ describe("therapist finance mappers", () => {
         totalPages: 1,
       },
       summary: {
-        blockedReasonCodes: ["account", "refund"],
-        blockedCents: 0,
-        eligibleForPayoutCents: 0,
-        nextBatchAt: null,
-        payoutProcessingCents: 0,
-        waitingConfirmationCents: 0,
-        waitingSafetyPeriodCents: 0,
-        waitingSettlementCents: 0,
+        approvedCents: 0,
+        processingCents: 0,
+        refundedCents: 1000,
+        scheduledCents: 0,
+      },
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+      therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],
+    });
+
+    expect(receipts.items[0]).toMatchObject({
+      chargeStatus: "refunded",
+      refundedAmountCents: 1000,
+      therapistNetAmountCents: 3000,
+    });
+  });
+
+  it("maps the simplified payout agenda and history", () => {
+    const payouts = mapTherapistPayoutsContract({
+      agenda: {
+        days: 15,
+        inTransit: [
+          {
+            amountCents: 8000,
+            composition: [
+              {
+                amountCents: 8000,
+                bookingId: "f6100000-0000-4000-8000-000000000001",
+                patientDisplayName: "Lucas",
+                sessionDate: "2026-07-28T13:00:00.000Z",
+                sessionPaymentId: "f6200000-0000-4000-8000-000000000001",
+                therapyNameSnapshot: "Reiki",
+              },
+            ],
+            date: "2026-07-30",
+            id: "in-transit:2026-07-30",
+            sessionCount: 1,
+            status: "in_transit",
+          },
+        ],
+        periodEnd: "2026-08-11",
+        periodStart: "2026-07-28",
+        predicted: [],
+      },
+      contractVersion: 3,
+      filters: {
+        agendaDays: 15,
+        periodEnd: "2026-07-28",
+        periodStart: "2026-06-29",
+        timezone: "America/Sao_Paulo",
+      },
+      generatedAt: "2026-07-28T12:00:00.000Z",
+      historyItems: [
+        {
+          amountCents: 8000,
+          composition: [],
+          date: "2026-07-27",
+          id: "received:2026-07-27",
+          sessionCount: 1,
+          status: "received",
+        },
+      ],
+      pagination: {
+        hasNextPage: false,
+        page: 1,
+        pageSize: 12,
+        totalCount: 1,
+        totalPages: 1,
+      },
+      summary: {
+        expectedCents: 0,
+        inTransitCents: 8000,
+        receivedCents: 8000,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     });
 
-    expect(payouts.items[0]?.therapistNetAmountCents).toBe(8000);
-    expect(payouts.items[0]?.refundedAmountCents).toBe(0);
-    expect(payouts.items[0]?.reconciliationStatus).toBe("paid");
-    expect(payouts.items[0]?.sourceKind).toBe("weekly_batch");
-    expect(payouts.summary.blockedReasonCodes).toEqual(["account", "refund"]);
+    expect(payouts.agenda.inTransit[0]?.amountCents).toBe(8000);
+    expect(payouts.agenda.inTransit[0]?.status).toBe("in_transit");
+    expect(payouts.historyItems[0]?.status).toBe("received");
+    expect(payouts.summary.receivedCents).toBe(8000);
   });
 
   it("never accepts a bank-account summary in the Connect read model", () => {

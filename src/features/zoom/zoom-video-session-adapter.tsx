@@ -268,7 +268,9 @@ export function ZoomVideoSessionAdapter({
   sessionTitle?: string;
   showJourneyThemes?: boolean;
 }) {
-  const [state, setSessionState] = useState<SessionState>("idle");
+  const [state, setSessionState] = useState<SessionState>(() =>
+    initialFeedback ? "ended" : "idle",
+  );
   const stateRef = useRef(state);
   const liveSessionStateRef = useRef<"joined" | "media_degraded">("joined");
   const setState = useCallback((nextState: SessionState) => {
@@ -416,42 +418,6 @@ export function ZoomVideoSessionAdapter({
   useEffect(() => {
     updateCurrentAccess(access);
   }, [access, updateCurrentAccess]);
-
-  useEffect(() => {
-    if (!initialFeedback) return;
-
-    let cancelled = false;
-
-    async function resolveFeedbackIntent() {
-      try {
-        const response = await fetch(
-          `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}&actorRole=${actorRole}`,
-          { cache: "no-store" },
-        );
-        const payload = (await response.json().catch(() => null)) as {
-          data?: { status?: string };
-          ok?: boolean;
-        } | null;
-        const feedbackStatus = payload?.data?.status;
-
-        if (
-          !cancelled &&
-          payload?.ok &&
-          (feedbackStatus === "eligible" ||
-            feedbackStatus === "submitted")
-        ) {
-          setState("ended");
-        }
-      } catch {
-        // The waiting room remains visible when the intent check is unavailable.
-      }
-    }
-
-    void resolveFeedbackIntent();
-    return () => {
-      cancelled = true;
-    };
-  }, [actorRole, bookingId, initialFeedback, setState]);
 
   useEffect(() => {
     isOnlineRef.current = isOnline;

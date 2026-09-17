@@ -85,5 +85,26 @@ migration imediatamente anterior: um job `processing` e um job `queued`
 viraram `done/superseded`, a fence legada ativa foi limpa e uma sessão com
 término já confirmado permaneceu inalterada.
 
+## Complemento — reuso de identificador do provider (2026-09-17)
+
+O `provider_session_id` não é uma fronteira suficiente de instância: depois de
+uma sala vazia ser tecnicamente encerrada, o Zoom pode reutilizar esse mesmo
+identificador quando o terapeuta retorna. A presença atual passa a usar uma
+época interna aberta por `session.started` ou `session.user_joined` confiável,
+posterior ao fechamento anterior. A época é registrada somente em metadata
+operacional sanitizada da `video_sessions` e das participações; não cria uma
+nova tentativa de reserva nem altera chegada, no-show, qualidade ou financeiro.
+
+Eventos anteriores ao início da época atual são descartados, inclusive um
+`session.ended` atrasado com o mesmo identificador do provider. O primeiro join
+confiável do terapeuta na nova época restaura `therapist_present=true`, para que
+o paciente já legitimado volte a receber acesso host-first. Encerramento manual,
+fim agendado, hard timeout e status terminal continuam sem reabertura.
+
+A regressão `137_zoom_same_provider_reentry_epoch.sql` cobre: entrada de ambos,
+fechamento técnico, reentrada do terapeuta com o mesmo identificador, bloqueio
+de evento antigo, nova entrada do paciente e manutenção da ACL exclusiva de
+`service_role`.
+
 Nenhuma alteração deste trabalho deve ser aplicada diretamente em HML ou
 produção. HML serve somente como fonte read-only de evidência.

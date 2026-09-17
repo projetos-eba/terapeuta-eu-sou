@@ -31,6 +31,7 @@ export type JourneyPatientRow = {
 };
 
 export type JourneyBookingRow = {
+  confirmationStatus?: "confirmed" | "pending" | null;
   completed_at: string | null;
   created_at: string;
   ends_at: string;
@@ -38,6 +39,7 @@ export type JourneyBookingRow = {
   id: string;
   patient_profile_id: string;
   payment_status: string;
+  realizationStatus?: "performed" | "pending" | "not_performed" | null;
   service_id: string;
   starts_at: string;
   status: string;
@@ -45,14 +47,13 @@ export type JourneyBookingRow = {
 
 export type JourneyBookingBaseRow = Omit<
   JourneyBookingRow,
-  "fulfillmentStatus"
+  "confirmationStatus" | "fulfillmentStatus" | "realizationStatus"
 >;
 
-export type JourneyBookingFulfillmentRow = Pick<
-  JourneyBookingRow,
-  "fulfillmentStatus"
-> & {
-  bookingId: string | null;
+export type JourneyBookingStateRow = {
+  booking_id: string;
+  confirmation_status: "confirmed" | "pending";
+  realization_status: "performed" | "pending" | "not_performed";
 };
 
 export type JourneyServiceRow = {
@@ -175,8 +176,7 @@ export function mapJourneyHistoryDetail(
       (booking) =>
         booking.patient_profile_id === input.patientId &&
         isMemoryEligibleBooking(booking) &&
-        new Date(booking.starts_at).getTime() <= now.getTime() &&
-        summaryByBooking.has(booking.id),
+        new Date(booking.starts_at).getTime() <= now.getTime(),
     )
     .sort(
       (a, b) =>
@@ -184,17 +184,18 @@ export function mapJourneyHistoryDetail(
     )
     .map((booking) => {
       const service = serviceById.get(booking.service_id);
-      const summary = summaryByBooking.get(booking.id)!;
+      const summary = summaryByBooking.get(booking.id);
       const serviceTitle = service?.title ?? "Sessão TES";
       return {
         bookingId: booking.id,
         date: booking.starts_at,
-        description: summary.summary ?? "Sem detalhes adicionais.",
+        description: summary?.summary ?? "Nenhum resumo foi compartilhado nesta sessão.",
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
-        status: booking.status,
+        confirmationStatus: getJourneyConfirmationStatus(booking),
+        hasSummary: Boolean(summary),
         serviceTitle,
-        title: summary.title ?? "Resumo compartilhado",
+        title: summary?.title ?? "Sem resumo compartilhado",
         topicLabels: [],
       };
     });
@@ -320,12 +321,27 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
 }
 
 function isMemoryEligibleBooking(booking: JourneyBookingRow) {
+  if (booking.realizationStatus !== undefined && booking.realizationStatus !== null) {
+    return booking.realizationStatus === "performed";
+  }
+
   return (
     (booking.fulfillmentStatus !== null &&
       MEMORY_FULFILLMENT_STATUSES.has(booking.fulfillmentStatus)) ||
     (booking.fulfillmentStatus === null &&
       booking.status === COMPLETED_BOOKING_STATUS)
   );
+}
+
+function getJourneyConfirmationStatus(
+  booking: JourneyBookingRow,
+): "confirmed" | "pending" {
+  if (booking.confirmationStatus) return booking.confirmationStatus;
+
+  return booking.fulfillmentStatus !== null &&
+    MEMORY_FULFILLMENT_STATUSES.has(booking.fulfillmentStatus)
+    ? "confirmed"
+    : "pending";
 }
 
 function buildTopicCounts(

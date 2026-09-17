@@ -33,6 +33,15 @@ export type TherapistReceiptStatus =
   | "waiting_safety_period"
   | "waiting_settlement";
 
+export type TherapistChargeStatus =
+  | "approved"
+  | "canceled"
+  | "failed"
+  | "processing"
+  | "refunded"
+  | "scheduled"
+  | "under_review";
+
 export type TherapistPayoutStatus =
   | "batched"
   | "blocked"
@@ -93,17 +102,14 @@ export type TherapistFinancialOverview = TherapistFinancePeriod & {
 
 export type TherapistReceiptItem = {
   bookingId: string;
+  chargeStatus: TherapistChargeStatus;
   createdAt: string;
-  disputeStatus: string | null;
   financialStatus: TherapistFinancialStatus;
   grossAmountCents: number;
   patientDisplayName: string;
-  paymentMethodType: string | null;
-  paymentOrigin: string;
   receiptUrl: string | null;
-  receiptStatus: TherapistReceiptStatus;
-  receivedAt: string | null;
   refundedAmountCents: number;
+  scheduledChargeAt: string | null;
   sessionDate: string;
   sessionPaymentId: string;
   tesCommissionCents: number;
@@ -117,84 +123,72 @@ export type TherapistReceiptTherapyOption = {
 };
 
 export type TherapistReceiptsContract = {
-  contractVersion: 2;
+  contractVersion: 3;
   filters: TherapistFinancePeriod & {
     search: string | null;
-    status: TherapistReceiptStatus | null;
+    status: TherapistChargeStatus | null;
     therapyId: string | null;
   };
   generatedAt: string;
   items: TherapistReceiptItem[];
   pagination: TherapistFinancePagination;
-  monthlyTrend: Array<{
-    month: string;
-    processingCents: number;
-    receivedCents: number;
-  }>;
-  statusDistribution: Array<{
-    amountCents: number;
-    itemCount: number;
-    status: TherapistReceiptStatus;
-  }>;
   summary: {
-    disputedCents: number;
+    approvedCents: number;
     processingCents: number;
-    receivedCents: number;
     refundedCents: number;
+    scheduledCents: number;
   };
   therapistProfileId: string;
   therapyOptions: TherapistReceiptTherapyOption[];
 };
 
-export type TherapistPayoutItem = {
-  blockedReason: string | null;
-  debtOffsetAmountCents: number;
-  expectedTransferAt: string | null;
-  failedReason: string | null;
-  grossAmountCents: number;
-  payoutBatchId: string | null;
-  payoutItemId: string;
-  periodEnd: string;
-  periodStart: string;
-  reconciliationStatus:
-    | "failed"
-    | "matched"
-    | "needs_reconciliation"
-    | "pending"
-    | "paid"
-    | "reversed";
-  reconciliationUpdatedAt: string | null;
-  refundedAmountCents: number;
-  sessionCount: number;
-  stripeSourceChargeId: string | null;
-  stripeTransferId: string | null;
-  sourceKind: "session_direct" | "weekly_batch";
-  tesCommissionCents: number;
-  therapistNetAmountCents: number;
-  transferredAt: string | null;
-  transferStatus: TherapistPayoutStatus;
+export type TherapistPayoutCompositionItem = {
+  amountCents: number;
+  bookingId: string;
+  patientDisplayName: string;
+  sessionDate: string;
+  sessionPaymentId: string;
+  therapyNameSnapshot: string;
 };
 
-export type TherapistPayoutSummary = {
-  blockedReasonCodes: Array<"account" | "review" | "refund" | "other">;
-  blockedCents: number;
-  eligibleForPayoutCents: number;
-  nextBatchAt: string | null;
-  payoutProcessingCents: number;
-  waitingConfirmationCents: number;
-  waitingSafetyPeriodCents: number;
-  waitingSettlementCents: number;
+export type TherapistPayoutAgendaGroup = {
+  amountCents: number;
+  composition: TherapistPayoutCompositionItem[];
+  date: string;
+  id: string;
+  sessionCount: number;
+  status: "in_transit" | "predicted";
+};
+
+export type TherapistPayoutHistoryItem = {
+  amountCents: number;
+  composition: TherapistPayoutCompositionItem[];
+  date: string;
+  id: string;
+  sessionCount: number;
+  status: "received" | "under_review";
 };
 
 export type TherapistPayoutsContract = {
-  contractVersion: 2;
+  agenda: {
+    days: 7 | 15 | 30;
+    inTransit: TherapistPayoutAgendaGroup[];
+    periodEnd: string;
+    periodStart: string;
+    predicted: TherapistPayoutAgendaGroup[];
+  };
+  contractVersion: 3;
   filters: TherapistFinancePeriod & {
-    status: TherapistPayoutStatus | null;
+    agendaDays: 7 | 15 | 30;
   };
   generatedAt: string;
-  items: TherapistPayoutItem[];
+  historyItems: TherapistPayoutHistoryItem[];
   pagination: TherapistFinancePagination;
-  summary: TherapistPayoutSummary;
+  summary: {
+    expectedCents: number;
+    inTransitCents: number;
+    receivedCents: number;
+  };
   therapistProfileId: string;
 };
 
@@ -219,10 +213,11 @@ export type TherapistConnectAccount = {
 };
 
 export type TherapistFinanceFilters = {
+  agendaDays: 7 | 15 | 30;
   page: number;
   payoutStatus: TherapistPayoutStatus | null;
   search: string | null;
-  status: TherapistReceiptStatus | null;
+  status: TherapistChargeStatus | null;
   therapyId: string | null;
 };
 

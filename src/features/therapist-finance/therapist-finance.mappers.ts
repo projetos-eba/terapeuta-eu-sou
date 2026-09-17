@@ -8,18 +8,18 @@ import type {
   FinancialMetricComparison,
   FinancialMetricComparisonStatus,
   TherapistAdvancedFinancialDashboard,
+  TherapistChargeStatus,
   TherapistConnectAccount,
   TherapistConnectOnboardingStatus,
   TherapistFinancialOverview,
   TherapistFinancialStatus,
   TherapistFinancePagination,
   TherapistFinancialMetrics,
-  TherapistPayoutItem,
-  TherapistPayoutStatus,
-  TherapistPayoutSummary,
+  TherapistPayoutAgendaGroup,
+  TherapistPayoutCompositionItem,
+  TherapistPayoutHistoryItem,
   TherapistPayoutsContract,
   TherapistReceiptItem,
-  TherapistReceiptStatus,
   TherapistReceiptTherapyOption,
   TherapistReceiptsContract,
 } from "./therapist-finance.types";
@@ -35,42 +35,15 @@ const financialStatuses = new Set<TherapistFinancialStatus>([
   "refunded",
 ]);
 
-const payoutStatuses = new Set<TherapistPayoutStatus>([
-  "bank_pending",
-  "batched",
-  "blocked",
-  "eligible",
-  "failed",
-  "paid",
-  "reversed",
-  "transferred",
-  "transfer_pending",
-  "waiting_confirmation",
-  "waiting_safety_period",
-  "waiting_settlement",
-]);
-
-const receiptStatuses = new Set<TherapistReceiptStatus>([
-  "bank_pending",
-  "blocked",
+const chargeStatuses = new Set<TherapistChargeStatus>([
+  "approved",
   "canceled",
-  "compensated",
-  "disputed",
-  "eligible",
   "failed",
-  "paid",
-  "payout_processing",
-  "receivable",
+  "processing",
   "refunded",
-  "reversed",
-  "waiting_confirmation",
-  "waiting_safety_period",
-  "waiting_settlement",
+  "scheduled",
+  "under_review",
 ]);
-
-const payoutReconciliationStatuses = new Set<
-  TherapistPayoutItem["reconciliationStatus"]
->(["failed", "matched", "needs_reconciliation", "paid", "pending", "reversed"]);
 
 const connectStatuses = new Set<TherapistConnectOnboardingStatus>([
   "account_created",
@@ -154,22 +127,18 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalTwo(value.contractVersion),
+      contractVersion: literalThree(value.contractVersion),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
         search: nullableString(filters.search),
-        status: nullableReceiptStatus(filters.status),
+        status: nullableChargeStatus(filters.status),
         therapyId: nullableString(filters.therapyId),
         timezone: nonEmptyString(filters.timezone),
       },
       generatedAt: dateTime(value.generatedAt),
       items: array(value.items).map(receiptItem),
-      monthlyTrend: array(value.monthlyTrend).map(monthlyTrendPoint),
       pagination: pagination(value.pagination),
-      statusDistribution: array(value.statusDistribution).map(
-        statusDistributionItem,
-      ),
       summary: receiptSummary(value.summary),
       therapistProfileId: nonEmptyString(value.therapistProfileId),
       therapyOptions: array(value.therapyOptions).map(therapyOption),
@@ -186,17 +155,25 @@ export function mapTherapistPayoutsContract(
   try {
     const value = record(input);
     const filters = record(value.filters);
+    const agenda = record(value.agenda);
 
     return {
-      contractVersion: literalTwo(value.contractVersion),
+      agenda: {
+        days: agendaDays(agenda.days),
+        inTransit: array(agenda.inTransit).map(payoutAgendaGroup),
+        periodEnd: dateString(agenda.periodEnd),
+        periodStart: dateString(agenda.periodStart),
+        predicted: array(agenda.predicted).map(payoutAgendaGroup),
+      },
+      contractVersion: literalThree(value.contractVersion),
       filters: {
+        agendaDays: agendaDays(filters.agendaDays),
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
-        status: nullablePayoutStatus(filters.status),
         timezone: nonEmptyString(filters.timezone),
       },
       generatedAt: dateTime(value.generatedAt),
-      items: array(value.items).map(payoutItem),
+      historyItems: array(value.historyItems).map(payoutHistoryItem),
       pagination: pagination(value.pagination),
       summary: payoutSummary(value.summary),
       therapistProfileId: nonEmptyString(value.therapistProfileId),
@@ -445,17 +422,14 @@ function receiptItem(input: unknown): TherapistReceiptItem {
 
   return {
     bookingId: nonEmptyString(value.bookingId),
+    chargeStatus: chargeStatus(value.chargeStatus),
     createdAt: dateTime(value.createdAt),
-    disputeStatus: nullableString(value.disputeStatus),
     financialStatus: financialStatus(value.financialStatus),
     grossAmountCents: nonNegativeInteger(value.grossAmountCents),
     patientDisplayName: nonEmptyString(value.patientDisplayName),
-    paymentMethodType: nullableString(value.paymentMethodType),
-    paymentOrigin: nonEmptyString(value.paymentOrigin),
     receiptUrl: nullableString(value.receiptUrl),
-    receiptStatus: receiptStatus(value.receiptStatus),
-    receivedAt: nullableDateTime(value.receivedAt),
     refundedAmountCents: nonNegativeInteger(value.refundedAmountCents),
+    scheduledChargeAt: nullableDateTime(value.scheduledChargeAt),
     sessionDate: dateTime(value.sessionDate),
     sessionPaymentId: nonEmptyString(value.sessionPaymentId),
     tesCommissionCents: nonNegativeInteger(value.tesCommissionCents),
@@ -464,97 +438,59 @@ function receiptItem(input: unknown): TherapistReceiptItem {
   };
 }
 
-function payoutItem(input: unknown): TherapistPayoutItem {
+function payoutCompositionItem(input: unknown): TherapistPayoutCompositionItem {
   const value = record(input);
-
   return {
-    blockedReason: nullableString(value.blockedReason),
-    debtOffsetAmountCents: nonNegativeInteger(value.debtOffsetAmountCents),
-    expectedTransferAt: nullableDateTime(value.expectedTransferAt),
-    failedReason: nullableString(value.failedReason),
-    grossAmountCents: nonNegativeInteger(value.grossAmountCents),
-    payoutBatchId: nullableString(value.payoutBatchId),
-    payoutItemId: nonEmptyString(value.payoutItemId),
-    periodEnd: dateString(value.periodEnd),
-    periodStart: dateString(value.periodStart),
-    reconciliationStatus: payoutReconciliationStatus(
-      value.reconciliationStatus,
-    ),
-    reconciliationUpdatedAt: nullableDateTime(value.reconciliationUpdatedAt),
-    refundedAmountCents: nonNegativeInteger(value.refundedAmountCents),
-    sessionCount: nonNegativeInteger(value.sessionCount),
-    stripeSourceChargeId: nullableString(value.stripeSourceChargeId),
-    stripeTransferId: nullableString(value.stripeTransferId),
-    sourceKind: payoutSourceKind(value.sourceKind),
-    tesCommissionCents: nonNegativeInteger(value.tesCommissionCents),
-    therapistNetAmountCents: integer(value.therapistNetAmountCents),
-    transferredAt: nullableDateTime(value.transferredAt),
-    transferStatus: payoutStatus(value.transferStatus),
+    amountCents: nonNegativeInteger(value.amountCents),
+    bookingId: nonEmptyString(value.bookingId),
+    patientDisplayName: nonEmptyString(value.patientDisplayName),
+    sessionDate: dateTime(value.sessionDate),
+    sessionPaymentId: nonEmptyString(value.sessionPaymentId),
+    therapyNameSnapshot: nonEmptyString(value.therapyNameSnapshot),
   };
 }
 
-function payoutSummary(input: unknown): TherapistPayoutSummary {
+function payoutAgendaGroup(input: unknown): TherapistPayoutAgendaGroup {
   const value = record(input);
-
   return {
-    blockedReasonCodes: payoutBlockedReasonCodes(value.blockedReasonCodes),
-    blockedCents: nonNegativeInteger(value.blockedCents),
-    eligibleForPayoutCents: nonNegativeInteger(value.eligibleForPayoutCents),
-    nextBatchAt: nullableDateTime(value.nextBatchAt),
-    payoutProcessingCents: nonNegativeInteger(value.payoutProcessingCents),
-    waitingConfirmationCents: nonNegativeInteger(
-      value.waitingConfirmationCents,
-    ),
-    waitingSafetyPeriodCents: nonNegativeInteger(
-      value.waitingSafetyPeriodCents,
-    ),
-    waitingSettlementCents: nonNegativeInteger(value.waitingSettlementCents),
+    amountCents: nonNegativeInteger(value.amountCents),
+    composition: array(value.composition).map(payoutCompositionItem),
+    date: dateString(value.date),
+    id: nonEmptyString(value.id),
+    sessionCount: nonNegativeInteger(value.sessionCount),
+    status: payoutAgendaStatus(value.status),
+  };
+}
+
+function payoutHistoryItem(input: unknown): TherapistPayoutHistoryItem {
+  const value = record(input);
+  return {
+    amountCents: nonNegativeInteger(value.amountCents),
+    composition: array(value.composition).map(payoutCompositionItem),
+    date: dateString(value.date),
+    id: nonEmptyString(value.id),
+    sessionCount: nonNegativeInteger(value.sessionCount),
+    status: payoutHistoryStatus(value.status),
+  };
+}
+
+function payoutSummary(input: unknown): TherapistPayoutsContract["summary"] {
+  const value = record(input);
+  return {
+    expectedCents: nonNegativeInteger(value.expectedCents),
+    inTransitCents: nonNegativeInteger(value.inTransitCents),
+    receivedCents: nonNegativeInteger(value.receivedCents),
   };
 }
 
 function receiptSummary(input: unknown): TherapistReceiptsContract["summary"] {
   const value = record(input);
   return {
-    disputedCents: nonNegativeInteger(value.disputedCents),
+    approvedCents: nonNegativeInteger(value.approvedCents),
     processingCents: nonNegativeInteger(value.processingCents),
-    receivedCents: nonNegativeInteger(value.receivedCents),
     refundedCents: nonNegativeInteger(value.refundedCents),
+    scheduledCents: nonNegativeInteger(value.scheduledCents),
   };
-}
-
-function monthlyTrendPoint(
-  input: unknown,
-): TherapistReceiptsContract["monthlyTrend"][number] {
-  const value = record(input);
-  return {
-    month: nonEmptyString(value.month),
-    processingCents: nonNegativeInteger(value.processingCents),
-    receivedCents: nonNegativeInteger(value.receivedCents),
-  };
-}
-
-function statusDistributionItem(
-  input: unknown,
-): TherapistReceiptsContract["statusDistribution"][number] {
-  const value = record(input);
-  return {
-    amountCents: nonNegativeInteger(value.amountCents),
-    itemCount: nonNegativeInteger(value.itemCount),
-    status: receiptStatus(value.status),
-  };
-}
-
-function payoutBlockedReasonCodes(
-  input: unknown,
-): TherapistPayoutSummary["blockedReasonCodes"] {
-  if (!Array.isArray(input)) return [];
-  return input.filter(
-    (item): item is TherapistPayoutSummary["blockedReasonCodes"][number] =>
-      item === "account" ||
-      item === "review" ||
-      item === "refund" ||
-      item === "other",
-  );
 }
 
 function therapyOption(input: unknown): TherapistReceiptTherapyOption {
@@ -778,53 +714,38 @@ function nullableFinancialStatus(value: unknown) {
   return financialStatus(value);
 }
 
-function receiptStatus(value: unknown): TherapistReceiptStatus {
+function chargeStatus(value: unknown): TherapistChargeStatus {
   if (
     typeof value === "string" &&
-    receiptStatuses.has(value as TherapistReceiptStatus)
+    chargeStatuses.has(value as TherapistChargeStatus)
   ) {
-    return value as TherapistReceiptStatus;
+    return value as TherapistChargeStatus;
   }
-  throw new Error("Invalid receipt status.");
+  throw new Error("Invalid charge status.");
 }
 
-function nullableReceiptStatus(value: unknown) {
+function nullableChargeStatus(value: unknown) {
   if (value === null || value === undefined) return null;
-  return receiptStatus(value);
+  return chargeStatus(value);
 }
 
-function payoutStatus(value: unknown): TherapistPayoutStatus {
-  if (
-    typeof value === "string" &&
-    payoutStatuses.has(value as TherapistPayoutStatus)
-  ) {
-    return value as TherapistPayoutStatus;
-  }
-  throw new Error("Invalid payout status.");
-}
-
-function payoutReconciliationStatus(
+function payoutAgendaStatus(
   value: unknown,
-): TherapistPayoutItem["reconciliationStatus"] {
-  if (
-    typeof value === "string" &&
-    payoutReconciliationStatuses.has(
-      value as TherapistPayoutItem["reconciliationStatus"],
-    )
-  ) {
-    return value as TherapistPayoutItem["reconciliationStatus"];
-  }
-  throw new Error("Invalid payout reconciliation status.");
+): TherapistPayoutAgendaGroup["status"] {
+  if (value === "in_transit" || value === "predicted") return value;
+  throw new Error("Invalid payout agenda status.");
 }
 
-function payoutSourceKind(value: unknown): TherapistPayoutItem["sourceKind"] {
-  if (value === "session_direct" || value === "weekly_batch") return value;
-  throw new Error("Invalid payout source kind.");
+function payoutHistoryStatus(
+  value: unknown,
+): TherapistPayoutHistoryItem["status"] {
+  if (value === "received" || value === "under_review") return value;
+  throw new Error("Invalid payout history status.");
 }
 
-function nullablePayoutStatus(value: unknown) {
-  if (value === null || value === undefined) return null;
-  return payoutStatus(value);
+function agendaDays(value: unknown): 7 | 15 | 30 {
+  if (value === 7 || value === 15 || value === 30) return value;
+  throw new Error("Invalid payout agenda period.");
 }
 
 function connectStatus(value: unknown): TherapistConnectOnboardingStatus {
@@ -943,6 +864,11 @@ function literalOne(value: unknown): 1 {
 
 function literalTwo(value: unknown): 2 {
   if (value === 2) return 2;
+  throw new Error("Invalid contract version.");
+}
+
+function literalThree(value: unknown): 3 {
+  if (value === 3) return 3;
   throw new Error("Invalid contract version.");
 }
 

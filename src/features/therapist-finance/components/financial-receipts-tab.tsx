@@ -1,11 +1,10 @@
 import Link from "next/link";
 import {
-  FileText,
-  Hourglass,
-  type LucideIcon,
-  ReceiptText,
+  CalendarClock,
+  CheckCircle2,
+  LoaderCircle,
   RotateCcw,
-  Search,
+  type LucideIcon,
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
@@ -13,23 +12,48 @@ import { PendingNavigationLink } from "@/components/tes/pending-navigation-link"
 import { routes } from "@/lib/routes";
 
 import type {
+  TherapistChargeStatus,
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
-  TherapistReceiptStatus,
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
-import {
-  defaultFinancialReceiptCopy,
-  financialReceiptCopyByStatus,
-  receiptStatusLabels,
-  formatCurrency,
-  formatDateTime,
-  formatPaymentMethod,
-  formatPaymentOrigin,
-} from "./financial-formatters";
+import { formatCurrency, formatDateTime } from "./financial-formatters";
 import { buildFinanceHref } from "./financial-route";
 import { FinancialPeriodFields } from "./financial-period-fields";
-import { FinancialStatusBadge } from "./financial-status-badge";
+
+const chargeStatusContent: Record<
+  TherapistChargeStatus,
+  { label: string; tone: string }
+> = {
+  approved: {
+    label: "Pagamento aprovado",
+    tone: "bg-status-successBg text-status-success",
+  },
+  canceled: {
+    label: "Cancelado",
+    tone: "bg-surface-soft text-tesText-secondary",
+  },
+  failed: {
+    label: "Falhou",
+    tone: "bg-status-dangerBg text-status-danger",
+  },
+  processing: {
+    label: "Processando",
+    tone: "bg-status-warningBg text-status-warning",
+  },
+  refunded: {
+    label: "Reembolsado",
+    tone: "bg-status-dangerBg text-status-danger",
+  },
+  scheduled: {
+    label: "Cobrança agendada",
+    tone: "bg-brand-lavenderSoft text-brand-primary",
+  },
+  under_review: {
+    label: "Em análise",
+    tone: "bg-status-warningBg text-status-warning",
+  },
+};
 
 export function FinancialReceiptsTab({
   dateRange,
@@ -40,47 +64,90 @@ export function FinancialReceiptsTab({
   filters: TherapistFinanceFilters;
   receipts: TherapistReceiptsContract;
 }) {
-  const receiptCopy = filters.status
-    ? financialReceiptCopyByStatus[filters.status]
-    : defaultFinancialReceiptCopy;
-
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
+      <AppPageSection className="grid gap-2">
+        <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
+          Cobranças das suas sessões
+        </h2>
+        <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
+          Entenda o valor de cada sessão e o que aconteceu com o pagamento. A
+          chegada do dinheiro à sua conta fica em Repasses.
+        </p>
+        <Link
+          className="mt-1 inline-flex min-h-11 w-fit items-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={buildFinanceHref({
+            end: dateRange.end,
+            filters: { agendaDays: filters.agendaDays },
+            period: dateRange.key,
+            start: dateRange.start,
+            tab: "payouts",
+          })}
+        >
+          Veja quando os valores devem chegar à sua conta
+        </Link>
+      </AppPageSection>
+
+      <section
+        aria-label="Resumo das cobranças"
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <ReceiptMetricCard
+          description="Seu valor nas sessões cuja cobrança foi concluída."
+          href={statusHref("approved", dateRange, filters)}
+          icon={CheckCircle2}
+          label="Pagamentos aprovados"
+          value={receipts.summary.approvedCents}
+        />
+        <ReceiptMetricCard
+          description="Cobranças iniciadas que ainda aguardam uma resposta."
+          href={statusHref("processing", dateRange, filters)}
+          icon={LoaderCircle}
+          label="Processando"
+          value={receipts.summary.processingCents}
+        />
+        <ReceiptMetricCard
+          description="Seu valor previsto em sessões cuja cobrança ainda ocorrerá."
+          href={statusHref("scheduled", dateRange, filters)}
+          icon={CalendarClock}
+          label="Cobranças agendadas"
+          value={receipts.summary.scheduledCents}
+        />
+        <ReceiptMetricCard
+          description="Valores devolvidos aos pacientes no período."
+          href={statusHref("refunded", dateRange, filters)}
+          icon={RotateCcw}
+          label="Reembolsos"
+          value={receipts.summary.refundedCents}
+        />
+      </section>
+
       <AppPageSection className="grid gap-4">
         <form className="grid min-w-0 gap-4" method="get">
           <input name="tab" type="hidden" value="recebimentos" />
-
           <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:max-w-[720px]">
             <FinancialPeriodFields dateRange={dateRange} />
           </div>
-
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,280px)_minmax(180px,240px)_minmax(320px,1fr)]">
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-              Situação
+              Situação da cobrança
               <select
                 className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                 defaultValue={filters.status ?? ""}
                 name="status"
               >
-                <option value="">Todos</option>
+                <option value="">Todas</option>
                 {(
-                  Object.entries(receiptStatusLabels) as Array<
-                    [TherapistReceiptStatus, string]
+                  Object.entries(chargeStatusContent) as Array<
+                    [TherapistChargeStatus, { label: string }]
                   >
-                )
-                  .filter(
-                    ([status]) =>
-                      status !== "waiting_safety_period" &&
-                      status !== "compensated",
-                  )
-                  .map(([status, label]) => (
-                    <option key={status} value={status}>
-                      {label}
-                    </option>
-                  ))}
+                ).map(([status, content]) => (
+                  <option key={status} value={status}>
+                    {content.label}
+                  </option>
+                ))}
               </select>
             </label>
-
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
               Terapia
               <select
@@ -96,93 +163,50 @@ export function FinancialReceiptsTab({
                 ))}
               </select>
             </label>
-
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep sm:col-span-2 lg:col-span-1">
-              Buscar paciente
-              <span className="relative">
-                <Search
-                  aria-hidden="true"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
-                  size={18}
-                />
-                <input
-                  className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white pl-10 pr-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
-                  defaultValue={filters.search ?? ""}
-                  name="q"
-                  placeholder="Nome ou terapia"
-                  type="search"
-                />
-              </span>
+              Paciente
+              <input
+                className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.search ?? ""}
+                name="q"
+                placeholder="Buscar por nome"
+                type="search"
+              />
             </label>
           </div>
-
-          <button
-            className="inline-flex min-h-11 w-full items-center justify-center justify-self-start rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
-            type="submit"
-          >
-            Filtrar
-          </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+              type="submit"
+            >
+              Filtrar
+            </button>
+            {hasActiveFilters(filters) ? (
+              <Link
+                className="inline-flex min-h-11 items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                href={buildFinanceHref({
+                  end: dateRange.end,
+                  period: dateRange.key,
+                  start: dateRange.start,
+                  tab: "receipts",
+                })}
+              >
+                Limpar filtros
+              </Link>
+            ) : null}
+          </div>
         </form>
-
-        {hasActiveFilters(filters) ? (
-          <Link
-            className="inline-flex min-h-11 w-fit items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={buildFinanceHref({
-              end: dateRange.end,
-              period: dateRange.key,
-              start: dateRange.start,
-              tab: "receipts",
-            })}
-          >
-            Limpar filtros
-          </Link>
-        ) : null}
       </AppPageSection>
-
-      <section
-        aria-label="Resumo dos recebimentos"
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-      >
-        <ReceiptMetricCard
-          description="Valor líquido já depositado e integralmente confirmado."
-          icon={ReceiptText}
-          label="Recebido no período"
-          value={receipts.summary.receivedCents}
-        />
-        <ReceiptMetricCard
-          description="Valores ativos das sessões dentro do período selecionado."
-          icon={Hourglass}
-          label="Em processamento"
-          value={receipts.summary.processingCents}
-        />
-        {receipts.summary.refundedCents > 0 ? (
-          <ReceiptMetricCard
-            description="Valores devolvidos ao cliente."
-            icon={RotateCcw}
-            label="Reembolsos"
-            value={receipts.summary.refundedCents}
-          />
-        ) : null}
-        {receipts.summary.disputedCents > 0 ? (
-          <ReceiptMetricCard
-            description="Pagamentos com disputa registrada."
-            icon={FileText}
-            label="Disputas"
-            value={receipts.summary.disputedCents}
-          />
-        ) : null}
-      </section>
-
-      <ReceiptsVisualSummary receipts={receipts} />
 
       <AppPageSection className="grid gap-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              {receiptCopy.title}
+              Movimentações por sessão
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              {receiptCopy.description}
+              Confira o valor da sessão, a Comissão TES, seu valor e a próxima
+              etapa da cobrança.
             </p>
           </div>
           <p className="text-sm font-bold text-tesText-secondary">
@@ -193,40 +217,21 @@ export function FinancialReceiptsTab({
         {receipts.items.length ? (
           <>
             <div
-              aria-label="Lista de recebimentos, seis linhas visíveis"
-              className="hidden max-h-[520px] overflow-auto lg:block"
+              aria-label="Movimentações das cobranças por sessão"
+              className="hidden max-h-[560px] overflow-auto lg:block"
               tabIndex={0}
             >
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs font-extrabold uppercase text-tesText-muted">
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Paciente
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Terapia
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Data
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Bruto
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Custos da plataforma
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Líquido
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Método
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Origem do pagamento
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Situação
-                    </th>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Terapia</TableHead>
+                    <TableHead>Sessão</TableHead>
+                    <TableHead>Valor da sessão</TableHead>
+                    <TableHead>Comissão TES</TableHead>
+                    <TableHead>Seu valor</TableHead>
+                    <TableHead>Situação</TableHead>
+                    <TableHead>Próxima etapa</TableHead>
                     <th className="border-b border-brand-lavender py-3">
                       Ação
                     </th>
@@ -235,47 +240,32 @@ export function FinancialReceiptsTab({
                 <tbody>
                   {receipts.items.map((item) => (
                     <tr
-                      className="text-sm font-bold text-brand-deep"
+                      className="align-top text-sm font-bold text-brand-deep"
                       key={item.sessionPaymentId}
                     >
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {item.patientDisplayName}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3 text-tesText-secondary">
-                        {item.therapyNameSnapshot}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
+                      <TableCell>{item.patientDisplayName}</TableCell>
+                      <TableCell muted>{item.therapyNameSnapshot}</TableCell>
+                      <TableCell>
                         {formatDateTime(
                           item.sessionDate,
                           receipts.filters.timezone,
                         )}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
+                      </TableCell>
+                      <TableCell>
                         {formatCurrency(item.grossAmountCents)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
+                      </TableCell>
+                      <TableCell>
                         {formatCurrency(item.tesCommissionCents)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
+                      </TableCell>
+                      <TableCell>
                         {formatCurrency(item.therapistNetAmountCents)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3 text-tesText-secondary">
-                        {formatPaymentMethod(item.paymentMethodType)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3 text-tesText-secondary">
-                        {formatPaymentOrigin(item.paymentOrigin)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        <FinancialStatusBadge
-                          status={item.receiptStatus}
-                          type="receipt"
-                        />
-                        {item.disputeStatus ? (
-                          <p className="mt-1 text-xs font-bold text-status-danger">
-                            Disputa: {item.disputeStatus}
-                          </p>
-                        ) : null}
-                      </td>
+                      </TableCell>
+                      <TableCell>
+                        <ChargeStatusBadge status={item.chargeStatus} />
+                      </TableCell>
+                      <TableCell muted>
+                        {nextStep(item, receipts.filters.timezone)}
+                      </TableCell>
                       <td className="border-b border-brand-lavender/70 py-4">
                         <ReceiptActions item={item} />
                       </td>
@@ -291,49 +281,43 @@ export function FinancialReceiptsTab({
                   className="rounded-card border border-brand-lavender bg-white p-4"
                   key={item.sessionPaymentId}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h3 className="text-base font-extrabold text-brand-deep">
                         {item.patientDisplayName}
                       </h3>
                       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                        {item.therapyNameSnapshot}
+                        {item.therapyNameSnapshot} ·{" "}
+                        {formatDateTime(
+                          item.sessionDate,
+                          receipts.filters.timezone,
+                        )}
                       </p>
                     </div>
-                    <FinancialStatusBadge
-                      status={item.receiptStatus}
-                      type="receipt"
-                    />
+                    <ChargeStatusBadge status={item.chargeStatus} />
                   </div>
-                  <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <dl className="mt-4 grid gap-3 sm:grid-cols-3">
                     <ReceiptDetail
-                      label="Data"
-                      value={formatDateTime(
-                        item.sessionDate,
-                        receipts.filters.timezone,
-                      )}
-                    />
-                    <ReceiptDetail
-                      label="Bruto"
+                      label="Valor da sessão"
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <ReceiptDetail
-                      label="Custos da plataforma"
+                      label="Comissão TES"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <ReceiptDetail
-                      label="Líquido"
+                      label="Seu valor"
                       value={formatCurrency(item.therapistNetAmountCents)}
                     />
-                    <ReceiptDetail
-                      label="Método"
-                      value={formatPaymentMethod(item.paymentMethodType)}
-                    />
-                    <ReceiptDetail
-                      label="Origem do pagamento"
-                      value={formatPaymentOrigin(item.paymentOrigin)}
-                    />
                   </dl>
+                  <div className="mt-4 rounded-lg bg-surface-soft p-3">
+                    <p className="text-xs font-extrabold uppercase text-tesText-muted">
+                      Próxima etapa
+                    </p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                      {nextStep(item, receipts.filters.timezone)}
+                    </p>
+                  </div>
                   <div className="mt-4">
                     <ReceiptActions item={item} />
                   </div>
@@ -344,10 +328,11 @@ export function FinancialReceiptsTab({
         ) : (
           <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
             <h3 className="text-lg font-extrabold text-brand-deep">
-              {receiptCopy.emptyTitle}
+              Ainda não há cobranças neste período
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              {receiptCopy.emptyDescription}
+              Tente outro período ou ajuste os filtros para consultar suas
+              sessões.
             </p>
           </div>
         )}
@@ -363,244 +348,24 @@ export function FinancialReceiptsTab({
   );
 }
 
-function ReceiptsVisualSummary({
-  receipts,
-}: {
-  receipts: TherapistReceiptsContract;
-}) {
-  const points = receipts.monthlyTrend;
-  const statusTotals = buildStatusTotals(receipts.statusDistribution);
-  const total = statusTotals.reduce((sum, item) => sum + item.value, 0);
-  const hasStatusData = total > 0;
-  const hasData = points.some((point) => point.receivedCents > 0);
-  const max = Math.max(1, ...points.map((point) => point.receivedCents));
-  const receivedPoints = chartPoints(
-    points.map((point) => point.receivedCents),
-    max,
-  );
-
-  return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-      <section className="rounded-card border border-brand-lavender bg-white p-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep">
-              Recebimento por mês
-            </h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Valores líquidos recebidos no banco, por mês.
-            </p>
-          </div>
-          <span className="rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-extrabold text-brand-primary">
-            Mensal
-          </span>
-        </div>
-        <div
-          aria-label={
-            hasData
-              ? "Recebimentos líquidos por mês"
-              : "Recebimentos por mês: ainda sem dados"
-          }
-          className="mt-5 grid min-h-[190px] grid-cols-[auto_minmax(0,1fr)] gap-3"
-          role="img"
-          tabIndex={0}
-        >
-          <div className="flex flex-col justify-between py-2 text-xs font-bold text-tesText-muted">
-            <span>{formatCurrency(max)}</span>
-            <span>{formatCurrency(Math.round(max / 2))}</span>
-            <span>R$ 0</span>
-          </div>
-          <div className="min-w-0 overflow-x-auto rounded-card border border-brand-lavender bg-surface-soft px-4 pb-3 pt-5">
-            <svg
-              aria-hidden="true"
-              className="h-32 min-w-[360px] w-full"
-              viewBox="0 0 500 128"
-            >
-              <path d="M0 112H500" stroke="var(--tes-color-brand-lavender)" />
-              {hasData ? (
-                <polyline
-                  fill="none"
-                  points={receivedPoints}
-                  stroke="var(--tes-color-status-success)"
-                  strokeWidth="4"
-                />
-              ) : (
-                <path
-                  d="M0 88 C120 84 180 94 260 82 S410 90 500 78"
-                  fill="none"
-                  stroke="var(--tes-color-brand-lavender)"
-                  strokeDasharray="6 6"
-                  strokeWidth="2"
-                />
-              )}
-            </svg>
-            <div className="flex min-w-[360px] justify-between gap-3 text-[11px] font-bold text-tesText-muted">
-              {points.map((point) => (
-                <span key={point.month}>{formatMonth(point.month)}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          {hasData
-            ? "Linha verde: valor líquido recebido no banco."
-            : "O gráfico será preenchido quando houver movimentação no período."}
-        </p>
-      </section>
-
-      <section className="rounded-card border border-brand-lavender bg-white p-5">
-        <h2 className="text-xl font-extrabold text-brand-deep">
-          Distribuição por status
-        </h2>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Situação financeira dos recebimentos consultados.
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-[170px_minmax(0,1fr)] sm:items-center">
-          <ReceiptDonut
-            label={
-              hasStatusData
-                ? "Distribuição de recebimentos por status"
-                : "Distribuição por status: ainda sem dados"
-            }
-            total={total}
-            values={statusTotals}
-          />
-          <ul className="grid gap-3 text-sm font-bold text-tesText-secondary">
-            {(hasStatusData
-              ? statusTotals
-              : [
-                  {
-                    status: "empty",
-                    label: "Aguardando dados",
-                    value: 0,
-                    color: "var(--tes-color-brand-lavender)",
-                  },
-                ]
-            ).map((item) => (
-              <li
-                className="flex items-center justify-between gap-3"
-                data-receipt-status={item.status}
-                key={item.status}
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="size-3 shrink-0 rounded-full"
-                    style={{ background: item.color }}
-                  />
-                  {item.label}
-                </span>
-                <strong className="shrink-0 text-brand-deep">
-                  {hasStatusData ? formatCurrency(item.value) : "-"}
-                </strong>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function buildStatusTotals(
-  items: TherapistReceiptsContract["statusDistribution"],
-) {
-  const colors: Record<TherapistReceiptStatus, string> = {
-    bank_pending: "var(--tes-color-status-info)",
-    blocked: "var(--tes-color-status-warning)",
-    canceled: "var(--tes-color-text-muted)",
-    compensated: "var(--tes-color-text-muted)",
-    disputed: "var(--tes-color-brand-deep)",
-    eligible: "var(--tes-color-brand-primary)",
-    failed: "var(--tes-color-status-danger)",
-    paid: "var(--tes-color-status-success)",
-    payout_processing: "var(--tes-color-brand-cyan)",
-    receivable: "var(--tes-color-brand-mint)",
-    refunded:
-      "color-mix(in srgb, var(--tes-color-status-danger) 58%, var(--tes-color-brand-primary))",
-    reversed:
-      "color-mix(in srgb, var(--tes-color-brand-deep) 72%, var(--tes-color-status-danger))",
-    waiting_confirmation: "var(--tes-color-brand-lavender)",
-    waiting_safety_period:
-      "color-mix(in srgb, var(--tes-color-brand-cyan) 58%, var(--tes-color-brand-lavender))",
-    waiting_settlement:
-      "color-mix(in srgb, var(--tes-color-brand-cyan) 72%, var(--tes-color-brand-primary))",
-  };
-  return items
-    .filter((item) => item.amountCents > 0)
-    .map((item) => ({
-      color: colors[item.status],
-      label: receiptStatusLabels[item.status],
-      status: item.status,
-      value: item.amountCents,
-    }));
-}
-
-function chartPoints(values: number[], max: number) {
-  if (!values.length) return "";
-  return values
-    .map((value, index) => {
-      const x = values.length === 1 ? 250 : (index / (values.length - 1)) * 500;
-      const y = 112 - (value / max) * 96;
-      return `${x},${y}`;
-    })
-    .join(" ");
-}
-
-function formatMonth(value: string) {
-  const [year, month] = value.split("-");
-  return `${month}/${year.slice(-2)}`;
-}
-
-function ReceiptDonut({
-  label,
-  total,
-  values,
-}: {
-  label: string;
-  total: number;
-  values: Array<{ color: string; label: string; value: number }>;
-}) {
-  let offset = 0;
-  const stops =
-    values.length && total > 0
-      ? values
-          .map((item) => {
-            const start = (offset / total) * 100;
-            offset += item.value;
-            return `${item.color} ${start}% ${(offset / total) * 100}%`;
-          })
-          .join(", ")
-      : "var(--tes-color-brand-lavender) 0 100%";
-
-  return (
-    <div
-      aria-label={label}
-      className="relative mx-auto grid size-[154px] place-items-center rounded-full"
-      role="img"
-      style={{ background: `conic-gradient(${stops})` }}
-      tabIndex={0}
-    >
-      <span className="grid size-[104px] place-items-center rounded-full bg-white px-2 text-center text-sm font-extrabold text-brand-deep">
-        {total > 0 ? formatCurrency(total) : "-"}
-      </span>
-    </div>
-  );
-}
-
 function ReceiptMetricCard({
   description,
+  href,
   icon: Icon,
   label,
   value,
 }: {
   description: string;
+  href: string;
   icon: LucideIcon;
   label: string;
   value: number;
 }) {
   return (
-    <article className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
+    <Link
+      className="rounded-card border border-brand-lavender bg-white p-5 shadow-card transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      href={href}
+    >
       <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         <Icon aria-hidden="true" size={22} />
       </span>
@@ -611,7 +376,73 @@ function ReceiptMetricCard({
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         {description}
       </p>
-    </article>
+    </Link>
+  );
+}
+
+function ChargeStatusBadge({ status }: { status: TherapistChargeStatus }) {
+  const content = chargeStatusContent[status];
+  return (
+    <span
+      className={`inline-flex min-h-7 w-fit items-center rounded-full px-3 py-1 text-xs font-extrabold ${content.tone}`}
+    >
+      {content.label}
+    </span>
+  );
+}
+
+function nextStep(
+  item: TherapistReceiptsContract["items"][number],
+  timezone: string,
+) {
+  switch (item.chargeStatus) {
+    case "scheduled":
+      return item.scheduledChargeAt
+        ? `Cobrança programada para ${formatDateTime(item.scheduledChargeAt, timezone)}.`
+        : "A cobrança será feita antes da sessão.";
+    case "processing":
+      return "Aguarde a conclusão da cobrança.";
+    case "approved":
+      return "Acompanhe a previsão de chegada em Repasses.";
+    case "failed":
+      return "A cobrança não foi concluída.";
+    case "refunded":
+      return "O valor foi devolvido ao paciente.";
+    case "under_review":
+      return "A movimentação está em análise.";
+    case "canceled":
+      return "Nenhuma cobrança será feita.";
+  }
+}
+
+function ReceiptActions({
+  item,
+}: {
+  item: TherapistReceiptsContract["items"][number];
+}) {
+  const canShowReceipt =
+    Boolean(item.receiptUrl) &&
+    ["approved", "refunded", "under_review"].includes(item.chargeStatus);
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Link
+        className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        href={routes.therapist.sessionDetail(item.bookingId)}
+      >
+        Ver detalhes
+      </Link>
+      {canShowReceipt ? (
+        <a
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={item.receiptUrl ?? undefined}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Comprovante de pagamento
+        </a>
+      ) : null}
+    </div>
   );
 }
 
@@ -626,31 +457,45 @@ function ReceiptDetail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ReceiptActions({
-  item,
+function TableHead({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="border-b border-brand-lavender py-3 pr-3">{children}</th>
+  );
+}
+
+function TableCell({
+  children,
+  muted = false,
 }: {
-  item: TherapistReceiptsContract["items"][number];
+  children: React.ReactNode;
+  muted?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      <Link
-        className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.sessionDetail(item.bookingId)}
-      >
-        Detalhes
-      </Link>
-      {item.receiptUrl ? (
-        <a
-          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={item.receiptUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Comprovante
-        </a>
-      ) : null}
-    </div>
+    <td
+      className={`border-b border-brand-lavender/70 py-4 pr-3 ${muted ? "font-semibold leading-6 text-tesText-secondary" : ""}`}
+    >
+      {children}
+    </td>
   );
+}
+
+function statusHref(
+  status: TherapistChargeStatus,
+  dateRange: TherapistFinanceDateRange,
+  filters: TherapistFinanceFilters,
+) {
+  return buildFinanceHref({
+    end: dateRange.end,
+    filters: {
+      agendaDays: filters.agendaDays,
+      search: filters.search,
+      status,
+      therapyId: filters.therapyId,
+    },
+    period: dateRange.key,
+    start: dateRange.start,
+    tab: "receipts",
+  });
 }
 
 function Pagination({

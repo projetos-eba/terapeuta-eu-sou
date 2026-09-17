@@ -171,8 +171,6 @@ export function SessionFeedbackForm({
   const subjectWithPreposition =
     actorRole === "patient" ? "deste encontro" : "desta sessão";
 
-  if (readPayload && !existingFeedback && !isQualityEligible && !isSubmitting) return null;
-
   return (
     <section
       aria-labelledby="session-feedback-title"
@@ -232,8 +230,9 @@ export function SessionFeedbackForm({
             className="mt-0.5 shrink-0 text-brand-primary"
             size={18}
           />
-          Ainda estamos preparando os dados {subjectWithPreposition}. A
-          avaliação ficará disponível quando o encontro estiver elegível.
+          {readPayload?.attendance?.sessionClosed
+            ? "A avaliação ficará disponível quando a presença dos dois participantes estiver confirmada."
+            : `A avaliação ficará disponível depois do encerramento ${subjectWithPreposition}.`}
         </div>
       ) : null}
 

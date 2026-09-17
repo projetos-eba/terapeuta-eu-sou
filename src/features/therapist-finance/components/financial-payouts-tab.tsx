@@ -1,13 +1,10 @@
 import Link from "next/link";
 import {
-  CalendarClock,
+  CalendarDays,
   CheckCircle2,
-  Clock3,
-  FileCheck2,
-  Landmark,
+  ChevronDown,
+  Send,
   type LucideIcon,
-  RotateCcw,
-  ShieldAlert,
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
@@ -16,28 +13,18 @@ import { PendingNavigationLink } from "@/components/tes/pending-navigation-link"
 import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
+  TherapistPayoutAgendaGroup,
+  TherapistPayoutCompositionItem,
+  TherapistPayoutHistoryItem,
   TherapistPayoutsContract,
 } from "../therapist-finance.types";
 import {
   formatCurrency,
   formatDate,
-  formatDateOnly,
   formatDateTime,
-  payoutStatusLabels,
 } from "./financial-formatters";
 import { buildFinanceHref } from "./financial-route";
 import { FinancialPeriodFields } from "./financial-period-fields";
-import { FinancialStatusBadge } from "./financial-status-badge";
-
-const payoutHistoryStatuses = [
-  "batched",
-  "transfer_pending",
-  "bank_pending",
-  "paid",
-  "blocked",
-  "failed",
-  "reversed",
-] as const;
 
 export function FinancialPayoutsTab({
   dateRange,
@@ -48,337 +35,154 @@ export function FinancialPayoutsTab({
   filters: TherapistFinanceFilters;
   payouts: TherapistPayoutsContract;
 }) {
-  const hasRefunds = payouts.items.some((item) => item.refundedAmountCents > 0);
-  const hasDebtOffsets = payouts.items.some(
-    (item) => item.debtOffsetAmountCents > 0,
-  );
-  const blockedReasons = payouts.summary.blockedReasonCodes
-    .map(
-      (reason) =>
-        ({
-          account: "conta de recebimento",
-          other: "análise financeira",
-          refund: "reembolso",
-          review: "revisão da sessão",
-        })[reason],
-    )
-    .join(", ");
-
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
+      <AppPageSection className="grid gap-2">
+        <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
+          Repasses
+        </h2>
+        <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
+          Veja quanto deve chegar à sua conta, o que já está a caminho e o que
+          foi recebido no período.
+        </p>
+        <p className="text-sm font-bold text-brand-primary">
+          Previsto → A caminho da sua conta → Recebido
+        </p>
+      </AppPageSection>
+
       <section
-        aria-label="Resumo de repasses"
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        aria-label="Resumo dos repasses"
+        className="grid gap-4 md:grid-cols-3"
       >
         <PayoutMetricCard
-          description="Pagamentos a receber, aguardando confirmação ou em liquidação"
-          icon={Clock3}
-          label="Em processamento"
-          value={payouts.summary.payoutProcessingCents}
+          description="Valores com previsão de chegada, antes de iniciarem o depósito."
+          icon={CalendarDays}
+          label="A receber"
+          value={payouts.summary.expectedCents}
         />
         <PayoutMetricCard
-          description="Valores prontos para entrar no próximo repasse."
-          icon={Landmark}
-          label="Disponível para repasse"
-          value={payouts.summary.eligibleForPayoutCents}
+          description="Valores que já avançaram e estão chegando ao banco."
+          icon={Send}
+          label="A caminho da sua conta"
+          value={payouts.summary.inTransitCents}
         />
         <PayoutMetricCard
-          description={
-            payouts.summary.nextBatchAt
-              ? `Próximo lote de transferência previsto para ${formatDateOnly(
-                  payouts.summary.nextBatchAt,
-                  payouts.filters.timezone,
-                )}.`
-              : "Sem valores elegíveis para o próximo lote."
-          }
-          icon={CalendarClock}
-          label="Próximo lote de transferência"
-          valueText={
-            payouts.summary.nextBatchAt
-              ? formatDateOnly(
-                  payouts.summary.nextBatchAt,
-                  payouts.filters.timezone,
-                )
-              : "Sem previsão"
-          }
+          description="Valores com chegada à conta já confirmada no período."
+          icon={CheckCircle2}
+          label="Recebido"
+          value={payouts.summary.receivedCents}
         />
-        {payouts.summary.blockedCents > 0 ? (
-          <PayoutMetricCard
-            description={
-              blockedReasons
-                ? `Motivos identificados: ${blockedReasons}.`
-                : "Valores em análise ou aguardando regularização."
-            }
-            icon={ShieldAlert}
-            label="Bloqueado"
-            value={payouts.summary.blockedCents}
-          />
-        ) : null}
       </section>
 
-      <PayoutTimeline payouts={payouts} />
+      <AppPageSection className="grid gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary">
+              Próximas chegadas
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
+              Agenda de repasses
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+              Acompanhe os valores previstos para chegar à sua conta. As datas
+              são estimativas e podem mudar.
+            </p>
+          </div>
+          <nav aria-label="Período da agenda" className="flex flex-wrap gap-2">
+            {([7, 15, 30] as const).map((days) => (
+              <Link
+                aria-current={payouts.agenda.days === days ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
+                  payouts.agenda.days === days
+                    ? "border-brand-primary bg-brand-primary text-white"
+                    : "border-brand-lavender bg-white text-brand-primary hover:bg-brand-lavenderSoft"
+                }`}
+                href={agendaHref(days, dateRange)}
+                key={days}
+              >
+                {days} dias
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-      <AppPageSection className="grid gap-4">
+        {payouts.agenda.inTransit.length || payouts.agenda.predicted.length ? (
+          <div className="grid gap-7">
+            <AgendaGroup
+              items={payouts.agenda.inTransit}
+              label="A caminho da sua conta"
+              timezone={payouts.filters.timezone}
+              tone="in_transit"
+            />
+            <AgendaGroup
+              items={payouts.agenda.predicted}
+              label="Próximos previstos"
+              timezone={payouts.filters.timezone}
+              tone="predicted"
+            />
+          </div>
+        ) : (
+          <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
+            <h3 className="text-lg font-extrabold text-brand-deep">
+              Ainda não há valores com data de chegada disponível
+            </h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Quando houver uma previsão confiável, ela aparecerá aqui. Nenhuma
+              data é estimada sem base financeira disponível.
+            </p>
+          </div>
+        )}
+      </AppPageSection>
+
+      <AppPageSection className="grid gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep">
+              Histórico de repasses
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Valores que já chegaram à sua conta no período selecionado.
+            </p>
+          </div>
+          <p className="text-sm font-bold text-tesText-secondary">
+            {payouts.pagination.totalCount} registro(s)
+          </p>
+        </div>
+
         <form className="grid min-w-0 gap-4" method="get">
           <input name="tab" type="hidden" value="repasses" />
+          <input name="agendaDays" type="hidden" value={filters.agendaDays} />
           <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:max-w-[720px]">
             <FinancialPeriodFields
               dateRange={dateRange}
               label="Período do histórico"
             />
           </div>
-          <div className="grid min-w-0 gap-3 sm:max-w-[360px]">
-            <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-              Etapa do repasse
-              <select
-                className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-                defaultValue={filters.payoutStatus ?? ""}
-                name="payoutStatus"
-              >
-                <option value="">Todos</option>
-                {payoutHistoryStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {payoutStatusLabels[status]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <button
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
-              type="submit"
-            >
-              Filtrar
-            </button>
-            {filters.payoutStatus ? (
-              <Link
-                className="inline-flex min-h-11 items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                href={buildFinanceHref({
-                  end: dateRange.end,
-                  period: dateRange.key,
-                  start: dateRange.start,
-                  tab: "payouts",
-                })}
-              >
-                Limpar filtros
-              </Link>
-            ) : null}
-          </div>
+          <button
+            className="inline-flex min-h-11 w-full items-center justify-center justify-self-start rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+            type="submit"
+          >
+            Consultar período
+          </button>
         </form>
-      </AppPageSection>
 
-      <AppPageSection className="grid gap-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep">
-              Repasses do período
-            </h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              A própria lista permite consultar períodos anteriores com filtros.
-            </p>
+        {payouts.historyItems.length ? (
+          <div className="grid gap-3">
+            {payouts.historyItems.map((item) => (
+              <HistoryRow
+                item={item}
+                key={item.id}
+                timezone={payouts.filters.timezone}
+              />
+            ))}
           </div>
-          <p className="text-sm font-bold text-tesText-secondary">
-            {payouts.pagination.totalCount} repasse(s)
-          </p>
-        </div>
-
-        {payouts.items.length ? (
-          <>
-            <div
-              aria-label="Histórico de repasses, seis linhas visíveis"
-              className="hidden max-h-[520px] overflow-auto lg:block"
-              tabIndex={0}
-            >
-              <table className="w-full border-separate border-spacing-0 text-left">
-                <thead>
-                  <tr className="text-xs font-extrabold uppercase text-tesText-muted">
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Período
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Sessões
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Bruto
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Custos da plataforma
-                    </th>
-                    {hasDebtOffsets ? (
-                      <th className="border-b border-brand-lavender py-3 pr-3">
-                        Compensação
-                      </th>
-                    ) : null}
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Reembolso
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Líquido
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Situação
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Conferência
-                    </th>
-                    <th className="border-b border-brand-lavender py-3 pr-3">
-                      Previsto
-                    </th>
-                    <th className="border-b border-brand-lavender py-3">
-                      Concluído
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payouts.items.map((item) => (
-                    <tr
-                      className="text-sm font-bold text-brand-deep"
-                      key={item.payoutItemId}
-                    >
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {formatDate(item.periodStart)} -{" "}
-                        {formatDate(item.periodEnd)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {item.sessionCount}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {formatCurrency(item.grossAmountCents)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {formatCurrency(item.tesCommissionCents)}
-                      </td>
-                      {hasDebtOffsets ? (
-                        <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                          {item.debtOffsetAmountCents > 0
-                            ? formatCurrency(item.debtOffsetAmountCents)
-                            : "Sem compensação"}
-                        </td>
-                      ) : null}
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {item.refundedAmountCents > 0
-                          ? formatCurrency(item.refundedAmountCents)
-                          : "Sem reembolso"}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {formatCurrency(item.therapistNetAmountCents)}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        <FinancialStatusBadge
-                          status={item.transferStatus}
-                          type="payout"
-                        />
-                        {item.blockedReason || item.failedReason ? (
-                          <p className="mt-1 text-xs font-bold text-status-danger">
-                            {item.blockedReason ?? item.failedReason}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        <PayoutReconciliation item={item} />
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4 pr-3">
-                        {formatDateTime(
-                          item.expectedTransferAt,
-                          payouts.filters.timezone,
-                        )}
-                      </td>
-                      <td className="border-b border-brand-lavender/70 py-4">
-                        {formatDateTime(
-                          item.transferredAt,
-                          payouts.filters.timezone,
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="grid gap-4 lg:hidden">
-              {payouts.items.map((item) => (
-                <article
-                  className="rounded-card border border-brand-lavender bg-white p-4"
-                  key={item.payoutItemId}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-extrabold text-brand-deep">
-                        {formatDate(item.periodStart)} -{" "}
-                        {formatDate(item.periodEnd)}
-                      </h3>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                        {item.sessionCount}{" "}
-                        {item.sessionCount === 1 ? "sessão" : "sessões"}
-                      </p>
-                    </div>
-                    <FinancialStatusBadge
-                      status={item.transferStatus}
-                      type="payout"
-                    />
-                  </div>
-                  <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <PayoutDetail
-                      label="Bruto"
-                      value={formatCurrency(item.grossAmountCents)}
-                    />
-                    <PayoutDetail
-                      label="Custos da plataforma"
-                      value={formatCurrency(item.tesCommissionCents)}
-                    />
-                    {item.debtOffsetAmountCents > 0 ? (
-                      <PayoutDetail
-                        label="Compensação"
-                        value={formatCurrency(item.debtOffsetAmountCents)}
-                      />
-                    ) : null}
-                    <PayoutDetail
-                      label="Reembolso"
-                      value={
-                        item.refundedAmountCents > 0
-                          ? formatCurrency(item.refundedAmountCents)
-                          : "Sem reembolso"
-                      }
-                    />
-                    <PayoutDetail
-                      label="Líquido"
-                      value={formatCurrency(item.therapistNetAmountCents)}
-                    />
-                    <PayoutDetail
-                      label="Previsto"
-                      value={formatDateTime(
-                        item.expectedTransferAt,
-                        payouts.filters.timezone,
-                      )}
-                    />
-                    <PayoutDetail
-                      label="Concluído"
-                      value={formatDateTime(
-                        item.transferredAt,
-                        payouts.filters.timezone,
-                      )}
-                    />
-                    <PayoutDetail
-                      label="Conferência"
-                      value={reconciliationLabel(item.reconciliationStatus)}
-                    />
-                  </dl>
-                  <div className="mt-4">
-                    <PayoutReconciliation item={item} />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
         ) : (
           <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
             <h3 className="text-lg font-extrabold text-brand-deep">
-              Nenhum repasse encontrado
+              Nenhum valor recebido neste período
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando houver valores prontos e um repasse processado, o histórico
-              aparecerá nesta lista.
+              Tente outro período para consultar chegadas anteriores.
             </p>
           </div>
         )}
@@ -390,122 +194,191 @@ export function FinancialPayoutsTab({
           page={filters.page}
         />
       </AppPageSection>
-
-      <AppPageSection className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <div>
-          <h2 className="text-xl font-extrabold text-brand-deep">
-            Como o valor é calculado
-          </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            O cálculo do repasse considera os pagamentos confirmados. Aqui você
-            vê de onde vem cada valor.
-          </p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
-          <FormulaCard label="Valor bruto" value="Sessões pagas" />
-          <FormulaOperator value="-" />
-          <FormulaCard
-            label="Custos da plataforma"
-            value="Custos da plataforma"
-          />
-          {hasRefunds ? (
-            <>
-              <FormulaOperator value="-" />
-              <FormulaCard
-                icon={RotateCcw}
-                label="Reembolso ao cliente"
-                value="Somente quando existir"
-              />
-            </>
-          ) : null}
-          <FormulaOperator value="=" />
-          <FormulaCard
-            emphasis
-            label="Valor líquido"
-            value="Repasse do terapeuta"
-          />
-        </div>
-      </AppPageSection>
     </div>
   );
 }
 
-function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
-  const preparingCents = payouts.summary.payoutProcessingCents;
-  const steps = [
-    {
-      detail:
-        preparingCents > 0 ? formatCurrency(preparingCents) : "Nenhum valor",
-      Icon: Clock3,
-      label: "Processando",
-      tone:
-        preparingCents > 0
-          ? "bg-status-warning text-white"
-          : "bg-brand-lavender text-brand-primary",
-    },
-    {
-      detail:
-        payouts.summary.eligibleForPayoutCents > 0
-          ? formatCurrency(payouts.summary.eligibleForPayoutCents)
-          : "Nenhum valor disponível",
-      Icon: CheckCircle2,
-      label: "Disponível para o próximo lote",
-      tone:
-        payouts.summary.eligibleForPayoutCents > 0
-          ? "bg-status-success text-white"
-          : "bg-brand-lavender text-brand-primary",
-    },
-    {
-      detail: payouts.summary.nextBatchAt
-        ? formatDateOnly(payouts.summary.nextBatchAt, payouts.filters.timezone)
-        : "Sem valores elegíveis para o próximo lote",
-      Icon: CalendarClock,
-      label: "Próximo lote de transferência",
-      tone: payouts.summary.nextBatchAt
-        ? "bg-brand-primary text-white"
-        : "bg-brand-lavender text-brand-primary",
-    },
-  ];
+function AgendaGroup({
+  items,
+  label,
+  timezone,
+  tone,
+}: {
+  items: TherapistPayoutAgendaGroup[];
+  label: string;
+  timezone: string;
+  tone: TherapistPayoutAgendaGroup["status"];
+}) {
+  return (
+    <section aria-label={label} className="grid gap-3">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className={`size-3 rounded-full ${
+            tone === "in_transit" ? "bg-brand-primary" : "bg-brand-cyan"
+          }`}
+        />
+        <h3 className="text-lg font-extrabold text-brand-deep">{label}</h3>
+      </div>
+      {items.length ? (
+        <div className="grid gap-3">
+          {items.map((item) => (
+            <AgendaRow item={item} key={item.id} timezone={timezone} />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-lg bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
+          {tone === "in_transit"
+            ? "Nenhum valor está a caminho neste momento."
+            : "Nenhum valor previsto para este intervalo."}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function AgendaRow({
+  item,
+  timezone,
+}: {
+  item: TherapistPayoutAgendaGroup;
+  timezone: string;
+}) {
+  const statusLabel =
+    item.status === "in_transit" ? "A caminho da sua conta" : "Previsto";
 
   return (
-    <AppPageSection className="grid gap-5 bg-surface-soft/70">
-      <div>
-        <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary">
-          Acompanhe o caminho do repasse
-        </p>
-        <h2 className="mt-2 font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
-          Próximos repasses
-        </h2>
-      </div>
-      <ol className="grid gap-4 md:grid-cols-3 md:gap-0">
-        {steps.map((step, index) => (
-          <li
-            className="relative grid gap-3 md:px-5 first:md:pl-0 last:md:pr-0"
-            key={step.label}
+    <article className="rounded-card border border-brand-lavender bg-white p-4 shadow-card sm:p-5">
+      <div className="grid gap-4 sm:grid-cols-[minmax(120px,0.55fr)_minmax(150px,0.7fr)_minmax(200px,1fr)_auto] sm:items-center">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
+            Chegada estimada
+          </p>
+          <p className="mt-1 text-lg font-extrabold text-brand-deep">
+            {formatDate(item.date, timezone)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
+            Valor
+          </p>
+          <p className="mt-1 text-xl font-extrabold text-brand-deep">
+            {formatCurrency(item.amountCents)}
+          </p>
+        </div>
+        <div className="grid gap-1">
+          <span
+            className={`inline-flex min-h-7 w-fit items-center rounded-full px-3 py-1 text-xs font-extrabold ${
+              item.status === "in_transit"
+                ? "bg-brand-lavenderSoft text-brand-primary"
+                : "bg-surface-soft text-tesText-secondary"
+            }`}
           >
-            {index < steps.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className="absolute left-6 top-6 hidden h-px w-[calc(100%-1.5rem)] border-t border-dashed border-brand-lavender md:block"
-              />
-            ) : null}
-            <div className="relative z-10 flex items-center gap-3">
-              <span
-                className={`grid size-12 place-items-center rounded-full ${step.tone}`}
-              >
-                <step.Icon aria-hidden="true" size={21} />
-              </span>
-              <span className="text-base font-extrabold text-brand-deep">
-                {step.label}
-              </span>
-            </div>
-            <p className="pl-[60px] text-sm font-semibold leading-6 text-tesText-secondary md:pl-0">
-              {step.detail}
-            </p>
-          </li>
-        ))}
-      </ol>
-    </AppPageSection>
+            {statusLabel}
+          </span>
+          <p className="text-sm font-semibold text-tesText-secondary">
+            {sessionCountLabel(item.sessionCount)}
+          </p>
+        </div>
+        <CompositionDetails
+          composition={item.composition}
+          timezone={timezone}
+        />
+      </div>
+    </article>
+  );
+}
+
+function HistoryRow({
+  item,
+  timezone,
+}: {
+  item: TherapistPayoutHistoryItem;
+  timezone: string;
+}) {
+  const received = item.status === "received";
+  return (
+    <article className="rounded-card border border-brand-lavender bg-white p-4 sm:p-5">
+      <div className="grid gap-4 sm:grid-cols-[minmax(120px,0.55fr)_minmax(150px,0.7fr)_minmax(200px,1fr)_auto] sm:items-center">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
+            {received ? "Recebido em" : "Atualizado em"}
+          </p>
+          <p className="mt-1 text-lg font-extrabold text-brand-deep">
+            {formatDate(item.date, timezone)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
+            Valor
+          </p>
+          <p className="mt-1 text-xl font-extrabold text-brand-deep">
+            {formatCurrency(item.amountCents)}
+          </p>
+        </div>
+        <div className="grid gap-1">
+          <span
+            className={`inline-flex min-h-7 w-fit items-center rounded-full px-3 py-1 text-xs font-extrabold ${
+              received
+                ? "bg-status-successBg text-status-success"
+                : "bg-status-warningBg text-status-warning"
+            }`}
+          >
+            {received ? "Recebido" : "Em análise"}
+          </span>
+          <p className="text-sm font-semibold text-tesText-secondary">
+            {sessionCountLabel(item.sessionCount)}
+          </p>
+        </div>
+        <CompositionDetails
+          composition={item.composition}
+          timezone={timezone}
+        />
+      </div>
+    </article>
+  );
+}
+
+function CompositionDetails({
+  composition,
+  timezone,
+}: {
+  composition: TherapistPayoutCompositionItem[];
+  timezone: string;
+}) {
+  return (
+    <details className="group sm:col-span-4 sm:text-right">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary">
+        Ver composição
+        <ChevronDown
+          aria-hidden="true"
+          className="transition group-open:rotate-180"
+          size={17}
+        />
+      </summary>
+      <div className="mt-4 rounded-lg bg-surface-soft p-4 text-left">
+        <ul className="grid gap-3">
+          {composition.map((session) => (
+            <li
+              className="grid gap-1 border-b border-brand-lavender/70 pb-3 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4"
+              key={session.sessionPaymentId}
+            >
+              <div>
+                <p className="text-sm font-extrabold text-brand-deep">
+                  {session.patientDisplayName} · {session.therapyNameSnapshot}
+                </p>
+                <p className="mt-1 text-xs font-bold text-tesText-secondary">
+                  Sessão em {formatDateTime(session.sessionDate, timezone)}
+                </p>
+              </div>
+              <strong className="text-sm text-brand-deep">
+                {formatCurrency(session.amountCents)}
+              </strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </details>
   );
 }
 
@@ -514,16 +387,12 @@ function PayoutMetricCard({
   icon: Icon,
   label,
   value,
-  valueText,
 }: {
   description: string;
   icon: LucideIcon;
   label: string;
-  value?: number;
-  valueText?: string;
+  value: number;
 }) {
-  const resolvedValue = valueText ?? formatCurrency(value ?? 0);
-
   return (
     <article className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
       <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -531,7 +400,7 @@ function PayoutMetricCard({
       </span>
       <h2 className="mt-4 text-base font-extrabold text-brand-deep">{label}</h2>
       <p className="mt-2 text-[24px] font-extrabold leading-tight text-brand-deep">
-        {resolvedValue}
+        {formatCurrency(value)}
       </p>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         {description}
@@ -540,49 +409,18 @@ function PayoutMetricCard({
   );
 }
 
-function PayoutDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-extrabold uppercase text-tesText-muted">
-        {label}
-      </dt>
-      <dd className="mt-1 text-sm font-extrabold text-brand-deep">{value}</dd>
-    </div>
-  );
+function agendaHref(days: 7 | 15 | 30, dateRange: TherapistFinanceDateRange) {
+  return buildFinanceHref({
+    end: dateRange.end,
+    filters: { agendaDays: days },
+    period: dateRange.key,
+    start: dateRange.start,
+    tab: "payouts",
+  });
 }
 
-function PayoutReconciliation({
-  item,
-}: {
-  item: TherapistPayoutsContract["items"][number];
-}) {
-  return (
-    <div className="grid gap-1 text-sm font-bold text-brand-deep">
-      <span className="inline-flex items-center gap-2">
-        <FileCheck2
-          aria-hidden="true"
-          className="text-brand-primary"
-          size={16}
-        />
-        {reconciliationLabel(item.reconciliationStatus)}
-      </span>
-    </div>
-  );
-}
-
-function reconciliationLabel(
-  status: TherapistPayoutsContract["items"][number]["reconciliationStatus"],
-) {
-  const labels = {
-    failed: "Precisa de conferência",
-    matched: "Conferido",
-    needs_reconciliation: "Precisa de conferência",
-    paid: "Pago e conciliado",
-    pending: "Em conferência",
-    reversed: "Repasse revertido",
-  } satisfies Record<typeof status, string>;
-
-  return labels[status];
+function sessionCountLabel(count: number) {
+  return `${count} ${count === 1 ? "sessão" : "sessões"}`;
 }
 
 function PayoutPagination({
@@ -639,40 +477,6 @@ function PayoutPagination({
           Carregar mais
         </PendingNavigationLink>
       ) : null}
-    </div>
-  );
-}
-
-function FormulaCard({
-  emphasis = false,
-  icon: Icon = CheckCircle2,
-  label,
-  value,
-}: {
-  emphasis?: boolean;
-  icon?: LucideIcon;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div
-      className={`rounded-card border border-brand-lavender bg-white p-4 ${
-        emphasis ? "text-brand-primary" : "text-brand-deep"
-      }`}
-    >
-      <Icon aria-hidden="true" size={18} />
-      <p className="mt-2 text-base font-extrabold">{label}</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function FormulaOperator({ value }: { value: "-" | "=" }) {
-  return (
-    <div className="hidden items-center justify-center text-xl font-extrabold text-brand-primary md:flex">
-      {value}
     </div>
   );
 }

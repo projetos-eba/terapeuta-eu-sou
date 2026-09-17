@@ -77,7 +77,7 @@ export function mapSessionJourneyThemeDatabaseError(error: unknown) {
     return new DomainError(
       "UNAVAILABLE",
       409,
-      "Os temas ficam disponíveis depois que a sessão realizada é confirmada.",
+      "Os temas ficam disponíveis depois de uma avaliação positiva da sessão realizada.",
     );
   }
   if (details.includes("JOURNEY_THEME_SELECTION_IMMUTABLE")) {

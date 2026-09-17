@@ -3,13 +3,14 @@ import "server-only";
 import {
   getRowsByIds,
   getSupabaseServerRestConfig,
+  supabaseServerRestRpc,
   supabaseServerRestRequest,
 } from "@/lib/supabase/server-rest";
 
 import type {
   JourneyBookingBaseRow,
-  JourneyBookingFulfillmentRow,
   JourneyBookingRow,
+  JourneyBookingStateRow,
   JourneyHistoryRows,
   JourneyPatientRow,
   JourneyRelationshipRow,
@@ -45,7 +46,7 @@ export async function queryTherapistJourneyHistory(input: {
   ];
   const serviceIds = [...new Set(bookingRows.map((row) => row.service_id))];
 
-  const [patients, services, summaries, themeSelections, fulfillmentRows] =
+  const [patients, services, summaries, themeSelections, journeyStateRows] =
     await Promise.all([
     getRowsByIds<JourneyPatientRow>(
       config,
@@ -72,22 +73,23 @@ export async function queryTherapistJourneyHistory(input: {
         )
       : Promise.resolve([]),
     bookingIds.length > 0
-      ? supabaseServerRestRequest<JourneyBookingFulfillmentRow[]>(
+      ? supabaseServerRestRpc<JourneyBookingStateRow[]>(
           config,
-          `/rest/v1/therapist_session_read_model_v1?select=bookingId,fulfillmentStatus&bookingId=in.(${bookingIds.join(",")})&limit=500`,
+          "get_therapist_journey_session_states_v1",
+          { p_booking_ids: bookingIds },
         )
       : Promise.resolve([]),
   ]);
-  const fulfillmentStatusByBookingId = new Map(
-    fulfillmentRows
-      .filter((row): row is JourneyBookingFulfillmentRow & { bookingId: string } =>
-        Boolean(row.bookingId),
-      )
-      .map((row) => [row.bookingId, row.fulfillmentStatus]),
+  const journeyStateByBookingId = new Map(
+    journeyStateRows.map((row) => [row.booking_id, row]),
   );
   const bookings: JourneyBookingRow[] = bookingRows.map((booking) => ({
     ...booking,
-    fulfillmentStatus: fulfillmentStatusByBookingId.get(booking.id) ?? null,
+    confirmationStatus:
+      journeyStateByBookingId.get(booking.id)?.confirmation_status ?? null,
+    fulfillmentStatus: null,
+    realizationStatus:
+      journeyStateByBookingId.get(booking.id)?.realization_status ?? null,
   }));
 
   return {

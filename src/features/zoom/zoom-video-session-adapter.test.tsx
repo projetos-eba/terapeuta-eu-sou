@@ -203,6 +203,45 @@ describe("ZoomVideoSessionAdapter", () => {
     vi.unstubAllGlobals();
   });
 
+  it("renders feedback directly without initializing or entering the video room", async () => {
+    const fetchMock = vi.fn((url?: string) => {
+      if (String(url).startsWith("/api/session-feedback?")) {
+        return Promise.resolve({
+          json: async () => ({
+            data: {
+              attendance: { sessionClosed: false },
+              feedback: null,
+              status: "before_session",
+            },
+            ok: true,
+          }),
+          ok: true,
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${String(url)}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+        initialFeedback
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Como foi sua sessão?" }),
+    ).toBeInTheDocument();
+    expect(createClient).not.toHaveBeenCalled();
+    expect(calls).not.toContain("init");
+    expect(calls).not.toContain("join");
+    expect(countAccessRequests(fetchMock, "join")).toBe(0);
+    expect(countAccessRequests(fetchMock, "preview")).toBe(0);
+  });
+
   it("keeps entry unavailable outside the join window", () => {
     render(
       <ZoomVideoSessionAdapter

@@ -82,11 +82,12 @@ export type JourneyHistoryDetailData = {
   therapistProfileId: string;
   timeline: Array<{
     bookingId: string;
+    confirmationStatus: "confirmed" | "pending";
     date: string;
     description: string;
+    hasSummary: boolean;
     href: string;
     id: string;
-    status: string;
     serviceTitle: string;
     title: string;
     topicLabels: string[];

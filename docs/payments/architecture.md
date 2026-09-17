@@ -555,6 +555,15 @@ Recebimentos, Repasses e Conta de recebimento. A tela é operacional e
 disponível para Free, Premium e Premium Plus quando houver movimentação
 financeira.
 
+Desde 2026-09-17, Recebimentos e Repasses consomem projeções privadas v3
+aditivas. Recebimentos comunica a cobrança de cada sessão; Repasses comunica a
+chegada bancária como `Previsto → A caminho da sua conta → Recebido`. A Agenda
+de Repasses contém apenas datas futuras sustentadas por `arrival_at`, agrupadas
+por data, e nunca inclui valores já recebidos. A confirmação de `Recebido`
+permanece condicionada ao Payout pago, à reconciliação concluída e à alocação
+integral. Os contratos v2, os caminhos V9/V10, workers, jobs, ledger e comandos
+financeiros não foram modificados por essa camada de apresentação.
+
 F2 adiciona métricas intermediárias na aba Resumo para Premium e Premium Plus
 via `advanced_metrics`: receita líquida comparada ao período anterior, ticket
 médio, sessões pagas/realizadas, retorno simples, cancelamentos,

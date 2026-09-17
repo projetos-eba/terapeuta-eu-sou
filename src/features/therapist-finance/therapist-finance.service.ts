@@ -84,9 +84,9 @@ export const getTherapistFinancePage = cache(
         }),
         queryTherapistPayouts(accessToken, {
           ...periodBody,
+          p_agenda_days: filters.agendaDays,
           p_page: 1,
           p_page_size: Math.min(filters.page * 6, 500),
-          p_status: filters.payoutStatus,
         }),
         queryTherapistConnectAccount(accessToken),
       ]);
