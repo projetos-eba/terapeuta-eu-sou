@@ -1,6 +1,6 @@
 begin;
 
-create function public.get_therapist_journey_session_states_v1(
+create or replace function public.get_therapist_journey_session_states_v1(
   p_booking_ids uuid[]
 )
 returns table(
