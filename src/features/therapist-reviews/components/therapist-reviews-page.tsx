@@ -152,7 +152,7 @@ export function TherapistReviewsPage({
             active={surface === "session"}
             count={data.pendingConfirmations.length}
             id="therapist-reviews-session-tab"
-            label="Avaliações da sessão"
+            label="Sessões e confirmações"
             onSelect={() => setSurface("session")}
             panelId="therapist-reviews-session-panel"
           />
@@ -395,11 +395,12 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
               className="text-xl font-extrabold text-brand-deep"
               id="pending-session-confirmations"
             >
-              Confirmações de atendimentos
+              Confirmações individuais pendentes
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Esta obrigação existe em todos os planos. Sem sua resposta, a
-              confirmação automática ocorre no vencimento de 30 dias.
+              A confirmação individual é separada da avaliação da sessão. Se
+              permanecer pendente, o sistema a registra após 30 dias do fim
+              previsto, observadas as análises de qualidade em andamento.
             </p>
           </div>
         </div>
@@ -432,7 +433,7 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
                   className="mt-4 inline-flex min-h-11 items-center rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
                   href={`${routes.therapist.sessionVideo(confirmation.bookingId)}?feedback=1`}
                 >
-                  Confirmar sessão
+                  Ver sessão
                 </a>
               </article>
             ))}
@@ -457,12 +458,11 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
               className="text-xl font-extrabold text-brand-deep"
               id="private-session-feedback"
             >
-              Feedbacks privados das sessões
+              Suas respostas privadas das sessões
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Somente participantes autorizados e a equipe administrativa
-              acessam estes relatos. As respostas do paciente não podem ser
-              editadas.
+              Aqui aparecem somente as suas respostas. O relato privado do
+              cliente fica acessível apenas a ele e ao TES.
             </p>
           </div>
         </div>
@@ -478,18 +478,18 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
                     {feedback.patientName}
                   </h3>
                   <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-extrabold text-tesText-secondary">
-                    {feedback.authorRole === "patient"
-                      ? "Paciente"
-                      : "Sua resposta"}
+                    {feedback.historical ? "Seu relato anterior" : "Sua resposta"}
                   </span>
                 </div>
                 <p className="mt-2 text-sm font-semibold text-tesText-secondary">
                   {feedback.serviceTitle ?? "Sessão terapêutica"}
                 </p>
                 <p className="mt-3 text-sm font-bold text-brand-deep">
-                  {feedback.outcome === "completed"
-                    ? `Realizada${feedback.rating ? ` · ${feedback.rating}/5` : ""}`
-                    : "Não realizada · análise necessária"}
+                  {feedback.historical && feedback.outcome === "not_performed"
+                    ? "Relato histórico de não realização"
+                    : feedback.successful === false
+                      ? "Realizada · não foi bem-sucedida"
+                      : `Realizada${feedback.rating ? ` · ${feedback.rating}/5` : ""}`}
                 </p>
                 {feedback.comment ? (
                   <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
@@ -511,7 +511,7 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
 
 function remainingLabel(seconds: number) {
   if (seconds <= 0)
-    return "Prazo automático atingido; processamento horário pendente";
+    return "Prazo automático atingido; uma análise de qualidade pode suspender o registro";
   const days = Math.ceil(seconds / 86_400);
   return `${days} ${days === 1 ? "dia restante" : "dias restantes"} até a confirmação automática`;
 }

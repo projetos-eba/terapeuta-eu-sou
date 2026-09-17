@@ -85,7 +85,9 @@ export function mapTherapistReviewsPageData(
         timezone: string(item.timezone, "America/Sao_Paulo"),
       };
     }),
-    privateFeedback: array(row.privateFeedback).map((value) => {
+    privateFeedback: array(row.privateFeedback).filter((value) =>
+      string(record(value).authorRole) === "therapist",
+    ).map((value) => {
       const item = record(value);
       return {
         authorRole: string(item.authorRole) === "therapist" ? "therapist" : "patient",
@@ -93,10 +95,13 @@ export function mapTherapistReviewsPageData(
         comment: string(item.comment),
         createdAt: string(item.createdAt),
         id: string(item.id),
+        historical: item.historical === true,
         notPerformedReason: nullableString(item.notPerformedReason),
         outcome: string(item.outcome) === "not_performed" ? "not_performed" : "completed",
         patientName: string(item.patientName, "Paciente TES"),
         rating: nullableNumber(item.rating),
+        successful: typeof item.successful === "boolean" ? item.successful : null,
+        qualityReason: nullableString(item.qualityReason),
         serviceTitle: nullableString(item.serviceTitle),
         startsAt: string(item.startsAt),
       };

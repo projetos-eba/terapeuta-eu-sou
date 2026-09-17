@@ -40,14 +40,11 @@ describe("PatientAppointmentCard", () => {
     expect(columns[2]).toHaveTextContent("Confirmada");
     expect(columns[3]?.tagName).toBe("DL");
     expect(columns[4]).toHaveTextContent("Ver detalhes");
-    expect(
-      screen.getByRole("link", { name: "Ver detalhes" }),
-    ).toHaveAttribute("href", "/app/encontros/booking-1");
-    expect(menuButton.parentElement).toHaveClass(
-      "absolute",
-      "right-3",
-      "top-3",
+    expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute(
+      "href",
+      "/app/encontros/booking-1",
     );
+    expect(menuButton.parentElement).toHaveClass("relative", "shrink-0");
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
 
     fireEvent.click(menuButton);
@@ -106,5 +103,14 @@ describe("PatientAppointmentCard", () => {
     expect(
       screen.getByRole("link", { name: "Entrar no encontro" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Entrar no encontro" }),
+    ).toHaveClass("min-h-10", "w-[145px]");
+    expect(
+      screen.getByRole("button", { name: "Abrir ações do encontro" }),
+    ).toHaveClass("size-10");
+    expect(
+      screen.queryByRole("link", { name: "Abrir chamado" }),
+    ).not.toBeInTheDocument();
   });
 });

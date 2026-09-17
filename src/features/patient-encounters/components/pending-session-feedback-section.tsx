@@ -21,22 +21,23 @@ export function PendingSessionFeedbackSection({
       <div className="max-w-[720px]">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-brand-primary">
           <CheckCircle2 aria-hidden="true" size={16} />
-          Ação necessária
+          Avaliação disponível
         </span>
         <h2
           className="mt-3 font-display text-[1.8rem] font-light italic leading-tight text-brand-deep sm:text-[2.1rem]"
           id="pending-feedback-title"
         >
-          Encontros aguardando sua confirmação
+          Encontros aguardando sua avaliação
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Confirme cada encontro separadamente. A confirmação privada é
-          diferente da avaliação pública do terapeuta.
+          Avalie cada encontro separadamente. Sua resposta é privada e não
+          interfere no pagamento nem no repasse; a avaliação pública do
+          terapeuta é uma etapa diferente e opcional.
         </p>
       </div>
 
       <div
-        aria-label="Lista de confirmações pendentes"
+        aria-label="Lista de avaliações pendentes"
         className="mt-5 grid max-h-[34rem] grid-cols-1 gap-3 overflow-y-auto overscroll-contain pr-2 [scrollbar-width:thin] lg:max-h-[20rem] lg:grid-cols-2"
         data-testid="pending-feedback-scroll"
         role="region"
@@ -100,11 +101,11 @@ function confirmationLabel(
     PatientPendingFeedbackSession["confirmationState"],
     string
   > = {
-    awaiting_both: "Aguardando paciente e terapeuta",
-    awaiting_patient: "Aguardando sua confirmação",
-    awaiting_therapist: "Aguardando confirmação do terapeuta",
+    awaiting_both: "Aguardando avaliações",
+    awaiting_patient: "Aguardando sua avaliação",
+    awaiting_therapist: "Aguardando avaliação do terapeuta",
     blocked_for_review: "Bloqueada para análise",
-    completed: "Concluída",
+    completed: "Avaliações concluídas",
     next_batch: "Próximo lote",
     processing_payment: "Pagamento em processamento",
     safety_period: "Pagamento em processamento",

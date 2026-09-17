@@ -98,8 +98,8 @@ disponível nos cinco minutos finais. A saída comum chama `leave(false)`, volta
 não chama `leave(true)`: o encerramento para todos passa pelo backend, que
 valida ownership, janela e sessão ativa antes de acionar o provedor. A mesma
 tela pode reabrir o feedback pelo detalhe com `?feedback=1`; isso não cria uma
-rota nova. O feedback usa `session_feedback` e é independente de `reviews`
-públicos.
+rota nova. O formulário vigente usa `session_quality_feedback` da tentativa
+atual; `session_feedback` é histórico legado, independente de `reviews` públicos.
 O read model administrativo mostra respostas pendentes e divergentes sem
 editar opiniões ou alterar pagamento, repasse, reembolso, booking ou confirmação
 de serviço.
@@ -118,13 +118,14 @@ confirmado, o CTA pode abrir a sala de espera mesmo antes da presença do
 terapeuta. Isso preserva o host-first: a tela de espera é acessível, mas o
 paciente só recebe acesso de join depois do evento confiável do terapeuta.
 
-O feedback privado fica disponível após o fim programado ou encerramento
-definitivo da sessão. A query `feedback=1` apenas pede a abertura da
-experiência; não altera essa decisão. A telemetria confiável de entrada de
-paciente e terapeuta continua como evidência e sinal de risco, mas não bloqueia
-o envio manual nem os vencimentos automáticos de 7/30 dias. O participante
-informa se o encontro ocorreu; uma resposta `not_performed` exige motivo,
-bloqueia o repasse e abre revisão administrativa.
+O feedback privado só fica disponível após o fim programado ou encerramento
+definitivo e joins confiáveis de ambos na tentativa atual. `feedback=1` apenas
+pede abertura; não altera elegibilidade. A pessoa informa se a sessão realizada
+foi bem-sucedida. Resposta negativa exige motivo técnico ou “outro”, cria
+ticket privado com prazo de cinco dias, mas não classifica “não realizada” nem
+altera Transfer. Ausência após T+10 é classificada pelo sistema, separadamente;
+os vencimentos automáticos de 7/30 dias revalidam a realização e são suspensos
+somente enquanto um relato de qualidade estiver dentro do prazo sem resposta.
 
 Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
 webhook assinado. Fixtures com pagamento direto sao permitidas somente para
@@ -186,8 +187,9 @@ nunca com `hard_ends_at`.
 A janela abre em T-15. Abrir a sala de espera autenticada registra
 `zoom_waiting_room_entered` para a versão atual da reserva até T+10 inclusive.
 Essa chegada pontual, ou um `session.user_joined` confiável anterior, preserva
-a reconexão até `scheduled_ends_at`; cada entrada ainda exige presença atual do
-terapeuta. T+10+1 ms é bloqueado sem uma dessas evidências.
+a reconexão do **próprio participante** até `scheduled_ends_at`; a entrada do
+paciente ainda exige presença atual do terapeuta. T+10+1 ms é bloqueado para
+quem não possui sua própria evidência no prazo.
 
 Somente o terapeuta pode encerrar para todos no intervalo fechado em T-5 e
 aberto no fim agendado. O encerramento confirmado nessa janela libera feedback;
@@ -202,8 +204,9 @@ encontro. `manual_end`, `end_scheduled` e `end_hard_timeout` são operações
 terminais independentes.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
-maintenance encerra sessoes somente no fim agendado, por hard timeout ou para
-confirmar um encerramento manual previamente autorizado. Jobs legados de
+maintenance encerra sessoes no fim agendado, por hard timeout, para confirmar
+um encerramento manual previamente autorizado ou quando o classificador
+constata ausência de comparecimento até T+10. Jobs legados de
 ausencia/orfandade sao concluídos como superseded e nunca chamam a REST API do
 provider. Sessões já confirmadas como `ended` não são reabertas automaticamente.
 
@@ -255,4 +258,7 @@ Em T+10, a combinação das chegadas define `no_show_patient`,
 reentrante; quando o horário termina sem joins bilaterais, abre
 `requires_review`. Falta do terapeuta, falta de ambos e evidência inconclusiva
 bloqueiam a sala e o financeiro, mas não executam efeitos Stripe. A decisão
-pertence ao Admin conforme a ADR-022.
+pertence ao Admin conforme a ADR-022. O trabalho durável
+`end_attendance_no_show` encerra uma sala ainda ativa por ID persistido ou uma
+única correspondência exata de nome; a fila não reutiliza o job legado de
+ausência temporária.

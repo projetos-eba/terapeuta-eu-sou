@@ -18,7 +18,7 @@ describe("therapist session status badge", () => {
         presentation({ label: "Confirmada", state: "confirmed", tone: "info" }),
         true,
       ),
-    ).toEqual({ label: "Aguardando confirmação", tone: "warning" });
+    ).toEqual({ label: "Realizada — confirmação pendente", tone: "warning" });
   });
 
   it("preserves the not performed status even if stale pending data arrives", () => {

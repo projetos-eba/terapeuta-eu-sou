@@ -54,6 +54,7 @@ type PublicTherapistSearchRow = {
   theme_names: string[] | null;
   theme_slugs: string[] | null;
   therapist_headline: string | null;
+  therapist_essence: string | null;
   therapy_id: string;
   therapy_name: string;
   therapy_slug: string;
@@ -161,8 +162,8 @@ function mapTherapistRow(
     ),
     cityState: [row.city, row.state].filter(Boolean).join(", "),
     description:
-      row.therapist_headline?.trim() ||
-      "Conheça a apresentação deste terapeuta no perfil completo.",
+      row.therapist_essence?.trim() ||
+      "Conheça a essência deste terapeuta no perfil completo.",
     durationLabel: formatDurationLabel(row.duration_minutes ?? 50),
     hasVideo: Boolean(row.has_video),
     highlight: row.highlight ?? "Perfil Verificado",

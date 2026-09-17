@@ -44,13 +44,14 @@ runtime.serve(async (request) => {
 
     try {
       const result = await client.rpc(
-        "submit_session_feedback_for_actor_v1",
+        "submit_session_quality_feedback_v1",
         {
           p_actor_user_id: user.id,
           p_booking_id: command.bookingId,
           p_comment: command.comment,
-          p_not_performed_reason: command.notPerformedReason,
-          p_outcome: command.outcome,
+          p_session_attempt_id: command.sessionAttemptId,
+          p_successful: command.successful,
+          p_quality_reason: command.qualityReason,
           p_rating: command.rating,
           p_request_id: command.requestId,
         },

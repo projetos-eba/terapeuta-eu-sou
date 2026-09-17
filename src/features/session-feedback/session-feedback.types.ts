@@ -55,16 +55,30 @@ export type SessionFeedbackConfirmation = {
 };
 
 export type SessionFeedbackRecord = {
+  sessionAttemptId?: string;
+  successful?: boolean;
+  qualityReason?: SessionFeedbackReason | null;
   authorRole: "patient" | "therapist";
   comment: string;
   createdAt: string;
   id: string;
-  notPerformedReason: SessionFeedbackReason | null;
-  outcome: SessionFeedbackOutcome;
+  notPerformedReason?: SessionFeedbackReason | null;
+  outcome?: SessionFeedbackOutcome;
   rating: number | null;
 };
 
 export type SessionFeedbackReadPayload = {
+  contractVersion?: 2;
+  sessionAttemptId?: string;
+  realizationStatus?: "performed" | "not_performed" | "pending";
+  supportTicketId?: string | null;
+  qualityReview?: {
+    isOpen: boolean;
+    overdue: boolean;
+    automaticConfirmationPaused: boolean;
+    dueAt: string | null;
+    allAnswered: boolean;
+  };
   actorConfirmation?: SessionFeedbackConfirmation | null;
   actorRole?: "patient" | "therapist";
   attendance?: SessionFeedbackAttendance;
@@ -111,12 +125,8 @@ export const SESSION_FEEDBACK_REASONS: Array<{
   value: SessionFeedbackReason;
   label: string;
 }> = [
-  { label: "O paciente não apareceu", value: "patient_absent" },
-  { label: "O terapeuta não apareceu", value: "therapist_absent" },
   { label: "Problema de internet", value: "internet_problem" },
   { label: "Problema técnico de áudio ou vídeo", value: "audio_video_problem" },
-  { label: "Sessão remarcada", value: "rescheduled" },
-  { label: "Cancelamento em cima da hora", value: "late_cancellation" },
   { label: "Outro motivo", value: "other" },
 ];
 

@@ -85,7 +85,7 @@ describe("OnlineSessionCard", () => {
     ).toHaveAttribute("href", "https://example.com/meeting");
   });
 
-  it("keeps confirmation for a terminal encounter within its details", () => {
+  it("keeps the private assessment for a terminal encounter within its details", () => {
     render(
       <SessionOverviewCard
         data={makeData({
@@ -97,7 +97,7 @@ describe("OnlineSessionCard", () => {
 
     expect(
       screen
-        .getAllByRole("link", { name: /confirmar encontro/i })
+        .getAllByRole("link", { name: /avaliar encontro/i })
         .every(
           (link) =>
             link.getAttribute("href") ===
@@ -121,7 +121,7 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.queryByRole("link", { name: /confirmar encontro/i }),
+      screen.queryByRole("link", { name: /avaliar encontro/i }),
     ).toBeNull();
     expect(screen.getByText(/a sala não será liberada/i)).toBeInTheDocument();
     expect(screen.queryByText("Seu encontro online")).toBeNull();

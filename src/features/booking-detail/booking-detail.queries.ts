@@ -25,7 +25,6 @@ import {
   type BookingDetailSessionSummaryRow,
   type BookingDetailTherapistRow,
   type BookingDetailTherapyRow,
-  type BookingDetailVideoParticipationRow,
 } from "./booking-detail.mappers";
 import type {
   BookingDetailPageData,
@@ -92,8 +91,7 @@ export const getPatientSessionDetailPage = cache(
         paymentRows,
         rescheduleRows,
         cancellationDecisionRows,
-        patientParticipationRows,
-        patientWaitingRoomEvents,
+        sessionQuality,
         attendanceIncidentRows,
         chargeStatus,
         checkoutRetryContext,
@@ -126,13 +124,8 @@ export const getPatientSessionDetailPage = cache(
           config,
           `/rest/v1/session_cancellation_decisions?select=decision,refund_amount_cents,requires_manual_review,review_due_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
         ),
-        supabaseServerRestRequest<BookingDetailVideoParticipationRow[]>(
-          config,
-          `/rest/v1/video_session_participations?select=id&booking_id=eq.${booking.id}&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
-        ),
-        supabaseServerRestRequest<Array<{ payload: unknown }>>(
-          config,
-          `/rest/v1/booking_events?select=payload&booking_id=eq.${booking.id}&event_type=eq.zoom_waiting_room_entered&limit=20`,
+        supabaseServerRestRpc<import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload>(
+          config, "get_session_quality_feedback_v1", { p_booking_id: booking.id },
         ),
         supabaseServerRestRequest<
           Array<{
@@ -202,15 +195,7 @@ export const getPatientSessionDetailPage = cache(
         completedBookings,
         intake: intakeRows[0] ?? null,
         patient: profile,
-        patientHasJoined:
-          patientParticipationRows.length > 0 ||
-          patientWaitingRoomEvents.some((event) =>
-            isCurrentBookingArrival(
-              event.payload,
-              booking.version,
-              booking.starts_at,
-            ),
-          ),
+        patientHasJoined: (sessionQuality.attendance as { patientPresentAtTolerance?: boolean } | undefined)?.patientPresentAtTolerance === true,
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -237,6 +222,7 @@ export const getPatientSessionDetailPage = cache(
 
       return {
         ...detail,
+        sessionQuality,
         attendanceReview,
         booking: attendanceReview?.isOpen
           ? {
@@ -249,7 +235,11 @@ export const getPatientSessionDetailPage = cache(
                     ? "Encontro não realizado — terapeuta não compareceu"
                     : "Encontro não realizado — acesso em análise",
             }
-          : detail.booking,
+          : sessionQuality.realizationStatus === "performed"
+            ? { ...detail.booking, statusLabel: sessionQuality.qualityReview?.isOpen
+              ? "Realizada, em análise" : sessionQuality.qualityReview?.allAnswered
+                ? "Realizada (confirmada)" : "Encontro realizado" }
+            : detail.booking,
         delayNotice,
         paymentRecovery: {
           ...mapSessionChargeStatus(chargeStatus),
@@ -319,21 +309,6 @@ function mapCheckoutRetryAvailability(value: unknown, bookingId: string) {
 
   const row = value as Record<string, unknown>;
   return row.bookingId === bookingId && row.canRetry === true;
-}
-
-function isCurrentBookingArrival(
-  value: unknown,
-  bookingVersion: number,
-  startsAt: string,
-) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const payload = value as Record<string, unknown>;
-
-  return (
-    Number(payload.bookingVersion) === bookingVersion &&
-    typeof payload.scheduledStartsAt === "string" &&
-    Date.parse(payload.scheduledStartsAt) === Date.parse(startsAt)
-  );
 }
 
 function createDemoBookingDetail(

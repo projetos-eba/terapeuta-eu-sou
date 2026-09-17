@@ -44,12 +44,12 @@ describe("session feedback API", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request(`http://localhost:3000/api/session-feedback?bookingId=${bookingId}`),
+      new Request(`http://localhost:3000/api/session-feedback?bookingId=${bookingId}&actorRole=patient`),
     );
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://tes.supabase.test/rest/v1/rpc/get_session_feedback_v2",
+      "https://tes.supabase.test/rest/v1/rpc/get_session_quality_feedback_v1",
       expect.objectContaining({
         body: JSON.stringify({ p_booking_id: bookingId }),
         headers: expect.objectContaining({
@@ -60,7 +60,7 @@ describe("session feedback API", () => {
     );
   });
 
-  it("forwards the idempotent answer without accepting an actor role", async () => {
+  it("uses the requested session cookie without forwarding the role as identity", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true, data: { feedback: { id: "feedback-1" } } }), {
         headers: { "Content-Type": "application/json" },
@@ -72,10 +72,13 @@ describe("session feedback API", () => {
     const response = await POST(
       new Request("http://localhost:3000/api/session-feedback", {
         body: JSON.stringify({
+          actorRole: "patient",
           bookingId,
+          contractVersion: 2,
+          sessionAttemptId: bookingId,
+          successful: true,
+          qualityReason: null,
           comment: "Tudo bem.",
-          notPerformedReason: null,
-          outcome: "completed",
           rating: 5,
           requestId,
         }),
@@ -90,9 +93,11 @@ describe("session feedback API", () => {
       expect.objectContaining({
         body: JSON.stringify({
           bookingId,
+          contractVersion: 2,
+          sessionAttemptId: bookingId,
+          successful: true,
+          qualityReason: null,
           comment: "Tudo bem.",
-          notPerformedReason: null,
-          outcome: "completed",
           rating: 5,
           requestId,
         }),
@@ -103,5 +108,26 @@ describe("session feedback API", () => {
       }),
     );
     expect(JSON.stringify(fetchMock.mock.calls[0])).not.toMatch(/actorRole|service_role/i);
+  });
+
+  it("does not read the therapist's private answer using a patient page with both cookies", async () => {
+    mocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_patient_access_token" ? { value: "patient-access-token" }
+        : name === "tes_therapist_access_token" ? { value: "therapist-access-token" } : undefined,
+    );
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "eligible" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await GET(new Request(`http://localhost:3000/api/session-feedback?bookingId=${bookingId}&actorRole=patient`));
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer patient-access-token");
+
+    await GET(new Request(`http://localhost:3000/api/session-feedback?bookingId=${bookingId}&actorRole=therapist`));
+    expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer therapist-access-token");
+  });
+
+  it("rejects a missing or incompatible actor role before reading any cookie", async () => {
+    const response = await GET(new Request(`http://localhost:3000/api/session-feedback?bookingId=${bookingId}`));
+    expect(response.status).toBe(422);
+    expect(mocks.cookies).not.toHaveBeenCalled();
   });
 });

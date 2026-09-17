@@ -18,9 +18,9 @@ retornava corretamente `SESSION_ENDED`, apesar de ainda haver tempo agendado.
 ## Invariantes corrigidos
 
 - A janela geral é T-15 até `scheduled_ends_at` exclusivo.
-- O terapeuta elegível pode entrar e reentrar durante toda a janela.
+- O terapeuta que chegou ou entrou até T+10 pode reentrar durante toda a janela.
 - O paciente que chegou até T+10 inclusive, ou que já possui
-  `session.user_joined` confiável, preserva o direito até o fim agendado.
+  `session.user_joined` confiável até T+10, preserva o direito até o fim agendado.
 - Cada entrada do paciente continua host-first. Sem presença atual do
   terapeuta, o estado é `THERAPIST_NOT_IN_SESSION`; um novo join confiável do
   host libera o acesso.
@@ -36,13 +36,14 @@ retornava corretamente `SESSION_ENDED`, apesar de ainda haver tempo agendado.
 Após T+10 estrito, uma sessão ativa somente recebe o término
 `patient_no_show` quando não existe, para a versão e horário atuais da reserva,
 nem chegada autenticada na sala de espera nem `session.user_joined` confiável
-do paciente. A mesma evidência libera ambos até o fim agendado: se o paciente
-chegou no prazo e o terapeuta entra em T+15, a sala continua host-first e o
-paciente pode entrar assim que a presença atual do terapeuta for confirmada.
+do paciente. Cada participante preserva seu próprio direito de reentrada até
+o fim agendado. A chegada do cliente não autoriza uma primeira chegada tardia
+do terapeuta. Se ambos chegaram até T+10, o terapeuta pode reentrar em T+15
+e o cliente entra assim que a presença atual do terapeuta for confirmada.
 
 O job `end_patient_no_show` revalida a evidência sob o lock consultado pela
 chegada da espera. Ele não reutiliza `end_therapist_absent` ou
-`reconcile_orphan`; atraso, saída e reconexão do terapeuta seguem reentrantes.
+`reconcile_orphan`; saída e reconexão do terapeuta pontual seguem reentrantes.
 O backend bloqueia a emissão de novos acessos imediatamente e a maintenance
 encerra a instância remota no ciclo seguinte.
 

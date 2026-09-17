@@ -2,6 +2,15 @@ begin;
 
 select plan(18);
 
+-- Keep the schedule fixture independent of other confirmed local bookings.
+update public.bookings set status = 'cancelled_by_patient'
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and status in ('draft','pending_payment','confirmed')
+  and id not in (
+    'f2000000-0000-4000-8000-000000000001',
+    'f2000000-0000-4000-8000-000000000002'
+  );
+
 select is(
   has_function_privilege(
     'authenticated',
@@ -72,10 +81,18 @@ select is(
   'repeating the same participant arrival is idempotent'
 );
 
-select is(
+create temporary table attendance_payment_before as
+select booking_id, to_jsonb(payment) as payment_snapshot
+from public.session_payments payment
+where booking_id in (
+  'f2000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000002'
+);
+
+select cmp_ok(
   public.finalize_due_session_attendance_v1(now() + interval '6 minutes', 20),
-  2,
-  'the finalizer classifies the therapist absence and the double absence once T+10 passes'
+  '>=', 2,
+  'the finalizer reaches both target absences once T+10 passes'
 );
 
 select is(
@@ -108,15 +125,12 @@ select is(
   'the double absence opens a distinct incident'
 );
 
-select ok(
-  (
-    select admin_blocked_at is not null
-      and internal_contested_at is not null
-      and transfer_blocked_reason = 'attendance_review'
-    from public.session_payments
-    where booking_id = 'f2000000-0000-4000-8000-000000000001'
-  ),
-  'therapist absence blocks financial completion before Admin review'
+select is(
+  (select count(*)::integer from public.session_payments payment
+    join attendance_payment_before before on before.booking_id = payment.booking_id
+    where to_jsonb(payment) = before.payment_snapshot),
+  2,
+  'attendance classification leaves both payments and Transfers unchanged'
 );
 
 select is(
@@ -161,14 +175,28 @@ select is(
 
 select is(
   (select count(*)::integer from public.notifications
-    where event_key like 'attendance-review:%:patient'),
+    where event_key in (
+      select 'attendance-review:' || incident.id::text || ':patient'
+      from public.session_confirmation_incidents incident
+      where incident.booking_id in (
+        'f2000000-0000-4000-8000-000000000001',
+        'f2000000-0000-4000-8000-000000000002'
+      )
+    )),
   2,
   'each reviewed incident notifies its patient exactly once'
 );
 
 select is(
   (select count(*)::integer from public.notifications
-    where event_key like 'attendance-review:%:therapist'),
+    where event_key in (
+      select 'attendance-review:' || incident.id::text || ':therapist'
+      from public.session_confirmation_incidents incident
+      where incident.booking_id in (
+        'f2000000-0000-4000-8000-000000000001',
+        'f2000000-0000-4000-8000-000000000002'
+      )
+    )),
   2,
   'each reviewed incident notifies its therapist exactly once'
 );

@@ -11,7 +11,7 @@ export function getTherapistSessionStatusBadge(
     presentation.state !== "refunded"
   ) {
     return {
-      label: "Aguardando confirmação",
+      label: "Realizada — confirmação pendente",
       tone: "warning" as const,
     };
   }

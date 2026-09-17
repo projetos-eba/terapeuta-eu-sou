@@ -70,8 +70,10 @@ Fim técnico `session.ended` não é automaticamente fim lógico do encontro.
 
 Ausência do terapeuta por 120 segundos e `session.ended` do Zoom são sinais
 técnicos, não autorização para encerrar o encontro TES. Durante a janela
-T-15 até `scheduled_ends_at` exclusivo, o terapeuta continua elegível para
-reentrar. O paciente previamente legitimado permanece host-first: recebe
+T-15 até `scheduled_ends_at` exclusivo, o terapeuta que chegou ou entrou até
+T+10 continua elegível para reentrar. Quem não compareceu nesse prazo não
+ganha acesso tardio pela chegada do cliente. O paciente previamente legitimado
+permanece host-first: recebe
 `THERAPIST_NOT_IN_SESSION` enquanto o terapeuta está fora e volta a ser
 liberado depois de um novo `session.user_joined` confiável do host.
 
@@ -81,6 +83,26 @@ Se a sessão ficar `ended` com `termination_reason=therapist_absent` ou
 não reparar dados manualmente e não reabrir sessões já confirmadas. Corrigir por
 migration versionada e validar localmente conforme
 [lifecycle de reentrada](./reentry-lifecycle-2026-08-28.md).
+
+## Cliente aguardou, mas o terapeuta não compareceu até T+10
+
+Confira a versão e os horários da reserva, os eventos autenticados
+`zoom_waiting_room_entered` por papel e os `session.user_joined` confiáveis.
+T+10 exato é permitido; em T+10 ultrapassado, a entrada tardia do terapeuta
+deve ser negada mesmo que o cliente tenha chegado. O cliente deve ver
+“Encontro não realizado”, e a reserva deve ficar `no_show_therapist`, com
+incidente aberto e pagamento bloqueado para análise do Admin. Não peça ao
+terapeuta para confirmar um atendimento sem entrada bilateral.
+
+Se a reserva continuar `confirmed`, verifique a execução do finalizador e se
+há sessões antigas normais consumindo o limite da fila. Um trabalho
+`end_attendance_no_show` fecha a sala lógica: confirme a versão do agendamento
+e o estado do job. Com ID do provedor persistido, encerre somente esse ID;
+sem ID, aceite apenas uma sessão ativa de nome **exatamente** igual. Duplicatas
+ou erro do provedor exigem revisão, sem encerramento manual por nome parcial.
+Nunca faça Refund, Transfer Reversal, nova tentativa de Transfer ou
+reagendamento automaticamente durante a classificação. O Admin decide entre
+reagendamento e reembolso com justificativa; registre o desfecho no incidente.
 
 ## O teste real foi bloqueado antes de abrir a sessao
 
@@ -216,6 +238,17 @@ watchdog incoerente exige auditoria de migration, funcao implantada e eventos,
 mas nao pode aparecer como "Tempo restante do encontro".
 
 ## O paciente saiu e recebeu 409 ao tentar voltar
+
+Na regra local da ADR-023, consulte `booking_session_attempts`, o payload da
+chegada autenticada com `sessionAttemptId`, a participação vinculada à mesma
+tentativa e o limite T+10 inclusivo. Uma participação antiga nunca dá direito
+de reentrada nem comprova sessão realizada. Após ausência classificada, a
+entrada fica bloqueada mesmo se o Zoom ainda estiver terminando a sala.
+Verifique os jobs por status e `next_run_at`; retry e dead letter não devem
+ser adiantados por um novo scan. Escale dead letter ao Admin, sem encerrar
+nomes parecidos ou presumir resultado financeiro. Relatos de qualidade têm
+ticket privado e prazo de resposta TES de cinco dias; somente resposta
+pública no ticket correto encerra a análise, sem alterar Transfer.
 
 Confira a razão sanitizada retornada pelo acesso. `THERAPIST_NOT_IN_SESSION`
 significa que a chegada pode continuar válida, mas o terapeuta precisa estar

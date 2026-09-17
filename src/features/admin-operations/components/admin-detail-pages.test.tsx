@@ -433,6 +433,66 @@ describe("admin operation detail pages", () => {
     expect(html).not.toContain("JWT");
   });
 
+  it("does not call an unclosed therapist no-show room ready for entry", () => {
+    const html = renderToStaticMarkup(
+      <AdminSessionDetailPage
+        data={detailData({
+          statusLabel: "no_show_therapist",
+          sections: [
+            { title: "Sessão", fields: [{ label: "Pagamento", value: "paid" }] },
+            { title: "Sala online", fields: [{ label: "Situação da sala", value: "Pronta para iniciar" }] },
+          ],
+          sessionFeedback: {
+            status: "available",
+            data: {
+              qualityReview: { isOpen: false, overdue: false, allAnswered: false },
+              attendance: {
+                bothJoined: false,
+                classification: "no_show_therapist",
+                classificationSource: "authenticated_waiting_room",
+                financialResolution: "pending",
+                incidentId: null,
+                patientArrivedAt: "2026-09-16T21:00:00Z",
+                patientJoined: false,
+                patientJoinedAt: null,
+                patientPresentAtTolerance: true,
+                processingCostRecoveryAuthorized: false,
+                resolution: null,
+                responsibility: "unassigned",
+                retentionAuthorized: false,
+                reviewDueAt: null,
+                sessionClosed: true,
+                sessionEndedAt: null,
+                sessionEndsAt: "2026-09-16T21:20:00Z",
+                sessionStartedAt: "2026-09-16T21:00:00Z",
+                therapistJoined: false,
+                therapistArrivedAt: null,
+                therapistJoinedAt: null,
+                therapistPresentAtTolerance: false,
+              },
+              confirmation: { patient: null, therapist: null },
+              divergent: false,
+              financial: null,
+              patient: null,
+              pendingRoles: ["patient", "therapist"],
+              therapist: null,
+            },
+          },
+        })}
+      />,
+    );
+
+    expect(html).toContain("Acesso bloqueado — encerramento pendente");
+    expect(html).toContain("Sessão não realizada — terapeuta não compareceu");
+    expect(html).toContain("Financeiro — independente da confirmação");
+    expect(html).toContain(">Pago</");
+    expect(html).toContain("avaliação de qualidade indisponível");
+    expect(html).toContain("Não se aplica — sessão não realizada.");
+    expect(html).not.toContain("Pendente: o cliente e o terapeuta");
+    expect(html).not.toContain("Análise de qualidade: somente auditoria");
+    expect(html).not.toContain("Pronta para iniciar");
+  });
+
   it("renders an honest session detail when the online room has no safe payload yet", () => {
     const html = renderToStaticMarkup(
       <AdminSessionDetailPage

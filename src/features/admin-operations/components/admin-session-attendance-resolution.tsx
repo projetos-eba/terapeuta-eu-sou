@@ -85,7 +85,7 @@ export function AdminSessionAttendanceResolution({
       </TESButton>
       {open ? (
         <TESDialog
-          description="A decisão bloqueia ou libera o fluxo financeiro conforme as evidências e a política vinculada à reserva."
+          description="Qualquer decisão financeira exige sua autorização explícita e justificativa. A classificação de ausência não executa reembolso automaticamente."
           onClose={() => !submitting && setOpen(false)}
           title="Resolver sessão não realizada"
         >
@@ -175,7 +175,7 @@ function getOptions(attendance: AdminSessionAttendance) {
     },
   ];
 
-  if (attendance.classification === "requires_review") {
+  if (attendance.classification === "requires_review" && attendance.bothJoined) {
     options.unshift({
       description: "Use somente quando a evidência confirmar que a sessão efetivamente ocorreu.",
       label: "Confirmar sessão realizada",
@@ -193,5 +193,9 @@ function getOptions(attendance: AdminSessionAttendance) {
     });
   }
 
+  if (attendance.classification === "no_show_therapist" || attendance.classification === "no_show_both") {
+    return options.filter((option) => option.value === "refund");
+  }
+  if (attendance.classification === "no_show_patient") return [];
   return options;
 }

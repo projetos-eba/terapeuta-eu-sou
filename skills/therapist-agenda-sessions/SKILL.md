@@ -5,6 +5,14 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 
 # Agenda e Sessões do terapeuta
 
+> Regra vigente ADR-023: “Avaliar sessão” só após joins confiáveis de ambos
+> na tentativa atual e encerramento. “Não foi bem-sucedida” é relato privado de
+> qualidade, não ausência. A confirmação automática ocorre após 30 dias do fim
+> previsto, com proteção de tentativa e pausa apenas durante relato de
+> qualidade não respondido dentro de cinco dias. Transfer jamais é confirmação
+> e qualidade/confirmação não acionam financeiro. No-show é classificado logo
+> após T+10, com decisão de reembolso do Admin em fluxo separado.
+
 ## Fontes obrigatórias
 
 1. `AGENTS.md`.
@@ -148,6 +156,9 @@ histórica.
 - Depois de `endsAt`, o detalhe não oferece mais ações de acompanhar sala nem
   status da sala. Se `get_session_feedback_v2` retornar `eligible`, o CTA é
   `Confirmar sessão` para `/terapeuta/sessoes/:bookingId/video?feedback=1`;
+  `eligible` exige entradas confiáveis de ambos. `incident_only` oferece
+  `Relatar ocorrência`, sem sugerir realização; falta do terapeuta ou de ambos
+  apresenta `Não realizada` e pagamento em análise administrativa.
   `submitted` e `unavailable` mostram somente o estado honesto. A autorização
   final permanece no backend e esta rota operacional continua disponível para
   Free, Premium e Premium Plus.

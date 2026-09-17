@@ -42,6 +42,8 @@ describe("getPatientEncounterPresentationState", () => {
     [ZoomAccessReason.TooLate, "schedule_ended"],
     [ZoomAccessReason.SessionEnded, "ended"],
     [ZoomAccessReason.ArrivalWindowExpired, "arrival_expired"],
+    [ZoomAccessReason.TherapistArrivalWindowExpired, "therapist_no_show"],
+    [ZoomAccessReason.BothNoShow, "both_no_show"],
     [ZoomAccessReason.TechnicalUnavailable, "operational_unavailable"],
   ] as const)(
     "maps %s without disguising it as an arrival timeout",
@@ -64,6 +66,22 @@ describe("getPatientEncounterPresentationState", () => {
       expect(result.actions).not.toContain("join_zoom");
     },
   );
+  it("records a therapist no-show without claiming the encounter occurred", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.NoShowTherapist,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T15:01:00.000Z"),
+    });
+
+    expect(state.waitingRoom.kind).toBe("therapist_no_show");
+    expect(state.payment.title).toBe("Pagamento confirmado");
+    expect(state.payment.message).not.toContain("bloqueado");
+    expect(state.payment.message).not.toContain("reagendamento");
+    expect(state.waitingRoom.message).toContain("Não houve confirmação de atendimento");
+    expect(state.actions).not.toContain("join_zoom");
+    expect(state.actions).toContain("contact_support");
+  });
   it("derives honest copy when the detail has not fetched Zoom access yet", () => {
     const before = getPatientEncounterPresentationState({
       ...baseInput,

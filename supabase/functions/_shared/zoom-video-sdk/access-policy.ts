@@ -15,6 +15,8 @@ export type VideoAccessReason =
   | "TOO_LATE"
   | "SESSION_ENDED"
   | "ARRIVAL_WINDOW_EXPIRED"
+  | "THERAPIST_ARRIVAL_WINDOW_EXPIRED"
+  | "BOTH_NO_SHOW"
   | "TECHNICAL_UNAVAILABLE"
   | "UNKNOWN";
 
@@ -39,6 +41,8 @@ export function evaluateVideoSessionAccess(input: {
   now?: Date;
   patientHasJoined?: boolean;
   patientHasTimelyArrival?: boolean;
+  therapistHasTimelyArrival?: boolean;
+  therapistHasTimelyJoin?: boolean;
   startsAt: string;
   therapistStatus?: string;
   therapistProfileEligible?: boolean;
@@ -62,11 +66,13 @@ export function evaluateVideoSessionAccess(input: {
   const patientEntryEntitled = Boolean(
     input.patientHasJoined || input.patientHasTimelyArrival,
   );
-  // A timely waiting-room arrival (or a trusted patient join) belongs to the
-  // booking, not to one actor. Without it, neither participant may keep or
-  // obtain access after T+10. Once it exists, host-first remains the only
-  // patient-specific restriction until the scheduled end.
-  const availableUntil = patientEntryEntitled ? endsAt : firstPatientJoinUntil;
+  const therapistEntryEntitled = Boolean(
+    input.therapistHasTimelyArrival || input.therapistHasTimelyJoin,
+  );
+  const actorEntryEntitled = input.actorRole === "therapist"
+    ? therapistEntryEntitled
+    : patientEntryEntitled;
+  const availableUntil = actorEntryEntitled ? endsAt : firstPatientJoinUntil;
   const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
@@ -79,12 +85,15 @@ export function evaluateVideoSessionAccess(input: {
       input.therapistStatus === "suspended"
         ? "THERAPIST_SUSPENDED"
         : "THERAPIST_NOT_ALLOWED";
+  } else if (input.bookingStatus === "no_show_therapist") {
+    reason = "THERAPIST_ARRIVAL_WINDOW_EXPIRED";
+  } else if (input.bookingStatus === "no_show_both") {
+    reason = "BOTH_NO_SHOW";
   } else if (
     [
       "cancelled_by_patient",
       "cancelled_by_therapist",
       "no_show_patient",
-      "no_show_therapist",
       "refunded",
     ].includes(input.bookingStatus)
   ) {
@@ -102,10 +111,15 @@ export function evaluateVideoSessionAccess(input: {
     input.videoSessionStatus === "canceled"
   ) {
     reason = "SESSION_ENDED";
-  } else if (!patientEntryEntitled && now > firstPatientJoinUntil) {
-    reason = "ARRIVAL_WINDOW_EXPIRED";
   } else if (hardEndsAt && now >= hardEndsAt) {
     reason = "HARD_TIMEOUT";
+  } else if (
+    input.actorRole === "patient" && patientEntryEntitled &&
+    !therapistEntryEntitled && now > firstPatientJoinUntil
+  ) {
+    reason = "THERAPIST_ARRIVAL_WINDOW_EXPIRED";
+  } else if (!actorEntryEntitled && now > firstPatientJoinUntil) {
+    reason = "ARRIVAL_WINDOW_EXPIRED";
   } else if (input.videoSessionStatus === "failed") {
     reason = "TECHNICAL_UNAVAILABLE";
   } else if (!input.videoSessionReady) {
@@ -140,6 +154,10 @@ export function getVideoAccessMessage(reason: VideoAccessReason) {
     TOO_LATE: "A janela de acesso desta sessao foi encerrada.",
     SESSION_ENDED: "Esta sessão foi encerrada e não permite nova entrada.",
     ARRIVAL_WINDOW_EXPIRED: "O prazo de chegada de 10 minutos terminou.",
+    THERAPIST_ARRIVAL_WINDOW_EXPIRED:
+      "O terapeuta não compareceu até o fim da tolerância. O TES analisará o encontro.",
+    BOTH_NO_SHOW:
+      "Não houve chegada dos participantes até o fim da tolerância. O TES analisará o encontro.",
     TECHNICAL_UNAVAILABLE:
       "Não foi possível preparar o vídeo agora. Tente atualizar a sala.",
     UNKNOWN: "Nao foi possivel liberar o acesso agora.",

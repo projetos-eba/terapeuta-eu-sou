@@ -32,6 +32,7 @@ import {
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
 import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
+import { SessionQualityStatus } from "@/features/session-feedback/components/session-quality-status";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
@@ -91,10 +92,17 @@ export default async function TherapistSessionDetailPage({
     }),
   ]);
   const feedbackStatus = feedbackSummary.status;
+  if (feedbackSummary.quality?.realizationStatus === "performed") {
+    presentation.label = feedbackSummary.quality.qualityReview?.isOpen ? "Realizada, em análise"
+      : feedbackSummary.quality.qualityReview?.allAnswered ? "Realizada (confirmada)" : "Sessão realizada";
+    presentation.description = "A realização foi registrada pelo sistema. Qualidade, confirmações individuais e financeiro são acompanhados separadamente.";
+    presentation.state = "completed";
+  }
 
   return (
     <AppPageContainer className="max-w-[1146px] gap-5 pb-14 sm:gap-6 lg:gap-7">
       <SessionDetailHeader />
+      <SessionQualityStatus actorRole="therapist" payload={feedbackSummary.quality} />
       <SessionOverview
         booking={booking}
         feedbackStatus={feedbackStatus}
@@ -285,6 +293,7 @@ function SessionStatusStrip({
   const roomUnavailable = isRoomUnavailable(presentation);
   const sessionEnded = postSessionAction !== "room";
   const paymentStatus = getTherapistSessionPaymentStatus({
+    bookingStatus: booking.bookingStatus,
     financialStatus: booking.financialStatus,
     sessionState: presentation.state,
     startsAt: booking.startsAt,
@@ -306,7 +315,7 @@ function SessionStatusStrip({
           roomUnavailable
             ? "Esta sessão foi encerrada e a sala não está disponível."
             : sessionEnded
-              ? "O horário agendado foi encerrado. A confirmação da sessão segue disponível conforme o seu estado atual."
+              ? "O horário agendado foi encerrado. Confira abaixo se há confirmação ou ocorrência disponível."
               : "O acesso é avaliado novamente ao abrir a sala."
         }
         icon={Video}
@@ -724,6 +733,17 @@ function SessionPrimaryAction({
     feedbackStatus,
   });
 
+  if (postSessionAction === "report_incident") {
+    return (
+      <Link
+        className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-6 text-base font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
+      >
+        Relatar ocorrência
+      </Link>
+    );
+  }
+
   if (isRoomUnavailable(presentation)) {
     return (
       <p className="rounded-[22px] bg-surface-soft px-4 py-3 text-center text-sm font-semibold leading-5 text-tesText-secondary">
@@ -739,7 +759,7 @@ function SessionPrimaryAction({
         href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
       >
         <CheckCheck aria-hidden="true" className="size-5" />
-        Confirmar sessão
+        Avaliar sessão
       </Link>
     );
   }
@@ -775,21 +795,25 @@ function isRoomUnavailable(presentation: SessionPresentation) {
 function feedbackStatusLabel(
   status: ReturnType<typeof getTherapistPostSessionAction>,
 ) {
-  if (status === "confirm") return "Confirmação disponível";
-  if (status === "submitted") return "Confirmação registrada";
-  return "Confirmação indisponível";
+  if (status === "confirm") return "Avaliação disponível";
+  if (status === "report_incident") return "Ocorrência disponível";
+  if (status === "submitted") return "Avaliação registrada";
+  return "Avaliação indisponível";
 }
 
 function feedbackStatusDescription(
   status: ReturnType<typeof getTherapistPostSessionAction>,
 ) {
   if (status === "confirm") {
-    return "Registre como a sessão aconteceu para concluir sua confirmação operacional.";
+    return "Conte se a sessão foi bem-sucedida. Sua resposta é privada e não altera o financeiro ou as confirmações individuais.";
+  }
+  if (status === "report_incident") {
+    return "Não há evidência de entrada de ambos na sala. Registre o que ocorreu; o TES analisará o encontro.";
   }
   if (status === "submitted") {
-    return "Sua confirmação desta sessão já foi registrada.";
+    return "Sua avaliação privada desta sessão já foi registrada.";
   }
-  return "A confirmação desta sessão não está disponível no momento.";
+  return "A avaliação desta sessão exige o registro de entrada de ambos. Para acompanhamento, use o Suporte.";
 }
 
 function StatusStripItem({

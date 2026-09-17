@@ -50,14 +50,7 @@ type NotificationRow = {
   id: string;
 };
 
-type VideoParticipationRow = {
-  booking_id: string;
-};
-
-type WaitingRoomArrivalRow = {
-  booking_id: string;
-  payload: unknown;
-};
+type AttemptAttendance = { patientPresentAtTolerance: boolean };
 
 export class PatientEncountersDataError extends Error {
   constructor() {
@@ -160,8 +153,7 @@ async function getSupabasePatientEncountersPage(
     sessionPayments,
     reschedules,
     unreadMessages,
-    patientParticipations,
-    patientWaitingRoomArrivals,
+    attemptAttendance,
   ] = await Promise.all([
     getRowsByIds<TherapistRecord>(
       config,
@@ -203,17 +195,10 @@ async function getSupabasePatientEncountersPage(
         )
       : Promise.resolve([]),
     bookingIds.length > 0
-      ? supabaseRequest<VideoParticipationRow[]>(
-          config,
-          `/rest/v1/video_session_participations?select=booking_id&booking_id=in.(${bookingIds.join(",")})&participant_role=eq.patient&event_type=eq.session.user_joined`,
-        )
-      : Promise.resolve([]),
-    bookingIds.length > 0
-      ? supabaseRequest<WaitingRoomArrivalRow[]>(
-          config,
-          `/rest/v1/booking_events?select=booking_id,payload&booking_id=in.(${bookingIds.join(",")})&event_type=eq.zoom_waiting_room_entered`,
-        )
-      : Promise.resolve([]),
+      ? supabaseRequest<Record<string, AttemptAttendance>>(config,
+          "/rest/v1/rpc/get_session_attempt_attendance_batch_v1",
+          { body: { p_booking_ids: bookingIds }, method: "POST" })
+      : Promise.resolve({} as Record<string, AttemptAttendance>),
   ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
   const therapies = await getRowsByIds<TherapyRecord>(
@@ -231,11 +216,9 @@ async function getSupabasePatientEncountersPage(
     pendingFeedbackBookingIds: new Set(
       feedbackQueue.map((session) => session.bookingId),
     ),
-    patientEntryEntitlementByBookingId: buildPatientEntryEntitlements(
-      bookings,
-      patientParticipations,
-      patientWaitingRoomArrivals,
-    ),
+    patientEntryEntitlementByBookingId: new Map(bookings.map((booking) => [
+      booking.id, attemptAttendance[booking.id]?.patientPresentAtTolerance === true,
+    ])),
     reviews,
     serviceById: new Map(services.map((service) => [service.id, service])),
     rescheduleByBookingId: new Map(
@@ -258,52 +241,6 @@ async function getSupabasePatientEncountersPage(
     pendingFeedbackSessions: feedbackQueue,
     source: "supabase",
   };
-}
-
-function buildPatientEntryEntitlements(
-  bookings: BookingRecord[],
-  participations: VideoParticipationRow[],
-  arrivals: WaitingRoomArrivalRow[],
-) {
-  const joinedBookingIds = new Set(
-    participations.map((participation) => participation.booking_id),
-  );
-  const arrivalsByBookingId = new Map<string, WaitingRoomArrivalRow[]>();
-
-  for (const arrival of arrivals) {
-    const current = arrivalsByBookingId.get(arrival.booking_id) ?? [];
-    current.push(arrival);
-    arrivalsByBookingId.set(arrival.booking_id, current);
-  }
-
-  return new Map(
-    bookings.map((booking) => [
-      booking.id,
-      joinedBookingIds.has(booking.id) ||
-        (arrivalsByBookingId.get(booking.id) ?? []).some((arrival) =>
-          isCurrentBookingArrival(
-            arrival.payload,
-            booking.version,
-            booking.starts_at,
-          ),
-        ),
-    ]),
-  );
-}
-
-function isCurrentBookingArrival(
-  value: unknown,
-  bookingVersion: number,
-  startsAt: string,
-) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const payload = value as Record<string, unknown>;
-
-  return (
-    Number(payload.bookingVersion) === bookingVersion &&
-    typeof payload.scheduledStartsAt === "string" &&
-    Date.parse(payload.scheduledStartsAt) === Date.parse(startsAt)
-  );
 }
 
 function getSupabaseServerConfig(

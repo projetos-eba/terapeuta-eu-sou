@@ -47,6 +47,27 @@ describe("ZoomWaitingRoom", () => {
     ).toBeVisible();
   });
 
+  it("tells the patient the therapist did not attend and removes room entry", () => {
+    render(<ZoomWaitingRoom {...baseProps} kind="therapist_no_show" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Encontro não realizado" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/O terapeuta não compareceu até o fim da tolerância/),
+    ).toBeVisible();
+    expect(screen.queryByText("Entrar na sala")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/A sala ficará disponível/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Testar (câmera|áudio)/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Entrar no encontro/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens a local camera preview without asking for microphone access", async () => {
     const track = { stop: vi.fn() };
     const stream = { getTracks: () => [track] } as unknown as MediaStream;

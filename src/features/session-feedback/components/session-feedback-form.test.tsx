@@ -17,12 +17,12 @@ afterEach(() => {
 });
 
 describe("SessionFeedbackForm", () => {
-  it("submits a completed private feedback without sending actor identity", async () => {
+  it("submits private quality feedback with the correct session role", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
         jsonResponse({
-          data: { feedback: null, status: "eligible" },
+          data: { sessionAttemptId: bookingId, contractVersion: 2, feedback: null, status: "eligible" },
           ok: true,
         }),
       )
@@ -54,7 +54,7 @@ describe("SessionFeedbackForm", () => {
     );
 
     await screen.findByText("Como foi seu encontro?");
-    fireEvent.click(screen.getByRole("button", { name: "Sim, foi realizado" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sim" }));
     expect(
       screen.getByText("Como você avalia este encontro?"),
     ).toBeInTheDocument();
@@ -75,10 +75,13 @@ describe("SessionFeedbackForm", () => {
       );
       expect(call?.[1]).toEqual(expect.objectContaining({ method: "POST" }));
       expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+        actorRole: "patient",
         bookingId,
         comment: "Boa qualidade de áudio.",
-        notPerformedReason: null,
-        outcome: "completed",
+        contractVersion: 2,
+        sessionAttemptId: bookingId,
+        successful: true,
+        qualityReason: null,
         rating: 4,
         requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
       });
@@ -86,11 +89,11 @@ describe("SessionFeedbackForm", () => {
 
     expect(document.body.textContent).not.toMatch(/actorRole|requestId/);
     expect(
-      await screen.findByText("Sua confirmação foi registrada"),
+      await screen.findByText("Sua avaliação foi registrada"),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Sua resposta permanece privada. Obrigado por compartilhar como foi.",
+        "Sua resposta permanece privada e não interfere no pagamento nem no repasse. Obrigado por compartilhar como foi.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/prazo de segurança/i)).not.toBeInTheDocument();
@@ -99,7 +102,7 @@ describe("SessionFeedbackForm", () => {
   it("requires a non-completion reason and preserves the 500 character limit", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
-        data: { feedback: null, status: "incident_only" },
+        data: { sessionAttemptId: bookingId, feedback: null, status: "eligible" },
         ok: true,
       }),
     );
@@ -119,6 +122,7 @@ describe("SessionFeedbackForm", () => {
         "Compartilhe algo importante sobre esta sessão…",
       ),
     ).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Não" }));
     const comment = screen.getByLabelText(/observações/i);
     fireEvent.change(comment, { target: { value: "x".repeat(600) } });
 
@@ -152,11 +156,7 @@ describe("SessionFeedbackForm", () => {
       />,
     );
 
-    expect(
-      await screen.findByText(
-        /Ainda estamos confirmando os dados deste encontro/,
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Como foi seu encontro?")).not.toBeInTheDocument());
     expect(
       screen.queryByRole("button", { name: /enviar feedback/i }),
     ).not.toBeInTheDocument();
@@ -226,7 +226,7 @@ describe("SessionFeedbackForm", () => {
         />,
       );
 
-      await screen.findByText("Sua confirmação foi registrada");
+      await screen.findByText("Sua avaliação foi registrada");
       expect(
         screen.queryByRole("heading", {
           name: "Quais foram os temas da sua sessão?",

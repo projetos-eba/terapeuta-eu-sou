@@ -4,6 +4,7 @@ import {
   AppPageMain,
 } from "@/components/app-page";
 import { PatientSessionFeedbackDialog } from "@/features/session-feedback";
+import { SessionQualityStatus } from "@/features/session-feedback/components/session-quality-status";
 
 import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
@@ -36,6 +37,7 @@ export function PatientSessionDetailPage({
       <SessionDetailHeader />
       <SessionOverviewCard data={data} />
       <SessionStatusStrip data={data} />
+      <SessionQualityStatus actorRole="patient" payload={data.sessionQuality} />
       {data.paymentRecovery?.available ? (
         <SessionChargeRecoveryCard
           bookingId={data.booking.id}
@@ -92,7 +94,7 @@ export function PatientSessionDetailPage({
           />
         </div>
       </AppPageGrid>
-      {feedbackOpen ? (
+      {feedbackOpen && data.sessionQuality?.status === "eligible" ? (
         <PatientSessionFeedbackDialog
           session={{
             bookingId: data.booking.id,

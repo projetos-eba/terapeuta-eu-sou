@@ -35,6 +35,41 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 
 ## Contrato de dados
 
+### Regra vigente da ADR-023 (substitui o contrato legado descrito abaixo)
+
+- `booking_session_attempts` identifica a tentativa atual e só avança em
+  reagendamento efetivo. `session_feedback` permanece histórico; novas respostas
+  privadas são `session_quality_feedback`, sempre vinculadas à tentativa.
+- `GET /api/session-feedback` usa `get_session_quality_feedback_v1` e separa
+  realização, resposta de qualidade, confirmação individual e financeiro.
+  Transfer `transferred` jamais significa confirmação. Fila de avaliações
+  inclui somente encontros encerrados com joins confiáveis de ambos, sem
+  classificação de ausência ou revisão técnica pendente.
+- `POST /api/session-feedback` exige `contractVersion: 2`, `bookingId`,
+  `sessionAttemptId`, `successful`, `qualityReason`, `rating`, `comment` e
+  `requestId`. “Sim” exige nota 1–5 sem motivo. “Não” exige motivo
+  `internet_problem`, `audio_video_problem` ou `other`, sem estrelas. Máximo de
+  500 caracteres. O servidor verifica identidade e tentativa; contrato antigo
+  e tentativa vencida falham fechados.
+- “Não” significa sessão realizada não bem-sucedida, não `not_performed`.
+  Cria ticket privado e revisão com cinco dias corridos; só resposta pública do
+  TES naquele ticket conta. Um ou dois relatos ficam separados. Sem joins
+  bilaterais não há formulário, nota nem pendência de avaliação: usar suporte
+  ou incidente de presença fora do feedback.
+- Qualidade, confirmação e presença não chamam nem bloqueiam Transfer, Refund
+  ou Reversal. Confirmação automática de cliente/terapeuta vence após 7/30 dias
+  do término previsto, revalida a tentativa e nunca ocorre em “Não realizada”.
+  Um relato não respondido pausa a automação até seu prazo de cinco dias; depois
+  ela retoma o vencimento original, mantendo a análise aberta e alertando Admin.
+  Resposta do TES não fabrica confirmação individual nem modifica registros.
+- Admin lê relatos da tentativa atual e legados históricos separadamente,
+  sem resposta privada cruzada para cliente ou terapeuta. QA: resposta
+  positiva/negativa, idempotência, tentativa desatualizada, dois tickets,
+  privacidade RLS, SLA exato, confirmação 7/30 dias, ausência e snapshots
+  financeiros imutáveis, desktop/mobile dos três perfis.
+
+### Histórico anterior (não normativo para o contrato V2)
+
 - `public.session_feedback` guarda uma resposta privada e imutável por
   participante e booking, com `completed` ou `not_performed`, nota, motivo,
   comentário limitado a 500 caracteres, timestamps e campos internos de
@@ -44,8 +79,11 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   retries; nunca envia `actorRole`.
 - `get_session_feedback_v2` devolve a resposta do participante atual, as duas
   confirmações, origens, vencimentos, estado bilateral e bloqueios. O fim
-  programado/definitivo libera o formulário; joins do Zoom
-  são evidência e sinal de risco, não uma trava para resposta ou automação.
+  programado/definitivo libera o formulário. `eligible` e confirmação
+  `completed` exigem entradas confiáveis de ambos, sem incidente de presença
+  aberto. `incident_only` permite exclusivamente relato `not_performed`, sem
+  nota, mesmo quando a revisão administrativa bloqueia o pagamento. Ausência
+  de evidência bilateral não pode oferecer `Confirmar sessão`.
 - No V10, os dois read models de confirmação usam as respostas dos
   participantes para o estado bilateral: o envio do repasse não conclui a
   confirmação e não há data de lote semanal no feedback. A reavaliação de

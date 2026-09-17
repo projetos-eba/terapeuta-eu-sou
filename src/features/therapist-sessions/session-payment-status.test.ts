@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { SessionFinancialStatus } from "@/domain/tes";
+import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 
 import { getTherapistSessionPaymentStatus } from "./session-payment-status";
 
 describe("getTherapistSessionPaymentStatus", () => {
+  it.each([BookingStatus.NoShowTherapist, BookingStatus.NoShowBoth])(
+    "keeps payment status independent of %s attendance review",
+    (bookingStatus) => {
+      expect(
+        getTherapistSessionPaymentStatus({
+          bookingStatus,
+          financialStatus: SessionFinancialStatus.Paid,
+          sessionState: "requires_attention",
+        }),
+      ).toMatchObject({ label: "Confirmado", tone: "success" });
+    },
+  );
   it("presents a future reserved session as a scheduled payment", () => {
     expect(
       getTherapistSessionPaymentStatus({

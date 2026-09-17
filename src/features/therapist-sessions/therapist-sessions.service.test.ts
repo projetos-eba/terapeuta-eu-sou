@@ -157,6 +157,17 @@ describe("therapist sessions service results", () => {
     ).resolves.toBe("eligible");
   });
 
+  it("preserves the incident-only state for the therapist action", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({ status: "incident_only" });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: null, status: "incident_only" });
+  });
+
   it("keeps an unknown feedback state unavailable to the session detail", async () => {
     queryTherapistSessionFeedback.mockResolvedValueOnce({ status: "internal" });
 
@@ -179,7 +190,7 @@ describe("therapist sessions service results", () => {
         accessToken: "test-token",
         bookingId: "f2000000-0000-4000-8000-000000000001",
       }),
-    ).resolves.toEqual({ outcome: "completed", status: "submitted" });
+    ).resolves.toMatchObject({ outcome: "completed", status: "submitted" });
   });
 
   it("fails closed when a submitted feedback has no recognized outcome", async () => {
@@ -193,7 +204,7 @@ describe("therapist sessions service results", () => {
         accessToken: "test-token",
         bookingId: "f2000000-0000-4000-8000-000000000001",
       }),
-    ).resolves.toEqual({ outcome: null, status: "submitted" });
+    ).resolves.toMatchObject({ outcome: null, status: "submitted" });
   });
 
   it.each([

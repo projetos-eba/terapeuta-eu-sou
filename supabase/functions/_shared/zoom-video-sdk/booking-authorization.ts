@@ -8,6 +8,8 @@ export type AuthorizedVideoBooking = {
   patientProfileId: string;
   patientHasJoined: boolean;
   patientHasTimelyArrival: boolean;
+  therapistHasTimelyArrival: boolean;
+  therapistHasTimelyJoin: boolean;
   startsAt: string;
   therapistProfileId: string;
   therapistProfileEligible: boolean;
@@ -148,50 +150,33 @@ export async function getAuthorizedVideoBooking(input: {
     );
   }
 
-  const patientParticipation = videoSession
-    ? await input.client.get<Array<{ id: string }>>(
-      `/rest/v1/video_session_participations?select=id&video_session_id=eq.${
-        encodeURIComponent(
-          videoSession.id,
-        )
-      }&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
-    )
-    : [];
+  const evidence = await input.client.rpc<{
+    classification: string | null;
+    patientArrivedAt: string | null; therapistArrivedAt: string | null;
+    patientJoined: boolean; therapistJoinedAt: string | null;
+    patientPresentAtTolerance: boolean; therapistPresentAtTolerance: boolean;
+  }>("session_attempt_evidence_v1", { p_booking_id: input.bookingId });
   const therapistProfileEligible = input.role === "therapist"
-    ? await input.client.rpc<boolean>(
-      "is_therapist_video_session_eligible_v1",
-      { p_therapist_profile_id: booking.therapist_profile_id },
-    )
-    : true;
-  // Both actors are governed by the same patient-attendance evidence after
-  // T+10. This remains read-only for therapists; only the patient access path
-  // records a new arrival through the service-only RPC.
-  const patientArrivalEvents = await input.client.get<
-    Array<{ payload: unknown }>
-  >(
-    `/rest/v1/booking_events?select=payload&booking_id=eq.${
-      encodeURIComponent(
-        input.bookingId,
-      )
-    }&event_type=eq.zoom_waiting_room_entered&limit=20`,
-  );
-  const patientHasTimelyArrival = patientArrivalEvents.some((event) =>
-    isCurrentBookingArrival(event.payload, booking.version, booking.starts_at)
-  );
+    ? await input.client.rpc<boolean>("is_therapist_video_session_eligible_v1",
+      { p_therapist_profile_id: booking.therapist_profile_id }) : true;
 
   return {
-    bookingStatus: booking.status,
+    bookingStatus: evidence.classification?.startsWith("no_show_")
+      ? evidence.classification : booking.status,
     endsAt: booking.ends_at,
     financialStatus: payment?.refund_pending || payment?.admin_blocked_at ||
         hasPendingTherapistChange
       ? "payment_under_review"
       : payment?.financial_status ?? null,
     patientProfileId: booking.patient_profile_id,
-    patientHasJoined: patientParticipation.length > 0,
-    patientHasTimelyArrival,
+    patientHasJoined: evidence.patientJoined === true,
+    patientHasTimelyArrival: typeof evidence.patientArrivedAt === "string",
     startsAt: booking.starts_at,
     therapistProfileId: booking.therapist_profile_id,
     therapistProfileEligible: therapistProfileEligible === true,
+    therapistHasTimelyArrival: typeof evidence.therapistArrivedAt === "string",
+    therapistHasTimelyJoin: typeof evidence.therapistJoinedAt === "string" &&
+      Date.parse(evidence.therapistJoinedAt) <= Date.parse(booking.starts_at) + 10 * 60_000,
     therapistStatus: booking.therapist_profiles?.status ?? "unknown",
     timezone: booking.timezone,
     videoSession: videoSession
@@ -210,17 +195,4 @@ export async function getAuthorizedVideoBooking(input: {
       }
       : null,
   } satisfies AuthorizedVideoBooking;
-}
-
-function isCurrentBookingArrival(
-  value: unknown,
-  bookingVersion: number,
-  startsAt: string,
-) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const payload = value as Record<string, unknown>;
-  if (Number(payload.bookingVersion) !== bookingVersion) return false;
-  if (typeof payload.scheduledStartsAt !== "string") return false;
-
-  return Date.parse(payload.scheduledStartsAt) === Date.parse(startsAt);
 }

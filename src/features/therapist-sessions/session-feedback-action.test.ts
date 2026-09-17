@@ -27,6 +27,16 @@ describe("getTherapistPostSessionAction", () => {
     ).toBe("confirm");
   });
 
+  it("offers only an occurrence report when bilateral entry is unproven", () => {
+    expect(
+      getTherapistPostSessionAction({
+        endsAt: "2026-08-27T14:59:00.000Z",
+        feedbackStatus: "incident_only",
+        now,
+      }),
+    ).toBe("report_incident");
+  });
+
   it("keeps submitted and unavailable confirmations as status-only states", () => {
     expect(
       getTherapistPostSessionAction({

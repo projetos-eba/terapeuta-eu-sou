@@ -149,6 +149,9 @@ runtime.serve(async (request) => {
     const patientHasTimelyArrival = actor.role === "patient"
       ? booking.patientHasTimelyArrival || Boolean(arrival?.entitled)
       : booking.patientHasTimelyArrival;
+    const therapistHasTimelyArrival = actor.role === "therapist"
+      ? booking.therapistHasTimelyArrival || Boolean(arrival?.entitled)
+      : booking.therapistHasTimelyArrival;
     const access = evaluateVideoSessionAccess({
       actorRole: actor.role,
       bookingStatus: booking.bookingStatus,
@@ -161,6 +164,8 @@ runtime.serve(async (request) => {
         booking.videoSession?.terminationConfirmedAt ?? null,
       patientHasJoined: booking.patientHasJoined,
       patientHasTimelyArrival,
+      therapistHasTimelyArrival,
+      therapistHasTimelyJoin: booking.therapistHasTimelyJoin,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
       therapistProfileEligible: booking.therapistProfileEligible,
