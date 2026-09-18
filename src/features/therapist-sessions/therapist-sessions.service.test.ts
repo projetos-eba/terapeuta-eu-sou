@@ -193,6 +193,21 @@ describe("therapist sessions service results", () => {
     ).resolves.toMatchObject({ outcome: "completed", status: "submitted" });
   });
 
+  it("keeps a persisted V2 quality response submitted for the therapist detail", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      actorConfirmation: { source: "manual" },
+      feedback: { successful: true },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: "completed", status: "submitted" });
+  });
+
   it("fails closed when a submitted feedback has no recognized outcome", async () => {
     queryTherapistSessionFeedback.mockResolvedValueOnce({
       feedback: { outcome: "internal" },

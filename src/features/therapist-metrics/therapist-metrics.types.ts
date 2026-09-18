@@ -154,6 +154,17 @@ export type TherapistMetricProtectedCollection<TItem> = {
   status: "empty" | "insufficient_sample" | "ready";
 };
 
+/**
+ * Frequência agregada do próprio terapeuta. Diferente das leituras
+ * comparativas, ela não expõe pessoas ou percentuais e pode ser mostrada
+ * desde a primeira sessão concluída.
+ */
+export type TherapistMetricOwnHistoryCollection<TItem> = {
+  items: TItem[];
+  observedSample: number;
+  status: "empty" | "ready";
+};
+
 export type TherapistSessionEvolutionPoint = {
   date: string;
   noShows: number;
@@ -180,13 +191,13 @@ export type TherapistSessionMetrics = {
     points: TherapistSessionEvolutionPoint[];
     status: "empty" | "ready";
   };
-  heatmap: TherapistMetricProtectedCollection<{
+  heatmap: TherapistMetricOwnHistoryCollection<{
     dayOfWeek: number;
     hourBucketStart: number;
     sessions: number;
   }>;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 1;
+  metricDefinitionVersion: 1 | 2;
   outcomeDistribution: TherapistMetricProtectedCollection<{
     key: TherapistSessionOutcomeKey;
     label: string;

@@ -9,8 +9,8 @@ ADR: `ADR-011-therapist-metrics-contracts-and-decisions.md`
 
 ### MTR-4 — Sessões
 
-O read model privado `get_therapist_session_metrics_v1` oferece períodos de 30
-ou 90 dias locais completos e deriva a identidade exclusivamente de
+O read model privado `get_therapist_session_metrics_v1` oferece períodos de 30,
+60, 90 ou 120 dias locais completos e deriva a identidade exclusivamente de
 `auth.uid()`.
 
 | Leitura                     | Fonte autoritativa                             | Regra                                        |
@@ -20,7 +20,7 @@ ou 90 dias locais completos e deriva a identidade exclusivamente de
 | Cancelamentos               | estados cancelados de `bookings`               | paciente e terapeuta preservados no agregado |
 | Reagendamentos aplicados    | `booking_reschedule_requests.status = applied` | contabiliza aplicação, não intenção          |
 | Duração média reservada     | `service_duration_minutes_snapshot`            | não representa tempo clínico real            |
-| Evolução e mapa de horários | `bookings.starts_at` no timezone canônico      | somente agregados                            |
+| Evolução e mapa de horários | `bookings.starts_at` no timezone canônico      | frequência privada agregada desde a primeira sessão concluída; domingo = 0 |
 | Distribuição por terapia    | snapshot/nome canônico relacionado ao booking  | mínimo de 10 sessões                         |
 | Motivos de cancelamento     | indisponível                                   | falta taxonomia estruturada e versionada     |
 
@@ -79,6 +79,9 @@ de erro em relatório vazio.
 - MTR-5 valida Premium Plus no servidor;
 - amostra insuficiente retorna `insufficient_sample`, nunca zero inventado;
 - métricas protegidas retornam coleções vazias, sem valores ocultos no payload;
+- a exceção é o mapa privado de dia e horário: ele contém somente contagens
+  agregadas do próprio terapeuta e fica disponível desde a primeira sessão
+  concluída, sem percentuais, comparação ou identidade de paciente;
 - cancelamentos não expõem texto livre;
 - Aura, ranking entre terapeutas e demanda agregada do portal não são
   calculados;
@@ -117,6 +120,9 @@ Diferenças intencionais:
 - temas, motivos de saída e sentimento não usam texto clínico;
 - Premium recebe bloqueio explícito da aba Interesse;
 - percentuais protegidos não aparecem abaixo de 10;
+- a frequência privada por dia e horário aparece desde a primeira sessão
+  concluída; entre uma e nove sessões, a interface a identifica como leitura
+  inicial;
 - na aba Interesse do Premium Plus, a contagem agregada de favoritos do perfil
   aparece desde o primeiro registro em dias locais completos; a tendência e a
   comparação entre períodos continuam protegidas por uma amostra de 10;

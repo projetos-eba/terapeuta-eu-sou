@@ -98,6 +98,9 @@ select is((select count(*)::integer from public.session_participant_confirmation
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'positive quality also records the author confirmation');
 select is((select participant_role::text from public.session_participant_confirmations where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),'patient','quality response confirms only its author');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','positive quality is no longer offered again to its author');
+select ok(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation' is not null,'positive quality returns the author confirmation');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'positive quality keeps the counterpart confirmation pending');
 create temporary table negative_result as select public.submit_session_quality_feedback_v1(
   (select therapist_actor from quality_context order by id limit 1),'b1300000-0000-4000-8000-000000000011',
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),false,null::smallint,'internet_problem','Teste privado.',
@@ -105,6 +108,10 @@ create temporary table negative_result as select public.submit_session_quality_f
 select is((select result->'feedback'->>'successful' from negative_result),'false','negative is quality, not non-performance');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'negative quality also confirms author participation');
+select set_config('request.jwt.claim.sub',(select therapist_actor from quality_context order by id limit 1),true);
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','negative quality is no longer offered again to its author');
+select ok(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation' is not null,'negative quality returns the author confirmation');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation'->>'source','manual','negative quality does not replace the counterpart confirmation');
 select is((select count(*)::integer from public.session_quality_reviews where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'one negative creates one review');
 select ok((select due_at=opened_at+interval '5 days' from public.session_quality_reviews order by opened_at desc limit 1),'SLA is five calendar days from server receipt');

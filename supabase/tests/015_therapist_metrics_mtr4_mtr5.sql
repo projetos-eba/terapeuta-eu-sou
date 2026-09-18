@@ -1,6 +1,6 @@
 begin;
 
-select plan(37);
+select plan(41);
 
 delete from public.therapist_metric_daily_aggregates
 where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
@@ -76,6 +76,48 @@ select is(
   public.get_therapist_session_metrics_v1(30) ->> 'contractVersion',
   '1',
   'MTR-4 exposes a versioned contract'
+);
+
+select is(
+  public.get_therapist_session_metrics_v1(30) ->> 'metricDefinitionVersion',
+  '2',
+  'MTR-4 uses the private session-timing definition'
+);
+
+select is(
+  public.get_therapist_session_metrics_v1(30) #>> '{heatmap,status}',
+  case when (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{heatmap,observedSample}'
+  )::integer = 0 then 'empty' else 'ready' end,
+  'the timing heatmap is available as soon as one completed session exists'
+);
+
+select is(
+  (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{heatmap,observedSample}'
+  )::bigint,
+  (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{summary,sessionsCompleted,value}'
+  )::bigint,
+  'the private timing sample matches the completed session count'
+);
+
+select ok(
+  not (
+    public.get_therapist_session_metrics_v1(30) -> 'heatmap'
+      ? 'minimumSample'
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_therapist_session_metrics_v1(30) -> 'heatmap' -> 'items'
+    ) as item
+    where (item ->> 'dayOfWeek')::integer not between 0 and 6
+  ),
+  'the timing heatmap has no ten-session gate and uses Sunday-zero weekdays'
 );
 
 select is(

@@ -55,6 +55,65 @@ const chargeStatusContent: Record<
   },
 };
 
+type ReceiptListCopy = {
+  ariaLabel: string;
+  emptyDescription: string;
+  emptyTitle: string;
+  subtitle: string;
+  title: string;
+};
+
+const defaultReceiptListCopy: ReceiptListCopy = {
+  ariaLabel: "Movimentações das cobranças por sessão",
+  emptyDescription:
+    "Tente outro período ou ajuste os filtros para consultar suas sessões.",
+  emptyTitle: "Ainda não há cobranças neste período",
+  subtitle:
+    "Confira o valor da sessão, a Comissão TES, seu valor e a próxima etapa da cobrança.",
+  title: "Movimentações por sessão",
+};
+
+const receiptListCopyByStatus: Record<
+  TherapistChargeStatus,
+  ReceiptListCopy
+> = {
+  approved: receiptListCopy(
+    "Sessões com pagamento aprovado",
+    "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
+    "Não há sessões com pagamento aprovado neste período.",
+  ),
+  canceled: receiptListCopy(
+    "Sessões canceladas",
+    "Confira as sessões canceladas. Nenhuma cobrança será feita.",
+    "Não há sessões canceladas neste período.",
+  ),
+  failed: receiptListCopy(
+    "Sessões com cobrança não concluída",
+    "Confira as sessões cuja cobrança não foi concluída.",
+    "Não há sessões com cobrança não concluída neste período.",
+  ),
+  processing: receiptListCopy(
+    "Sessões com cobrança em processamento",
+    "Confira as sessões cuja cobrança foi iniciada e ainda aguarda conclusão.",
+    "Não há sessões com cobrança em processamento neste período.",
+  ),
+  refunded: receiptListCopy(
+    "Sessões reembolsadas",
+    "Confira as sessões cujo valor foi devolvido ao paciente.",
+    "Não há sessões reembolsadas neste período.",
+  ),
+  scheduled: receiptListCopy(
+    "Sessões com cobrança agendada",
+    "Confira as sessões com cobrança prevista antes do atendimento.",
+    "Não há sessões com cobrança agendada neste período.",
+  ),
+  under_review: receiptListCopy(
+    "Sessões com cobrança em análise",
+    "Confira as sessões cuja cobrança está sendo analisada.",
+    "Não há sessões com cobrança em análise neste período.",
+  ),
+};
+
 export function FinancialReceiptsTab({
   dateRange,
   filters,
@@ -64,6 +123,10 @@ export function FinancialReceiptsTab({
   filters: TherapistFinanceFilters;
   receipts: TherapistReceiptsContract;
 }) {
+  const listCopy = filters.status
+    ? receiptListCopyByStatus[filters.status]
+    : defaultReceiptListCopy;
+
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-2">
@@ -202,11 +265,10 @@ export function FinancialReceiptsTab({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              Movimentações por sessão
+              {listCopy.title}
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Confira o valor da sessão, a Comissão TES, seu valor e a próxima
-              etapa da cobrança.
+              {listCopy.subtitle}
             </p>
           </div>
           <p className="text-sm font-bold text-tesText-secondary">
@@ -217,7 +279,7 @@ export function FinancialReceiptsTab({
         {receipts.items.length ? (
           <>
             <div
-              aria-label="Movimentações das cobranças por sessão"
+              aria-label={listCopy.ariaLabel}
               className="hidden max-h-[560px] overflow-auto lg:block"
               tabIndex={0}
             >
@@ -328,11 +390,10 @@ export function FinancialReceiptsTab({
         ) : (
           <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
             <h3 className="text-lg font-extrabold text-brand-deep">
-              Ainda não há cobranças neste período
+              {listCopy.emptyTitle}
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Tente outro período ou ajuste os filtros para consultar suas
-              sessões.
+              {listCopy.emptyDescription}
             </p>
           </div>
         )}
@@ -346,6 +407,21 @@ export function FinancialReceiptsTab({
       </AppPageSection>
     </div>
   );
+}
+
+function receiptListCopy(
+  title: string,
+  subtitle: string,
+  emptyTitle: string,
+): ReceiptListCopy {
+  return {
+    ariaLabel: title,
+    emptyDescription:
+      "Tente outro período ou ajuste os filtros para consultar suas sessões.",
+    emptyTitle,
+    subtitle,
+    title,
+  };
 }
 
 function ReceiptMetricCard({
