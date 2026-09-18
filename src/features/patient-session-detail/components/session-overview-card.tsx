@@ -324,6 +324,10 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
       : "O TES está analisando o que ocorreu neste encontro. O pagamento permanece confirmado. Se tiver alguma dúvida, entre em contato com o TES.";
   }
 
+  if (data.paymentRecovery?.available) {
+    return "O pagamento não foi concluído. Confirme com o banco ou use outro cartão antes do horário do encontro.";
+  }
+
   if (data.paymentRecovery?.checkoutAvailable) {
     return "O pagamento não foi concluído. Continue para tentar novamente e confirmar o horário.";
   }

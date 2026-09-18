@@ -14,6 +14,7 @@ type RecoveryElements = {
     destroy(): void;
     mount(target: HTMLElement): void;
   };
+  submit(): Promise<{ error?: { message?: string } }>;
 };
 
 type RecoveryStripe = {
@@ -42,6 +43,7 @@ export function SessionChargeRecoveryCard({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const stripeRef = useRef<RecoveryStripe | null>(null);
   const elementsRef = useRef<RecoveryElements | null>(null);
+  const submittingRef = useRef(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [phase, setPhase] = useState<
@@ -118,26 +120,44 @@ export function SessionChargeRecoveryCard({
   async function confirm() {
     const stripe = stripeRef.current;
     const elements = elementsRef.current;
-    if (!stripe || !elements || !clientSecret) return;
+    if (!stripe || !elements || !clientSecret || submittingRef.current) return;
+    submittingRef.current = true;
     setMessage(null);
     setPhase("submitting");
-    const result = await stripe.confirmPayment({
-      clientSecret,
-      confirmParams: { return_url: window.location.href },
-      elements,
-      redirect: "if_required",
-    });
-    if (result.error) {
+    try {
+      const validation = await elements.submit();
+      if (validation.error) {
+        setMessage(
+          validation.error.message ??
+            "Confira os dados do pagamento e tente novamente.",
+        );
+        return;
+      }
+
+      const result = await stripe.confirmPayment({
+        clientSecret,
+        confirmParams: { return_url: window.location.href },
+        elements,
+        redirect: "if_required",
+      });
+      if (result.error) {
+        setMessage(
+          result.error.message ??
+            "Não foi possível confirmar o pagamento. Revise os dados e tente novamente.",
+        );
+        return;
+      }
+
+      setMessage("Pagamento enviado para confirmação.");
+      router.refresh();
+    } catch {
       setMessage(
-        result.error.message ??
-          "Não foi possível confirmar o pagamento. Revise os dados e tente novamente.",
+        "Não foi possível concluir o pagamento agora. Tente novamente em instantes.",
       );
+    } finally {
+      submittingRef.current = false;
       setPhase("ready");
-      return;
     }
-    setMessage("Pagamento enviado para confirmação.");
-    router.refresh();
-    setPhase("ready");
   }
 
   return (
