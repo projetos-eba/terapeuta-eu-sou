@@ -55,7 +55,7 @@ export function FinancialPayoutsTab({
         className="grid gap-4 md:grid-cols-3"
       >
         <PayoutMetricCard
-          description="Valores com previsão de chegada, antes de iniciarem o depósito."
+          description="Valores previstos no intervalo selecionado ou ainda sem data bancária."
           icon={CalendarDays}
           label="A receber"
           value={payouts.summary.expectedCents}
@@ -84,8 +84,8 @@ export function FinancialPayoutsTab({
               Agenda de repasses
             </h2>
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Acompanhe os valores previstos para chegar à sua conta. As datas
-              são estimativas e podem mudar.
+              Acompanhe quando o saldo deve ficar disponível e quando há uma
+              previsão de chegada à sua conta. As datas podem mudar.
             </p>
           </div>
           <nav aria-label="Período da agenda" className="flex flex-wrap gap-2">
@@ -106,7 +106,8 @@ export function FinancialPayoutsTab({
           </nav>
         </div>
 
-        {payouts.agenda.inTransit.length || payouts.agenda.predicted.length ? (
+        {payouts.agenda.inTransit.length || payouts.agenda.predicted.length ||
+        payouts.agenda.balanceAvailable.length || payouts.agenda.awaitingBankDate.length ? (
           <div className="grid gap-7">
             <AgendaGroup
               items={payouts.agenda.inTransit}
@@ -116,19 +117,30 @@ export function FinancialPayoutsTab({
             />
             <AgendaGroup
               items={payouts.agenda.predicted}
-              label="Próximos previstos"
+              label="Chegada prevista à conta"
               timezone={payouts.filters.timezone}
               tone="predicted"
+            />
+            <AgendaGroup
+              items={payouts.agenda.balanceAvailable}
+              label="Disponibilidade prevista do saldo"
+              timezone={payouts.filters.timezone}
+              tone="balance_schedule"
+            />
+            <AgendaGroup
+              items={payouts.agenda.awaitingBankDate}
+              label="Ainda sem data bancária"
+              timezone={payouts.filters.timezone}
+              tone="awaiting_bank_date"
             />
           </div>
         ) : (
           <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
             <h3 className="text-lg font-extrabold text-brand-deep">
-              Ainda não há valores com data de chegada disponível
+              Ainda não há repasses previstos
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando houver uma previsão confiável, ela aparecerá aqui. Nenhuma
-              data é estimada sem base financeira disponível.
+              Quando houver valores para acompanhar, eles aparecerão aqui.
             </p>
           </div>
         )}
@@ -230,7 +242,9 @@ function AgendaGroup({
         <p className="rounded-lg bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
           {tone === "in_transit"
             ? "Nenhum valor está a caminho neste momento."
-            : "Nenhum valor previsto para este intervalo."}
+            : tone === "awaiting_bank_date"
+              ? "Todos os valores exibidos já têm uma previsão de data."
+              : "Nenhum valor previsto para este intervalo."}
         </p>
       )}
     </section>
@@ -244,18 +258,25 @@ function AgendaRow({
   item: TherapistPayoutAgendaGroup;
   timezone: string;
 }) {
-  const statusLabel =
-    item.status === "in_transit" ? "A caminho da sua conta" : "Previsto";
+  const statusLabel = item.status === "in_transit"
+    ? "A caminho da sua conta"
+    : item.status === "balance_schedule"
+      ? "Saldo previsto"
+      : item.status === "awaiting_bank_date"
+        ? "Aguardando data bancária"
+        : "Chegada prevista";
 
   return (
     <article className="rounded-card border border-brand-lavender bg-white p-4 shadow-card sm:p-5">
       <div className="grid gap-4 sm:grid-cols-[minmax(120px,0.55fr)_minmax(150px,0.7fr)_minmax(200px,1fr)_auto] sm:items-center">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
-            Chegada estimada
+            {item.status === "balance_schedule" ? "Saldo disponível em"
+              : item.status === "awaiting_bank_date" ? "Chegada à conta"
+                : "Chegada estimada"}
           </p>
           <p className="mt-1 text-lg font-extrabold text-brand-deep">
-            {formatDate(item.date, timezone)}
+            {item.date ? formatDate(item.date, timezone) : "Ainda sem data"}
           </p>
         </div>
         <div>

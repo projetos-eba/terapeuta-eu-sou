@@ -159,13 +159,15 @@ export function mapTherapistPayoutsContract(
 
     return {
       agenda: {
+        awaitingBankDate: array(agenda.awaitingBankDate).map(payoutAgendaGroup),
+        balanceAvailable: array(agenda.balanceAvailable).map(payoutAgendaGroup),
         days: agendaDays(agenda.days),
         inTransit: array(agenda.inTransit).map(payoutAgendaGroup),
         periodEnd: dateString(agenda.periodEnd),
         periodStart: dateString(agenda.periodStart),
         predicted: array(agenda.predicted).map(payoutAgendaGroup),
       },
-      contractVersion: literalThree(value.contractVersion),
+      contractVersion: literalNumber(value.contractVersion, 4),
       filters: {
         agendaDays: agendaDays(filters.agendaDays),
         periodEnd: dateString(filters.periodEnd),
@@ -455,7 +457,7 @@ function payoutAgendaGroup(input: unknown): TherapistPayoutAgendaGroup {
   return {
     amountCents: nonNegativeInteger(value.amountCents),
     composition: array(value.composition).map(payoutCompositionItem),
-    date: dateString(value.date),
+    date: value.date === null ? null : dateString(value.date),
     id: nonEmptyString(value.id),
     sessionCount: nonNegativeInteger(value.sessionCount),
     status: payoutAgendaStatus(value.status),
@@ -732,7 +734,7 @@ function nullableChargeStatus(value: unknown) {
 function payoutAgendaStatus(
   value: unknown,
 ): TherapistPayoutAgendaGroup["status"] {
-  if (value === "in_transit" || value === "predicted") return value;
+  if (value === "in_transit" || value === "predicted" || value === "balance_schedule" || value === "awaiting_bank_date") return value;
   throw new Error("Invalid payout agenda status.");
 }
 

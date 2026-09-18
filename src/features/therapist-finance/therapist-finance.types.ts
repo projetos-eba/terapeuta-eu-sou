@@ -154,10 +154,10 @@ export type TherapistPayoutCompositionItem = {
 export type TherapistPayoutAgendaGroup = {
   amountCents: number;
   composition: TherapistPayoutCompositionItem[];
-  date: string;
+  date: string | null;
   id: string;
   sessionCount: number;
-  status: "in_transit" | "predicted";
+  status: "in_transit" | "predicted" | "balance_schedule" | "awaiting_bank_date";
 };
 
 export type TherapistPayoutHistoryItem = {
@@ -171,13 +171,15 @@ export type TherapistPayoutHistoryItem = {
 
 export type TherapistPayoutsContract = {
   agenda: {
+    awaitingBankDate: TherapistPayoutAgendaGroup[];
+    balanceAvailable: TherapistPayoutAgendaGroup[];
     days: 7 | 15 | 30;
     inTransit: TherapistPayoutAgendaGroup[];
     periodEnd: string;
     periodStart: string;
     predicted: TherapistPayoutAgendaGroup[];
   };
-  contractVersion: 3;
+  contractVersion: 4;
   filters: TherapistFinancePeriod & {
     agendaDays: 7 | 15 | 30;
   };

@@ -95,12 +95,16 @@ create temporary table positive_result as select public.submit_session_quality_f
   'f2000000-0000-4000-8000-000000000501') as result;
 select is((select result->'feedback'->>'successful' from positive_result),'true','quality success stored separately');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'quality does not impersonate manual confirmation');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'positive quality also records the author confirmation');
+select is((select participant_role::text from public.session_participant_confirmations where session_attempt_id=
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),'patient','quality response confirms only its author');
 create temporary table negative_result as select public.submit_session_quality_feedback_v1(
   (select therapist_actor from quality_context order by id limit 1),'b1300000-0000-4000-8000-000000000011',
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),false,null::smallint,'internet_problem','Teste privado.',
   'f2000000-0000-4000-8000-000000000502') as result;
 select is((select result->'feedback'->>'successful' from negative_result),'false','negative is quality, not non-performance');
+select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'negative quality also confirms author participation');
 select is((select count(*)::integer from public.session_quality_reviews where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'one negative creates one review');
 select ok((select due_at=opened_at+interval '5 days' from public.session_quality_reviews order by opened_at desc limit 1),'SLA is five calendar days from server receipt');
@@ -108,6 +112,8 @@ select is(public.submit_session_quality_feedback_v1((select therapist_actor from
   'b1300000-0000-4000-8000-000000000011',public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),
   false,null::smallint,'internet_problem','Teste privado.','f2000000-0000-4000-8000-000000000502')->>'idempotentReplay','true','negative retry is idempotent');
 select ok((select count(*)=1 from public.session_quality_reviews),'retry does not create a ticket or restart SLA');
+select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'retry does not duplicate individual confirmations');
 select set_config('request.jwt.claim.sub',(select patient_actor::text from quality_context order by id limit 1),true);
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->>'realizationStatus','performed','negative quality preserves performed classification');
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->>'supportTicketId',null,'patient cannot read therapist ticket through quality API');
@@ -125,10 +131,10 @@ select ok((select answered_at is not null and response_message_id is not null fr
 select is(public.session_quality_review_state_v1(public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'))->>'allAnswered','true','answered state is separate from participant confirmations');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '7 days'-interval '1 microsecond');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'no automatic confirmation before patient deadline');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'manual confirmations remain before the automatic deadline');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '7 days');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011') and participant_role='patient' and source='automatic'),1,'patient auto at exactly scheduled end plus seven days');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011') and participant_role='patient' and source='automatic'),0,'patient manual response is not replaced by automatic confirmation');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '30 days');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'therapist auto at thirty days');

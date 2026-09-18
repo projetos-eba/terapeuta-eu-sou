@@ -547,7 +547,7 @@ describe("TherapistFinancePage", () => {
       .closest("section");
     expect(agenda).not.toBeNull();
     expect(agenda!.textContent!.indexOf("A caminho da sua conta")).toBeLessThan(
-      agenda!.textContent!.indexOf("Próximos previstos"),
+      agenda!.textContent!.indexOf("Chegada prevista à conta"),
     );
     expect(within(agenda!).queryByText("Recebido em")).not.toBeInTheDocument();
   });
@@ -792,6 +792,8 @@ function fixture(): TherapistFinancePageData {
     },
     payouts: {
       agenda: {
+        awaitingBankDate: [],
+        balanceAvailable: [],
         days: 15,
         inTransit: [
           {
@@ -834,7 +836,7 @@ function fixture(): TherapistFinancePageData {
           },
         ],
       },
-      contractVersion: 3,
+      contractVersion: 4,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",

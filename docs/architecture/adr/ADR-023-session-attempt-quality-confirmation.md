@@ -1,7 +1,7 @@
 # ADR-023 — Tentativa da sessão, qualidade e confirmação independente
 
 Data: 2026-09-17  
-Status: implementada localmente; HML e produção não alterados.
+Status: evolução do envio único implementada localmente em 2026-09-17; PR manual e reteste HML pendentes.
 
 ## Decisão
 
@@ -49,6 +49,24 @@ seu próprio cookie, mesmo quando há duas sessões no navegador; a identidade,
 vínculo, presença e versão são
 validados no servidor. Contrato antigo ou tentativa desatualizada não alteram
 a atual. Relatos legados ficam em seção histórica, sem conversão silenciosa.
+
+### Envio único de avaliação e confirmação individual
+
+Para evitar duas respostas da mesma pessoa, o envio da avaliação privada da
+tentativa atual registra, na mesma transação, a confirmação individual de que
+essa pessoa participou da sessão. Tanto “Sim” quanto “Não” confirmam a
+participação; “Não” continua sendo uma avaliação negativa da experiência, não
+uma declaração de ausência. A identidade, os dois joins confiáveis, o
+encerramento e a tentativa atual são revalidados pelo servidor. A confirmação
+da outra pessoa permanece independente. Repetições preservam a resposta e a
+confirmação já registradas; conflito ou falha desfazem ambas as escritas.
+Esta união é somente da ação de interface: avaliação, confirmação, presença e
+financeiro continuam como registros e decisões separados.
+
+Uma migração progressiva regulariza somente avaliações já persistidas na
+tentativa atual que ainda não tinham confirmação individual, com presença
+bilateral e encerramento comprovados, sem ocorrência aberta e com pagamento em
+estado elegível. Não inventa respostas para formulários que não foram gravados.
 
 Para o Histórico da Jornada do Premium Plus, a mesma evidência operacional
 inclui a sessão passada realizada mesmo quando não houver resumo compartilhado.

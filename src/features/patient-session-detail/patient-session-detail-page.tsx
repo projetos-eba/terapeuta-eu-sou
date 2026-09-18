@@ -3,11 +3,10 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
-import { PatientSessionFeedbackDialog } from "@/features/session-feedback";
-import { SessionQualityStatus } from "@/features/session-feedback/components/session-quality-status";
 
 import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
+import { PatientSessionQualityFeedback } from "./components/patient-session-quality-feedback";
 import { SessionChargeRecoveryCard } from "./components/session-charge-recovery-card";
 import { PreparationCard } from "./components/preparation-card";
 import { QuickSupportCard } from "./components/quick-support-card";
@@ -37,7 +36,17 @@ export function PatientSessionDetailPage({
       <SessionDetailHeader />
       <SessionOverviewCard data={data} />
       <SessionStatusStrip data={data} />
-      <SessionQualityStatus actorRole="patient" payload={data.sessionQuality} />
+      <PatientSessionQualityFeedback
+        feedbackOpen={feedbackOpen}
+        initialPayload={data.sessionQuality}
+        session={{
+          bookingId: data.booking.id,
+          dateLabel: data.booking.dateLabel,
+          serviceLabel: data.service.title,
+          therapist: { id: data.therapist.id, name: data.therapist.name },
+          timeLabel: data.booking.timeRangeLabel,
+        }}
+      />
       {data.paymentRecovery?.available ? (
         <SessionChargeRecoveryCard
           bookingId={data.booking.id}
@@ -94,20 +103,6 @@ export function PatientSessionDetailPage({
           />
         </div>
       </AppPageGrid>
-      {feedbackOpen && data.sessionQuality?.status === "eligible" ? (
-        <PatientSessionFeedbackDialog
-          session={{
-            bookingId: data.booking.id,
-            dateLabel: data.booking.dateLabel,
-            serviceLabel: data.service.title,
-            therapist: {
-              id: data.therapist.id,
-              name: data.therapist.name,
-            },
-            timeLabel: data.booking.timeRangeLabel,
-          }}
-        />
-      ) : null}
     </AppPageContainer>
   );
 }

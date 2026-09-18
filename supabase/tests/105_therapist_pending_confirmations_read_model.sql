@@ -232,8 +232,8 @@ from public.bookings
 where id = 'a9900000-0000-4000-8000-000000000002';
 
 update public.bookings
-set starts_at = starts_at - interval '14 days',
-    ends_at = ends_at - interval '14 days'
+set starts_at = starts_at - interval '30 days',
+    ends_at = ends_at - interval '30 days'
 where id = 'a9900000-0000-4000-8000-000000000002';
 
 select is(
