@@ -5,14 +5,44 @@
 
 begin;
 
-alter function public.admin_get_operation_module_v1_internal(
-  text,
-  integer,
-  integer
-)
-rename to admin_get_operation_module_v1_before_verification_queue;
+-- A prior deployment may already have renamed the predecessor while another
+-- migration claimed the same version. Accept only that exact wrapper state;
+-- never overwrite an unrelated internal function.
+do $$
+declare
+  v_predecessor regprocedure := to_regprocedure(
+    'public.admin_get_operation_module_v1_before_verification_queue(text,integer,integer)'
+  );
+  v_current regprocedure := to_regprocedure(
+    'public.admin_get_operation_module_v1_internal(text,integer,integer)'
+  );
+begin
+  if v_predecessor is null then
+    if v_current is null or position(
+      'admin_get_operation_module_v1_internal_before_professional_identity'
+      in pg_get_functiondef(v_current)
+    ) = 0 then
+      raise exception 'ADMIN_VERIFICATION_QUEUE_UNEXPECTED_PREDECESSOR';
+    end if;
 
-create function public.admin_get_operation_module_v1_internal(
+    alter function public.admin_get_operation_module_v1_internal(
+      text, integer, integer
+    ) rename to admin_get_operation_module_v1_before_verification_queue;
+  else
+    if position(
+      'admin_get_operation_module_v1_internal_before_professional_identity'
+      in pg_get_functiondef(v_predecessor)
+    ) = 0 or (v_current is not null and position(
+      'admin_get_operation_module_v1_before_verification_queue'
+      in pg_get_functiondef(v_current)
+    ) = 0) then
+      raise exception 'ADMIN_VERIFICATION_QUEUE_UNEXPECTED_EXISTING_FUNCTION';
+    end if;
+  end if;
+end;
+$$;
+
+create or replace function public.admin_get_operation_module_v1_internal(
   p_module text,
   p_limit integer default 12,
   p_offset integer default 0

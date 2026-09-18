@@ -61,6 +61,15 @@ begin
     for v_segment_length
   );
 
+  -- The old filename shared a version with a different migration. If this
+  -- repair already ran, preserve its exact protected contract on replay.
+  if position(v_protected_status in v_segment) > 0
+    and position(v_protected_items in v_segment) > 0
+    and position(v_unprotected_status in v_segment) = 0
+    and position(v_unprotected_items in v_segment) = 0 then
+    return;
+  end if;
+
   if position(v_unprotected_status in v_segment) = 0
     or position(v_unprotected_items in v_segment) = 0
     or position($contract$'minimumSample', 10,$contract$ in v_segment) > 0 then
