@@ -15,6 +15,8 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const actionPermissions = {
+  "patient.suspend": "admin.patients.suspend",
+  "patient.reactivate": "admin.patients.suspend",
   "professional.publish": "admin.professionals.verify",
   "professional.reactivate": "admin.professionals.suspend",
   "professional.suspend": "admin.professionals.suspend",
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
       return failure(mapRpcFailure(payload), response.status);
     }
 
-    revalidateAdminOperationSurfaces(input.value.action);
+    revalidateAdminOperationSurfaces(input.value.action, input.value.entityId);
 
     return NextResponse.json(
       { data: payload, ok: true },
@@ -198,6 +200,12 @@ function parseCommandInput(value: unknown):
 
 function mapRpcFailure(payload: unknown) {
   if (isRecord(payload) && typeof payload.message === "string") {
+    if (payload.message.includes("patient booking state transition invalid")) {
+      return "A situação da conta mudou. Atualize a página antes de continuar.";
+    }
+    if (payload.message.includes("IDEMPOTENCY_KEY_REUSED")) {
+      return "Esta tentativa já foi utilizada. Atualize a página antes de continuar.";
+    }
     if (payload.message.includes("reason")) {
       return "Informe um motivo válido para executar a ação.";
     }
@@ -221,12 +229,17 @@ function failure(message: string, status: number) {
   );
 }
 
-function revalidateAdminOperationSurfaces(action: string) {
+function revalidateAdminOperationSurfaces(action: string, entityId: string) {
   revalidatePath(routes.admin.home);
   revalidatePath(routes.admin.professionals);
   revalidatePath(routes.admin.verifications);
   revalidatePath(routes.admin.support);
   revalidatePath(routes.admin.reviews);
+
+  if (action.startsWith("patient.")) {
+    revalidatePath(routes.admin.patients);
+    revalidatePath(routes.admin.patientDetail(entityId));
+  }
 
   if (
     action.startsWith("professional.") ||

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { AdminProfessionalProfileReview } from "../admin-operations.types";
+import { AdminPrivateContactDetails } from "./admin-private-contact-details";
 
 export function AdminProfileReviewPanel({
   publicationStatus = "",
@@ -126,26 +127,6 @@ export function AdminProfileReviewPanel({
         </div>
 
         <aside className="space-y-5">
-          {review.privateIdentity ? (
-            <div className="rounded-2xl border border-status-warning/30 bg-status-warningBg p-4">
-              <p className="text-sm font-extrabold text-brand-deep">
-                Dados privados de validação
-              </p>
-              <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-                Visíveis somente para a equipe TES autorizada.
-              </p>
-              <dl className="mt-3 grid gap-2 text-sm">
-                <ReviewFact
-                  label={documentLabel(review.privateIdentity.documentType)}
-                  value={review.privateIdentity.documentNumber}
-                />
-                <ReviewFact
-                  label="Endereço"
-                  value={formatAddress(review.privateIdentity)}
-                />
-              </dl>
-            </div>
-          ) : null}
           {fields.photoUrl ? (
             <div className="overflow-hidden rounded-2xl border border-border bg-surface-soft p-2">
               <Image
@@ -183,6 +164,20 @@ export function AdminProfileReviewPanel({
           </div>
         </aside>
       </div>
+
+      {review.privateIdentity ? (
+        <section className="mt-7 border-t border-border pt-7">
+          <h3 className="text-lg font-extrabold text-brand-deep">
+            Dados e contato
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
+            Informações privadas visíveis apenas para a equipe TES autorizada.
+          </p>
+          <div className="mt-5">
+            <AdminPrivateContactDetails identity={review.privateIdentity} />
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }
@@ -212,35 +207,4 @@ function videoProviderLabel(
   if (value === "vimeo") return "Vimeo";
   if (value === "upload") return "arquivo enviado";
   return "link externo";
-}
-
-function documentLabel(value: "cpf" | "rg" | "passport" | null) {
-  if (value === "cpf") return "CPF";
-  if (value === "rg") return "RG";
-  if (value === "passport") return "Passaporte";
-  return "Documento";
-}
-
-function formatAddress(
-  identity: NonNullable<AdminProfessionalProfileReview["privateIdentity"]>,
-) {
-  const line = [identity.street, identity.streetNumber, identity.complement]
-    .filter(Boolean)
-    .join(", ");
-  const locality = [identity.neighborhood, identity.city, identity.state]
-    .filter(Boolean)
-    .join(" · ");
-  return [line, locality, identity.postalCode].filter(Boolean).join(" — ");
-}
-
-function ReviewFact({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-  return (
-    <div>
-      <dt className="font-extrabold text-brand-deep">{label}</dt>
-      <dd className="mt-0.5 break-words font-semibold text-tesText-secondary">
-        {value}
-      </dd>
-    </div>
-  );
 }

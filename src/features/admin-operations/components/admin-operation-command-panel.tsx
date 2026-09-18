@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,7 +9,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-import { TESFeedbackDialog } from "@/components/tes";
+import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 
 import type {
   AdminOperationDetailPageData,
@@ -17,6 +17,8 @@ import type {
 } from "../admin-operations.types";
 
 type CommandAction =
+  | "patient.suspend"
+  | "patient.reactivate"
   | "professional.publish"
   | "professional.reactivate"
   | "professional.suspend"
@@ -52,6 +54,12 @@ export function AdminOperationCommandPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<CommandOption | null>(null);
+  const pendingPatientRequest = useRef<{
+    signature: string;
+    id: string;
+  } | null>(null);
+  const submitting = useRef(false);
   const options = useMemo(() => getCommandOptions(data), [data]);
 
   if (options.length === 0) {
@@ -63,6 +71,7 @@ export function AdminOperationCommandPanel({
   }
 
   async function submitCommand(option: CommandOption) {
+    if (submitting.current) return;
     const trimmedReason = reason.trim();
 
     setError(null);
@@ -73,7 +82,16 @@ export function AdminOperationCommandPanel({
       return;
     }
 
+    setConfirmation(null);
+    submitting.current = true;
     setIsSubmitting(true);
+    const signature = JSON.stringify([option.action, data.id, trimmedReason]);
+    if (
+      option.action.startsWith("patient.") &&
+      pendingPatientRequest.current?.signature !== signature
+    ) {
+      pendingPatientRequest.current = { signature, id: crypto.randomUUID() };
+    }
 
     try {
       const response = await fetch("/api/admin/operations", {
@@ -81,7 +99,9 @@ export function AdminOperationCommandPanel({
           action: option.action,
           entityId: option.entityId ?? data.id,
           reason: trimmedReason,
-          requestId: crypto.randomUUID(),
+          requestId: option.action.startsWith("patient.")
+            ? pendingPatientRequest.current!.id
+            : crypto.randomUUID(),
         }),
         cache: "no-store",
         headers: {
@@ -101,11 +121,13 @@ export function AdminOperationCommandPanel({
       }
 
       setReason("");
+      pendingPatientRequest.current = null;
       setSuccess(getCommandSuccessMessage(option.action, payload));
       router.refresh();
     } catch {
       setError("Não foi possível conectar agora. Tente novamente.");
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   }
@@ -154,7 +176,17 @@ export function AdminOperationCommandPanel({
             className={commandButtonClass(option.tone)}
             disabled={isSubmitting || option.disabled}
             key={option.action}
-            onClick={() => void submitCommand(option)}
+            onClick={() => {
+              if (option.action.startsWith("patient.")) {
+                if (reason.trim().length < 8) {
+                  setError("Informe um motivo com pelo menos 8 caracteres.");
+                } else {
+                  setConfirmation(option);
+                }
+              } else {
+                void submitCommand(option);
+              }
+            }}
             type="button"
           >
             {option.tone === "success" ? (
@@ -168,6 +200,38 @@ export function AdminOperationCommandPanel({
           </button>
         ))}
       </div>
+      {confirmation ? (
+        <TESDialog
+          description={
+            confirmation.action === "patient.suspend"
+              ? "Somente novos agendamentos serão bloqueados. Login, suporte e sessões já contratadas continuarão disponíveis."
+              : "O cliente poderá voltar a criar novos agendamentos. As sessões existentes não serão alteradas."
+          }
+          onClose={() => setConfirmation(null)}
+          title={confirmation.label}
+        >
+          <p className="mt-4 break-words text-sm font-semibold leading-6 text-tesText-secondary">
+            Motivo: {reason.trim()}
+          </p>
+          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              className={commandButtonClass("neutral")}
+              onClick={() => setConfirmation(null)}
+              type="button"
+            >
+              Cancelar
+            </button>
+            <button
+              className={commandButtonClass(confirmation.tone)}
+              disabled={isSubmitting}
+              onClick={() => void submitCommand(confirmation)}
+              type="button"
+            >
+              Confirmar
+            </button>
+          </div>
+        </TESDialog>
+      ) : null}
     </div>
   );
 }
@@ -176,6 +240,7 @@ export function getCommandOptions(
   data: Pick<
     AdminOperationDetailPageData,
     | "canApprove"
+    | "canManagePatientBookings"
     | "canPublish"
     | "module"
     | "relatedProfessionalId"
@@ -184,11 +249,34 @@ export function getCommandOptions(
 ): CommandOption[] {
   const {
     canApprove,
+    canManagePatientBookings,
     canPublish,
     module,
     relatedProfessionalId,
     statusLabel,
   } = data;
+  if (module === "patients") {
+    if (!canManagePatientBookings) return [];
+    if (statusLabel === "active") {
+      return [
+        {
+          action: "patient.suspend",
+          label: "Suspender novos agendamentos",
+          tone: "danger",
+        },
+      ];
+    }
+    if (statusLabel === "suspended") {
+      return [
+        {
+          action: "patient.reactivate",
+          label: "Reativar agendamentos",
+          tone: "neutral",
+        },
+      ];
+    }
+    return [];
+  }
   if (module === "professionals") {
     if (statusLabel === "suspended") {
       return [
@@ -325,6 +413,12 @@ function getEmptyActionMessage(
   module: AdminOperationModuleKey,
   statusLabel?: string,
 ) {
+  if (
+    module === "patients" &&
+    (statusLabel === "active" || statusLabel === "suspended")
+  ) {
+    return "A gestão de agendamentos está indisponível no momento.";
+  }
   if (module === "verifications" && statusLabel === "approved") {
     return "Esta análise foi concluída. A publicação só fica disponível quando o perfil atende a todos os critérios.";
   }
@@ -351,6 +445,8 @@ function getCommandSuccessMessage(
       : "Verificação aprovada. A publicação ainda está pendente.";
   }
   const messages: Record<CommandAction, string> = {
+    "patient.suspend": "Novos agendamentos suspensos.",
+    "patient.reactivate": "Novos agendamentos reativados.",
     "professional.publish": "Perfil publicado e disponível para reservas.",
     "professional.reactivate": "Profissional reativado com sucesso.",
     "professional.suspend": "Profissional suspenso com sucesso.",

@@ -28,11 +28,17 @@ agendamento`, separando claramente aprovação administrativa, publicação e
   `therapist_verifications` usam a decisão autoritativa já presente no cadastro
   somente para leitura dos marcos. A interface não cria, reabre nem altera uma
   verificação retroativamente.
-- A aba `Perfil` substitui qualquer referência a formulário. Ela mostra apenas
-  a projeção publicada de Meu perfil (`public_therapist_profile_content_v`) e
-  os serviços elegíveis (`public_therapist_profile_services_v`). Rascunhos,
+- A primeira dobra não repete conteúdo editorial, serviços ou dados privados:
+  ela mantém identidade, estado, fluxo e ações autorizadas. A aba `Perfil`
+  concentra a versão enviada de Meu perfil e, em `Dados e contato`, a
+  identidade e o contato privados estritamente necessários para validação.
+  CPF, telefone e CEP são formatados apenas na interface; a origem continua
+  sendo a projeção administrativa autorizada. Rascunhos fora dessa projeção,
   documentos privados, seus metadados, IDs internos e dados de conta não são
   exibidos.
+- A aba `Serviços e terapias` concentra a oferta informada na versão em
+  revisão. Quando essa leitura não estiver disponível, ela pode mostrar a
+  projeção pública elegível com estado honesto de indisponibilidade.
 - A aba `Documentos` existe apenas para revisão privada/autorizada, usando o
   fluxo canônico `therapist-private-documents`; a primeira dobra não deve
   transformar anexos em conteúdo editorial.

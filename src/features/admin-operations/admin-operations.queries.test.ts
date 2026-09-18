@@ -87,6 +87,51 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("maps global patient metrics including comparison and suspension independently of page rows", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          metrics: {
+            "total-patients": 100,
+            "recent-patients": 20,
+            "previous-patients": 10,
+            "active-patients": 80,
+            "suspended-patients": 5,
+            "active-patients-percentage": 80,
+          },
+          page: { page: 2, pageSize: 12, total: 5, hasNext: false },
+          rows: [],
+        }),
+      ),
+    );
+    const result = await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "patients",
+      searchParams: { status: "suspended" },
+    });
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.metrics).toHaveLength(4);
+      expect(result.data.metrics[1]).toMatchObject({
+        value: 20,
+        comparisonValue: 10,
+      });
+      expect(result.data.metrics[2]).toMatchObject({
+        value: 80,
+        percentage: 80,
+      });
+      expect(result.data.metrics[3]).toMatchObject({
+        value: 5,
+        status: "available",
+      });
+      expect(result.data.filterOptions.status).toContainEqual({
+        label: "Suspensos",
+        value: "suspended",
+      });
+    }
+  });
+
   it("uses an approved profile decision only as a read-only verification fallback", () => {
     expect(deriveProfileDecisionVerificationSummary("approved")).toEqual({
       reviewedAt: null,

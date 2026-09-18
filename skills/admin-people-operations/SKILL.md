@@ -158,6 +158,41 @@ refresh, cópia de link e QA com Playwright.
 
 ## Regras
 
+### Clientes — indicadores, contato e suspensão de agendamentos
+
+- Referência visual: imagem de cards de Clientes fornecida em 2026-09-18;
+  usar densidade Operational, quatro resumos compactos, sem alterar tokens ou shells.
+- `/admin/pacientes` usa a base completa no ramo específico de Clientes da RPC
+  `admin_get_operation_module_v2`, sem a janela legada de cinquenta registros.
+  Outros módulos mantêm o contrato anterior. Gráficos locais continuam sendo
+  somente o recorte da página.
+- Indicadores: total cadastrado, novos nos últimos 30 dias versus os 30 dias
+  anteriores, ativos e suspensos. Ativos/suspensos excluem contas excluídas ou
+  anonimizadas; total inclui todos os registros. Período anterior zero não gera
+  crescimento percentual; falha nunca vira zero.
+- O detalhe recebe `private_contact` allowlisted: e-mail de `profiles`, celular
+  e DDI de `patient_profiles`, endereço opcional em `metadata.account.address`.
+  Nunca enviar metadata completa nem contato em listas. Máscaras são formatação
+  somente; e-mail permanece completo. Projeção ausente significa indisponível,
+  diferente de um campo opcional não informado.
+- `patient.suspend` e `patient.reactivate` exigem `admin.patients.suspend`, Admin
+  ativo, confirmação TESDialog, motivo de 8–1000 caracteres, requestId idempotente
+  e auditoria append-only. Contas excluídas/anonimizadas não oferecem ações.
+  A projeção `booking_management_available` habilita as ações somente quando o
+  contrato existe no servidor; backend anterior continua legível, sem CTA desconectado.
+- `patient_booking_restrictions` é estado administrativo separado de Auth e dos
+  dados editáveis pelo cliente. Somente INSERT de hold/reserva é bloqueado;
+  hold não consumido não pode criar reserva depois da suspensão. Retry exato de
+  hold já consumido conserva a reserva existente.
+- Não bloquear login, suporte, reagendamento/cancelamento de reservas existentes,
+  pagamento, reembolso ou acesso à sessão; não disparar efeito financeiro.
+- Validar mais de 50 clientes, contatos parciais e internacionais, autorização,
+  idempotência, concorrência, preservação de contratos, desktop/tablet/mobile.
+  Migration e testes são locais; deploy remoto exige autorização específica.
+
+Esta autorização atual substitui as limitações históricas de contato do raster
+de Clientes; objetivo, progresso e informações clínicas continuam fora.
+
 - Não expor conteúdo clínico, intake, mensagens privadas, URL secreta de
   reunião, descrição completa de ticket ou comentário de review em listas.
 - Documentos de verificação não devem ser enviados em payload de listagem.
@@ -244,8 +279,9 @@ métricas, status e paginação antes do Benchmark C e da Calibration.
 
 ## Pendências conhecidas
 
-- Evoluir a implementação interna da v2 para busca em toda a base quando volume
-  real ultrapassar a janela sanitizada atual de até 50 registros por módulo.
+- Evoluir a implementação interna da v2 para busca em toda a base nos demais
+  módulos quando ultrapassarem a janela de 50 registros; Clientes já pagina a
+  base completa pelo contrato de restrições descrito acima.
 - Abas em detalhes continuam pendentes até existirem contratos funcionais para
   conteúdo e ações adicionais.
 - Validar Supabase Advisor em HML/remoto antes de declarar fase homologada.
@@ -258,7 +294,8 @@ métricas, status e paginação antes do Benchmark C e da Calibration.
 - Os detalhes de profissional e cliente seguem a direção visual dos rasters,
   mas só podem renderizar os campos já mapeados em `admin_get_operation_detail_v1`;
   avatar real, contato, avaliação, receita, retenção, responsável, jornada e
-  notas clínicas continuam fora do escopo.
+  notas clínicas continuam fora do escopo, exceto o contato privado do cliente
+  explicitamente projetado no contrato acima.
 - A fila e o detalhe de verificações não exibem documentos, preview de anexos,
   exportação, prioridade, responsável ou observação persistida enquanto esses
   dados não fizerem parte do contrato seguro do módulo.

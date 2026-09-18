@@ -104,6 +104,20 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
         "patient_profiles",
         "success",
       ),
+      metric(
+        "active-patients",
+        "Contas ativas",
+        "Clientes sem bloqueio de novos agendamentos.",
+        "patient_profiles",
+        "success",
+      ),
+      metric(
+        "suspended-patients",
+        "Clientes suspensos",
+        "Novos agendamentos bloqueados.",
+        "patient_booking_restrictions",
+        "warning",
+      ),
     ],
     safetyNotes: [
       "A lista evita dados sensíveis de jornada, mensagens, intake ou conteúdo clínico.",
@@ -113,6 +127,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     statusOptions: [
       option("", "Todos os status"),
       option("active", "Ativos"),
+      option("suspended", "Suspensos"),
       option("deleted", "Excluídos"),
       option("anonymized", "Anonimizados"),
     ],
@@ -748,6 +763,8 @@ function mapPrivateIdentity(
         : null,
     neighborhood: asText(value.neighborhood) || null,
     postalCode: asText(value.postalCode) || null,
+    phone: asText(value.phone) || null,
+    phoneCountryCode: asText(value.phoneCountryCode) || null,
     state: asText(value.state) || null,
     street: asText(value.street) || null,
     streetNumber: asText(value.streetNumber) || null,
@@ -1074,6 +1091,16 @@ function availableMetric(
   const value = metricsPayload[spec.key];
 
   return {
+    ...(spec.key === "recent-patients"
+      ? { comparisonValue: asFiniteNumber(metricsPayload["previous-patients"]) }
+      : {}),
+    ...(spec.key === "active-patients"
+      ? {
+          percentage: asFiniteNumber(
+            metricsPayload["active-patients-percentage"],
+          ),
+        }
+      : {}),
     description: spec.description,
     key: spec.key,
     label: spec.label,

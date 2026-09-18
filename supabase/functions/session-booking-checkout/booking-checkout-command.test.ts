@@ -22,6 +22,24 @@ const startsAt = "2026-07-28T12:00:00.000Z";
 const endsAt = "2026-07-28T12:50:00.000Z";
 const therapistSlug = "ana-oliveira";
 
+Deno.test(
+  "booking-only suspension maps to an actionable error without changing other authorization errors",
+  () => {
+    const mapped = mapBookingCheckoutDatabaseError(
+      new SupabaseHttpError(400, "PATIENT_BOOKING_SUSPENDED"),
+    );
+    assertEquals(mapped instanceof DomainError, true);
+    assertEquals((mapped as DomainError).code, "patient_booking_suspended");
+    assertEquals((mapped as DomainError).status, 403);
+    assertEquals(
+      (mapped as DomainError).message.includes(
+        "encontros já contratados permanecem disponíveis",
+      ),
+      true,
+    );
+  },
+);
+
 Deno.test("booking checkout reads the immutable currency snapshot", () => {
   assertEquals(BOOKING_SNAPSHOT_SELECT.includes("currency_snapshot"), true);
   assertEquals(BOOKING_SNAPSHOT_SELECT.split(",").includes("currency"), false);
