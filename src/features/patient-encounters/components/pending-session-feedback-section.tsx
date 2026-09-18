@@ -30,9 +30,8 @@ export function PendingSessionFeedbackSection({
           Encontros aguardando sua avaliação
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Avalie cada encontro separadamente. Sua resposta é privada e não
-          interfere no pagamento nem no repasse; a avaliação pública do
-          terapeuta é uma etapa diferente e opcional.
+          Avalie cada encontro separadamente. Sua resposta é privada; a
+          avaliação pública do terapeuta é uma etapa diferente e opcional.
         </p>
       </div>
 

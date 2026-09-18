@@ -25,5 +25,9 @@ describe("PatientReviewPrompt", () => {
     expect(
       screen.getByRole("link", { name: "Ver detalhes do encontro" }),
     ).toHaveAttribute("href", "/app/encontros/booking-latest?feedback=1");
+    expect(
+      screen.getByText(/sua resposta é privada/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/pagamento|repasse/i)).not.toBeInTheDocument();
   });
 });

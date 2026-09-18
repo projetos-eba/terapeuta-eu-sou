@@ -53,8 +53,7 @@ export function PatientReviewPrompt({
         </div>
         <p className="mt-4 text-sm font-semibold leading-6 text-[var(--tes-color-text-secondary-app)]">
           Conte como foi o encontro. Sua resposta é privada, separada da
-          avaliação pública do terapeuta e não interfere no pagamento nem no
-          repasse.
+          avaliação pública do terapeuta.
         </p>
         <TESButton
           className="mt-4 w-full"

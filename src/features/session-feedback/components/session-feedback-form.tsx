@@ -194,7 +194,8 @@ export function SessionFeedbackForm({
       </div>
 
       <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        Sua avaliação é privada e ajuda a equipe a acompanhar a qualidade da sala online. Ela não interfere no pagamento, reembolso ou repasse.
+        Sua avaliação é privada e ajuda a equipe a acompanhar a qualidade da
+        sala online.
       </p>
 
       {introductoryMessage ? (
@@ -350,8 +351,8 @@ export function SessionFeedbackForm({
                 O que aconteceu?
               </legend>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                Seu relato é privado. O TES responderá pelo suporte em até 5 dias corridos,
-                sem alterar a realização da sessão ou o financeiro.
+                Seu relato é privado. O TES responderá pelo suporte em até 5
+                dias corridos.
               </p>
               <div className="mt-3 grid gap-2">
                 {SESSION_FEEDBACK_REASONS.map((item) => (

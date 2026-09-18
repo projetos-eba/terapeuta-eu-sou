@@ -5,7 +5,7 @@ import type {
 
 const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
   awaiting_confirmation:
-    "Conte como foi este encontro. Sua avaliação é privada, separada da avaliação pública e não interfere no pagamento nem no repasse.",
+    "Conte como foi este encontro. Sua avaliação é privada e separada da avaliação pública do terapeuta.",
   cancelled:
     "Este encontro foi cancelado. Consulte os detalhes para acompanhar o reembolso, quando aplicável.",
   completed:

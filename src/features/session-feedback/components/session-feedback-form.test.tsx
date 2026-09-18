@@ -54,6 +54,10 @@ describe("SessionFeedbackForm", () => {
     );
 
     await screen.findByText("Como foi seu encontro?");
+    expect(
+      screen.getByText(/sua avaliação é privada/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/pagamento|reembolso|repasse/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sim" }));
     expect(
       screen.getByText("Como você avalia este encontro?"),

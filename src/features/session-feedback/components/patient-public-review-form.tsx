@@ -113,8 +113,8 @@ export function PatientPublicReviewForm({
           Avaliar {therapistName} publicamente
         </h3>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Esta etapa é opcional, editável e não interfere na avaliação privada,
-          no pagamento ou no repasse do encontro.
+          Esta etapa é opcional, editável e separada da avaliação privada do
+          encontro.
         </p>
       </div>
 

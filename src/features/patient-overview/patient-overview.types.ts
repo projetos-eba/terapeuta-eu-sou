@@ -50,7 +50,8 @@ export type PatientAppointment = {
   };
   serviceLabel: string;
   startsAt: string;
-  status: "confirmed" | "live";
+  status: PatientEncounterStatus;
+  statusLabel: string;
   therapyLabel: string;
   timezone: string;
 };
@@ -112,3 +113,4 @@ export type PatientSupportTicket = {
 export type PatientOverviewQueryResult =
   | { data: PatientOverview; error: null }
   | { data: null; error: "not_found" | "unavailable" };
+import type { PatientEncounterStatus } from "@/features/patient-encounters/patient-encounters.types";

@@ -54,8 +54,9 @@ describe("PendingSessionFeedbackSection", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/não interfere no pagamento nem no repasse/i),
+      screen.getByText(/sua resposta é privada/i),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/pagamento|repasse/i)).not.toBeInTheDocument();
     expect(screen.getAllByText("Aguardando sua avaliação")).toHaveLength(2);
   });
 

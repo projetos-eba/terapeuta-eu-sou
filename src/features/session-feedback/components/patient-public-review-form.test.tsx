@@ -40,6 +40,10 @@ describe("PatientPublicReviewForm", () => {
       />,
     );
 
+    expect(
+      await screen.findByText(/separada da avaliação privada/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/pagamento|repasse/i)).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "5 estrelas" }));
     fireEvent.change(screen.getByLabelText(/comentário/i), {
       target: { value: "Acolhimento cuidadoso." },
