@@ -41,13 +41,26 @@ const confirmedPayload: SessionFeedbackReadPayload = {
   status: "incident_only",
 };
 
+const reviewedPayload: SessionFeedbackReadPayload = {
+  ...pendingPayload,
+  feedback: {
+    authorRole: "patient",
+    comment: "",
+    createdAt: "2026-09-17T20:00:00Z",
+    id: "feedback-1",
+    rating: 5,
+    successful: true,
+  },
+  status: "submitted",
+};
+
 afterEach(() => {
   cleanup();
   refresh.mockClear();
 });
 
 describe("PatientSessionQualityFeedback", () => {
-  it("updates the own participation on the same screen and refreshes after closing", () => {
+  it("updates the private feedback state on the same screen and refreshes after closing", () => {
     render(
       <PatientSessionQualityFeedback
         feedbackOpen
@@ -62,13 +75,28 @@ describe("PatientSessionQualityFeedback", () => {
       />,
     );
 
-    expect(screen.getByText(/sua confirmação ainda está pendente/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Enviar resposta simulada" }));
-    expect(screen.getByText("Sua participação está confirmada.")).toBeInTheDocument();
-    expect(screen.queryByText(/sua confirmação ainda está pendente/i)).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Fechar avaliação" }));
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the optional therapist review available after private feedback is saved", () => {
+    render(
+      <PatientSessionQualityFeedback
+        feedbackOpen={false}
+        initialPayload={reviewedPayload}
+        session={{
+          bookingId: "b7f70000-0000-4000-8000-000000000001",
+          dateLabel: "17 de setembro",
+          serviceLabel: "Sessão de teste",
+          therapist: { id: "therapist-1", name: "Terapeuta" },
+          timeLabel: "17:00",
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Avaliar terapeuta" })).toBeInTheDocument();
   });
 });

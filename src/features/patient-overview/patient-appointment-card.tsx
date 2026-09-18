@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import { CalendarDays, Clock3 } from "lucide-react";
-import { useEffect, useState } from "react";
 
+import { EncounterStatusBadge } from "@/features/patient-encounters/components/encounter-status-badge";
 import { routes } from "@/lib/routes";
 
 import { EncounterActionsMenu } from "../patient-encounters/components/encounter-actions-menu";
@@ -13,7 +13,6 @@ import {
   formatAppointmentDate,
   formatTimeRange,
 } from "./patient-overview.formatters";
-import { isPatientAppointmentLive } from "./patient-overview.live";
 import type { PatientAppointment } from "./patient-overview.types";
 
 export function PatientAppointmentCard({
@@ -21,18 +20,7 @@ export function PatientAppointmentCard({
 }: {
   appointment: PatientAppointment;
 }) {
-  const [isLive, setIsLive] = useState(appointment.status === "live");
-
-  useEffect(() => {
-    const updateLiveState = () => {
-      setIsLive(isPatientAppointmentLive(appointment));
-    };
-
-    updateLiveState();
-    const intervalId = window.setInterval(updateLiveState, 30_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [appointment]);
+  const isLive = appointment.status === "live";
 
   return (
     <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center">
@@ -59,14 +47,12 @@ export function PatientAppointmentCard({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:justify-self-start">
-        <span className="inline-flex min-h-7 items-center rounded-full bg-status-successBg px-3 text-[11px] font-medium whitespace-nowrap text-status-success">
-          Confirmada
-        </span>
-        {isLive ? (
-          <span className="inline-flex min-h-7 items-center rounded-full bg-status-dangerBg px-3 text-[11px] font-medium whitespace-nowrap text-status-danger">
-            Ao vivo
-          </span>
-        ) : null}
+        <EncounterStatusBadge
+          className="min-h-7 text-[11px] font-medium whitespace-nowrap"
+          status={appointment.status}
+        >
+          {appointment.statusLabel}
+        </EncounterStatusBadge>
       </div>
       <dl className="grid gap-2 text-xs text-[var(--tes-color-text-secondary-app)] sm:block">
         <div className="flex items-center gap-2">

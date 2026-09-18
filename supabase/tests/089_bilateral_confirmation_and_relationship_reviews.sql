@@ -269,8 +269,8 @@ select is(
 select public.auto_confirm_sessions((select ends_at + interval '40 days' from public.bookings where id = 'b8000000-0000-4000-8000-000000000003'));
 select is(
   (select count(*)::integer from public.session_participant_confirmations where booking_id = 'b8000000-0000-4000-8000-000000000003' and source = 'automatic'),
-  0,
-  'automatic confirmation pauses while the private quality review SLA has not elapsed'
+  2,
+  'automatic confirmation remains independent from the private quality review'
 );
 select is(
   public.submit_session_quality_feedback_v1(

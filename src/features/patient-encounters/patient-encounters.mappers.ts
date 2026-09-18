@@ -186,15 +186,17 @@ function mapPatientEncounter(
   if (!therapist || !service || !therapy) return null;
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
-  const paymentScheduled = isFutureV10ChargeScheduled(booking, payment);
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
-  const status = getEncounterStatus(
-    booking,
-    payment,
-    reschedule,
-    input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
-    input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
-  );
+  const { paymentScheduled, status, statusLabel } =
+    getPatientEncounterStatusPresentation({
+      booking,
+      feedbackPending:
+        input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
+      patientHasEntryEntitlement:
+        input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
+      payment,
+      reschedule,
+    });
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
   return {
     actionHint: paymentScheduled
@@ -218,9 +220,7 @@ function mapPatientEncounter(
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
-    statusLabel: paymentScheduled
-      ? "Reservado"
-      : getStatusLabel(status, booking.status),
+    statusLabel,
     summaryId,
     therapist: {
       avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
@@ -234,8 +234,36 @@ function mapPatientEncounter(
   };
 }
 
+export function getPatientEncounterStatusPresentation(input: {
+  booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">;
+  feedbackPending?: boolean;
+  patientHasEntryEntitlement?: boolean;
+  payment: SessionPaymentRecord | null;
+  reschedule: RescheduleRecord | null;
+}) {
+  const paymentScheduled = isFutureV10ChargeScheduled(
+    input.booking,
+    input.payment,
+  );
+  const status = getEncounterStatus(
+    input.booking,
+    input.payment,
+    input.reschedule,
+    input.patientHasEntryEntitlement ?? false,
+    input.feedbackPending ?? false,
+  );
+
+  return {
+    paymentScheduled,
+    status,
+    statusLabel: paymentScheduled
+      ? "Reservado"
+      : getStatusLabel(status, input.booking.status),
+  };
+}
+
 function getEncounterStatus(
-  booking: BookingRecord,
+  booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">,
   payment: SessionPaymentRecord | null,
   reschedule: RescheduleRecord | null,
   patientHasEntryEntitlement: boolean,
@@ -355,7 +383,7 @@ function getPrimaryAction(
 }
 
 function isFutureV10ChargeScheduled(
-  booking: BookingRecord,
+  booking: Pick<BookingRecord, "starts_at" | "status">,
   payment: SessionPaymentRecord | null,
 ) {
   return (

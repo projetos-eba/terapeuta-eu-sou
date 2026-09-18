@@ -34,6 +34,7 @@ import { SessionOperationActions } from "@/features/session-actions/session-oper
 import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
 import { SessionQualityStatus } from "@/features/session-feedback/components/session-quality-status";
+import { SharedIntakeCard } from "@/features/patient-session-detail/components/shared-intake-card";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
@@ -101,9 +102,8 @@ export default async function TherapistSessionDetailPage({
   ]);
   const feedbackStatus = feedbackSummary.status;
   if (feedbackSummary.quality?.realizationStatus === "performed") {
-    presentation.label = feedbackSummary.quality.qualityReview?.isOpen ? "Realizada, em análise"
-      : feedbackSummary.quality.qualityReview?.allAnswered ? "Realizada (confirmada)" : "Sessão realizada";
-    presentation.description = "A realização foi registrada pelo sistema. Qualidade, confirmações individuais e financeiro são acompanhados separadamente.";
+    presentation.label = "Sessão realizada";
+    presentation.description = "A realização foi registrada pelo sistema.";
     presentation.state = "completed";
   }
 
@@ -130,6 +130,10 @@ export default async function TherapistSessionDetailPage({
 
         <AppPageMain className="order-2 gap-5 lg:order-1 xl:col-start-1 xl:row-span-2">
           <SessionAbout booking={booking} presentation={presentation} />
+          <SharedIntakeCard
+            perspective="therapist"
+            sharedNote={booking.sharedNote}
+          />
           <SessionOnlineAccess
             booking={booking}
             feedbackStatus={feedbackStatus}
@@ -819,7 +823,7 @@ function feedbackStatusDescription(
   isDoubleNoShow = false,
 ) {
   if (status === "confirm") {
-    return "Conte se a sessão foi bem-sucedida. Sua resposta é privada e não altera o financeiro ou as confirmações individuais.";
+    return "Conte se a sessão foi bem-sucedida. Sua resposta é privada e usada somente pelo TES.";
   }
   if (status === "report_incident") {
     return isDoubleNoShow

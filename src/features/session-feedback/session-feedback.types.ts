@@ -17,6 +17,7 @@ export type SessionFeedbackStatus =
   | "attendance_pending"
   | "eligible"
   | "incident_only"
+  | "submitted"
   | "sent"
   | "error";
 

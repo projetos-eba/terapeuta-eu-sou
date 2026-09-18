@@ -121,11 +121,12 @@ paciente só recebe acesso de join depois do evento confiável do terapeuta.
 O feedback privado só fica disponível após o fim programado ou encerramento
 definitivo e joins confiáveis de ambos na tentativa atual. `feedback=1` apenas
 pede abertura; não altera elegibilidade. A pessoa informa se a sessão realizada
-foi bem-sucedida. Resposta negativa exige motivo técnico ou “outro”, cria
-ticket privado com prazo de cinco dias, mas não classifica “não realizada” nem
-altera Transfer. Ausência após T+10 é classificada pelo sistema, separadamente;
-os vencimentos automáticos de 7/30 dias revalidam a realização e são suspensos
-somente enquanto um relato de qualidade estiver dentro do prazo sem resposta.
+foi bem-sucedida. A resposta é um sinal privado para o TES: não confirma
+participação, não classifica realização ou ausência e não altera Transfer,
+pagamento, reembolso ou repasse. Resposta negativa exige motivo técnico ou
+“outro” e cria ticket privado com prazo de cinco dias. Ausência após T+10 é
+classificada pelo sistema, separadamente; os vencimentos automáticos de 7/30
+dias usam somente suas próprias evidências operacionais.
 
 Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
 webhook assinado. Fixtures com pagamento direto sao permitidas somente para

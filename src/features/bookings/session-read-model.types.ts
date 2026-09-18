@@ -115,6 +115,7 @@ export type TherapistPendingConfirmationsSummary = {
 };
 
 export type TherapistSessionDetailReadModel = SessionReadModelItem & {
+  sharedNote: string | null;
   therapistProfileId: string;
   version: 1;
 };

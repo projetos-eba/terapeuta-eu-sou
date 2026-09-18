@@ -84,7 +84,7 @@ export type BookingDetailReviewRow = {
 
 export type BookingDetailIntakeRow = {
   focus_area: string;
-  shared_note: string;
+  shared_note: string | null;
   therapy_goal: string;
   visibility: "patient_therapist" | "private_patient" | "support" | string;
 };
@@ -266,9 +266,7 @@ export function mapBookingDetail(
     }),
     intake: {
       focusArea: input.intake?.focus_area ?? "Seu momento atual",
-      sharedNote:
-        input.intake?.shared_note ??
-        "Você poderá complementar suas informações antes do encontro, se desejar.",
+      sharedNote: normalizeSharedNote(input.intake?.shared_note),
       therapyGoal:
         input.intake?.therapy_goal ??
         input.service.description ??
@@ -335,6 +333,15 @@ export function mapBookingDetail(
       roleLabel: input.therapist.headline ?? "Terapeuta",
     },
   };
+}
+
+const LEGACY_EMPTY_SHARED_NOTE =
+  "Você poderá complementar suas informações antes do encontro, se desejar.";
+
+function normalizeSharedNote(value: string | null | undefined) {
+  const note = value?.trim() ?? "";
+
+  return note && note !== LEGACY_EMPTY_SHARED_NOTE ? note : null;
 }
 
 function mapReschedule(

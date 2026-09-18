@@ -25,6 +25,7 @@ describe("PatientAppointmentCard", () => {
           serviceLabel: "Reiki online",
           startsAt: "2026-08-27T15:00:00.000Z",
           status: "confirmed",
+          statusLabel: "Confirmada",
           therapyLabel: "Reiki",
           timezone: "America/Sao_Paulo",
         }}
@@ -74,7 +75,7 @@ describe("PatientAppointmentCard", () => {
     ).toBe(expected);
   });
 
-  it("exibe Confirmada e o badge Ao vivo durante a janela de entrada", () => {
+  it("exibe somente o estado canônico ao vivo e libera a entrada", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-27T14:45:00.000Z"));
 
@@ -92,14 +93,15 @@ describe("PatientAppointmentCard", () => {
           serviceLabel: "Reiki online",
           startsAt: "2026-08-27T15:00:00.000Z",
           status: "live",
+          statusLabel: "Ao vivo agora",
           therapyLabel: "Reiki",
           timezone: "America/Sao_Paulo",
         }}
       />,
     );
 
-    expect(screen.getByText("Confirmada")).toBeInTheDocument();
-    expect(screen.getByText("Ao vivo")).toBeInTheDocument();
+    expect(screen.queryByText("Confirmada")).not.toBeInTheDocument();
+    expect(screen.getByText("Ao vivo agora")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Entrar no encontro" }),
     ).toBeInTheDocument();
@@ -112,5 +114,37 @@ describe("PatientAppointmentCard", () => {
     expect(
       screen.queryByRole("link", { name: "Abrir chamado" }),
     ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["pending_payment", "Reservado"],
+    ["payment_incomplete", "Pagamento não concluído"],
+    ["reschedule_requested", "Reagendamento solicitado"],
+  ] as const)("exibe o estado %s recebido da agenda completa", (status, label) => {
+    render(
+      <PatientAppointmentCard
+        appointment={{
+          endsAt: "2026-08-29T16:00:00.000Z",
+          id: `booking-${status}`,
+          meetingUrl: null,
+          professional: {
+            avatarUrl: null,
+            id: "therapist-1",
+            name: "Ana Oliveira",
+          },
+          serviceLabel: "Reiki online",
+          startsAt: "2026-08-29T15:00:00.000Z",
+          status,
+          statusLabel: label,
+          therapyLabel: "Reiki",
+          timezone: "America/Sao_Paulo",
+        }}
+      />,
+    );
+
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver detalhes" }),
+    ).toHaveAttribute("href", `/app/encontros/booking-${status}`);
   });
 });

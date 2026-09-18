@@ -45,7 +45,7 @@ export type BookingDetailPageData = {
   encounterState: PatientEncounterPresentationState;
   intake: {
     focusArea: string;
-    sharedNote: string;
+    sharedNote: string | null;
     therapyGoal: string;
     visibility: "patient_therapist" | "private_patient" | "support";
   };

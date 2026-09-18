@@ -50,6 +50,7 @@ export async function getTherapistSessionDetail() {
     proposedTimezone: null,
     refundPending: false,
     rescheduleStatus: null,
+    sharedNote: null,
     serviceId: "fixture",
     serviceTitle: "Reiki online",
     therapistAmountCents: 12750,

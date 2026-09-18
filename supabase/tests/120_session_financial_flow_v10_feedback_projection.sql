@@ -210,8 +210,8 @@ select ok(
 select is(
   public.get_session_feedback_v2('b1200000-0000-4000-8000-000000000012')
     ->> 'confirmationState',
-  'blocked_for_review',
-  'the participant sees a review state without financial implementation terms'
+  'awaiting_both',
+  'a private quality review does not alter the separate confirmation state'
 );
 
 select is(
