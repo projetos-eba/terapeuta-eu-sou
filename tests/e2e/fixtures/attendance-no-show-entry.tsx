@@ -12,13 +12,28 @@ async function main() {
   const root = createRoot(document.getElementById("root")!);
   if (role === "quality-state-patient" || role === "quality-state-therapist") {
     const stage = new URLSearchParams(location.search).get("stage");
-    root.render(<main className="mx-auto max-w-6xl p-4 sm:p-6">
-      <SessionQualityStatus actorRole={role === "quality-state-patient" ? "patient" : "therapist"}
-        payload={{ realizationStatus: "performed", status: "eligible", feedback: null,
-          confirmation: null, actorConfirmation: null, supportTicketId: "own-private-ticket",
-          qualityReview: { isOpen: stage !== "answered", allAnswered: stage === "answered",
-            overdue: stage === "overdue", automaticConfirmationPaused: stage === "open", dueAt: null } }} />
-    </main>);
+    root.render(
+      <main className="mx-auto max-w-6xl p-4 sm:p-6">
+        <SessionQualityStatus
+          actorRole={role === "quality-state-patient" ? "patient" : "therapist"}
+          payload={{
+            realizationStatus: "performed",
+            status: "eligible",
+            feedback: null,
+            confirmation: null,
+            actorConfirmation: null,
+            supportTicketId: "own-private-ticket",
+            qualityReview: {
+              isOpen: stage !== "answered",
+              allAnswered: stage === "answered",
+              overdue: stage === "overdue",
+              automaticConfirmationPaused: stage === "open",
+              dueAt: null,
+            },
+          }}
+        />
+      </main>,
+    );
     return;
   }
   if (role === "quality-patient" || role === "quality-therapist") {
@@ -27,6 +42,11 @@ async function main() {
         <SessionFeedbackForm
           actorRole={role === "quality-patient" ? "patient" : "therapist"}
           bookingId="fixture"
+          publicReviewTherapist={
+            role === "quality-patient"
+              ? { id: "therapist-fixture", name: "Terapeuta de teste" }
+              : undefined
+          }
           sessionLabel="Sessão de teste"
         />
       </main>,
@@ -95,16 +115,39 @@ async function main() {
         },
       },
     };
-    if (role === "quality-admin" && data.sessionFeedback?.status === "available") {
+    if (
+      role === "quality-admin" &&
+      data.sessionFeedback?.status === "available"
+    ) {
       data.statusLabel = "confirmed";
       const feedback = data.sessionFeedback.data;
-      feedback.attendance = { ...feedback.attendance, classification: null, incidentId: null,
-        bothJoined: true, patientJoined: true, therapistJoined: true,
-        therapistPresentAtTolerance: true, therapistArrivedAt: "2026-09-16T21:01:00Z",
-        patientJoinedAt: "2026-09-16T21:02:00Z", therapistJoinedAt: "2026-09-16T21:02:00Z" };
-      feedback.qualityReview = { isOpen: true, overdue: false, allAnswered: false };
-      feedback.qualityReports = [{ id: "quality-report", authorRole: "patient", ticketId: "quality-ticket",
-        dueAt: "2026-09-21T21:20:00Z", answeredAt: null, overdue: false }];
+      feedback.attendance = {
+        ...feedback.attendance,
+        classification: null,
+        incidentId: null,
+        bothJoined: true,
+        patientJoined: true,
+        therapistJoined: true,
+        therapistPresentAtTolerance: true,
+        therapistArrivedAt: "2026-09-16T21:01:00Z",
+        patientJoinedAt: "2026-09-16T21:02:00Z",
+        therapistJoinedAt: "2026-09-16T21:02:00Z",
+      };
+      feedback.qualityReview = {
+        isOpen: true,
+        overdue: false,
+        allAnswered: false,
+      };
+      feedback.qualityReports = [
+        {
+          id: "quality-report",
+          authorRole: "patient",
+          ticketId: "quality-ticket",
+          dueAt: "2026-09-21T21:20:00Z",
+          answeredAt: null,
+          overdue: false,
+        },
+      ];
     }
     root.render(<AdminSessionDetailPage data={data} />);
     return;

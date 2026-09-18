@@ -35,6 +35,10 @@ export default async function PatientVideoCallRoute({
         backHref={routes.patient.encounterDetail(bookingId)}
         bookingId={bookingId}
         participantLabel={`Com ${data.therapist.name}`}
+        publicReviewTherapist={{
+          id: data.therapist.id,
+          name: data.therapist.name,
+        }}
         scheduleLabel={`${data.booking.dateLabel}, ${data.booking.timeRangeLabel}`}
         scheduledEndsAt={data.booking.endsAt}
         scheduledStartsAt={data.booking.startsAt}

@@ -10,6 +10,7 @@ import {
   ZoomVideoSessionStatus,
 } from "@/domain/tes";
 export { getTherapistSessionPaymentStatus } from "@/features/therapist-sessions/session-payment-status";
+export { getTherapistSessionChangePolicy } from "@/features/therapist-sessions/therapist-session-change-policy";
 
 // Only server/auth boundaries are simulated. No credentials or external writes.
 export const therapistRoutePolicies = { sessions: {} };

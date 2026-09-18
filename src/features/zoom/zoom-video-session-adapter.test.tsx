@@ -250,71 +250,79 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(countAccessRequests(fetchMock, "preview")).toBe(0);
   });
 
-  it("refreshes the therapist return state only after feedback persists", async () => {
-    const bookingId = "96000000-0000-4000-8000-000000000001";
-    const feedback = {
-      authorRole: "therapist",
-      comment: "",
-      createdAt: "2026-09-17T22:00:00.000Z",
-      id: "96000000-0000-4000-8000-000000000099",
-      qualityReason: null,
-      rating: 5,
-      successful: true,
-    };
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({
-          data: {
-            contractVersion: 2,
-            feedback: null,
-            sessionAttemptId: bookingId,
-            status: "eligible",
-          },
+  it.each(["patient", "therapist"] as const)(
+    "refreshes the %s return state only after its feedback persists",
+    async (actorRole) => {
+      const bookingId = "96000000-0000-4000-8000-000000000001";
+      const feedback = {
+        authorRole: actorRole,
+        comment: "",
+        createdAt: "2026-09-17T22:00:00.000Z",
+        id: "96000000-0000-4000-8000-000000000099",
+        qualityReason: null,
+        rating: 5,
+        successful: true,
+      };
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              contractVersion: 2,
+              feedback: null,
+              sessionAttemptId: bookingId,
+              status: "eligible",
+            },
+            ok: true,
+          }),
           ok: true,
-        }),
-        ok: true,
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({ data: { feedback }, ok: true }),
-        ok: true,
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          data: {
-            actorConfirmation: { source: "manual" },
-            contractVersion: 2,
-            feedback,
-            sessionAttemptId: bookingId,
-            status: "submitted",
-          },
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({ data: { feedback }, ok: true }),
           ok: true,
-        }),
-        ok: true,
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              actorConfirmation: null,
+              contractVersion: 2,
+              feedback,
+              sessionAttemptId: bookingId,
+              status: "submitted",
+            },
+            ok: true,
+          }),
+          ok: true,
+        });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(
+        <ZoomVideoSessionAdapter
+          access={allowedAccess}
+          actorRole={actorRole}
+          backHref={`/terapeuta/sessoes/${bookingId}`}
+          bookingId={bookingId}
+          initialFeedback
+        />,
+      );
+
+      await screen.findByRole("heading", {
+        name:
+          actorRole === "patient"
+            ? "Como foi seu encontro?"
+            : "Como foi sua sessão?",
       });
-    vi.stubGlobal("fetch", fetchMock);
+      fireEvent.click(screen.getByRole("button", { name: "Sim" }));
+      fireEvent.click(screen.getByRole("button", { name: "5 estrelas" }));
+      fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
 
-    render(
-      <ZoomVideoSessionAdapter
-        access={allowedAccess}
-        actorRole="therapist"
-        backHref={`/terapeuta/sessoes/${bookingId}`}
-        bookingId={bookingId}
-        initialFeedback
-      />,
-    );
-
-    await screen.findByRole("heading", { name: "Como foi sua sessão?" });
-    fireEvent.click(screen.getByRole("button", { name: "Sim" }));
-    fireEvent.click(screen.getByRole("button", { name: "5 estrelas" }));
-    fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
-
-    await screen.findByText("Sua avaliação foi registrada");
-    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
-    expect(
-      screen.getByRole("link", { name: "Voltar aos detalhes" }),
-    ).toHaveAttribute("href", `/terapeuta/sessoes/${bookingId}`);
-  });
+      await screen.findByText("Sua avaliação foi registrada");
+      await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+      expect(
+        screen.getByRole("link", { name: "Voltar aos detalhes" }),
+      ).toHaveAttribute("href", `/terapeuta/sessoes/${bookingId}`);
+    },
+  );
 
   it("keeps entry unavailable outside the join window", () => {
     render(

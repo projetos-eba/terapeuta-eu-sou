@@ -88,10 +88,18 @@ describe("OnlineSessionCard", () => {
   it("keeps the private assessment for a terminal encounter within its details", () => {
     render(
       <SessionOverviewCard
-        data={makeData({
-          financialStatus: SessionFinancialStatus.Paid,
-          status: BookingStatus.Completed,
-        })}
+        data={{
+          ...makeData({
+            financialStatus: SessionFinancialStatus.Paid,
+            status: BookingStatus.Completed,
+          }),
+          sessionQuality: {
+            confirmation: null,
+            feedback: null,
+            realizationStatus: "performed",
+            status: "eligible",
+          },
+        }}
       />,
     );
 
@@ -127,6 +135,37 @@ describe("OnlineSessionCard", () => {
     expect(screen.queryByText("Seu encontro online")).toBeNull();
     expect(screen.queryByText("Antes do encontro")).toBeNull();
   });
+
+  it.each(["submitted", "unavailable", "before_session"] as const)(
+    "does not ask to assess the encounter when own quality state is %s",
+    (status) => {
+      const data = makeData({
+        financialStatus: SessionFinancialStatus.Paid,
+        status: BookingStatus.Completed,
+      });
+      data.sessionQuality = {
+        confirmation: null,
+        counterpartConfirmation: null,
+        realizationStatus: "performed",
+        status,
+        feedback:
+          status === "submitted"
+            ? {
+                authorRole: "patient",
+                successful: true,
+                rating: 5,
+                comment: "",
+                createdAt: "2026-09-18T17:06:00Z",
+                id: "own-answer",
+              }
+            : null,
+      };
+      render(<SessionOverviewCard data={data} />);
+      expect(
+        screen.queryByRole("link", { name: /avaliar encontro/i }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("highlights a confirmed encounter without repeating utility actions", () => {
     render(

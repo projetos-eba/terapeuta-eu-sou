@@ -61,9 +61,13 @@ export async function queryTherapistSessionFeedback(
   const config = getSupabaseServerRestConfig(accessToken);
   if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
 
-  return supabaseServerRestRpc<unknown>(config, "get_session_feedback_v2", {
-    p_booking_id: bookingId,
-  });
+  return supabaseServerRestRpc<unknown>(
+    config,
+    "get_session_quality_feedback_v1",
+    {
+      p_booking_id: bookingId,
+    },
+  );
 }
 
 export type TherapistPendingRescheduleRow = {
