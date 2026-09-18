@@ -15,7 +15,9 @@ describe("admin operation mappers", () => {
             id: "therapist-1",
             is_accepting_bookings: true,
             is_public: false,
+            email: "ana.oliveira@example.test",
             plan: "premium_plus",
+            photo_url: "/images/avatar-terapeuta.jpeg",
             public_name: "Ana Oliveira",
             public_status: "draft",
             slug: "ana-oliveira",
@@ -26,7 +28,9 @@ describe("admin operation mappers", () => {
       })[0],
     ).toEqual(
       expect.objectContaining({
+        avatarUrl: "/images/avatar-terapeuta.jpeg",
         detailHref: "/admin/profissionais/therapist-1",
+        email: "ana.oliveira@example.test",
         id: "therapist-1",
         statusLabel: "approved",
         subtitle: "ana-oliveira",
