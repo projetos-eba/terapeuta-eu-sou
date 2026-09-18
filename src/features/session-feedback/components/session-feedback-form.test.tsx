@@ -93,7 +93,7 @@ describe("SessionFeedbackForm", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Sua resposta permanece privada e não interfere no pagamento nem no repasse. Obrigado por compartilhar como foi.",
+        "Sua participação foi confirmada. Obrigado por compartilhar como foi.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/prazo de segurança/i)).not.toBeInTheDocument();

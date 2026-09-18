@@ -56,6 +56,12 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   TES naquele ticket conta. Um ou dois relatos ficam separados. Sem joins
   bilaterais não há formulário, nota nem pendência de avaliação: usar suporte
   ou incidente de presença fora do feedback.
+- Um envio de avaliação “Sim” ou “Não” também grava a confirmação individual
+  `completed` do próprio autor, na mesma transação e tentativa atual. Os dois
+  registros permanecem separados; nunca confirmar a outra pessoa nem inferir
+  confirmação de Transfer. Repetições são idempotentes e conflito desfaz ambas
+  as escritas. Respostas anteriores só são regularizadas quando persistidas e
+  sustentadas por presença bilateral confiável e sala encerrada.
 - Qualidade, confirmação e presença não chamam nem bloqueiam Transfer, Refund
   ou Reversal. Confirmação automática de cliente/terapeuta vence após 7/30 dias
   do término previsto, revalida a tentativa e nunca ocorre em “Não realizada”.

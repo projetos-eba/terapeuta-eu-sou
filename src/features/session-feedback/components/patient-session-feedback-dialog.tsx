@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
 
-import type { SessionFeedbackRecord } from "../session-feedback.types";
+import type { SessionFeedbackReadPayload, SessionFeedbackRecord } from "../session-feedback.types";
 import { PatientPublicReviewForm } from "./patient-public-review-form";
 import { SessionFeedbackForm } from "./session-feedback-form";
 
@@ -25,7 +25,7 @@ export function PatientSessionFeedbackDialog({
   session,
 }: {
   onClose?: () => void;
-  onSessionSubmitted?: () => void;
+  onSessionSubmitted?: (payload: SessionFeedbackReadPayload | null) => void;
   session: PatientFeedbackSession;
 }) {
   const [step, setStep] = useState<"session" | "public-review">("session");
@@ -56,9 +56,9 @@ export function PatientSessionFeedbackDialog({
             actorRole="patient"
             bookingId={session.bookingId}
             introductoryMessage={`${session.serviceLabel} com ${session.therapist.name}`}
-            onSubmitted={(feedback: SessionFeedbackRecord) => {
+            onSubmitted={(feedback: SessionFeedbackRecord, payload) => {
               setCompletedFeedback(feedback.successful === true || (feedback.successful === undefined && feedback.outcome === "completed"));
-              onSessionSubmitted?.();
+              onSessionSubmitted?.(payload);
             }}
             sessionLabel={`${session.dateLabel} · ${session.timeLabel}`}
           />

@@ -401,6 +401,8 @@ describe("therapist finance mappers", () => {
   it("maps the simplified payout agenda and history", () => {
     const payouts = mapTherapistPayoutsContract({
       agenda: {
+        awaitingBankDate: [{ amountCents: 4000, composition: [], date: null, id: "bank-date-pending", sessionCount: 1, status: "awaiting_bank_date" }],
+        balanceAvailable: [{ amountCents: 10455, composition: [], date: "2026-08-01", id: "balance:2026-08-01", sessionCount: 1, status: "balance_schedule" }],
         days: 15,
         inTransit: [
           {
@@ -425,7 +427,7 @@ describe("therapist finance mappers", () => {
         periodStart: "2026-07-28",
         predicted: [],
       },
-      contractVersion: 3,
+      contractVersion: 4,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",
@@ -459,6 +461,8 @@ describe("therapist finance mappers", () => {
     });
 
     expect(payouts.agenda.inTransit[0]?.amountCents).toBe(8000);
+    expect(payouts.agenda.balanceAvailable[0]?.date).toBe("2026-08-01");
+    expect(payouts.agenda.awaitingBankDate[0]?.date).toBeNull();
     expect(payouts.agenda.inTransit[0]?.status).toBe("in_transit");
     expect(payouts.historyItems[0]?.status).toBe("received");
     expect(payouts.summary.receivedCents).toBe(8000);

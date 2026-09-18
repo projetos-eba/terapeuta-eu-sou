@@ -9,8 +9,8 @@ export function SessionQualityStatus({ payload, actorRole }: {
 }) {
   if (payload?.realizationStatus !== "performed") return null;
   const review = payload.qualityReview;
-  const title = review?.isOpen ? "Realizada, em análise" : review?.allAnswered
-    ? "Realizada (confirmada)" : "Sessão realizada";
+  const subject = actorRole === "patient" ? "Encontro" : "Sessão";
+  const title = review?.isOpen ? `${subject} realizado, em análise` : `${subject} realizado`;
   const confirmation = payload.actorConfirmation;
   const ticketHref = payload.supportTicketId
     ? actorRole === "patient" ? routes.patient.supportTicketDetail(payload.supportTicketId)
@@ -21,9 +21,8 @@ export function SessionQualityStatus({ payload, actorRole }: {
       {review?.isOpen ? <p>{review.overdue
         ? "O prazo de 5 dias do TES venceu. A análise continua aberta e a equipe foi alertada."
         : "O TES responderá pelo suporte em até 5 dias corridos após o relato."}</p> : null}
-      <p>{confirmation ? `Sua confirmação foi registrada ${confirmation.source === "automatic" ? "pelo sistema" : "por você"}.`
-        : `Sua confirmação individual permanece pendente. Prazo automático: ${actorRole === "patient" ? "7" : "30"} dias após o horário final previsto.`}</p>
-      <p>A análise de qualidade e a confirmação não alteram o pagamento ou o repasse.</p>
+      <p>{confirmation ? "Sua participação está confirmada."
+        : `Sua confirmação ainda está pendente. Você pode responder até ${actorRole === "patient" ? "7" : "30"} dias após o fim ${actorRole === "patient" ? "do encontro" : "da sessão"}.`}</p>
       {ticketHref ? <Link className="inline-flex min-h-11 items-center font-extrabold text-brand-primary underline" href={ticketHref as Route<string>}>Acompanhar meu relato no suporte</Link> : null}
     </section>
   );

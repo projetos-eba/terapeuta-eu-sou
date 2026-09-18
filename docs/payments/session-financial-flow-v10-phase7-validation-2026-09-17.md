@@ -258,3 +258,64 @@ Nenhuma dessas operações foi realizada; a drenagem V9 não foi declarada concl
 Estas alterações de testes/documentação aguardam PR manual. Nenhum teste de
 envio real de e-mail, novo reembolso ou novo evento Stripe foi necessário nesta
 rodada. Produção permaneceu intocada.
+
+## Correções locais posteriores — repasses e resposta individual
+
+Esta seção atualiza apenas o estado **local** após o diagnóstico de nove
+Transfers V10 sem vínculo com depósito bancário em HML. Ela não certifica que
+HML já recebeu estas alterações.
+
+- A projeção `get_private_therapist_payouts_v4` inclui o valor líquido dos
+  Transfers ainda sem depósito, desconta reversões concluídas e exclui
+  reembolso/disputa pendente ou resultado ambíguo. Disponibilidade do saldo
+  Stripe e previsão de chegada à conta são exibidas separadamente. Quando há
+  depósito reconciliado, a previsão anterior sai da projeção; valor sem data
+  continua visível, sem data inventada.
+- A composição V4 substitui integralmente a agenda futura V3, preservando o
+  histórico de depósitos efetivos. Um repasse já alocado com previsão bancária
+  não aparece novamente na disponibilidade do saldo. Reversão posterior retira
+  a data bancária potencialmente desatualizada e reduz o valor remanescente;
+  reembolso pendente retira a previsão. Testes SQL cobrem também os totais do
+  resumo, que não podem continuar somando a projeção antiga.
+- Um envio de avaliação registra também a confirmação **da própria pessoa**,
+  na mesma transação. Reenvios não duplicam a confirmação. Resposta negativa
+  continua abrindo análise privada, sem alterar pagamento ou repasse.
+- A migration só recompõe respostas antigas já persistidas na tentativa atual,
+  com presença bilateral e sala encerrada verificadas, sem ocorrência aberta.
+  A sessão HML `e032e6de-4c22-48a2-aae4-79ec3f7cf785` não tinha resposta
+  persistida na leitura anterior; não se presume envio nem se cria confirmação
+  para ela sem evidência.
+- Docker local: migrations `20260917220000` e `20260917221000` aplicadas sem
+  reset; a definição V4 foi atualizada localmente antes de qualquer PR.
+  Suíte SQL completa: **164 arquivos, 3.182 testes, PASS**, incluindo
+  autoria individual e reenvio idempotente. Suíte Vitest: **259 arquivos,
+  1.320 testes, PASS**. Typecheck, lint e build passaram. O `db lint` retornou
+  código zero, mas ainda lista avisos/erros de análise em funções pgTAP
+  antigas; não é interpretado como schema inteiramente sem alertas.
+- No IAB **local**, login com conta fictícia e navegação por
+  Financeiro → Repasses mostraram R$ 75,00 em “Ainda sem data bancária”, com
+  composição de uma sessão. Uma sessão fictícia adicional, com presença
+  bilateral verificada e sala encerrada, permitiu o clique real de “Sim”,
+  cinco estrelas e envio no IAB. O banco confirmou uma avaliação, somente a
+  confirmação individual da pessoa que respondeu e pagamento inalterado.
+  Após detectar que a faixa de status permanecia antiga até recarregar, o
+  detalhe passou a consumir a leitura atualizada retornada após o envio.
+  Novo teste IAB em outra sessão fictícia mostrou “Sua participação está
+  confirmada” imediatamente, com o modal ainda aberto; “Concluir agora” o
+  fechou e sincronizou os detalhes. O teste de componente cobre a transição.
+  Nenhum e-mail ou evento Stripe real foi emitido por esses dados locais.
+- As duas sessões descartáveis concluídas foram movidas somente no Docker para
+  datas históricas sem conflito e marcadas como concluídas, preservando seus
+  registros de prova. Antes disso, elas entravam na janela de testes de agenda
+  e de classificação automática; depois do isolamento, os testes afetados e
+  a suíte integral passaram. O dry-run local de migrations retornou
+  `upToDate: true`. Não foi feita alteração em HML.
+
+Permanecem abertos, após PR manual: confirmar paridade de migrations,
+Functions e bundle em HML; retestar os nove repasses e a avaliação com sessão
+elegível; executar com registros novos e isolados a falha de cobrança T-24 e a
+recuperação, incluindo comunicação, autenticação, duplicidade e limite de início;
+validar os dois ramos do reembolso administrativo com evidências de Stripe,
+banco e frontend; observar os canários e as obrigações V9. Não usar o canário
+de 15/09 nem `cf95afc2-8aeb-4e91-8461-4da6e427e334` como massa descartável.
+Produção segue sem aprovação.

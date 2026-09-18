@@ -495,11 +495,11 @@ function FeedbackSentState({
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
         {payload?.qualityReview?.isOpen
           ? payload.qualityReview.overdue
-            ? "Realizada, em análise. O prazo de 5 dias do TES venceu; seu relato continua disponível no suporte. O financeiro não foi alterado."
-            : "Realizada, em análise. O TES responderá pelo suporte em até 5 dias corridos. O financeiro não foi alterado."
+            ? "Sua participação foi confirmada. A equipe TES continua acompanhando seu relato pelo suporte."
+            : "Sua participação foi confirmada. A equipe TES responderá seu relato pelo suporte em até 5 dias corridos."
           : payload?.qualityReview?.allAnswered
-            ? "Realizada (confirmada). O TES respondeu aos relatos. As confirmações individuais permanecem separadas."
-            : "Sua resposta permanece privada e não interfere no pagamento nem no repasse. Obrigado por compartilhar como foi."}
+            ? "Sua participação foi confirmada e a equipe TES respondeu aos relatos."
+            : "Sua participação foi confirmada. Obrigado por compartilhar como foi."}
       </p>
       <div className="flex flex-wrap gap-2 text-sm font-extrabold text-brand-deep">
         <span className="rounded-full bg-white px-3 py-2">
