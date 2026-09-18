@@ -167,7 +167,9 @@ Capacidades preservadas antes da implementação:
 - estados `available`, `unavailable` e `forbidden` distintos;
 - acesso ao detalhe do profissional;
 - acesso à fila de verificações;
-- DTO minimizado sem documentos privados, conteúdo clínico ou dados sensíveis;
+- DTO minimizado sem documentos privados, conteúdo clínico, telefone ou
+  endereço; e-mail e foto pública do perfil aparecem exclusivamente para a
+  identificação operacional do Admin;
 - suspensão/reativação somente no detalhe, quando permitida;
 - aprovação e decisões somente no fluxo de verificação auditado.
 

@@ -24,7 +24,9 @@ export type AdminOperationField = {
 };
 
 export type AdminOperationRow = {
+  avatarUrl?: string;
   detailHref?: string;
+  email?: string;
   fields: AdminOperationField[];
   id: string;
   statusLabel?: string;

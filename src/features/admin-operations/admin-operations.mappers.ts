@@ -38,9 +38,11 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
     );
 
   return {
+    avatarUrl: asText(row.photo_url) || undefined,
     detailHref: pendingVerification
       ? routes.admin.verificationDetail(verificationId)
       : getAdminOperationDetailHref("professionals", id),
+    email: asText(row.email) || undefined,
     fields: compactFields([
       field("Plano", asText(row.plan)),
       field("Perfil público", asText(row.public_status)),
