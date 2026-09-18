@@ -154,7 +154,7 @@ export function mapSessionPresentation(
     return presentation(
       "cancelled",
       "Sessão não realizada",
-      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      "Se precisar de ajuda, fale com o suporte.",
       "critical",
       "danger",
       actions,
@@ -164,8 +164,8 @@ export function mapSessionPresentation(
   if (session.attendanceStatus === AttendanceStatus.RequiresReview) {
     return presentation(
       "requires_attention",
-      "Sessão não realizada — acesso em análise",
-      "O TES está verificando as chegadas e entradas registradas antes de definir o desfecho.",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
       "critical",
       "warning",
       actions,
@@ -178,19 +178,22 @@ export function mapSessionPresentation(
   ) {
     return presentation(
       "cancelled",
-      "Sessão não realizada — terapeuta não compareceu",
-      "O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
       "critical",
       "danger",
       actions,
     );
   }
 
-  if (session.attendanceStatus === AttendanceStatus.PatientNoShow) {
+  if (
+    session.attendanceStatus === AttendanceStatus.PatientNoShow ||
+    session.bookingStatus === BookingStatus.NoShowPatient
+  ) {
     return presentation(
       "cancelled",
-      "Sessão não realizada — cliente não compareceu",
-      "A chegada do terapeuta foi registrada dentro da tolerância.",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
       "medium",
       "danger",
       actions,
@@ -203,8 +206,8 @@ export function mapSessionPresentation(
   ) {
     return presentation(
       "cancelled",
-      "Não realizada",
-      "Esta sessão já foi encerrada e não pode ser cancelada novamente.",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
       "medium",
       "danger",
       actions,
@@ -391,9 +394,8 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
     [ZoomAccessReason.TooLate]: "Janela de acesso encerrada",
     [ZoomAccessReason.SessionEnded]: "Sessão encerrada",
     [ZoomAccessReason.ArrivalWindowExpired]: "Prazo de chegada encerrado",
-    [ZoomAccessReason.TherapistArrivalWindowExpired]:
-      "Terapeuta não compareceu",
-    [ZoomAccessReason.BothNoShow]: "Encontro não realizado",
+    [ZoomAccessReason.TherapistArrivalWindowExpired]: "Sessão não realizada",
+    [ZoomAccessReason.BothNoShow]: "Sessão não realizada",
     [ZoomAccessReason.TechnicalUnavailable]: "Vídeo indisponível no momento",
     [ZoomAccessReason.Unknown]: "Acesso indisponível",
   };

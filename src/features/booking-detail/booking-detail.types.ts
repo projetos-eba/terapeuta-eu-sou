@@ -10,14 +10,8 @@ export type BookingDetailStatus = BookingStatus | "live";
 export type BookingDetailPageData = {
   sessionQuality?: import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
   attendanceReview?: {
-    classification:
-      | "no_show_therapist"
-      | "no_show_both"
-      | "requires_review"
-      | "participant_report";
     financialResolution: string | null;
     isOpen: boolean;
-    reviewDueAt: string | null;
   } | null;
   delayNotice?: SessionDelayNoticeState;
   booking: {

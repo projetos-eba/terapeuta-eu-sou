@@ -30,6 +30,7 @@ export type PatientEncounterWaitingRoomKind =
   | "therapist_absent_prolonged"
   | "therapist_no_show"
   | "both_no_show"
+  | "not_performed"
   | "too_early"
   | "waiting_therapist";
 
@@ -135,11 +136,13 @@ export function getPatientEncounterPresentationState({
         waitingRoom.kind !== "ended" &&
         waitingRoom.kind !== "therapist_no_show" &&
         waitingRoom.kind !== "both_no_show" &&
+        waitingRoom.kind !== "not_performed" &&
         waitingRoom.kind !== "operational_unavailable",
       title:
         waitingRoom.kind === "therapist_no_show" ||
-        waitingRoom.kind === "both_no_show"
-          ? "Acompanhe a análise do encontro"
+        waitingRoom.kind === "both_no_show" ||
+        waitingRoom.kind === "not_performed"
+          ? "Sessão não realizada"
           : payment.kind === "confirmed" || payment.kind === "scheduled"
             ? "Prepare seu encontro"
             : "Confirme o pagamento para preparar a sala",
@@ -163,15 +166,14 @@ function getPaymentState({
 }): PatientEncounterPresentationState["payment"] {
   if (
     financialStatus === SessionFinancialStatus.Paid &&
-    (bookingStatus === BookingStatus.NoShowTherapist ||
+    (bookingStatus === BookingStatus.NoShowPatient ||
+      bookingStatus === BookingStatus.NoShowTherapist ||
       bookingStatus === BookingStatus.NoShowBoth)
   ) {
     return {
       kind: "confirmed",
       message:
-        bookingStatus === BookingStatus.NoShowBoth
-          ? "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
-          : "O encontro não foi realizado e está em análise pelo TES. Avisaremos você sobre o resultado.",
+        "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
       retryAllowed: false,
       slotState: "review",
       title: "Pagamento confirmado",
@@ -338,20 +340,25 @@ function getWaitingRoomState({
   startsAtMs: number;
   zoomAccess: ZoomAccessState | null;
 }): PatientEncounterPresentationState["waitingRoom"] {
+  if (bookingStatus === BookingStatus.NoShowPatient) {
+    return {
+      kind: "not_performed",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
+    };
+  }
   if (bookingStatus === BookingStatus.NoShowTherapist) {
     return {
-      kind: "therapist_no_show",
-      message:
-        "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
-      title: "Encontro não realizado",
+      kind: "not_performed",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
     };
   }
   if (bookingStatus === BookingStatus.NoShowBoth) {
     return {
       kind: "both_no_show",
-      message:
-        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
-      title: "Encontro não realizado",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
     };
   }
   if (isTerminalBookingStatus(bookingStatus)) {
@@ -422,18 +429,17 @@ function getWaitingRoomState({
   if (zoomAccess?.reason === ZoomAccessReason.TherapistArrivalWindowExpired) {
     return {
       kind: "therapist_no_show",
-      title: "Encontro não realizado",
+      title: "Sessão não realizada",
       message:
-        "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento.",
+        "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte.",
     };
   }
 
   if (zoomAccess?.reason === ZoomAccessReason.BothNoShow) {
     return {
       kind: "both_no_show",
-      title: "Encontro não realizado",
-      message:
-        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      title: "Sessão não realizada",
+      message: "Se precisar de ajuda, fale com o suporte.",
     };
   }
 
@@ -545,7 +551,8 @@ function getActions(
 
   if (
     waitingRoomKind === "therapist_no_show" ||
-    waitingRoomKind === "both_no_show"
+    waitingRoomKind === "both_no_show" ||
+    waitingRoomKind === "not_performed"
   ) {
     return ["contact_support"];
   }
@@ -670,7 +677,8 @@ export function getZoomRecoveryActionLabels(
   if (
     kind === "therapist_absent_prolonged" ||
     kind === "therapist_no_show" ||
-    kind === "both_no_show"
+    kind === "both_no_show" ||
+    kind === "not_performed"
   ) {
     return [...base, "Copiar referência", "Falar com suporte"];
   }

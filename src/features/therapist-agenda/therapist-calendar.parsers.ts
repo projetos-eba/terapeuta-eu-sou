@@ -57,7 +57,7 @@ export function parseTherapistCalendarReadModel(
     ) {
       attentionItems.push({
         bookingId: booking.bookingId,
-        description: attendanceReviewDescription(booking.attendanceStatus),
+        description: attendanceReviewDescription(),
         id: booking.attendanceIncidentId,
         kind: "attendance_review",
         startsAt: booking.startsAt,
@@ -104,11 +104,8 @@ function parseBooking(value: unknown) {
   };
 }
 
-function attendanceReviewDescription(status: string) {
-  if (status === "therapist_no_show") {
-    return "Sessão não realizada — sua presença está em análise";
-  }
-  return "Sessão não realizada — acesso em análise";
+function attendanceReviewDescription() {
+  return "Sessão não realizada. Se precisar de ajuda, fale com o suporte.";
 }
 
 function parseService(value: unknown): TherapistCalendarService {

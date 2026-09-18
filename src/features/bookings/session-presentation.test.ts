@@ -147,7 +147,7 @@ describe("mapSessionPresentation", () => {
 
     expect(result.actions.canCancel).toBe(false);
     expect(result.actions.canReschedule).toBe(false);
-    expect(result.label).toBe("Não realizada");
+    expect(result.label).toBe("Sessão não realizada");
     expect(result.tone).toBe("danger");
     expect(getSessionOperationDisabledReason(session, "cancel")).toContain(
       "já foi encerrada",
@@ -157,16 +157,16 @@ describe("mapSessionPresentation", () => {
   it.each([
     [
       AttendanceStatus.PatientNoShow,
-      "Sessão não realizada — cliente não compareceu",
+      "Sessão não realizada",
     ],
     [
       AttendanceStatus.TherapistNoShow,
-      "Sessão não realizada — terapeuta não compareceu",
+      "Sessão não realizada",
     ],
     [AttendanceStatus.BothNoShow, "Sessão não realizada"],
     [
       AttendanceStatus.RequiresReview,
-      "Sessão não realizada — acesso em análise",
+      "Sessão não realizada",
     ],
   ])(
     "presents the authoritative attendance outcome %s",
@@ -189,7 +189,7 @@ describe("mapSessionPresentation", () => {
 
     expect(result.state).toBe("cancelled");
     expect(result.description).toBe(
-      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      "Se precisar de ajuda, fale com o suporte.",
     );
     expect(result.description).not.toContain("repasse");
   });
@@ -201,7 +201,7 @@ describe("mapSessionPresentation", () => {
     );
 
     expect(result.description).toBe(
-      "O TES está analisando o ocorrido e avisará você sobre o resultado. Se precisar, entre em contato com nosso suporte.",
+      "Se precisar de ajuda, fale com o suporte.",
     );
     expect(result.description).not.toMatch(/Admin|reembolso|repasse/i);
   });

@@ -31,6 +31,13 @@ a mudança não apaga nem reclassifica registros anteriores.
 - `submit_session_quality_feedback_v1` persiste somente qualidade.
 - O estado `submitted` continua removendo a ação de avaliar para a pessoa que
   já respondeu, sem depender de confirmação individual.
+- Confirmação manual `completed` da tentativa atual, gravada pelo formulário
+  anterior, impede pedir novamente uma resposta do mesmo participante. Ela
+  continua no histórico legado e não é convertida em avaliação V2.
+- Sessão comprovadamente realizada que depois foi reembolsada mantém o estado
+  visível de reembolso. O cron ainda registra a confirmação individual após
+  7/30 dias se houve entrada de ambos e não há classificação de ausência;
+  não muda pagamento, reembolso nem cria nota de qualidade.
 - A avaliação pública do terapeuta continua opcional, é separada e só é
   apresentada ao paciente após uma avaliação privada positiva de encontro
   realizado.

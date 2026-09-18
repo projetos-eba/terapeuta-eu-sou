@@ -18,6 +18,7 @@ export type SessionFeedbackStatus =
   | "eligible"
   | "incident_only"
   | "automatically_confirmed"
+  | "previously_recorded"
   | "submitted"
   | "sent"
   | "error";

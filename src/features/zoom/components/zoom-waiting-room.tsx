@@ -33,6 +33,7 @@ type ZoomWaitingRoomProps = {
     | "therapist_absent_prolonged"
     | "therapist_no_show"
     | "both_no_show"
+    | "not_performed"
     | "too_early"
     | "waiting_therapist"
     | "ended"
@@ -95,7 +96,8 @@ export function ZoomWaitingRoom({
   const isProlongedAbsence = kind === "therapist_absent_prolonged";
   const isTherapistNoShow = kind === "therapist_no_show";
   const isBothNoShow = kind === "both_no_show";
-  const isAttendanceNoShow = isTherapistNoShow || isBothNoShow;
+  const isAttendanceNoShow =
+    isTherapistNoShow || isBothNoShow || kind === "not_performed";
   const isEnded = kind === "ended";
   const hasCameraPreview = cameraPreviewEnabled;
   const hasAmbientAudio = Boolean(ambientAudioSrc);
@@ -276,55 +278,49 @@ export function ZoomWaitingRoom({
     setIsMusicPlaying(false);
   }
 
-  const statusTitle =
-    isTherapistNoShow || isBothNoShow
-      ? "Encontro não realizado"
-      : isEntryAvailable
-        ? "Entrada liberada"
-        : kind === "arrival_expired"
-          ? "Prazo de chegada encerrado"
-          : kind === "schedule_ended"
-            ? "Horário encerrado"
-            : isTooEarly
-              ? "A sala será liberada em breve"
-              : isEnded
-                ? "Sala encerrada"
-                : isProlongedAbsence
-                  ? "Ainda estamos aguardando"
-                  : isOperationalUnavailable
-                    ? "Vamos atualizar a sala"
-                    : actorRole === "patient"
-                      ? "Aguardando terapeuta entrar"
-                      : "Aguardando paciente entrar";
-  const displayStatusTitle = isBothNoShow
-    ? actorRole === "patient"
-      ? "Encontro não realizado"
-      : "Sessão não realizada"
-    : statusTitle;
-  const statusMessage = !isOnline
-    ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
-    : message ||
-      (isTherapistNoShow
-        ? "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro. Não houve confirmação de atendimento."
-        : null) ||
-      (isBothNoShow
-        ? "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES."
-        : null) ||
-      (kind === "arrival_expired"
-        ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
+  const statusTitle = isAttendanceNoShow
+    ? "Sessão não realizada"
+    : isEntryAvailable
+      ? "Entrada liberada"
+      : kind === "arrival_expired"
+        ? "Prazo de chegada encerrado"
         : kind === "schedule_ended"
-          ? "O horário deste encontro terminou e não permite nova entrada."
-          : isEnded
-            ? "Este encontro foi encerrado e não permite nova entrada."
-            : isTooEarly
-              ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
-              : kind === "waiting_therapist"
-                ? actorRole === "patient"
-                  ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
-                  : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
+          ? "Horário encerrado"
+          : isTooEarly
+            ? "A sala será liberada em breve"
+            : isEnded
+              ? "Sala encerrada"
+              : isProlongedAbsence
+                ? "Ainda estamos aguardando"
                 : isOperationalUnavailable
-                  ? "Não foi possível confirmar a disponibilidade da sala. Tente atualizar."
-                  : "Estamos confirmando a disponibilidade da sala.");
+                  ? "Vamos atualizar a sala"
+                  : actorRole === "patient"
+                    ? "Aguardando terapeuta entrar"
+                    : "Aguardando paciente entrar";
+  const displayStatusTitle = statusTitle;
+  const statusMessage =
+    isTherapistNoShow && actorRole === "patient"
+      ? "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte."
+      : isAttendanceNoShow
+        ? "Se precisar de ajuda, fale com o suporte."
+        : !isOnline
+          ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
+          : message ||
+            (kind === "arrival_expired"
+              ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
+              : kind === "schedule_ended"
+                ? "O horário deste encontro terminou e não permite nova entrada."
+                : isEnded
+                  ? "Este encontro foi encerrado e não permite nova entrada."
+                  : isTooEarly
+                    ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
+                    : kind === "waiting_therapist"
+                      ? actorRole === "patient"
+                        ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
+                        : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
+                      : isOperationalUnavailable
+                        ? "Não foi possível confirmar a disponibilidade da sala. Tente atualizar."
+                        : "Estamos confirmando a disponibilidade da sala.");
 
   return (
     <section
@@ -396,7 +392,7 @@ export function ZoomWaitingRoom({
                 role="status"
               >
                 <LockKeyhole aria-hidden="true" size={18} />
-                Acesso encerrado. Acompanhe a análise pelo TES.
+                Acesso encerrado. Se precisar de ajuda, fale com o suporte.
               </p>
             ) : (
               <div className="grid min-w-0 gap-3" aria-live="polite">
@@ -500,7 +496,7 @@ export function ZoomWaitingRoom({
                 size={18}
               />
               {isAttendanceNoShow
-                ? "O registro está em análise. O TES orientará os próximos passos."
+                ? "Se precisar de ajuda, fale com o suporte."
                 : "A sala ficará disponível para entrada no horário agendado."}
             </p>
             <div className="flex items-center gap-2">

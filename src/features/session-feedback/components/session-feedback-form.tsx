@@ -268,6 +268,12 @@ export function SessionFeedbackForm({
         </FeedbackInfoState>
       ) : null}
 
+      {status === "previously_recorded" ? (
+        <FeedbackInfoState>
+          Sua resposta anterior já foi registrada para este {actorRole === "patient" ? "encontro" : "atendimento"}.
+        </FeedbackInfoState>
+      ) : null}
+
       {status === "waiting_for_participants" ? (
         <FeedbackInfoState>
           Ainda não há registro da entrada dos dois participantes. Quando{" "}
@@ -542,7 +548,7 @@ function FeedbackSentState({
               ? "Encontro realizado"
               : "Sessão realizada"
             : actorRole === "patient"
-              ? "Encontro não realizado"
+              ? "Sessão não realizada"
               : "Sessão não realizada"}
         </span>
         {feedback.rating ? (

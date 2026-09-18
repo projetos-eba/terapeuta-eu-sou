@@ -323,7 +323,7 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
   if (data.attendanceReview?.isOpen) {
     return data.attendanceReview.financialResolution === "refund_pending"
       ? "Seu reembolso está em processamento. Se precisar de ajuda, acompanhe com o Suporte."
-      : "O TES está analisando o que ocorreu neste encontro. O pagamento permanece confirmado. Se tiver alguma dúvida, entre em contato com o TES.";
+      : "Sessão não realizada. Se precisar de ajuda, fale com o suporte.";
   }
 
   if (data.paymentRecovery?.available) {
@@ -361,7 +361,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     return {
       href: supportHref,
       kind: "support",
-      label: "Acompanhar com o Suporte",
+      label: "Falar com o suporte",
       variant: "secondary",
     };
   }

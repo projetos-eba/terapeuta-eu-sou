@@ -64,6 +64,11 @@ describe("getPatientEncounterPresentationState", () => {
       });
       expect(result.waitingRoom.kind).toBe(kind);
       expect(result.actions).not.toContain("join_zoom");
+      if (reason === ZoomAccessReason.TherapistArrivalWindowExpired) {
+        expect(result.waitingRoom.message).toContain(
+          "O terapeuta não compareceu até o fim da tolerância",
+        );
+      }
     },
   );
   it("records a therapist no-show without claiming the encounter occurred", () => {
@@ -72,15 +77,22 @@ describe("getPatientEncounterPresentationState", () => {
       bookingStatus: BookingStatus.NoShowTherapist,
       financialStatus: SessionFinancialStatus.Paid,
       now: new Date("2026-08-01T15:01:00.000Z"),
+      zoomAccess: {
+        allowed: false,
+        reason: ZoomAccessReason.TherapistArrivalWindowExpired,
+        videoSessionStatus: ZoomVideoSessionStatus.Ready,
+        availableFrom: baseInput.startsAt,
+        availableUntil: baseInput.endsAt,
+      },
     });
 
-    expect(state.waitingRoom.kind).toBe("therapist_no_show");
+    expect(state.waitingRoom.kind).toBe("not_performed");
     expect(state.payment.title).toBe("Pagamento confirmado");
     expect(state.payment.message).not.toContain("bloqueado");
     expect(state.payment.message).not.toContain("reagendamento");
     expect(state.payment.message).not.toMatch(/Admin|reembolso|repasse/i);
-    expect(state.waitingRoom.message).toContain(
-      "Não houve confirmação de atendimento",
+    expect(state.waitingRoom.message).toBe(
+      "Se precisar de ajuda, fale com o suporte.",
     );
     expect(state.actions).not.toContain("join_zoom");
     expect(state.actions).toContain("contact_support");
@@ -96,12 +108,14 @@ describe("getPatientEncounterPresentationState", () => {
 
     expect(state.waitingRoom).toMatchObject({
       kind: "both_no_show",
-      title: "Encontro não realizado",
+      title: "Sessão não realizada",
     });
     expect(state.waitingRoom.message).toBe(
-      "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
+      "Se precisar de ajuda, fale com o suporte.",
     );
-    expect(state.payment.message).toBe(state.waitingRoom.message);
+    expect(state.payment.message).toBe(
+      "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
+    );
     expect(state.actions).toEqual(["contact_support"]);
   });
   it("derives honest copy when the detail has not fetched Zoom access yet", () => {

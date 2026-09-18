@@ -48,10 +48,12 @@ describe("ZoomWaitingRoom", () => {
   });
 
   it("tells the patient the therapist did not attend and removes room entry", () => {
-    render(<ZoomWaitingRoom {...baseProps} kind="therapist_no_show" />);
+    const { rerender } = render(
+      <ZoomWaitingRoom {...baseProps} kind="therapist_no_show" />,
+    );
 
     expect(
-      screen.getByRole("heading", { name: "Encontro não realizado" }),
+      screen.getByRole("heading", { name: "Sessão não realizada" }),
     ).toBeVisible();
     expect(
       screen.getByText(/O terapeuta não compareceu até o fim da tolerância/),
@@ -66,6 +68,15 @@ describe("ZoomWaitingRoom", () => {
     expect(
       screen.queryByRole("button", { name: /Entrar no encontro/ }),
     ).not.toBeInTheDocument();
+
+    rerender(
+      <ZoomWaitingRoom
+        {...baseProps}
+        actorRole="therapist"
+        kind="therapist_no_show"
+      />,
+    );
+    expect(screen.queryByText(/O terapeuta não compareceu/i)).toBeNull();
   });
 
   it("keeps a double no-show neutral for either participant", () => {
@@ -74,11 +85,10 @@ describe("ZoomWaitingRoom", () => {
     );
 
     expect(
-      screen.getByText(
-        "O TES está analisando o que ocorreu nesta sala. Se tiver alguma dúvida, entre em contato com o TES.",
-      ),
-    ).toBeVisible();
+      screen.getAllByText("Se precisar de ajuda, fale com o suporte."),
+    ).not.toHaveLength(0);
     expect(screen.queryByText(/ninguém acessou|ambos ausentes/i)).toBeNull();
+    expect(screen.queryByText(/análise pelo TES/i)).toBeNull();
 
     rerender(
       <ZoomWaitingRoom
@@ -91,6 +101,26 @@ describe("ZoomWaitingRoom", () => {
     expect(
       screen.getByRole("heading", { name: "Sessão não realizada" }),
     ).toBeVisible();
+  });
+
+  it("keeps a finalized absence neutral even if an old access message names a participant", () => {
+    render(
+      <ZoomWaitingRoom
+        {...baseProps}
+        kind="not_performed"
+        message="Você não compareceu. O TES está analisando o ocorrido."
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Sessão não realizada" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/Você não compareceu|analisando o ocorrido/i),
+    ).toBeNull();
+    expect(
+      screen.getAllByText("Se precisar de ajuda, fale com o suporte."),
+    ).not.toHaveLength(0);
   });
 
   it("opens a local camera preview without asking for microphone access", async () => {

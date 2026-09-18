@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mapPatientEncountersPage } from "./patient-encounters.mappers";
+import { getEncounterGuidance } from "./patient-encounters.copy";
 
 const patient = {
   avatarUrl: null,
@@ -430,6 +431,45 @@ describe("patient encounters mapper", () => {
     );
   });
 
+  it.each(["no_show_patient", "no_show_therapist", "no_show_both"])(
+    "shows %s as a neutral not-performed encounter instead of a cancellation",
+    (bookingStatus) => {
+      const booking = {
+        ...createBooking(
+          "95000000-0000-4000-8000-000000000014",
+          new Date(Date.now() - 72 * 60 * 60 * 1000),
+        ),
+        status: bookingStatus,
+      };
+      const result = mapPatientEncountersPage({
+        bookings: [booking],
+        favoriteTherapistsCount: 0,
+        patient,
+        rescheduleByBookingId: new Map(),
+        reviews: [],
+        serviceById: new Map([[service.id, service]]),
+        sessionPaymentByBookingId: new Map([
+          [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+        ]),
+        summaries: [],
+        therapistById: new Map([[therapist.id, therapist]]),
+        therapyById: new Map([[therapy.id, therapy]]),
+        unreadMessagesCount: 0,
+        unreadNotificationsCount: 0,
+      });
+
+      expect(result.historyEncounters[0]).toMatchObject({
+        status: "not_performed",
+        statusLabel: "Sessão não realizada",
+        primaryAction: { label: "Ver detalhes do encontro" },
+      });
+      expect(getEncounterGuidance(result.historyEncounters[0])).toBe(
+        "Caso precise de ajuda, entre em contato com o suporte.",
+      );
+      expect(result.upcomingEncounters).toHaveLength(0);
+    },
+  );
+
   it("sends a pending evaluation to the corresponding encounter details", () => {
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000008",
@@ -464,6 +504,46 @@ describe("patient encounters mapper", () => {
       statusLabel: "Avaliação pendente",
     });
   });
+
+  it.each([false, true])(
+    "preserves the refunded badge after own confirmation (actorRealized=%s)",
+    (actorRealized) => {
+      const booking = createBooking(
+        "95000000-0000-4000-8000-000000000010",
+        new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+      );
+      const result = mapPatientEncountersPage({
+        actorRealizedBookingIds: actorRealized
+          ? new Set([booking.id])
+          : new Set(),
+        bookings: [booking],
+        favoriteTherapistsCount: 0,
+        patient,
+        pendingFeedbackBookingIds: new Set([booking.id]),
+        rescheduleByBookingId: new Map(),
+        reviews: [],
+        serviceById: new Map([[service.id, service]]),
+        sessionPaymentByBookingId: new Map([
+          [
+            booking.id,
+            { booking_id: booking.id, financial_status: "refunded" },
+          ],
+        ]),
+        summaries: [],
+        therapistById: new Map([[therapist.id, therapist]]),
+        therapyById: new Map([[therapy.id, therapy]]),
+        unreadMessagesCount: 0,
+        unreadNotificationsCount: 0,
+      });
+
+      expect(result.historyEncounters[0]).toMatchObject({
+        status: "refunded",
+        statusLabel: "Reembolsado",
+        primaryAction: { label: "Ver reembolso" },
+      });
+      expect(result.upcomingEncounters).toHaveLength(0);
+    },
+  );
 
   it("shows the encounter as realized after the current patient responds", () => {
     const booking = createBooking(
