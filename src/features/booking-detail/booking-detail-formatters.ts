@@ -35,15 +35,15 @@ export function formatSessionDuration(startsAt: string, endsAt: string) {
     ),
   );
 
-  if (minutes === 60) return "1h de duração";
-  if (minutes < 60) return `${minutes} min de duração`;
+  if (minutes === 60) return "Até 1h";
+  if (minutes < 60) return `Até ${minutes} min`;
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
   return remainingMinutes
-    ? `${hours}h${remainingMinutes} de duração`
-    : `${hours}h de duração`;
+    ? `Até ${hours}h${remainingMinutes}`
+    : `Até ${hours}h`;
 }
 
 export function formatJourneyStartedAt(value: string | null, timezone: string) {

@@ -294,7 +294,7 @@ export function AvailabilityCalendarModal({
   return (
     <TESDialog
       className="max-w-4xl text-brand-deep"
-      description={`${service.title} · ${service.durationMinutes} min · ${service.priceLabel}`}
+      description={`${service.title} · até ${service.durationMinutes} min · ${service.priceLabel}`}
       onClose={onClose}
       title="Escolha um dia e horário"
     >

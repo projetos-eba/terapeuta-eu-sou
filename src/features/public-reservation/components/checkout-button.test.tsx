@@ -93,7 +93,7 @@ describe("CheckoutButton", () => {
     expect(
       await screen.findByText("Os detalhes desta terapia mudaram"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/60 min, R\$ 145,00/)).toBeInTheDocument();
+    expect(screen.getByText(/até 60 min, R\$ 145,00/)).toBeInTheDocument();
     expect(initEmbeddedCheckout).not.toHaveBeenCalled();
 
     fireEvent.click(

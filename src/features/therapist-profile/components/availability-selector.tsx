@@ -47,7 +47,7 @@ export function AvailabilitySelector({
             {selectedService ? (
               <p className="mt-1 text-sm font-medium leading-6 text-white/80">
                 {selectedService.title} ·{" "}
-                {selectedService.durationMinutes} min ·{" "}
+                até {selectedService.durationMinutes} min ·{" "}
                 {selectedService.priceLabel}
               </p>
             ) : null}

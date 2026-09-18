@@ -74,6 +74,7 @@ describe("public reservation data contract", () => {
     });
 
     expect(hydrated.time?.timeRangeLabel).toBe("09:10 - 10:10");
+    expect(hydrated.serviceSummary).toBe("Reiki online (até 60 min)");
   });
 
   it("replaces stale link details with the current published service snapshot", () => {
@@ -112,6 +113,7 @@ describe("public reservation data contract", () => {
       reservationUnavailable: false,
       serviceDetailsUpdated: true,
       serviceLabel: "Reiki online",
+      serviceSummary: "Reiki online (até 50 min)",
     });
     expect(hydrated.prepareStepHref).toContain("duration=50");
     expect(hydrated.prepareStepHref).toContain("price=12300");

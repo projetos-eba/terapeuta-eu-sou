@@ -141,7 +141,7 @@ describe("TherapistBlocksPanel", () => {
     expect(screen.getByText("Reiki online")).toBeInTheDocument();
   });
 
-  it("cancels a series with optimistic schedule version", async () => {
+  it("presents the approved release dialog and releases a recurring block", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -158,9 +158,32 @@ describe("TherapistBlocksPanel", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
-    fireEvent.click(screen.getByLabelText("Toda a série recorrente"));
-    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Quer liberar este horário?" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Ao liberar, seus clientes poderão agendar sessões neste horário novamente. As sessões que já estão agendadas não serão alteradas.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("O que você deseja liberar?")).toBeVisible();
+    expect(screen.getByLabelText("Apenas este horário")).toBeChecked();
+    expect(
+      screen.getByText("Libera somente este bloqueio."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Todos os horários deste bloqueio"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Libera este bloqueio em todas as datas em que ele se repete.",
+      ),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByLabelText("Todos os horários deste bloqueio"));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -202,8 +225,8 @@ describe("TherapistBlocksPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Criar bloqueio" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     const [, request] = fetchMock.mock.calls[1] as [string, RequestInit];
@@ -229,8 +252,8 @@ describe("TherapistBlocksPanel", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
 
     expect(
       await screen.findByRole("alert", {
