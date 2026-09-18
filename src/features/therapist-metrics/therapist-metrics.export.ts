@@ -199,7 +199,7 @@ export function buildTherapistMetricsCsv({
         },
       );
     });
-    appendProtectedItems(rows, "heatmap", data.heatmap, (item) => ({
+    appendOwnHistoryItems(rows, "heatmap", data.heatmap, (item) => ({
       detail: `day=${item.dayOfWeek};hour_start=${item.hourBucketStart}`,
       key: `${item.dayOfWeek}:${item.hourBucketStart}`,
       label: "Sessões por dia e faixa de horário",
@@ -412,6 +412,36 @@ function appendProtectedItems<T>(
   if (collection.status !== "ready") {
     rows.push({
       detail: `minimum_sample=${collection.minimumSample};observed_sample=${collection.observedSample}`,
+      key: section,
+      label: section,
+      section,
+      status: collection.status,
+    });
+    return;
+  }
+
+  collection.items.forEach((item) => {
+    rows.push({
+      ...mapItem(item),
+      section,
+      status: collection.status,
+    });
+  });
+}
+
+function appendOwnHistoryItems<T>(
+  rows: CsvRow[],
+  section: string,
+  collection: {
+    items: T[];
+    observedSample: number;
+    status: string;
+  },
+  mapItem: (item: T) => Omit<CsvRow, "section" | "status">,
+) {
+  if (collection.status !== "ready") {
+    rows.push({
+      detail: `observed_sample=${collection.observedSample}`,
       key: section,
       label: section,
       section,

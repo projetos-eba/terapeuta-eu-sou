@@ -243,6 +243,14 @@ export function mapBookingCheckoutDatabaseError(error: unknown) {
 
   const details = error.safeDetails ?? "";
 
+  if (details.includes("PATIENT_BOOKING_SUSPENDED")) {
+    return new DomainError(
+      "patient_booking_suspended",
+      403,
+      "Novos agendamentos estão suspensos para sua conta. Entre em contato com o suporte. Seus encontros já contratados permanecem disponíveis.",
+    );
+  }
+
   if (details.includes("PATIENT_SCHEDULE_CONFLICT")) {
     return new DomainError(
       "patient_schedule_conflict",

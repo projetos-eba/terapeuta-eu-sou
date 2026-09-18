@@ -114,6 +114,7 @@ Capacidades a consolidar antes ou durante a Fase 1:
 - `admin.professionals.verify`
 - `admin.professionals.suspend`
 - `admin.patients.read`
+- `admin.patients.suspend`
 - `admin.sessions.read`
 - `admin.sessions.manage`
 - `admin.payments.read`
@@ -123,6 +124,21 @@ Capacidades a consolidar antes ou durante a Fase 1:
 - `admin.therapies.read`
 - `admin.therapies.manage`
 - `admin.matching.read`
+
+### Suspensão de novos agendamentos de clientes — 2026-09-18
+
+`patient.suspend` e `patient.reactivate` usam `admin.patients.suspend`, com Admin
+ativo, motivo, requestId idempotente, confirmação e auditoria em `patient_profile`.
+O estado vive em `patient_booking_restrictions`, sem acesso direto do cliente,
+separado de Auth e metadata editável. Um bloqueio transacional por cliente
+serializa o comando com INSERTs de holds/reservas; demais operações da agenda
+não são alteradas. Não há ban de login nem cancelamento, reembolso ou alteração
+financeira. Reservas existentes e seus retries permanecem disponíveis.
+
+Clientes usa paginação/filtros sobre a base completa, indicadores globais e
+detalhe privado de e-mail, telefone/DDI e endereço cadastrado. Contato é PRIVATE,
+nunca parte da lista nem de uma projeção pública. A referência de cards fornecida
+pelo usuário prevalece sobre os rasters históricos, com tokens TES e texto legível.
 
 ### Publicação administrativa de profissionais
 

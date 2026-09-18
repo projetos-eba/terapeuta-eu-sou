@@ -3,6 +3,17 @@ import { describe, expect, it } from "vitest";
 import { mapCheckoutError } from "./checkout-errors";
 
 describe("mapCheckoutError", () => {
+  it("explains a booking-only suspension separately from an incorrect role", () => {
+    const result = mapCheckoutError({
+      code: "patient_booking_suspended",
+      status: 403,
+    });
+    expect(result.code).toBe("PATIENT_BOOKING_SUSPENDED");
+    expect(result.message).toContain(
+      "encontros já contratados permanecem disponíveis",
+    );
+    expect(mapCheckoutError({ status: 403 }).code).toBe("FORBIDDEN");
+  });
   it("preserves a patient schedule conflict", () => {
     expect(
       mapCheckoutError({ code: "patient_schedule_conflict", status: 409 }),

@@ -1,4 +1,11 @@
 export function mapCheckoutError(error: { code?: string; status: number }) {
+  if (error.status === 403 && error.code === "patient_booking_suspended") {
+    return {
+      code: "PATIENT_BOOKING_SUSPENDED",
+      message:
+        "Novos agendamentos estão suspensos para sua conta. Entre em contato com o suporte. Seus encontros já contratados permanecem disponíveis.",
+    };
+  }
   if (error.status === 409 && error.code === "patient_schedule_conflict") {
     return {
       code: "PATIENT_SCHEDULE_CONFLICT",

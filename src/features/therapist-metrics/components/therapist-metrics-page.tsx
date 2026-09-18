@@ -628,6 +628,10 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
         }))
       : [];
   const highlights = agendaHighlights(heatmapPoints);
+  const idleAvailability = idleAvailabilityLabel(occupancy);
+  const isInitialSessionReading =
+    sessions.heatmap.status === "ready" &&
+    sessions.heatmap.observedSample < 10;
   const occupancyPercentage =
     occupancy.status === "ready" &&
     occupancy.current.percentage !== null &&
@@ -702,6 +706,12 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             points={heatmapPoints}
             valueLabel="sessões"
           />
+          {isInitialSessionReading ? (
+            <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
+              Leitura inicial — o padrão fica mais claro conforme novas sessões
+              forem concluídas.
+            </p>
+          ) : null}
         </div>
 
         <div className="min-w-0 py-4 lg:py-0 lg:pl-6">
@@ -730,7 +740,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             <AgendaStat
               label="Horários ociosos"
               tone="primary"
-              value={highlights.quietHour}
+              value={idleAvailability}
             />
           </dl>
         </div>
@@ -1248,7 +1258,6 @@ function agendaHighlights(
     return {
       bestDays: "Sem dados",
       peakHour: "Sem dados",
-      quietHour: "Sem dados",
     };
   }
 
@@ -1266,21 +1275,67 @@ function agendaHighlights(
     );
   }
   const bestDays = [...totalsByDay.entries()]
-    .sort(([, left], [, right]) => right - left)
+    .sort(([leftDay, left], [rightDay, right]) => right - left || leftDay - rightDay)
     .slice(0, 2)
     .map(([day]) => dayNames[day])
     .join(", ");
   const hours = [...totalsByHour.entries()].sort(
-    ([, left], [, right]) => right - left,
+    ([leftHour, left], [rightHour, right]) => right - left || leftHour - rightHour,
   );
   const peak = hours[0]?.[0];
-  const quiet = hours.at(-1)?.[0];
 
   return {
     bestDays: bestDays || "Sem dados",
     peakHour: peak === undefined ? "Sem dados" : `${peak}h – ${peak + 2}h`,
-    quietHour: quiet === undefined ? "Sem dados" : `${quiet}h – ${quiet + 2}h`,
   };
+}
+
+function idleAvailabilityLabel(
+  occupancy: TherapistMetricsDashboard["occupancy"],
+) {
+  if (occupancy.status === "forming") {
+    return "Histórico em formação";
+  }
+
+  if (occupancy.status !== "ready") {
+    return "Sem horários disponíveis";
+  }
+
+  const byHour = new Map<
+    number,
+    { availableMinutes: number; occupiedMinutes: number; offeredMinutes: number }
+  >();
+
+  for (const point of occupancy.heatmap) {
+    if (point.offeredMinutes <= 0) continue;
+    const hourBucketStart = Math.floor(point.hourBucketStart / 2) * 2;
+    const current = byHour.get(hourBucketStart) ?? {
+      availableMinutes: 0,
+      occupiedMinutes: 0,
+      offeredMinutes: 0,
+    };
+    current.availableMinutes += Math.max(
+      0,
+      point.offeredMinutes - point.occupiedMinutes,
+    );
+    current.occupiedMinutes += point.occupiedMinutes;
+    current.offeredMinutes += point.offeredMinutes;
+    byHour.set(hourBucketStart, current);
+  }
+
+  const idle = [...byHour.entries()]
+    .filter(([, value]) => value.offeredMinutes > 0)
+    .sort(([leftHour, left], [rightHour, right]) => {
+      const leftRate = left.occupiedMinutes / left.offeredMinutes;
+      const rightRate = right.occupiedMinutes / right.offeredMinutes;
+      return (
+        leftRate - rightRate ||
+        right.availableMinutes - left.availableMinutes ||
+        leftHour - rightHour
+      );
+    })[0]?.[0];
+
+  return idle === undefined ? "Sem horários disponíveis" : `${idle}h – ${idle + 2}h`;
 }
 
 function discoveryKpi(

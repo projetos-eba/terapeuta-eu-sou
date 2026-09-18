@@ -7,6 +7,8 @@ import type {
 import type { AdminProfessionalDocumentReviewData } from "@/features/therapist-private-documents/private-documents.types";
 
 export type AdminOperationMetric = {
+  comparisonValue?: number | null;
+  percentage?: number | null;
   description: string;
   key: string;
   label: string;
@@ -135,6 +137,8 @@ export type AdminProfessionalProfileReview = {
     documentType: "cpf" | "rg" | "passport" | null;
     neighborhood: string | null;
     postalCode: string | null;
+    phone: string | null;
+    phoneCountryCode: string | null;
     state: string | null;
     street: string | null;
     streetNumber: string | null;
@@ -182,6 +186,8 @@ export type AdminOperationDetailPageData = {
   generatedAt: string;
   id: string;
   module: AdminOperationModuleKey;
+  patientContact?: AdminPatientContact | null;
+  canManagePatientBookings?: boolean;
   /**
    * Relacionamento usado exclusivamente para navegação e comandos entre
    * Profissionais e Verificações. Nunca é apresentado como dado de interface.
@@ -202,6 +208,20 @@ export type AdminOperationDetailPageData = {
   title: string;
   publicProfile?: AdminProfessionalPublishedProfile;
   verificationSummary?: AdminProfessionalVerificationSummary | null;
+};
+
+/** Private, allowlisted registration fields returned only by the Admin detail. */
+export type AdminPatientContact = {
+  email: string | null;
+  phone: string | null;
+  phoneCountryCode: string | null;
+  postalCode: string | null;
+  street: string | null;
+  streetNumber: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
 };
 
 export type AdminSessionFeedbackItem = {

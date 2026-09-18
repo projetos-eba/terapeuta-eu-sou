@@ -76,7 +76,9 @@ export function FinancialEvolutionChart({
           </div>
         </div>
         {highlights.length ? (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div
+            className={`grid gap-3 ${highlights.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+          >
             {highlights.map((item) => (
               <div
                 className="grid grid-cols-[10px_minmax(0,1fr)] gap-x-2"
@@ -124,7 +126,7 @@ export function FinancialEvolutionChart({
         <div className="min-w-0 overflow-x-auto rounded-[14px] border border-brand-lavender/60 bg-white px-3 py-5 sm:px-5">
           <div
             aria-label="Gráfico com a evolução dos valores financeiros"
-            className="h-[350px] min-w-[680px]"
+            className="h-[320px] min-w-[560px]"
             role="img"
             tabIndex={0}
           >

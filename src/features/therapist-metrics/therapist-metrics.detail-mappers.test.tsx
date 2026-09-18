@@ -83,6 +83,41 @@ describe("therapist metric detail contracts", () => {
     );
   });
 
+  it("maps private day and hour frequency from the first completed session", () => {
+    const payload = sessionPayload();
+    payload.metricDefinitionVersion = 2;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    };
+
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.heatmap).toEqual({
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    });
+  });
+
+  it("keeps the legacy heatmap contract readable during the rollout", () => {
+    const payload = sessionPayload();
+    payload.heatmap = {
+      items: [{ dayOfWeek: 7, hourBucketStart: 18, sessions: 12 }],
+      minimumSample: 10,
+      observedSample: 12,
+      status: "ready",
+    };
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.metricDefinitionVersion).toBe(1);
+    expect(mapped.heatmap.status).toBe("ready");
+    expect(mapped.heatmap.items).toEqual([
+      { dayOfWeek: 0, hourBucketStart: 18, sessions: 12 },
+    ]);
+  });
+
   it("rejects partial values below the minimum sample", () => {
     const payload = sessionPayload();
     payload.outcomeDistribution = {
@@ -134,6 +169,7 @@ describe("therapist metric detail contracts", () => {
     expect(csv).toContain("metric_definition_version");
     expect(csv).toContain("America/Sao_Paulo");
     expect(csv).toContain("cancellation_taxonomy_not_versioned");
+    expect(csv).toContain("day=1;hour_start=18");
     expect(csv).not.toMatch(/patient_profile_id|patientProfileId|public_name/i);
   });
 
@@ -173,6 +209,25 @@ describe("therapist metric detail contracts", () => {
     expect(
       screen.getByText(/motivos escritos livremente permanecem ocultos/i),
     ).toBeInTheDocument();
+  });
+
+  it("shows an initial reading without unlocking protected session metrics", () => {
+    const payload = sessionPayload();
+    payload.metricDefinitionVersion = 2;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    };
+
+    render(<TherapistSessionMetricsPage data={mapTherapistSessionMetrics(payload)} />);
+
+    expect(
+      screen.getByText(
+        "Leitura inicial — o padrão fica mais claro conforme novas sessões forem concluídas.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/mais dados são necessários/i).length).toBeGreaterThan(0);
   });
 
   it("renders the plan gate and protected MTR-5 states", () => {

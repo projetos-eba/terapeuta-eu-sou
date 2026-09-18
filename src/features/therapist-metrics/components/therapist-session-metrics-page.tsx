@@ -31,7 +31,7 @@ import {
 } from "./therapist-metrics-charts";
 import { TherapistMetricsLayout } from "./therapist-metrics-layout";
 
-const dayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export function TherapistSessionMetricsPage({
   data,
@@ -94,7 +94,7 @@ export function TherapistSessionMetricsPage({
           <OutcomeDistribution data={data} />
           <PresenceRanking
             collection={data.presenceByDay}
-            label={(item) => dayLabels[item.dayOfWeek - 1]}
+            label={(item) => dayLabels[item.dayOfWeek]}
             title="Presença por dia"
           />
           <PresenceRanking
@@ -252,13 +252,13 @@ function SessionEvolution({
 }
 
 function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
-  if (data.heatmap.status !== "ready") {
+  if (data.heatmap.status === "empty") {
     return (
       <AppPageSection>
         <h2 className="text-xl font-extrabold text-brand-deep">
           Distribuição por dia e horário
         </h2>
-        <ProtectedBlock collection={data.heatmap} />
+        <EmptyBlock text="A grade será preenchida após a primeira sessão concluída no período." />
       </AppPageSection>
     );
   }
@@ -278,6 +278,12 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
         Volume de sessões realizadas no seu fuso. Tons mais intensos indicam
         maior concentração no período selecionado.
       </p>
+      {data.heatmap.observedSample < 10 ? (
+        <p className="mt-3 rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-semibold leading-5 text-tesText-secondary">
+          Leitura inicial — o padrão fica mais claro conforme novas sessões
+          forem concluídas.
+        </p>
+      ) : null}
       <div className="mt-5">
         <MetricsHeatmap
           points={data.heatmap.items.map((item) => ({

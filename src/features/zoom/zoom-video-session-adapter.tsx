@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Copy, Loader2, Mic, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { TESDialog } from "@/components/tes";
 import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
@@ -268,6 +269,7 @@ export function ZoomVideoSessionAdapter({
   sessionTitle?: string;
   showJourneyThemes?: boolean;
 }) {
+  const router = useRouter();
   const [state, setSessionState] = useState<SessionState>(() =>
     initialFeedback ? "ended" : "idle",
   );
@@ -3174,6 +3176,13 @@ export function ZoomVideoSessionAdapter({
     );
   }
 
+  const handleFeedbackSubmitted = useCallback(() => {
+    // The detail route was rendered before the answer existed. Clear the
+    // client router cache so returning to it reads the persisted feedback and
+    // the respondent's individual confirmation.
+    if (actorRole === "therapist") router.refresh();
+  }, [actorRole, router]);
+
   if (state === "ended") {
     return (
       <section className={sectionClassName} aria-label="Feedback da sessão">
@@ -3181,6 +3190,7 @@ export function ZoomVideoSessionAdapter({
           actorRole={actorRole}
           bookingId={bookingId}
           introductoryMessage={message}
+          onSubmitted={handleFeedbackSubmitted}
           sessionLabel={
             actorRole === "patient"
               ? "Seu encontro foi encerrado"

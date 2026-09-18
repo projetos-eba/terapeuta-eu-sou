@@ -108,6 +108,7 @@ function mapPatientRow(row: UnknownRecord, index: number) {
     ]),
     id,
     subtitle: asText(row.user_id),
+    statusLabel: asText(row.account_status),
     title: asText(row.display_name) || "Paciente sem nome",
   } satisfies AdminOperationRow;
 }
@@ -205,7 +206,13 @@ export function mapAdminOperationDetail({
     generatedAt,
     id,
     module,
+    patientContact:
+      module === "patients"
+        ? mapPatientContact(record.private_contact)
+        : undefined,
     relatedProfessionalId,
+    canManagePatientBookings:
+      module === "patients" ? record.booking_management_available === true : undefined,
     relatedVerificationId,
     canApprove: canApproveVerification(record),
     canPublish: canPublishAdministratively(record),
@@ -218,6 +225,22 @@ export function mapAdminOperationDetail({
     statusLabel: row?.statusLabel,
     subtitle: row?.subtitle,
     title: row?.title ?? getFallbackDetailTitle(module, id),
+  };
+}
+
+function mapPatientContact(value: unknown) {
+  if (!isRecord(value)) return null;
+  return {
+    email: asText(value.email) || null,
+    phone: asText(value.phone) || null,
+    phoneCountryCode: asText(value.phoneCountryCode) || null,
+    postalCode: asText(value.postalCode) || null,
+    street: asText(value.street) || null,
+    streetNumber: asText(value.streetNumber) || null,
+    complement: asText(value.complement) || null,
+    neighborhood: asText(value.neighborhood) || null,
+    city: asText(value.city) || null,
+    state: asText(value.state) || null,
   };
 }
 

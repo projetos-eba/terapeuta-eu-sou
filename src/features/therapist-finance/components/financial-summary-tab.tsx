@@ -1,25 +1,17 @@
 import {
   ArrowDownRight,
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
-  CheckCircle2,
   CircleDollarSign,
   Info,
   Lightbulb,
-  Sparkles,
   Ticket,
-  TrendingUp,
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
 
 import { TherapistPlan } from "@/domain/tes";
 import { TherapistLockedCard } from "@/features/therapist-access";
-import {
-  MetricSparkline,
-  type MetricChartTone,
-} from "@/features/therapist-metrics/components/therapist-metrics-charts";
 import type {
   FinancialMetricComparison,
   TherapistAdvancedFinancialDashboard,
@@ -27,6 +19,7 @@ import type {
   TherapistFinanceAnalyticsAccess,
   TherapistFinancialMetrics,
   TherapistFinancialOverview,
+  TherapistPayoutsContract,
 } from "../therapist-finance.types";
 import {
   FinancialEvolutionChart,
@@ -48,20 +41,16 @@ export function FinancialSummaryTab({
   advanced,
   analytics,
   overview,
+  payouts,
 }: {
   advanced: TherapistFinanceAdvancedAccess;
   analytics: TherapistFinanceAnalyticsAccess;
   overview: TherapistFinancialOverview;
+  payouts: TherapistPayoutsContract;
 }) {
   const metrics = analytics.status === "available" ? analytics.metrics : null;
   const dashboard = advanced.status === "available" ? advanced.dashboard : null;
-  const receivable =
-    overview.waitingConfirmationCents +
-    overview.waitingSafetyPeriodCents +
-    overview.eligibleForPayoutCents +
-    overview.payoutProcessingCents;
-  const forecast = dashboard?.forecast ?? null;
-  const forecastAvailable = forecast?.status === "available";
+  const receivable = payouts.summary.expectedCents;
   const hasFinancialData = hasOverviewFinancialData(overview);
   const hasMetricsData =
     metrics !== null &&
@@ -69,16 +58,6 @@ export function FinancialSummaryTab({
       metrics.sessions.completedCount > 0 ||
       metrics.sessions.cancelledCount > 0 ||
       metrics.sessions.rescheduledCount > 0);
-  const financialEvolution =
-    metrics?.financialEvolution.map((point) => ({
-      label: point.periodStart,
-      value: point.therapistNetAmountCents,
-    })) ?? [];
-  const contractedEvolution =
-    dashboard?.financialEvolution.map((point) => ({
-      label: point.periodStart,
-      value: point.contractedNetCents,
-    })) ?? [];
 
   return (
     <div className="grid min-w-0 gap-6 [&>*]:min-w-0">
@@ -98,15 +77,13 @@ export function FinancialSummaryTab({
             variant="section"
           />
         ) : (
-          <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 xl:gap-4 [&>*]:min-w-0">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0">
             <FinancialKpiCard
               accent="green"
               comparison={metrics?.revenue.comparison.therapistNet}
               helpText="É o valor que pertence a você após os custos da plataforma e os reembolsos confirmados, quando houver."
               icon={CircleDollarSign}
               label="Receita líquida"
-              showFlowArrow
-              sparkline={financialEvolution}
               valueNote="No período selecionado"
               value={formatCurrencyOrDash(
                 overview.therapistNetCents,
@@ -115,50 +92,17 @@ export function FinancialSummaryTab({
             />
             <FinancialKpiCard
               accent="blue"
-              helpText="Reúne valores que continuam em confirmação, liquidação ou processamento antes do próximo repasse."
+              helpText="Mostra os valores previstos para os próximos repasses e os que ainda não têm uma data bancária confirmada."
               icon={WalletCards}
               label="A receber"
-              sparkline={[]}
               status={
-                !hasFinancialData
-                  ? "Sem dados"
-                  : receivable === 0
-                    ? "Sem pendências"
-                    : "Acompanhando o próximo repasse"
+                receivable === 0
+                  ? "Sem valores previstos"
+                  : "Acompanhando os próximos repasses"
               }
-              valueNote="Valores em andamento"
-              value={formatCurrencyOrDash(receivable, hasFinancialData)}
-              showFlowArrow
+              valueNote="Valores previstos para chegar"
+              value={formatCurrency(receivable)}
             />
-            {advanced.status === "locked" ? (
-              <TherapistLockedCard
-                description="A previsão separa o que já aconteceu do que ainda é possibilidade, para apoiar suas decisões com mais clareza."
-                requiredPlan={TherapistPlan.PremiumPlus}
-                title="Receita no mês"
-                variant="compact"
-              />
-            ) : (
-              <FinancialKpiCard
-                accent="violet"
-                helpText="Soma o valor líquido já realizado no mês às sessões futuras que já foram pagas. O potencial da agenda aparece separado porque é uma estimativa, não uma receita garantida."
-                icon={TrendingUp}
-                label="Receita no mês"
-                sparkline={contractedEvolution}
-                status={
-                  forecastAvailable && forecast
-                    ? forecastProgressLabel(forecast)
-                    : "Leitura indisponível no momento"
-                }
-                tone={forecastAvailable ? "success" : "muted"}
-                valueNote="Realizado + sessões pagas"
-                value={
-                  forecastAvailable && forecast
-                    ? formatCurrency(forecast.contractedMonthNetCents)
-                    : "-"
-                }
-                showFlowArrow
-              />
-            )}
             <FinancialKpiCard
               accent="orange"
               comparison={metrics?.revenue.comparison.averageTicket}
@@ -169,7 +113,6 @@ export function FinancialSummaryTab({
               }.`}
               icon={Ticket}
               label="Ticket médio"
-              sparkline={[]}
               valueNote={
                 metrics
                   ? `Média líquida de ${formatInteger(metrics.revenue.paidSessionCount)} sessões pagas`
@@ -180,14 +123,12 @@ export function FinancialSummaryTab({
                   ? formatCurrency(metrics.revenue.netAverageTicketCents)
                   : "-"
               }
-              showFlowArrow
             />
             <FinancialKpiCard
               accent="cyan"
               helpText="Conta as sessões concluídas ou confirmadas no período selecionado."
               icon={CalendarDays}
-              label="Sessões realizadas"
-              sparkline={[]}
+              label="Sessões concluídas"
               status={
                 metrics
                   ? hasMetricsData
@@ -211,8 +152,8 @@ export function FinancialSummaryTab({
       </section>
 
       <section
-        aria-label="Leituras financeiras"
-        className="grid min-w-0 gap-5 xl:grid-cols-3 [&>*]:min-w-0"
+        aria-label="Visão financeira"
+        className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] [&>*]:min-w-0"
       >
         {analytics.status === "locked" ? (
           <TherapistLockedCard
@@ -224,37 +165,35 @@ export function FinancialSummaryTab({
         ) : (
           <MoneyCompositionPanel overview={overview} />
         )}
-        {advanced.status === "locked" ? (
-          <TherapistLockedCard
-            description="Uma leitura avançada pode ajudar no planejamento da sua agenda, sem misturar estimativa com receita garantida."
-            requiredPlan={TherapistPlan.PremiumPlus}
-            title="Saúde financeira"
-            variant="section"
-          />
-        ) : (
-          <AgendaPotentialPanel advanced={advanced} />
-        )}
-        <OpportunityOfMonth advanced={advanced} />
-      </section>
-
-      <section
-        aria-label="Visão estratégica"
-        className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] [&>*]:min-w-0"
-      >
-        <div className="grid min-w-0 content-start gap-5">
-          <TherapyRankingCard metrics={metrics} />
-          <FinancialMethodology
-            advanced={advanced}
-            generatedAt={overview.generatedAt}
-            timezone={overview.timezone}
-          />
-        </div>
         <FinancialEvolutionCard
           advanced={dashboard}
           metrics={metrics}
           overview={overview}
         />
       </section>
+
+      <section
+        aria-label="Agenda e receitas"
+        className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)] [&>*]:min-w-0"
+      >
+        {advanced.status === "locked" ? (
+          <TherapistLockedCard
+            description="Uma leitura avançada pode ajudar no planejamento da sua agenda, sem misturar estimativa com receita garantida."
+            requiredPlan={TherapistPlan.PremiumPlus}
+            title="Agenda e potencial"
+            variant="section"
+          />
+        ) : (
+          <AgendaPotentialPanel advanced={advanced} />
+        )}
+        <TherapyRankingCard metrics={metrics} />
+      </section>
+
+      <FinancialMethodology
+        advanced={advanced}
+        generatedAt={overview.generatedAt}
+        timezone={overview.timezone}
+      />
     </div>
   );
 }
@@ -268,7 +207,8 @@ function hasOverviewFinancialData(overview: TherapistFinancialOverview) {
     overview.waitingConfirmationCents > 0 ||
     overview.waitingSafetyPeriodCents > 0 ||
     overview.eligibleForPayoutCents > 0 ||
-    overview.payoutProcessingCents > 0
+    overview.payoutProcessingCents > 0 ||
+    overview.waitingSettlementCents > 0
   );
 }
 
@@ -278,8 +218,6 @@ function FinancialKpiCard({
   helpText,
   icon: Icon,
   label,
-  showFlowArrow = false,
-  sparkline,
   status,
   tone = "default",
   valueNote,
@@ -290,8 +228,6 @@ function FinancialKpiCard({
   helpText: string;
   icon: LucideIcon;
   label: string;
-  showFlowArrow?: boolean;
-  sparkline: Array<{ label: string; value: number }>;
   status?: string;
   tone?: "default" | "muted" | "success";
   valueNote: string;
@@ -305,14 +241,6 @@ function FinancialKpiCard({
     purple: "bg-brand-lavenderSoft text-brand-primary",
     violet: "bg-surface-mist text-brand-primaryPressed",
   } as const;
-  const sparklineTone: Record<typeof accent, MetricChartTone> = {
-    blue: "cyan",
-    cyan: "cyan",
-    green: "mint",
-    orange: "warning",
-    purple: "primary",
-    violet: "primary",
-  };
   const comparisonText = comparison
     ? formatComparison(comparison, { formatter: formatCurrency })
     : null;
@@ -332,7 +260,7 @@ function FinancialKpiCard({
   const TrendIcon = comparisonIsPositive ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <article className="relative grid min-h-[322px] grid-rows-[auto_auto_1fr_auto] overflow-visible rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+    <article className="grid min-h-[176px] content-start gap-4 rounded-card border border-brand-lavender bg-white p-4 shadow-card sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -340,21 +268,21 @@ function FinancialKpiCard({
           >
             <Icon aria-hidden="true" size={21} />
           </span>
-          <h2 className="text-sm font-extrabold text-brand-deep">{label}</h2>
+          <h3 className="text-sm font-extrabold text-brand-deep">{label}</h3>
         </div>
         <FinancialInfoTooltip align="end" label={label} text={helpText} />
       </div>
-      <div className="mt-7">
+      <div>
         <p
           className={`break-words tabular-nums text-[27px] font-extrabold leading-none tracking-[-0.035em] sm:text-[31px] ${tone === "muted" ? "text-tesText-muted" : "text-brand-deep"}`}
         >
           {value}
         </p>
-        <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
+        <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
           {valueNote}
         </p>
       </div>
-      <div className="mt-5 self-start">
+      <div className="self-start">
         <p className={`flex items-center gap-1.5 text-sm font-extrabold ${statusClass}`}>
           {comparisonAvailable ? (
             <TrendIcon aria-hidden="true" className="shrink-0" size={18} />
@@ -367,22 +295,6 @@ function FinancialKpiCard({
           </p>
         ) : null}
       </div>
-      <div className="mt-5 border-t border-brand-lavender/70 pt-4">
-        <MetricSparkline
-          className="h-12"
-          data={sparkline}
-          empty={sparkline.length < 2}
-          label={`Tendência de ${label}`}
-          tone={sparklineTone[accent]}
-        />
-      </div>
-      {showFlowArrow ? (
-        <ArrowRight
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-[25px] top-[45%] z-10 hidden size-8 rounded-full bg-white p-1 text-brand-primary xl:block"
-          strokeWidth={1.8}
-        />
-      ) : null}
     </article>
   );
 }
@@ -493,130 +405,90 @@ function AgendaPotentialPanel({
 }: {
   advanced: TherapistFinanceAdvancedAccess;
 }) {
-  const agenda =
-    advanced.status === "available" ? advanced.dashboard.agendaPotential : null;
+  const dashboard = advanced.status === "available" ? advanced.dashboard : null;
+  const agenda = dashboard?.agendaPotential ?? null;
   const available = agenda?.status === "available";
   const occupancy = available ? agenda?.occupancyRate : null;
-  const capacity = available ? agenda?.capacityMinutes ?? 0 : 0;
-  const contracted = advanced.status === "available" && advanced.dashboard.forecast.status === "available"
-    ? advanced.dashboard.forecast.contractedMonthNetCents
-    : null;
+  const opportunity =
+    dashboard?.opportunities.status === "available"
+      ? dashboard.opportunities.primary
+      : null;
 
   return (
-    <section className="grid min-h-[430px] content-start gap-5 rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+    <section className="grid min-h-[382px] content-start gap-5 rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <h2 className="truncate text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
-            Saúde financeira
+            Agenda e potencial
           </h2>
           <FinancialInfoTooltip
-            label="Saúde financeira"
+            label="Agenda e potencial"
             text="A ocupação usa a agenda disponível no período. Os valores de potencial são estimativas e não representam receita garantida."
           />
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_148px] sm:items-center">
-        <div>
-          <p className="text-sm font-bold text-tesText-secondary">
-            Capacidade utilizada
-          </p>
-          <p className="mt-2 tabular-nums text-[31px] font-extrabold leading-none tracking-[-0.035em] text-brand-deep">
+      <div className="rounded-xl bg-surface-soft px-4 py-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p className="text-sm font-extrabold text-brand-deep">Ocupação da agenda</p>
+          <strong className="tabular-nums text-xl font-extrabold text-brand-deep">
             {available && occupancy !== null ? formatPercent(occupancy) : "-"}
-          </p>
-          <p className="mt-3 text-sm font-semibold leading-5 text-status-success">
-            {agendaCapacityMessage(agenda)}
-          </p>
+          </strong>
         </div>
-        <OccupancyDonut occupancy={occupancy} reference={!available} />
+        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-brand-lavenderSoft">
+          <span
+            aria-hidden="true"
+            className="block h-full rounded-full bg-brand-primary"
+            style={{ width: `${available && occupancy !== null ? Math.max(0, Math.min(100, occupancy)) : 0}%` }}
+          />
+        </div>
       </div>
 
-      <div className="h-2.5 overflow-hidden rounded-full bg-brand-lavenderSoft">
-        <span
-          aria-hidden="true"
-          className="block h-full rounded-full bg-status-success"
-          style={{ width: `${available && occupancy !== null ? Math.max(0, Math.min(100, occupancy)) : 0}%` }}
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <AgendaDetail
+          label="Horas comprometidas"
+          value={available ? formatMinutes(agenda?.committedMinutes ?? 0) : "-"}
         />
-      </div>
-
-      <dl className="grid gap-3 text-sm">
-        <HealthDetail
-          color="bg-status-success"
-          label="Capacidade estimada da agenda"
-          value={available ? formatMinutes(capacity) : "-"}
-        />
-        <HealthDetail
-          color="bg-brand-primary"
-          label="Receita no mês"
-          value={contracted !== null ? formatCurrency(contracted) : "-"}
-        />
-        <HealthDetail
-          color="bg-status-warning"
-          label="Potencial estimado disponível"
-          value={available ? formatCurrency(agenda?.expectedPotentialCents ?? 0) : "-"}
+        <AgendaDetail
+          label="Horas livres no período"
+          value={available ? formatMinutes(agenda?.availableMinutes ?? 0) : "-"}
         />
       </dl>
 
-      <p className="flex items-start gap-3 rounded-xl bg-status-warningBg px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
+      <div className="rounded-xl bg-status-warningBg px-4 py-4">
+        <p className="text-sm font-extrabold text-brand-deep">
+          Potencial estimado da agenda
+        </p>
+        <p className="mt-2 tabular-nums text-[27px] font-extrabold leading-none tracking-[-0.035em] text-status-warning">
+          {available ? formatCurrency(agenda?.expectedPotentialCents ?? 0) : "-"}
+        </p>
+        <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
+          {agendaCapacityMessage(agenda)} Potencial é uma estimativa e não
+          representa receita garantida.
+        </p>
+      </div>
+
+      <p className="flex items-start gap-3 rounded-xl bg-brand-lavenderSoft/70 px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
         <Lightbulb aria-hidden="true" className="mt-0.5 shrink-0 text-status-warning" size={20} />
-        {agenda?.reason === "no_active_services"
+        {opportunity?.description ?? (agenda?.reason === "no_active_services"
           ? "Ative uma terapia para estimar o potencial dos horários já configurados. O potencial é uma estimativa e não representa receita garantida."
-          : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida."}
+          : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida.")}
       </p>
     </section>
   );
 }
 
-function OccupancyDonut({
-  occupancy,
-  reference,
-}: {
-  occupancy: number | null | undefined;
-  reference: boolean;
-}) {
-  const normalized = Math.max(0, Math.min(100, occupancy ?? 0));
-  return (
-    <div
-      aria-label={
-        reference
-          ? "Ocupação da agenda ainda sem base suficiente"
-          : `Ocupação da agenda: ${formatPercent(normalized)}`
-      }
-      className="relative mx-auto grid size-[148px] place-items-center rounded-full"
-      role="img"
-      style={{
-        background: reference
-          ? "conic-gradient(var(--tes-color-brand-lavender) 0 100%)"
-          : `conic-gradient(var(--tes-color-status-success) 0 ${Math.max(0, normalized - 12)}%, var(--tes-color-brand-primary) ${Math.max(0, normalized - 12)}% ${normalized}%, var(--tes-color-brand-lavender) ${normalized}% 100%)`,
-      }}
-      tabIndex={0}
-    >
-      <span className="grid size-[106px] place-items-center rounded-full bg-white px-2 text-center">
-        <strong className="tabular-nums text-2xl font-extrabold text-brand-deep">
-          {reference ? "-" : formatPercent(normalized)}
-        </strong>
-        <span className="text-xs font-semibold text-tesText-secondary">
-          Ocupação
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function HealthDetail({
-  color,
+function AgendaDetail({
   label,
   value,
 }: {
-  color: string;
   label: string;
   value: string;
 }) {
   return (
-    <div className="grid grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2">
-      <span aria-hidden="true" className={`size-2.5 rounded-full ${color}`} />
-      <dt className="min-w-0 font-semibold text-tesText-secondary">{label}</dt>
-      <dd className="whitespace-nowrap font-extrabold tabular-nums text-brand-deep">
+    <div className="rounded-lg border border-brand-lavender/80 bg-white px-3 py-3">
+      <dt className="text-sm font-semibold text-tesText-secondary">{label}</dt>
+      <dd className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-brand-deep">
         {value}
       </dd>
     </div>
@@ -649,7 +521,7 @@ function TherapyRankingCard({
       <TherapistLockedCard
         description="Compare o movimento das suas terapias e entenda quais caminhos têm recebido mais procura."
         requiredPlan={TherapistPlan.Premium}
-        title="Terapias que mais faturam"
+        title="Terapias com maior receita"
         variant="section"
       />
     );
@@ -659,34 +531,30 @@ function TherapyRankingCard({
 
   return (
     <section className="grid min-h-[382px] content-start gap-5 rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-            <Sparkles aria-hidden="true" size={20} />
-          </span>
+      <div className="flex items-center justify-between gap-3">
+        <div>
           <h2 className="text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
-            Estratégico
+            Terapias com maior receita
           </h2>
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            Receita líquida no período selecionado.
+          </p>
         </div>
         <FinancialInfoTooltip
           align="end"
-          label="Estratégico"
-          text="O ranking considera a receita líquida e o ticket médio das sessões pagas no período selecionado."
+          label="Terapias com maior receita"
+          text="O ranking considera a receita líquida das sessões pagas no período selecionado."
         />
       </div>
 
       {therapies.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px] text-left">
-            <caption className="mb-3 text-left text-sm font-extrabold text-brand-deep">
-              Terapias que mais faturam
-            </caption>
+          <table className="w-full min-w-[360px] text-left">
             <thead className="border-b border-brand-lavender text-[11px] font-extrabold uppercase tracking-[0.04em] text-tesText-muted">
               <tr>
                 <th className="w-8 pb-2 font-inherit">#</th>
                 <th className="pb-2 font-inherit">Terapia</th>
                 <th className="pb-2 text-right font-inherit">Receita líquida</th>
-                <th className="pb-2 text-right font-inherit">Ticket médio</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-lavender/80">
@@ -701,11 +569,6 @@ function TherapyRankingCard({
                   <td className="py-2.5 text-right text-sm font-extrabold tabular-nums text-brand-deep">
                     {formatCurrency(therapy.therapistNetAmountCents)}
                   </td>
-                  <td className="py-2.5 pl-4 text-right text-sm font-extrabold tabular-nums text-brand-deep">
-                    {therapy.averageTicketCents === null
-                      ? "-"
-                      : formatCurrency(therapy.averageTicketCents)}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -715,100 +578,6 @@ function TherapyRankingCard({
         <ReferenceBars message="O ranking será preenchido quando houver recebimentos confirmados." />
       )}
 
-    </section>
-  );
-}
-
-function OpportunityOfMonth({
-  advanced,
-}: {
-  advanced: TherapistFinanceAdvancedAccess;
-}) {
-  if (advanced.status === "locked") {
-    return (
-      <TherapistLockedCard
-        description="A disponibilidade da agenda e uma leitura contextualizada podem ajudar você a escolher o próximo passo da sua prática."
-        requiredPlan={TherapistPlan.PremiumPlus}
-        title="Crescimento"
-        variant="section"
-      />
-    );
-  }
-
-  const dashboard = advanced.dashboard;
-  const agenda = dashboard.agendaPotential;
-  const available = agenda.status === "available";
-  const occupancy = available ? agenda.occupancyRate : null;
-  const availability = occupancy === null ? null : Math.max(0, 100 - occupancy);
-  const opportunity =
-    dashboard.opportunities.status === "available"
-      ? dashboard.opportunities.primary
-      : null;
-
-  return (
-    <section className="grid min-h-[430px] content-start gap-4 rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
-            Crescimento
-          </h2>
-          <FinancialInfoTooltip
-            label="Crescimento"
-            text="A disponibilidade da agenda e o potencial mostrado aqui são leituras de apoio. Potencial não é receita garantida."
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl bg-status-dangerBg px-4 py-4">
-        <p className="text-sm font-extrabold text-brand-deep">
-          Potencial estimado não utilizado
-        </p>
-        <p className="mt-3 tabular-nums text-[27px] font-extrabold leading-none tracking-[-0.035em] text-status-danger">
-          {available ? formatCurrency(agenda.expectedPotentialCents) : "-"}
-        </p>
-        <p className="mt-3 text-sm font-semibold leading-5 text-status-danger">
-          {availability === null
-            ? agenda.reason === "no_availability_rules"
-              ? "Sem horários configurados para o restante do mês"
-              : "Não foi possível estimar o potencial neste período"
-            : `${formatPercent(availability)} da agenda permanece disponível`}
-        </p>
-      </div>
-
-      <div className="rounded-xl bg-status-warningBg px-4 py-4">
-        <p className="text-sm font-extrabold text-brand-deep">Disponibilidade na agenda</p>
-        <p className="mt-3 tabular-nums text-[27px] font-extrabold leading-none tracking-[-0.035em] text-status-warning">
-          {availability === null ? "-" : formatPercent(availability)}
-        </p>
-        <p className="mt-3 text-sm font-semibold leading-5 text-status-warning">
-          {available
-            ? agenda.reason === "no_active_services"
-              ? "Configure uma terapia ativa para estimar o potencial"
-              : `${formatMinutes(agenda.availableMinutes)} livres no período`
-            : agenda.reason === "no_availability_rules"
-              ? "Cadastre horários para acompanhar a disponibilidade"
-              : "Não foi possível calcular a disponibilidade"}
-        </p>
-      </div>
-
-      <div className="flex items-start gap-3 rounded-xl bg-brand-lavenderSoft/80 px-4 py-4">
-        <Lightbulb aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={24} />
-        <div>
-          <p className="text-sm font-semibold leading-5 text-tesText-secondary">
-            {opportunity?.description ?? "Preencha horários disponíveis para criar mais oportunidades de atendimento."}
-          </p>
-          {opportunity && opportunity.estimatedImpactCents !== null ? (
-            <p className="mt-2 text-sm font-extrabold text-brand-deep">
-              Impacto estimado: {formatCurrency(opportunity.estimatedImpactCents)}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <p className="mt-auto border-t border-brand-lavender/80 pt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        Acompanhe a disponibilidade ao longo do período para interpretar a
-        oportunidade com contexto.
-      </p>
     </section>
   );
 }
@@ -837,26 +606,24 @@ function FinancialEvolutionCard({
   if (advanced?.financialEvolution.length) {
     return (
       <FinancialEvolutionChart
-        emptyMessage="A evolução avançada aparece quando houver uma base suficiente para comparar realizado, contratado e estimado."
+        emptyMessage="A evolução aparece quando houver uma base suficiente para comparar realizado, contratado e o período anterior."
         footer={getEvolutionFooter(
           advanced.financialEvolution.map((point) => point.realizedNetCents),
         )}
         highlights={[
           {
-            color: "var(--tes-color-brand-primary)",
-            label: "Realizado líquido",
-            value: formatCurrency(advanced.forecast.realizedNetCents),
-          },
-          {
             color: "var(--tes-color-brand-primaryHover)",
-            label: "Receita no mês",
-            value: formatCurrency(advanced.forecast.contractedMonthNetCents),
+            label: "Receita contratada do mês",
+            value:
+              advanced.forecast.status === "available"
+                ? formatCurrency(advanced.forecast.contractedMonthNetCents)
+                : "-",
           },
           {
-            color: "var(--tes-color-brand-lavender)",
-            label: "Potencial estimado",
-            value: formatCurrency(
-              advanced.forecast.estimatedOpenAgendaPotentialCents,
+            color: "var(--tes-color-status-success)",
+            label: "Variação vs período anterior",
+            value: formatPercentageComparison(
+              metrics?.revenue.comparison.therapistNet,
             ),
           },
         ]}
@@ -865,7 +632,6 @@ function FinancialEvolutionCard({
           current: point.realizedNetCents,
           label: formatShortDate(point.periodStart),
           previous: point.previousPeriodNetCents,
-          projected: point.projectedNetCents,
         }))}
         series={[
           {
@@ -879,12 +645,6 @@ function FinancialEvolutionCard({
             dataKey: "contracted",
             label: "Contratado",
             type: "bar",
-          },
-          {
-            color: "var(--tes-color-brand-lavender)",
-            dataKey: "projected",
-            label: "Estimado",
-            type: "line",
           },
           {
             color: "var(--tes-color-brand-primaryPressed)",
@@ -968,79 +728,26 @@ function FinancialMethodology({
   timezone: string;
 }) {
   return (
-    <section className="grid gap-4">
-      <div>
-        <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[34px]">
-          Detalhes e metodologia
-        </h2>
-        <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+    <footer className="rounded-card border border-brand-lavender bg-white px-4 py-4 shadow-card sm:px-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-extrabold text-brand-deep">
+            Como calculamos estes indicadores
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            O valor líquido considera o bruto, os custos da plataforma e os reembolsos confirmados.
+          </p>
+        </div>
+        <p className="shrink-0 text-xs font-semibold text-tesText-muted">
           Atualizado em {formatDateTime(generatedAt, timezone)}.
         </p>
       </div>
-
-      <div className="divide-y divide-brand-lavender rounded-card border border-brand-lavender bg-white shadow-card">
-        <MethodologyRow
-          description="Entenda como recebimentos, custos da plataforma e reembolsos formam o valor líquido."
-          icon={CircleDollarSign}
-          title="Como o valor é composto"
-        >
-          O valor líquido considera o bruto das sessões, os custos da plataforma e os
-          reembolsos ao cliente confirmados no período.
-        </MethodologyRow>
-        <MethodologyRow
-          description="Veja o que distingue valores realizados, contratados e estimados."
-          icon={TrendingUp}
-          title="Como a previsão do mês é calculada"
-        >
-          {advanced.status === "available"
-            ? "A previsão separa o que já foi realizado, sessões futuras já contratadas e o potencial estimado da agenda. Potencial não é receita garantida."
-            : "A previsão avançada fica disponível no Premium Plus e sempre separa valores confirmados de estimativas."}
-        </MethodologyRow>
-      </div>
-
-      <p className="flex items-center justify-center gap-2 text-center text-xs font-semibold text-tesText-muted">
-        <CheckCircle2 aria-hidden="true" size={15} />
-        Seus dados financeiros são apresentados com segurança e privacidade.
+      <p className="mt-3 border-t border-brand-lavender pt-3 text-xs font-semibold leading-5 text-tesText-secondary">
+        {advanced.status === "available"
+          ? "Receita contratada reúne o realizado e sessões futuras já pagas; o potencial da agenda é uma estimativa, não uma receita garantida."
+          : "As estimativas de receita e potencial da agenda são exibidas somente quando estiverem disponíveis no seu plano."}
       </p>
-    </section>
-  );
-}
-
-function MethodologyRow({
-  children,
-  description,
-  icon: Icon,
-  title,
-}: {
-  children: string;
-  description: string;
-  icon: LucideIcon;
-  title: string;
-}) {
-  return (
-    <details className="group">
-      <summary className="flex min-h-[72px] cursor-pointer list-none items-center gap-3 px-4 py-3 marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary [&::-webkit-details-marker]:hidden sm:px-5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <Icon aria-hidden="true" size={18} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <strong className="block text-sm font-extrabold text-brand-deep">
-            {title}
-          </strong>
-          <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
-            {description}
-          </span>
-        </span>
-        <ArrowRight
-          aria-hidden="true"
-          className="shrink-0 text-brand-primary transition-transform group-open:rotate-90"
-          size={19}
-        />
-      </summary>
-      <p className="border-t border-brand-lavender px-4 py-4 text-sm font-semibold leading-6 text-tesText-secondary sm:px-5">
-        {children}
-      </p>
-    </details>
+    </footer>
   );
 }
 
@@ -1058,20 +765,6 @@ function ReferenceBars({ message }: { message: string }) {
   );
 }
 
-function forecastProgressLabel(
-  forecast: TherapistAdvancedFinancialDashboard["forecast"],
-) {
-  if (forecast.contractedMonthNetCents <= 0) return "Sem sessões pagas no mês";
-  const progress = Math.max(
-    0,
-    Math.min(
-      100,
-      (forecast.realizedNetCents / forecast.contractedMonthNetCents) * 100,
-    ),
-  );
-  return `${formatPercent(progress, 0)} da receita do mês já realizada`;
-}
-
 function getEvolutionFooter(values: number[]) {
   const usable = values.filter((value) => value > 0);
   if (usable.length < 2) {
@@ -1086,6 +779,21 @@ function getEvolutionFooter(values: number[]) {
     return "A receita líquida variou na sequência observada. Consulte os períodos para interpretar a mudança com contexto.";
   }
   return "A receita líquida permaneceu estável na sequência observada.";
+}
+
+function formatPercentageComparison(
+  comparison: FinancialMetricComparison | undefined,
+) {
+  if (
+    !comparison ||
+    comparison.comparisonStatus !== "available" ||
+    comparison.percentageDelta === null
+  ) {
+    return "Sem base comparável";
+  }
+
+  const prefix = comparison.percentageDelta > 0 ? "+" : "";
+  return `${prefix}${formatPercent(comparison.percentageDelta)}`;
 }
 
 function formatShortDate(value: string) {

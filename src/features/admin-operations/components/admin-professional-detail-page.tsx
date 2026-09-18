@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
@@ -31,7 +32,7 @@ import type {
   AdminOperationField,
 } from "../admin-operations.types";
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
-import { AdminProfileReviewPanel } from "./admin-profile-review-panel";
+import { AdminPrivateContactDetails } from "./admin-private-contact-details";
 import {
   buildMonogram,
   fieldMap,
@@ -70,6 +71,9 @@ export function AdminProfessionalDetailPage({
   const profile = fieldMap(findSection(data, "Estado do perfil")?.fields ?? []);
   const operation = fieldMap(findSection(data, "Operação")?.fields ?? []);
   const traceability = findSection(data, "Rastreabilidade")?.fields ?? [];
+  const registeredAt = traceability.find(
+    (field) => field.label === "Criado em",
+  )?.value;
 
   const name = data.title;
   const plan = formatPlanLabel(profile.get("Plano"));
@@ -200,6 +204,11 @@ export function AdminProfessionalDetailPage({
                     label="Próxima sessão"
                     value={operation.get("Próxima sessão") || "Não agendada"}
                   />
+                  <SummaryFact
+                    icon={CalendarDays}
+                    label="Na plataforma desde"
+                    value={registeredAt || "Data indisponível"}
+                  />
                 </dl>
               </div>
             </section>
@@ -217,10 +226,6 @@ export function AdminProfessionalDetailPage({
                 </p>
               </section>
             ) : null}
-            <AdminProfileReviewPanel
-              publicationStatus={publication}
-              review={data.profileReview}
-            />
           </AppPageMain>
 
           <AppPageAside>
@@ -347,12 +352,16 @@ export function AdminProfessionalDetailPage({
               />
             ) : null}
             {activeTab === "profile" ? (
-              <ProfilePanel profile={data.publicProfile} />
+              <ProfilePanel
+                profile={data.publicProfile}
+                review={data.profileReview}
+              />
             ) : null}
             {activeTab === "services" ? (
               <ServicesPanel
                 counts={activityFields}
                 profile={data.publicProfile}
+                review={data.profileReview}
               />
             ) : null}
             {activeTab === "documents" ? (
@@ -398,9 +407,15 @@ function OverviewPanel({
 
 function ProfilePanel({
   profile,
+  review,
 }: {
   profile: AdminOperationDetailPageData["publicProfile"];
+  review: AdminOperationDetailPageData["profileReview"];
 }) {
+  if (review) {
+    return <SubmittedProfilePanel review={review} />;
+  }
+
   if (profile?.status === "unavailable") {
     return (
       <ProfileState
@@ -487,22 +502,189 @@ function ProfilePanel({
   );
 }
 
+function SubmittedProfilePanel({
+  review,
+}: {
+  review: NonNullable<AdminOperationDetailPageData["profileReview"]>;
+}) {
+  const { fields } = review;
+  const verificationLabel = reviewVerificationLabel(review.verificationStatus);
+  const hasProfileAside = Boolean(fields.photoUrl || fields.experienceYears);
+
+  return (
+    <div className="max-w-5xl space-y-9">
+      <OpenSection
+        description="Conteúdo informado pelo profissional em Meu perfil. Esta leitura apoia a decisão administrativa e não altera a publicação."
+        title="Meu perfil"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
+          <p className="text-sm font-extrabold text-brand-deep">
+            Versão enviada para revisão
+          </p>
+          <span className="inline-flex min-h-8 items-center rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
+            {verificationLabel}
+          </span>
+        </div>
+
+        <div
+          className={`mt-6 grid gap-7 ${
+            hasProfileAside ? "lg:grid-cols-[minmax(0,1fr)_220px]" : ""
+          }`}
+        >
+          <div className="min-w-0 space-y-7">
+            {fields.shortIntro ? (
+              <p className="max-w-3xl font-display text-2xl font-normal italic leading-9 text-brand-deep sm:text-[1.85rem]">
+                {fields.shortIntro}
+              </p>
+            ) : null}
+            <ReviewContentField
+              label="Minha essência"
+              value={fields.essenceBody}
+            />
+            <ReviewContentField
+              label="Apresentação"
+              value={fields.invitationBody}
+            />
+            {fields.guideItems.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-extrabold text-brand-deep">
+                  Como posso guiar
+                </h3>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {fields.guideItems.map((item) => (
+                    <li
+                      className="rounded-full bg-brand-lavenderSoft px-3 py-2 text-sm font-bold text-brand-primary"
+                      key={item.label}
+                    >
+                      {item.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {fields.videoUrl ? (
+              <div className="border-l-2 border-brand-primary pl-4">
+                <h3 className="text-sm font-extrabold text-brand-deep">
+                  Vídeo de apresentação
+                </h3>
+                {fields.videoTitle ? (
+                  <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+                    {fields.videoTitle}
+                  </p>
+                ) : null}
+                <a
+                  className="mt-3 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary underline underline-offset-4 outline-none focus-visible:ring-4 focus-visible:ring-ring/20"
+                  href={fields.videoUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Abrir vídeo de apresentação
+                </a>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-5">
+            {fields.photoUrl ? (
+              <div className="overflow-hidden rounded-2xl border border-border bg-surface-soft p-2">
+                <Image
+                  alt="Foto enviada no perfil"
+                  className="aspect-square w-full rounded-xl object-cover"
+                  height={520}
+                  src={fields.photoUrl}
+                  width={520}
+                />
+              </div>
+            ) : null}
+            {fields.experienceYears ? (
+              <div className="border-l-2 border-brand-primary pl-4">
+                <p className="text-2xl font-extrabold text-brand-deep">
+                  {fields.experienceYears} anos
+                </p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                  de experiência informada
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </OpenSection>
+
+      <PrivateContactSection identity={review.privateIdentity} />
+    </div>
+  );
+}
+
+function ReviewContentField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null;
+}) {
+  if (!value) return null;
+
+  return (
+    <div>
+      <h3 className="text-sm font-extrabold text-brand-deep">{label}</h3>
+      <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm font-semibold leading-7 text-tesText-secondary">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function PrivateContactSection({
+  identity,
+}: {
+  identity: NonNullable<
+    AdminOperationDetailPageData["profileReview"]
+  >["privateIdentity"];
+}) {
+  if (!identity) return null;
+
+  return (
+    <OpenSection
+      description="Informações privadas visíveis apenas para a equipe TES autorizada."
+      title="Dados e contato"
+    >
+      <AdminPrivateContactDetails identity={identity} />
+    </OpenSection>
+  );
+}
+
 function ServicesPanel({
   counts,
   profile,
+  review,
 }: {
   counts: AdminOperationField[];
   profile: AdminOperationDetailPageData["publicProfile"];
+  review: AdminOperationDetailPageData["profileReview"];
 }) {
-  const services = profile?.services;
+  const services = review
+    ? review.services.map((service) => ({
+        description: service.description,
+        durationMinutes: service.durationMinutes,
+        priceCents: service.priceCents,
+        serviceTitle: service.title,
+        therapyName: service.therapyName,
+      }))
+    : profile?.services;
+  const hasReview = Boolean(review);
 
   return (
     <div className="max-w-5xl space-y-8">
       <OpenSection
-        description="Serviços elegíveis que aparecem na superfície pública neste momento."
+        description={
+          hasReview
+            ? "Serviços e terapias informados pelo profissional nesta versão."
+            : "Serviços elegíveis que aparecem na superfície pública neste momento."
+        }
         title="Serviços e terapias"
       >
-        {profile?.status === "unavailable" || services === null ? (
+        {!hasReview &&
+        (profile?.status === "unavailable" || services === null) ? (
           <p className="text-sm font-semibold leading-7 text-tesText-secondary">
             Não foi possível carregar a lista de serviços publicados agora.
           </p>
@@ -539,7 +721,9 @@ function ServicesPanel({
           </ul>
         ) : (
           <p className="text-sm font-semibold leading-7 text-tesText-secondary">
-            Não há serviços elegíveis para publicação neste momento.
+            {hasReview
+              ? "O profissional ainda não informou serviços ou terapias nesta versão."
+              : "Não há serviços elegíveis para publicação neste momento."}
           </p>
         )}
       </OpenSection>
@@ -801,28 +985,70 @@ function HistoryPanel({
   return (
     <div className="grid max-w-5xl gap-8 xl:grid-cols-[minmax(0,1fr)_280px]">
       <OpenSection
-        description="Decisões administrativas registradas para este profissional."
-        title="Linha do tempo"
+        description="Acompanhe as ações e os eventos relacionados a este profissional."
+        title="Histórico do profissional"
       >
         {events.length > 0 ? (
-          <ol className="border-l border-border pl-5">
+          <div className="overflow-hidden rounded-2xl border border-border bg-white">
+            <div className="hidden grid-cols-[112px_minmax(150px,0.85fr)_minmax(0,1.45fr)_minmax(130px,0.7fr)] gap-5 bg-surface-soft px-5 py-3 md:grid">
+              <p className="text-xs font-extrabold text-tesText-secondary">
+                Data e hora
+              </p>
+              <p className="text-xs font-extrabold text-tesText-secondary">
+                Evento
+              </p>
+              <p className="text-xs font-extrabold text-tesText-secondary">
+                Detalhes
+              </p>
+              <p className="text-xs font-extrabold text-tesText-secondary">
+                Responsável
+              </p>
+            </div>
+            <ol className="divide-y divide-border">
             {events.map((event) => (
-              <li className="relative pb-6 last:pb-0" key={event.id}>
-                <span className="absolute -left-[1.7rem] top-1.5 size-3 rounded-full border-2 border-white bg-brand-primary" />
-                <p className="text-sm font-extrabold text-brand-deep">
-                  {formatAuditActionLabel(event.action)}
-                </p>
-                <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-tesText-muted sm:text-xs">
-                  {formatDateTime(event.createdAt)}
-                </p>
-                {event.reason ? (
-                  <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                    {event.reason}
+              <li
+                className="relative grid gap-3 px-5 py-5 pl-9 md:grid-cols-[112px_minmax(150px,0.85fr)_minmax(0,1.45fr)_minmax(130px,0.7fr)] md:gap-5 md:pl-5"
+                key={event.id}
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0 left-4 top-0 w-px bg-brand-lavender md:hidden"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute left-[0.7rem] top-7 size-2.5 rounded-full border-2 border-white bg-brand-primary md:hidden"
+                />
+                <HistoryTimestamp value={event.createdAt} />
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-tesText-muted md:hidden">
+                    Evento
                   </p>
-                ) : null}
+                  <span
+                    className={`mt-1 inline-flex min-h-7 items-center rounded-full px-3 text-xs font-extrabold ${historyEventTone(event.action)}`}
+                  >
+                    {formatAuditActionLabel(event.action)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-tesText-muted md:hidden">
+                    Detalhes
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                    {event.reason || "Sem observações adicionais."}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-tesText-muted md:hidden">
+                    Responsável
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                    {formatAuditActor(event.actorRole)}
+                  </p>
+                </div>
               </li>
             ))}
-          </ol>
+            </ol>
+          </div>
         ) : (
           <p className="text-sm font-semibold leading-7 text-tesText-secondary">
             Ainda não há movimentações administrativas registradas para este
@@ -835,6 +1061,72 @@ function HistoryPanel({
       </OpenSection>
     </div>
   );
+}
+
+function HistoryTimestamp({ value }: { value: string }) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return (
+      <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+        Data indisponível
+      </p>
+    );
+  }
+
+  const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  });
+  const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  });
+
+  return (
+    <time
+      className="flex flex-col text-sm font-semibold leading-6 text-tesText-secondary"
+      dateTime={value}
+    >
+      <span>{dateFormatter.format(date)}</span>
+      <span className="text-tesText-muted">{timeFormatter.format(date)}</span>
+    </time>
+  );
+}
+
+function historyEventTone(action: string) {
+  if (
+    action === "verification.approve" ||
+    action === "professional.reactivate"
+  ) {
+    return "bg-status-successBg text-status-success";
+  }
+
+  if (
+    action === "verification.pause_review" ||
+    action === "verification.request_changes"
+  ) {
+    return "bg-status-warningBg text-status-warning";
+  }
+
+  if (
+    action === "professional.suspend" ||
+    action === "verification.reject"
+  ) {
+    return "bg-status-dangerBg text-status-danger";
+  }
+
+  return "bg-brand-lavenderSoft text-brand-primary";
+}
+
+function formatAuditActor(value: string) {
+  const key = value.trim().toLowerCase();
+
+  if (key === "admin" || key === "administrator") return "Administrador";
+  if (key === "service_role" || key === "system") return "Sistema TES";
+  if (key === "therapist") return "Profissional";
+
+  return formatStatusLabel(value) || "Não informado";
 }
 
 function ProfileState({
@@ -990,6 +1282,15 @@ function statusTone(status: string) {
     return "warning" as const;
   }
   return "primary" as const;
+}
+
+function reviewVerificationLabel(status: string) {
+  if (status === "submitted") return "Aguardando análise";
+  if (status === "in_review") return "Em análise";
+  if (status === "approved") return "Aprovado";
+  if (status === "changes_requested") return "Ajustes solicitados";
+  if (status === "rejected") return "Não aprovado";
+  return "Versão enviada";
 }
 
 function formatServiceMeta(service: {

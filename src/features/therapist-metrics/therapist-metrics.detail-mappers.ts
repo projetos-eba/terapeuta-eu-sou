@@ -4,6 +4,7 @@ import type {
   TherapistInterestSegmentKey,
   TherapistMetricDirection,
   TherapistMetricDirectionCopyKey,
+  TherapistMetricOwnHistoryCollection,
   TherapistMetricProtectedCollection,
   TherapistMetricsCommonMeta,
   TherapistMetricsTodayActivity,
@@ -91,6 +92,14 @@ export function mapTherapistSessionMetrics(
     const summary = record(value.summary);
     const evolution = record(value.evolution);
     const cancellationReasons = record(value.cancellationReasons);
+    const metricDefinitionVersion = oneOf(value.metricDefinitionVersion, 1, 2);
+    const mapSessionDayOfWeek =
+      metricDefinitionVersion === 1 ? legacyDayOfWeek : dayOfWeek;
+    const heatmapItem = (item: Record<string, unknown>) => ({
+      dayOfWeek: mapSessionDayOfWeek(item.dayOfWeek),
+      hourBucketStart: hourBucket(item.hourBucketStart),
+      sessions: nonNegativeInteger(item.sessions),
+    });
 
     return {
       cancellationReasons: {
@@ -114,13 +123,12 @@ export function mapTherapistSessionMetrics(
         }),
         status: emptyOrReady(evolution.status),
       },
-      heatmap: protectedCollection(value.heatmap, (item) => ({
-        dayOfWeek: dayOfWeek(item.dayOfWeek),
-        hourBucketStart: hourBucket(item.hourBucketStart),
-        sessions: nonNegativeInteger(item.sessions),
-      })),
+      heatmap:
+        metricDefinitionVersion === 1
+          ? legacyHeatmap(value.heatmap, heatmapItem)
+          : ownHistoryCollection(value.heatmap, heatmapItem),
       meta: commonMeta(value.meta),
-      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
+      metricDefinitionVersion,
       outcomeDistribution: protectedCollection(
         value.outcomeDistribution,
         (item) => ({
@@ -131,7 +139,7 @@ export function mapTherapistSessionMetrics(
         }),
       ),
       presenceByDay: protectedCollection(value.presenceByDay, (item) => ({
-        dayOfWeek: dayOfWeek(item.dayOfWeek),
+        dayOfWeek: mapSessionDayOfWeek(item.dayOfWeek),
         percentage: percentage(item.percentage),
         sample: nonNegativeInteger(item.sample),
       })),
@@ -426,6 +434,39 @@ function protectedCollection<T>(
   };
 }
 
+function ownHistoryCollection<T>(
+  input: unknown,
+  mapItem: (value: Record<string, unknown>) => T,
+): TherapistMetricOwnHistoryCollection<T> {
+  const value = record(input);
+  const status = emptyOrReady(value.status);
+  const items = array(value.items).map((item) => mapItem(record(item)));
+  const observedSample = nonNegativeInteger(value.observedSample);
+
+  if (status === "empty" && (observedSample !== 0 || items.length > 0)) {
+    throw new Error("Empty own-history collection contains data.");
+  }
+
+  if (status === "ready" && observedSample === 0) {
+    throw new Error("Ready own-history collection has no sample.");
+  }
+
+  return { items, observedSample, status };
+}
+
+function legacyHeatmap<T>(
+  input: unknown,
+  mapItem: (value: Record<string, unknown>) => T,
+): TherapistMetricOwnHistoryCollection<T> {
+  const collection = protectedCollection(input, mapItem);
+
+  return {
+    items: collection.status === "ready" ? collection.items : [],
+    observedSample: collection.observedSample,
+    status: collection.status === "ready" ? "ready" : "empty",
+  };
+}
+
 function unavailable<TReason extends string>(
   input: unknown,
   reason: TReason,
@@ -481,7 +522,12 @@ function metricDate(value: unknown) {
 }
 
 function dayOfWeek(value: unknown) {
-  return boundedInteger(value, 1, 7);
+  return boundedInteger(value, 0, 6);
+}
+
+function legacyDayOfWeek(value: unknown) {
+  const parsed = boundedInteger(value, 1, 7);
+  return parsed === 7 ? 0 : parsed;
 }
 
 function hourBucket(value: unknown) {

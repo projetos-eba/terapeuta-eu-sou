@@ -63,6 +63,7 @@ export function TherapistFinancePage({
           advanced={data.advanced}
           analytics={data.analytics}
           overview={data.overview}
+          payouts={data.payouts}
         />
       ) : null}
     </AppPageContainer>

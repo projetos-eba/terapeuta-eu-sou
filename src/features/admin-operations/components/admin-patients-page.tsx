@@ -8,9 +8,9 @@ import {
   ExternalLink,
   Search,
   ShieldCheck,
+  ShieldAlert,
   UserRound,
   UsersRound,
-  WalletCards,
 } from "lucide-react";
 
 import { buildAdminListHref } from "@/features/admin-shared/admin-list-query";
@@ -30,7 +30,7 @@ type BreakdownItem = {
 
 type PatientMetricCard = AdminOperationMetric & {
   displayLabel: string;
-  icon: "recurrence" | "ticket" | "user" | "users";
+  icon: "active" | "suspended" | "user" | "users";
 };
 
 const STATUS_COLORS = [
@@ -63,8 +63,8 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
               {data.title}
             </h1>
             <p className="mt-4 max-w-[840px] text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
-              Monitore sua base de clientes, engajamento, recorrência e
-              necessidades de suporte.
+              Gerencie os clientes cadastrados e acompanhe a situação de suas
+              contas.
             </p>
           </div>
           <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
@@ -74,30 +74,38 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
 
         <section
           aria-label="Indicadores de clientes"
-          className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         >
           {metrics.map((metric) => (
             <MetricCard key={metric.key} metric={metric} />
           ))}
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-3">
-          <StatusDistributionCard
-            items={statusBreakdown}
-            rowsStatus={data.rowsStatus}
-          />
-          <CompactBarsCard
-            icon={<Clock3 aria-hidden="true" className="size-5" />}
-            items={activityBreakdown}
-            rowsStatus={data.rowsStatus}
-            title="Atividade da base"
-            subtitle="Sinais disponíveis"
-            unavailableMessage="Não há registros suficientes para resumir atividade nesta visão."
-          />
-          <LastActivityAgeCard
-            items={activityAgeBreakdown}
-            rowsStatus={data.rowsStatus}
-          />
+        <section
+          aria-label="Atividade dos clientes nesta página"
+          className="space-y-3"
+        >
+          <p className="text-sm font-semibold text-tesText-secondary">
+            Os gráficos abaixo representam somente os clientes da página atual.
+          </p>
+          <div className="grid gap-5 xl:grid-cols-3">
+            <StatusDistributionCard
+              items={statusBreakdown}
+              rowsStatus={data.rowsStatus}
+            />
+            <CompactBarsCard
+              icon={<Clock3 aria-hidden="true" className="size-5" />}
+              items={activityBreakdown}
+              rowsStatus={data.rowsStatus}
+              title="Atividade nesta página"
+              subtitle="Sinais disponíveis"
+              unavailableMessage="Não há registros suficientes para resumir atividade nesta visão."
+            />
+            <LastActivityAgeCard
+              items={activityAgeBreakdown}
+              rowsStatus={data.rowsStatus}
+            />
+          </div>
         </section>
 
         <section className="overflow-hidden rounded-[26px] border border-brand-lavender/70 bg-white shadow-[0_24px_70px_rgba(20,16,90,0.11)]">
@@ -201,27 +209,24 @@ function MetricCard({ metric }: { metric: PatientMetricCard }) {
   const Icon = iconForMetric(metric.icon);
 
   return (
-    <article className="min-h-[184px] rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_55px_rgba(20,16,90,0.1)]">
-      <div className="flex h-full flex-col justify-between gap-5">
-        <div className="flex items-start justify-between gap-4">
-          <span
-            className={`grid size-12 place-items-center rounded-[18px] ${metricIconClass(metric)}`}
-          >
-            <Icon aria-hidden="true" className="size-5" />
-          </span>
-          <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold uppercase tracking-[0.12em] text-brand-primary">
-            {metric.status === "available" ? "Disponível" : "Indisp."}
-          </span>
-        </div>
-        <div>
+    <article className="rounded-[18px] border border-border bg-white p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-full ${metricIconClass(metric)}`}
+        >
+          <Icon aria-hidden="true" className="size-5" />
+        </span>
+        <div className="min-w-0">
           <p className="text-sm font-extrabold text-tesText-secondary">
             {metric.displayLabel}
           </p>
-          <p className="mt-2 text-[2.55rem] font-extrabold leading-none text-brand-deep">
+          <p className="mt-1 text-3xl font-extrabold leading-tight tabular-nums text-brand-deep">
             {formatMetricValue(metric)}
           </p>
-          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-muted">
-            {metric.description}
+          <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
+            {metric.status === "available"
+              ? metric.description
+              : "Indicador indisponível no momento."}
           </p>
         </div>
       </div>
@@ -691,28 +696,30 @@ function buildPatientMetrics(
     toPatientMetric(
       byKey.get("total-patients"),
       "total-patients",
-      "Clientes cadastrados",
+      "Total de clientes",
       "Base cadastrada.",
       "users",
     ),
     toPatientMetric(
       byKey.get("recent-patients"),
       "recent-patients",
-      "Novos clientes",
-      "Cadastros dos últimos 30 dias.",
+      "Novos cadastros",
+      recentRegistrationDescription(byKey.get("recent-patients")),
       "user",
     ),
-    unavailableMetric(
-      "recurring-patients",
-      "Recorrência",
-      "Métrica consolidada ainda não disponível nesta visão.",
-      "recurrence",
+    toPatientMetric(
+      byKey.get("active-patients"),
+      "active-patients",
+      "Contas ativas",
+      activeAccountDescription(byKey.get("active-patients")),
+      "active",
     ),
-    unavailableMetric(
-      "average-ticket-per-patient",
-      "Média por cliente",
-      "Métrica financeira consolidada ainda não disponível nesta visão.",
-      "ticket",
+    toPatientMetric(
+      byKey.get("suspended-patients"),
+      "suspended-patients",
+      "Clientes suspensos",
+      "Novos agendamentos bloqueados.",
+      "suspended",
     ),
   ];
 }
@@ -725,7 +732,7 @@ function toPatientMetric(
   icon: PatientMetricCard["icon"],
 ): PatientMetricCard {
   return {
-    description: metric?.description ?? description,
+    description,
     displayLabel,
     icon,
     key,
@@ -737,23 +744,27 @@ function toPatientMetric(
   };
 }
 
-function unavailableMetric(
-  key: string,
-  displayLabel: string,
-  description: string,
-  icon: PatientMetricCard["icon"],
-): PatientMetricCard {
-  return {
-    description,
-    displayLabel,
-    icon,
-    key,
-    label: displayLabel,
-    source: "patients",
-    status: "unavailable",
-    tone: "info",
-    value: null,
-  };
+function recentRegistrationDescription(metric?: AdminOperationMetric) {
+  const previous = metric?.comparisonValue;
+  if (
+    metric?.status !== "available" ||
+    metric.value === null ||
+    previous == null
+  ) {
+    return "Cadastros dos últimos 30 dias. Comparação indisponível.";
+  }
+  if (previous === 0) return "Últimos 30 dias · Sem base de comparação.";
+  const change = ((metric.value - previous) / previous) * 100;
+  const formatted = Math.abs(change).toLocaleString("pt-BR", {
+    maximumFractionDigits: 1,
+  });
+  return `Últimos 30 dias · ${change > 0 ? "+" : change < 0 ? "−" : ""}${formatted}% em relação aos 30 dias anteriores.`;
+}
+
+function activeAccountDescription(metric?: AdminOperationMetric) {
+  return metric?.percentage != null
+    ? `${metric.percentage.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do total de clientes.`
+    : "Clientes sem bloqueio de novos agendamentos.";
 }
 
 function buildBreakdown(values: string[], colors: string[]): BreakdownItem[] {
@@ -892,6 +903,7 @@ function getInitials(name: string) {
 function translateStatus(status?: string) {
   const labels: Record<string, string> = {
     active: "Ativo",
+    suspended: "Suspenso",
     anonymized: "Anonimizado",
     deleted: "Excluído",
   };
@@ -904,7 +916,7 @@ function statusPillClass(status?: string) {
     return "bg-status-successBg text-status-success";
   }
 
-  if (status === "deleted") {
+  if (status === "deleted" || status === "suspended") {
     return "bg-status-dangerBg text-status-danger";
   }
 
@@ -916,8 +928,8 @@ function statusPillClass(status?: string) {
 }
 
 function iconForMetric(icon: PatientMetricCard["icon"]) {
-  if (icon === "recurrence") return ShieldCheck;
-  if (icon === "ticket") return WalletCards;
+  if (icon === "active") return ShieldCheck;
+  if (icon === "suspended") return ShieldAlert;
   if (icon === "user") return UserRound;
   return UsersRound;
 }
