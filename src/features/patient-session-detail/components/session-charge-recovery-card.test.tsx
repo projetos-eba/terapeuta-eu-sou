@@ -94,6 +94,71 @@ describe("SessionChargeRecoveryCard", () => {
       }),
     );
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    expect(
+      screen.getByText(
+        "Estamos conferindo o pagamento. Não tente pagar novamente enquanto atualizamos o encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Verificando pagamento…" }),
+    ).toBeDisabled();
+  });
+
+  it("keeps the result fail-closed when server confirmation takes longer", async () => {
+    vi.useFakeTimers();
+    try {
+      (window as unknown as { Stripe?: unknown }).Stripe = vi.fn(() => ({
+        confirmPayment: vi.fn().mockResolvedValue({
+          paymentIntent: { status: "succeeded" },
+        }),
+        elements: vi.fn(() => ({
+          create: () => ({ destroy: vi.fn(), mount: vi.fn() }),
+          submit: vi.fn().mockResolvedValue({}),
+        })),
+      }));
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            new Response(
+              JSON.stringify({
+                data: { clientSecret: "pi_bound_secret_test" },
+              }),
+              { headers: { "Content-Type": "application/json" }, status: 200 },
+            ),
+          ),
+      );
+      render(
+        <SessionChargeRecoveryCard
+          bookingId={bookingId}
+          stripePublishableKey="pk_test_public"
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Concluir pagamento" }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Confirmar pagamento" }),
+      );
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(
+        screen.getByText(
+          "Ainda estamos conferindo o pagamento. Atualize os detalhes em instantes e não tente pagar novamente enquanto isso.",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Aguardando confirmação" }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Atualizar detalhes" }),
+      ).toBeEnabled();
+      expect(mocks.refresh).toHaveBeenCalledTimes(31);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps the room recovery actionable after a declined confirmation", async () => {
@@ -154,12 +219,14 @@ describe("SessionChargeRecoveryCard", () => {
     }));
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({ data: { clientSecret: "pi_bound_secret_test" } }),
-          { headers: { "Content-Type": "application/json" }, status: 200 },
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ data: { clientSecret: "pi_bound_secret_test" } }),
+            { headers: { "Content-Type": "application/json" }, status: 200 },
+          ),
         ),
-      ),
     );
     render(
       <SessionChargeRecoveryCard
@@ -169,12 +236,20 @@ describe("SessionChargeRecoveryCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Concluir pagamento" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Confirmar pagamento" })).toBeEnabled(),
+      expect(
+        screen.getByRole("button", { name: "Confirmar pagamento" }),
+      ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar pagamento" }));
-    expect(await screen.findByText("Confira o número do cartão.")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar pagamento" }),
+    );
+    expect(
+      await screen.findByText("Confira o número do cartão."),
+    ).toBeInTheDocument();
     expect(confirmPayment).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Confirmar pagamento" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Confirmar pagamento" }),
+    ).toBeEnabled();
   });
 
   it("recovers from an unexpected Stripe failure without leaving the button stuck", async () => {
@@ -187,12 +262,14 @@ describe("SessionChargeRecoveryCard", () => {
     }));
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({ data: { clientSecret: "pi_bound_secret_test" } }),
-          { headers: { "Content-Type": "application/json" }, status: 200 },
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ data: { clientSecret: "pi_bound_secret_test" } }),
+            { headers: { "Content-Type": "application/json" }, status: 200 },
+          ),
         ),
-      ),
     );
     render(
       <SessionChargeRecoveryCard
@@ -202,12 +279,20 @@ describe("SessionChargeRecoveryCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Concluir pagamento" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Confirmar pagamento" })).toBeEnabled(),
+      expect(
+        screen.getByRole("button", { name: "Confirmar pagamento" }),
+      ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar pagamento" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar pagamento" }),
+    );
     expect(
-      await screen.findByText("Não foi possível concluir o pagamento agora. Tente novamente em instantes."),
+      await screen.findByText(
+        "Não foi possível concluir o pagamento agora. Tente novamente em instantes.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirmar pagamento" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Confirmar pagamento" }),
+    ).toBeEnabled();
   });
 });
