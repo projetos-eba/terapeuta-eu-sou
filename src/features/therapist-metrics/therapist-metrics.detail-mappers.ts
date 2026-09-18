@@ -100,6 +100,15 @@ export function mapTherapistSessionMetrics(
       hourBucketStart: hourBucket(item.hourBucketStart),
       sessions: nonNegativeInteger(item.sessions),
     });
+    const outcomeDistribution = protectedCollection(
+      value.outcomeDistribution,
+      (item) => ({
+        key: outcomeKey(item.key),
+        label: nonEmptyString(item.label),
+        percentage: percentage(item.percentage),
+        value: nonNegativeInteger(item.value),
+      }),
+    );
 
     return {
       cancellationReasons: {
@@ -129,15 +138,8 @@ export function mapTherapistSessionMetrics(
           : ownHistoryCollection(value.heatmap, heatmapItem),
       meta: commonMeta(value.meta),
       metricDefinitionVersion,
-      outcomeDistribution: protectedCollection(
-        value.outcomeDistribution,
-        (item) => ({
-          key: outcomeKey(item.key),
-          label: nonEmptyString(item.label),
-          percentage: percentage(item.percentage),
-          value: nonNegativeInteger(item.value),
-        }),
-      ),
+      outcomeDistribution:
+        neutralizeSessionOutcomeDistribution(outcomeDistribution),
       presenceByDay: protectedCollection(value.presenceByDay, (item) => ({
         dayOfWeek: mapSessionDayOfWeek(item.dayOfWeek),
         percentage: percentage(item.percentage),
@@ -484,10 +486,35 @@ function outcomeKey(value: unknown): TherapistSessionOutcomeKey {
     "cancelled_by_patient",
     "cancelled_by_therapist",
     "completed",
+    "not_performed",
     "no_show_patient",
     "no_show_therapist",
     "no_show_both",
   );
+}
+
+function neutralizeSessionOutcomeDistribution(
+  collection: TherapistSessionMetrics["outcomeDistribution"],
+): TherapistSessionMetrics["outcomeDistribution"] {
+  const isNotPerformed = (key: TherapistSessionOutcomeKey) =>
+    key === "not_performed" || key.startsWith("no_show_");
+  const firstIndex = collection.items.findIndex((item) =>
+    isNotPerformed(item.key),
+  );
+  if (firstIndex < 0) return collection;
+
+  const noShows = collection.items.filter((item) => isNotPerformed(item.key));
+  const value = noShows.reduce((total, item) => total + item.value, 0);
+  const items = collection.items.filter((item) => !isNotPerformed(item.key));
+  items.splice(firstIndex, 0, {
+    key: "not_performed",
+    label: "Sessão não realizada",
+    percentage: collection.observedSample
+      ? Math.round((value / collection.observedSample) * 1000) / 10
+      : 0,
+    value,
+  });
+  return { ...collection, items };
 }
 
 function segmentKey(value: unknown): TherapistInterestSegmentKey {

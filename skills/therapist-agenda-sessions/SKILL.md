@@ -167,7 +167,8 @@ histórica.
   `/terapeuta/sessoes/:bookingId/video?feedback=1`;
   `eligible` exige entradas confiáveis de ambos. `incident_only` oferece
   `Relatar ocorrência`, sem sugerir realização; falta do terapeuta ou de ambos
-  apresenta `Não realizada` e pagamento em análise administrativa.
+  apresenta `Sessão não realizada` e orientação para falar com o suporte se
+  necessário, sem expor a classificação de presença nem prometer análise pelo TES.
   `submitted` ou resposta persistida removem o CTA sem exigir confirmação
   individual ou resposta da outra pessoa. `unavailable` mostra o estado honesto. A autorização
   final permanece no backend e esta rota operacional continua disponível para

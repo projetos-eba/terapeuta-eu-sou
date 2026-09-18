@@ -259,7 +259,9 @@ ainda não confirmadas exibem “Aguardando confirmação” em desktop e mobile
   análise continua pendente.
 - `/admin/profissionais/verificacoes`: identifica a origem “Agenda sem
   horários”, mostra itens incompletos e desabilita Aprovar/Publicar enquanto a
-  completude estiver abaixo de 100% ou não houver regra ativa.
+  completude estiver abaixo de 100% ou não houver regra ativa. A fila mostra
+  somente a revisão mais recente de cada terapeuta; ciclos anteriores continuam
+  preservados no histórico e na auditoria.
 
 ## Admin
 

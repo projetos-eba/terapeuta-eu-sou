@@ -13,7 +13,7 @@ export function SessionQualityStatus({
   if (payload?.realizationStatus !== "performed") return null;
   const review = payload.qualityReview;
   const subject = actorRole === "patient" ? "Encontro" : "Sessão";
-  const title = `${subject} realizado`;
+  const title = `${subject} ${actorRole === "patient" ? "realizado" : "realizada"}`;
   const ticketHref = payload.supportTicketId
     ? actorRole === "patient"
       ? routes.patient.supportTicketDetail(payload.supportTicketId)

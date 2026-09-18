@@ -560,7 +560,7 @@ export function ZoomVideoSessionAdapter({
                 ZoomAccessReason.TherapistArrivalWindowExpired
             ) {
               setMessage(
-                "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro.",
+                "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte.",
               );
             } else if (
               actorRole === "patient" &&
@@ -3214,23 +3214,34 @@ export function ZoomVideoSessionAdapter({
   }
 
   if (state === "idle") {
-    const waitingKind = previewUnavailable
-      ? "operational_unavailable"
-      : currentAccess?.allowed
-        ? "entry_available"
-        : currentAccess?.reason === ZoomAccessReason.TooEarly
-          ? "too_early"
-          : waitingRoomKind === "ended" ||
-              waitingRoomKind === "arrival_expired" ||
-              waitingRoomKind === "schedule_ended"
-            ? waitingRoomKind
-            : waitingRoomKind === "therapist_absent_prolonged" ||
-                waitingRoomKind === "therapist_no_show" ||
-                waitingRoomKind === "both_no_show"
-              ? waitingRoomKind
-              : currentAccess?.reason === ZoomAccessReason.TherapistNotInSession
-                ? "waiting_therapist"
-                : "operational_unavailable";
+    const waitingKind =
+      waitingRoomKind === "not_performed"
+        ? "not_performed"
+        : previewUnavailable
+          ? "operational_unavailable"
+          : currentAccess?.allowed
+            ? "entry_available"
+            : currentAccess?.reason === ZoomAccessReason.TooEarly
+              ? "too_early"
+              : currentAccess?.reason ===
+                  ZoomAccessReason.TherapistArrivalWindowExpired
+                ? actorRole === "patient"
+                  ? "therapist_no_show"
+                  : "not_performed"
+                : currentAccess?.reason === ZoomAccessReason.BothNoShow
+                  ? "both_no_show"
+                  : waitingRoomKind === "ended" ||
+                      waitingRoomKind === "arrival_expired" ||
+                      waitingRoomKind === "schedule_ended"
+                    ? waitingRoomKind
+                    : waitingRoomKind === "therapist_absent_prolonged" ||
+                        waitingRoomKind === "therapist_no_show" ||
+                        waitingRoomKind === "both_no_show"
+                      ? waitingRoomKind
+                      : currentAccess?.reason ===
+                          ZoomAccessReason.TherapistNotInSession
+                        ? "waiting_therapist"
+                        : "operational_unavailable";
 
     return (
       <ZoomWaitingRoom

@@ -155,9 +155,9 @@ export function getVideoAccessMessage(reason: VideoAccessReason) {
     SESSION_ENDED: "Esta sessão foi encerrada e não permite nova entrada.",
     ARRIVAL_WINDOW_EXPIRED: "O prazo de chegada de 10 minutos terminou.",
     THERAPIST_ARRIVAL_WINDOW_EXPIRED:
-      "O terapeuta não compareceu até o fim da tolerância. O TES analisará o encontro.",
+      "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
     BOTH_NO_SHOW:
-      "Não houve chegada dos participantes até o fim da tolerância. O TES analisará o encontro.",
+      "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
     TECHNICAL_UNAVAILABLE:
       "Não foi possível preparar o vídeo agora. Tente atualizar a sala.",
     UNKNOWN: "Nao foi possivel liberar o acesso agora.",

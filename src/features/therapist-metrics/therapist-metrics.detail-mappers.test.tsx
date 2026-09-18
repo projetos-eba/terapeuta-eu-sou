@@ -83,6 +83,42 @@ describe("therapist metric detail contracts", () => {
     );
   });
 
+  it("combines absence classifications for the therapist chart and CSV", () => {
+    const payload = sessionPayload();
+    const distribution = payload.outcomeDistribution as {
+      items: Array<{
+        key: string;
+        label: string;
+        percentage: number;
+        value: number;
+      }>;
+      observedSample: number;
+    };
+    distribution.items[2] = {
+      key: "no_show_therapist",
+      label: "Ausência do terapeuta",
+      percentage: 11.8,
+      value: 2,
+    };
+    distribution.observedSample = 17;
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.outcomeDistribution.items).toContainEqual({
+      key: "not_performed",
+      label: "Sessão não realizada",
+      percentage: 17.6,
+      value: 3,
+    });
+    expect(JSON.stringify(mapped.outcomeDistribution)).not.toMatch(
+      /no_show_patient|no_show_therapist|Ausência da pessoa atendida|Ausência do terapeuta/,
+    );
+    expect(
+      buildTherapistMetricsCsv({ data: mapped, tab: "sessions" }),
+    ).not.toMatch(
+      /no_show_patient|no_show_therapist|Ausência da pessoa atendida|Ausência do terapeuta/,
+    );
+  });
+
   it("maps private day and hour frequency from the first completed session", () => {
     const payload = sessionPayload();
     payload.metricDefinitionVersion = 2;
@@ -220,14 +256,20 @@ describe("therapist metric detail contracts", () => {
       status: "ready",
     };
 
-    render(<TherapistSessionMetricsPage data={mapTherapistSessionMetrics(payload)} />);
+    render(
+      <TherapistSessionMetricsPage
+        data={mapTherapistSessionMetrics(payload)}
+      />,
+    );
 
     expect(
       screen.getByText(
         "Leitura inicial — o padrão fica mais claro conforme novas sessões forem concluídas.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/mais dados são necessários/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/mais dados são necessários/i).length,
+    ).toBeGreaterThan(0);
   });
 
   it("renders the plan gate and protected MTR-5 states", () => {
@@ -379,11 +421,17 @@ describe("therapist metric detail contracts", () => {
     expect(
       container.querySelector('[aria-label="25% da base acompanhada"]'),
     ).toBeInTheDocument();
-    expect(container.querySelectorAll('article[data-state="ready"]')).toHaveLength(5);
-    expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(3);
+    expect(
+      container.querySelectorAll('article[data-state="ready"]'),
+    ).toHaveLength(5);
+    expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(
+      3,
+    );
     expect(screen.getByText("Retorno no período")).toBeInTheDocument();
     expect(screen.getByText("12 pessoas")).toBeInTheDocument();
-    expect(screen.getByText("60% da base voltou para uma nova sessão")).toBeInTheDocument();
+    expect(
+      screen.getByText("60% da base voltou para uma nova sessão"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Pessoas que voltaram")).not.toBeInTheDocument();
     expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
   });

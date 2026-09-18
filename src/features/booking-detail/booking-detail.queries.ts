@@ -124,19 +124,20 @@ export const getPatientSessionDetailPage = cache(
           config,
           `/rest/v1/session_cancellation_decisions?select=decision,refund_amount_cents,requires_manual_review,review_due_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
         ),
-        supabaseServerRestRpc<import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload>(
-          config, "get_session_quality_feedback_v1", { p_booking_id: booking.id },
-        ),
+        supabaseServerRestRpc<
+          import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload
+        >(config, "get_session_quality_feedback_v1", {
+          p_booking_id: booking.id,
+        }),
         supabaseServerRestRequest<
           Array<{
             classification: string | null;
             financial_resolution: string | null;
-            review_due_at: string | null;
             status: string;
           }>
         >(
           config,
-          `/rest/v1/session_confirmation_incidents?select=classification,financial_resolution,review_due_at,status&booking_id=eq.${booking.id}&order=booking_version.desc,created_at.desc&limit=1`,
+          `/rest/v1/session_confirmation_incidents?select=classification,financial_resolution,status&booking_id=eq.${booking.id}&order=booking_version.desc,created_at.desc&limit=1`,
         ),
         supabaseServerRestRpc<unknown>(
           config,
@@ -195,7 +196,12 @@ export const getPatientSessionDetailPage = cache(
         completedBookings,
         intake: intakeRows[0] ?? null,
         patient: profile,
-        patientHasJoined: (sessionQuality.attendance as { patientPresentAtTolerance?: boolean } | undefined)?.patientPresentAtTolerance === true,
+        patientHasJoined:
+          (
+            sessionQuality.attendance as
+              | { patientPresentAtTolerance?: boolean }
+              | undefined
+          )?.patientPresentAtTolerance === true,
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -228,12 +234,7 @@ export const getPatientSessionDetailPage = cache(
           ? {
               ...detail.booking,
               canJoin: false,
-              statusLabel:
-                attendanceReview.classification === "no_show_both"
-                  ? "Encontro não realizado"
-                  : attendanceReview.classification === "no_show_therapist"
-                    ? "Encontro não realizado — terapeuta não compareceu"
-                    : "Encontro não realizado — acesso em análise",
+              statusLabel: "Sessão não realizada",
             }
           : sessionQuality.realizationStatus === "performed"
             ? { ...detail.booking, statusLabel: "Encontro realizado" }
@@ -260,7 +261,6 @@ function mapAttendanceReview(
     | {
         classification: string | null;
         financial_resolution: string | null;
-        review_due_at: string | null;
         status: string;
       }
     | undefined,
@@ -278,12 +278,8 @@ function mapAttendanceReview(
   }
 
   return {
-    classification: row.classification as NonNullable<
-      BookingDetailPageData["attendanceReview"]
-    >["classification"],
     financialResolution: row.financial_resolution,
     isOpen: row.status === "open",
-    reviewDueAt: row.review_due_at,
   };
 }
 

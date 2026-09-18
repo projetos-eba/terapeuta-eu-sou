@@ -74,6 +74,13 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   Um relato privado não pausa a confirmação automática; o prazo de atendimento
   de cinco dias permanece independente, mantendo a análise aberta e alertando Admin.
   Resposta do TES não fabrica confirmação individual nem modifica registros.
+- Reserva reembolsada após atendimento bilateral continua com badge de
+  reembolso; o cron de 7/30 dias pode confirmar cada participante sem alterar
+  o financeiro. Sem entrada confiável de ambos, ou com classificação de falta,
+  não há avaliação nem confirmação automática.
+- Confirmação manual `completed` da tentativa atual feita no fluxo anterior
+  fecha o prompt duplicado para seu autor, sem reclassificar o histórico legado
+  como avaliação de qualidade V2.
 - Nas listas do cliente e terapeuta, a resposta privada da própria tentativa
   remove a pendência visual e apresenta a sessão comprovadamente realizada.
   A confirmação automática individual de 7/30 dias também a apresenta como

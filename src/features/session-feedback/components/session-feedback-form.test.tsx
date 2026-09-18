@@ -371,6 +371,31 @@ describe("SessionFeedbackForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not ask again after a manual response from the current attempt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: { feedback: null, status: "previously_recorded" },
+          ok: true,
+        }),
+      ),
+    );
+
+    render(
+      <SessionFeedbackForm
+        actorRole="patient"
+        bookingId={bookingId}
+        sessionLabel="Seu encontro foi encerrado"
+      />,
+    );
+
+    expect(await screen.findByText(/Sua resposta anterior já foi registrada/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enviar feedback/i }))
+      .not.toBeInTheDocument();
+  });
+
   it("shows journey themes after completed therapist feedback when enabled", async () => {
     const fetchMock = vi
       .fn()

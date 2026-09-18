@@ -643,7 +643,7 @@ async function fetchAdminSessionFeedback({
 }) {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_session_feedback_v1`,
+      `${config.url}/rest/v1/rpc/admin_get_session_feedback_v2`,
       {
         body: JSON.stringify({ p_booking_id: bookingId }),
         cache: "no-store",

@@ -16,10 +16,10 @@ select ok(not has_function_privilege(
   'EXECUTE'
 ), 'the browser cannot finalize attendance directly');
 select ok(position(
-  'O TES está analisando o ocorrido e avisará você sobre o resultado.' in pg_get_functiondef(
+  'Sessão não realizada. Se precisar de ajuda, fale com o suporte.' in pg_get_functiondef(
     'public.finalize_due_session_attendance_v1(timestamptz,integer)'::regprocedure
   )
-) > 0, 'future participant notifications use plain-language review copy');
+) > 0, 'future participant notifications use neutral support copy');
 select ok(position(
   'decisão financeira exige autorização' in pg_get_functiondef(
     'public.finalize_due_session_attendance_v1(timestamptz,integer)'::regprocedure

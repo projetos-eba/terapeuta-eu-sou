@@ -93,6 +93,8 @@ export type PatientEncounterStatus =
   | "awaiting_feedback"
   | "reschedule_requested"
   | "completed"
+  | "not_performed"
+  | "refunded"
   | "cancelled";
 
 export type PatientEncountersQueryResult =

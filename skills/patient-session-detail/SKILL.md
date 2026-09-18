@@ -180,9 +180,12 @@ anotação.
 
 ## QA
 
-- Após T+10 estrito sem chegada ou entrada pontual do terapeuta, comunicar
-  `Encontro não realizado` e análise pelo TES, sem entrada nem promessa de
-  reembolso. A chegada do cliente não autoriza o terapeuta atrasado. Cada
+- Após T+10 estrito sem chegada ou entrada pontual do terapeuta, a sala de
+  espera informa ao cliente que o terapeuta não compareceu até o fim da
+  tolerância, sem entrada nem promessa de reembolso. Depois da classificação
+  final, lista, detalhe e notificações mostram somente `Sessão não realizada`
+  e orientam a procurar o suporte se necessário; a classificação e as
+  evidências ficam no Admin. A chegada do cliente não autoriza o terapeuta atrasado. Cada
   participante mantém reentrada pelo próprio registro pontual até o fim;
   reagendamento não herda evidência de versões/horários anteriores.
 - `no_show_therapist` e `no_show_both` mantêm pagamento em análise pelo Admin:

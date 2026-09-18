@@ -10,6 +10,9 @@ const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
     "Este encontro foi cancelado. Consulte os detalhes para acompanhar o reembolso, quando aplicável.",
   completed:
     "Este encontro foi realizado. O resumo, a avaliação ou o suporte aparecem conforme o encontro.",
+  not_performed: "Caso precise de ajuda, entre em contato com o suporte.",
+  refunded:
+    "O pagamento deste encontro foi reembolsado. Consulte os detalhes para acompanhar o registro.",
   confirmed:
     "Seu horário está confirmado. Os detalhes ficam disponíveis quando você precisar.",
   live: "A entrada está disponível agora.",

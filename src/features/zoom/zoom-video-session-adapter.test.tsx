@@ -3248,6 +3248,49 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
   });
 
+  it("keeps the therapist absence notice when the waiting room preview reaches T+10", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          data: {
+            access: {
+              ...allowedAccess,
+              allowed: false,
+              reason: ZoomAccessReason.TherapistArrivalWindowExpired,
+            },
+          },
+          ok: true,
+        }),
+        ok: true,
+      }),
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={{
+          ...allowedAccess,
+          allowed: false,
+          reason: ZoomAccessReason.TherapistNotInSession,
+        }}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        /O terapeuta não compareceu até o fim da tolerância/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sessão não realizada" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Entrar na sala/i }),
+    ).toBeNull();
+  });
+
   it("recovers a stalled preview and transitions automatically when the therapist joins", async () => {
     vi.useFakeTimers();
     const waitingAccess = {

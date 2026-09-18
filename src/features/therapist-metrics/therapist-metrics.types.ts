@@ -177,6 +177,7 @@ export type TherapistSessionOutcomeKey =
   | "cancelled_by_patient"
   | "cancelled_by_therapist"
   | "completed"
+  | "not_performed"
   | "no_show_patient"
   | "no_show_therapist"
   | "no_show_both";

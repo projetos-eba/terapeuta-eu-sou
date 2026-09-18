@@ -110,6 +110,8 @@ export function mapPatientEncountersPage(
     .filter(
       (encounter) =>
         encounter.status !== "completed" &&
+        encounter.status !== "not_performed" &&
+        encounter.status !== "refunded" &&
         encounter.status !== "cancelled" &&
         new Date(encounter.endsAt) >= now,
     )
@@ -122,6 +124,8 @@ export function mapPatientEncountersPage(
     .filter(
       (encounter) =>
         encounter.status === "completed" ||
+        encounter.status === "not_performed" ||
+        encounter.status === "refunded" ||
         encounter.status === "cancelled" ||
         encounter.status === "awaiting_feedback",
     )
@@ -260,7 +264,7 @@ export function getPatientEncounterStatusPresentation(input: {
     status,
     statusLabel: paymentScheduled
       ? "Reservado"
-      : getStatusLabel(status, input.booking.status),
+      : getStatusLabel(status),
   };
 }
 
@@ -272,6 +276,16 @@ function getEncounterStatus(
   feedbackPending: boolean,
   actorRealized: boolean,
 ): PatientEncounterStatus {
+  if (payment?.financial_status === "refunded" || booking.status === "refunded") {
+    return "refunded";
+  }
+  if (
+    booking.status === "no_show_patient" ||
+    booking.status === "no_show_therapist" ||
+    booking.status === "no_show_both"
+  ) {
+    return "not_performed";
+  }
   if (!isCancelledBookingStatus(booking.status)) {
     if (actorRealized) return "completed";
     if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
@@ -381,6 +395,22 @@ function getPrimaryAction(
     };
   }
 
+  if (status === "not_performed") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver detalhes do encontro",
+    };
+  }
+
+  if (status === "refunded") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver reembolso",
+    };
+  }
+
   return {
     href: routes.patient.encounterDetail(booking.id),
     kind: "link",
@@ -400,24 +430,15 @@ function isFutureV10ChargeScheduled(
   );
 }
 
-function getStatusLabel(
-  status: PatientEncounterStatus,
-  bookingStatus?: string,
-) {
-  if (bookingStatus === "no_show_patient") {
-    return "Não realizado — você não compareceu";
-  }
-  if (bookingStatus === "no_show_therapist") {
-    return "Não realizado — terapeuta ausente";
-  }
-  if (bookingStatus === "no_show_both") {
-    return "Encontro não realizado";
-  }
+function getStatusLabel(status: PatientEncounterStatus) {
+  if (status === "refunded") return "Reembolsado";
 
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
     awaiting_feedback: "Avaliação pendente",
     completed: "Já realizada",
+    not_performed: "Sessão não realizada",
+    refunded: "Reembolsado",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
     payment_incomplete: "Pagamento não concluído",

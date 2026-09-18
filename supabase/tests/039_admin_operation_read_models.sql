@@ -98,9 +98,13 @@ select throws_ok(
 
 reset role;
 
+update public.profiles
+set role = 'admin'::public.user_role
+where id = 'aaaaaaaa-0000-4000-8000-000000000001';
+
 select set_config(
   'request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"authenticated"}',
+  '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',
   true
 );
 
@@ -418,8 +422,11 @@ select is(
       -> 'metrics'
       ->> 'total-verifications'
   )::integer,
-  (select count(*)::integer from public.therapist_verifications),
-  'verifications metric uses canonical therapist_verifications count'
+  (
+    select count(distinct therapist_profile_id)::integer
+    from public.therapist_verifications
+  ),
+  'verifications metric counts the current queue identity per therapist'
 );
 
 select ok(

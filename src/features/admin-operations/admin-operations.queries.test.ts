@@ -132,6 +132,60 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("loads current-attempt private quality through the Admin V2 contract", async () => {
+    const bookingId = "00000000-0000-4000-8000-000000000153";
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith("/rpc/admin_get_operation_detail_v1")) {
+        return jsonResponse({
+          auditEvents: [],
+          generatedAt: "2026-09-18T17:00:00.000Z",
+          module: "sessions",
+          record: { id: bookingId },
+        });
+      }
+      if (url.endsWith("/rpc/admin_get_session_feedback_v2")) {
+        return jsonResponse({
+          attendance: { bothJoined: true, patientJoined: true, therapistJoined: true, sessionClosed: true },
+          confirmation: { patient: null, therapist: null },
+          financial: { serviceStatus: "scheduled", transferStatus: "transferred" },
+          patient: { authorRole: "patient", successful: true, rating: 5, comment: "Bem atendido", createdAt: "2026-09-18T17:05:00.000Z" },
+          therapist: { authorRole: "therapist", successful: true, rating: 5, comment: "Tudo certo", createdAt: "2026-09-18T17:06:00.000Z" },
+          pendingRoles: [],
+          qualityReview: { isOpen: false, overdue: false, allAnswered: false },
+          legacyFeedback: [],
+        });
+      }
+      return jsonResponse({ error: "unexpected rpc" }, { status: 503 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminOperationDetailPage({
+      accessToken: "admin-token",
+      id: bookingId,
+      module: "sessions",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_session_feedback_v2",
+      expect.objectContaining({
+        body: JSON.stringify({ p_booking_id: bookingId }),
+        method: "POST",
+      }),
+    );
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.sessionFeedback).toMatchObject({
+        status: "available",
+        data: {
+          patient: { successful: true, rating: 5 },
+          therapist: { successful: true, rating: 5 },
+          pendingRoles: [],
+        },
+      });
+    }
+  });
+
   it("uses an approved profile decision only as a read-only verification fallback", () => {
     expect(deriveProfileDecisionVerificationSummary("approved")).toEqual({
       reviewedAt: null,

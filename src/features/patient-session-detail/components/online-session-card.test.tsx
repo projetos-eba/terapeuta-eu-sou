@@ -392,12 +392,10 @@ describe("OnlineSessionCard", () => {
       status: BookingStatus.NoShowBoth,
     });
     data.attendanceReview = {
-      classification: "no_show_both",
       financialResolution: null,
       isOpen: true,
-      reviewDueAt: null,
     };
-    data.booking.statusLabel = "Encontro não realizado";
+    data.booking.statusLabel = "Sessão não realizada";
 
     render(
       <>
@@ -406,10 +404,10 @@ describe("OnlineSessionCard", () => {
       </>,
     );
 
-    expect(screen.getAllByText("Encontro não realizado")).not.toHaveLength(0);
+    expect(screen.getAllByText("Sessão não realizada")).not.toHaveLength(0);
     expect(
       screen.getAllByText(
-        "O TES está analisando o que ocorreu neste encontro. O pagamento permanece confirmado. Se tiver alguma dúvida, entre em contato com o TES.",
+        "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
       ),
     ).not.toHaveLength(0);
     expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
@@ -422,12 +420,10 @@ describe("OnlineSessionCard", () => {
       status: BookingStatus.Confirmed,
     });
     data.attendanceReview = {
-      classification: "participant_report",
       financialResolution: "pending",
       isOpen: true,
-      reviewDueAt: null,
     };
-    data.booking.statusLabel = "Encontro não realizado — acesso em análise";
+    data.booking.statusLabel = "Sessão não realizada";
 
     render(
       <>
@@ -438,7 +434,7 @@ describe("OnlineSessionCard", () => {
 
     expect(screen.getByText("Pagamento confirmado")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Encontro não realizado — acesso em análise"),
+      screen.getAllByText("Sessão não realizada"),
     ).not.toHaveLength(0);
     expect(screen.queryByText("Encontro reservado")).toBeNull();
     expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();

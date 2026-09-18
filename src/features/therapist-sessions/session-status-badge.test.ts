@@ -70,6 +70,16 @@ describe("therapist session status badge", () => {
       ),
     ).toEqual({ label: "Sessão não realizada", tone: "danger" });
   });
+
+  it("keeps a refunded badge after the therapist is automatically confirmed", () => {
+    expect(
+      getTherapistSessionStatusBadge(
+        presentation({ label: "Reembolsada", state: "refunded", tone: "neutral" }),
+        true,
+        false,
+      ),
+    ).toEqual({ label: "Reembolsada", tone: "neutral" });
+  });
 });
 
 function presentation(
