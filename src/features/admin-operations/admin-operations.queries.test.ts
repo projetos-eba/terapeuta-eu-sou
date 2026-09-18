@@ -160,7 +160,10 @@ describe("admin operation queries", () => {
         });
       }
 
-      if (url.includes("public_therapist_profile_content_v")) {
+      if (
+        url ===
+        "https://tes.supabase.test/rest/v1/public_therapist_profile_content_v?slug=eq.ana-oliveira&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1"
+      ) {
         return jsonResponse([
           {
             essence_body: "Escuta responsável.",
@@ -196,13 +199,15 @@ describe("admin operation queries", () => {
     });
 
     expect(result.status).toBe("success");
-    expect(
-      fetchMock.mock.calls.some(([url]) =>
-        String(url).includes(
-          "/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.00000000-0000-4000-8000-000000000001",
-        ),
-      ),
-    ).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/public_therapist_profile_content_v?slug=eq.ana-oliveira&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1",
+      expect.objectContaining({
+        cache: "no-store",
+        headers: expect.objectContaining({
+          Authorization: "Bearer admin-token",
+        }),
+      }),
+    );
     expect(
       fetchMock.mock.calls.some(([url]) =>
         String(url).includes(
@@ -235,6 +240,66 @@ describe("admin operation queries", () => {
       );
     }
   });
+
+  it.each([
+    { slug: undefined, responseStatus: 200, expectedStatus: "unavailable" },
+    { slug: "   ", responseStatus: 200, expectedStatus: "unavailable" },
+    { slug: "ana-oliveira", responseStatus: 200, expectedStatus: "available" },
+    {
+      slug: "ana-oliveira",
+      responseStatus: 400,
+      expectedStatus: "unavailable",
+    },
+  ])(
+    "keeps published content safe for slug=$slug and HTTP $responseStatus",
+    async ({ slug, responseStatus, expectedStatus }) => {
+      const fetchMock = vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("admin_get_operation_detail_v1")) {
+          return jsonResponse({
+            auditEvents: [],
+            generatedAt: "2026-08-14T12:00:00.000Z",
+            module: "professionals",
+            record: {
+              id: "00000000-0000-4000-8000-000000000001",
+              public_name: "Ana Oliveira",
+              slug,
+              status: "approved",
+            },
+          });
+        }
+        if (url.includes("public_therapist_profile_content_v")) {
+          return jsonResponse([], { status: responseStatus });
+        }
+        if (url.includes("therapist_verifications")) return jsonResponse([]);
+        return jsonResponse({ ok: false }, { status: 503 });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const result = await getAdminOperationDetailPage({
+        accessToken: "admin-token",
+        id: "00000000-0000-4000-8000-000000000001",
+        module: "professionals",
+      });
+
+      expect(result.status).toBe("success");
+      if (result.status === "success") {
+        expect(result.data.publicProfile).toEqual({
+          content: null,
+          services: expectedStatus === "available" ? [] : null,
+          status: expectedStatus,
+        });
+      }
+      const publicCalls = fetchMock.mock.calls
+        .map(([input]) => String(input))
+        .filter((url) => url.includes("public_therapist_profile_"));
+      expect(publicCalls).toHaveLength(slug?.trim() ? 1 : 0);
+      expect(publicCalls.join(" ")).not.toContain("therapist_profile_id");
+      expect(
+        fetchMock.mock.calls.map(([input]) => String(input)).join(" "),
+      ).not.toContain("/rest/v1/therapist_profile_content_versions");
+    },
+  );
 });
 
 function jsonResponse(payload: unknown, init: ResponseInit = {}) {
