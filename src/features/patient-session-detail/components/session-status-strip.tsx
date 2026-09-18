@@ -22,6 +22,9 @@ export function SessionStatusStrip({
   const roomAvailable = ["entry_available", "therapist_present"].includes(
     data.encounterState.waitingRoom.kind,
   );
+  const encounterRealized =
+    data.sessionQuality?.realizationStatus === "performed" &&
+    !data.attendanceReview?.isOpen;
   const encounterConfirmed =
     paymentConfirmed &&
     !data.attendanceReview?.isOpen &&
@@ -53,19 +56,23 @@ export function SessionStatusStrip({
       <StatusItem
         icon={ShieldCheck}
         supporting={
-          encounterConfirmed
-            ? "Seu horário está reservado para você."
-            : encounterReserved
-              ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
-              : data.booking.statusLabel
+          encounterRealized
+            ? "A realização do encontro foi registrada."
+            : encounterConfirmed
+              ? "Seu horário está reservado para você."
+              : encounterReserved
+                ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
+                : data.booking.statusLabel
         }
-        tone={encounterConfirmed ? "success" : "neutral"}
+        tone={encounterRealized || encounterConfirmed ? "success" : "neutral"}
         title={
-          encounterConfirmed
-            ? "Encontro confirmado"
-            : encounterReserved
-              ? "Encontro reservado"
-              : data.booking.statusLabel
+          encounterRealized
+            ? "Encontro realizado"
+            : encounterConfirmed
+              ? "Encontro confirmado"
+              : encounterReserved
+                ? "Encontro reservado"
+                : data.booking.statusLabel
         }
       />
     </section>

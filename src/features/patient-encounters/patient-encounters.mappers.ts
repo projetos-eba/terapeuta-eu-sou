@@ -80,6 +80,7 @@ type MapPatientEncountersInput = {
   bookings: BookingRecord[];
   favoriteTherapistsCount: number;
   patient: PatientEncountersPatient;
+  actorRealizedBookingIds?: Set<string>;
   patientEntryEntitlementByBookingId?: Map<string, boolean>;
   pendingFeedbackBookingIds?: Set<string>;
   historyPage?: number;
@@ -102,9 +103,7 @@ export function mapPatientEncountersPage(
     input.summaries.map((summary) => summary.booking_id),
   );
   const mapped = input.bookings
-    .map((booking) =>
-      mapPatientEncounter(booking, input, summaryBookingIds),
-    )
+    .map((booking) => mapPatientEncounter(booking, input, summaryBookingIds))
     .filter((item): item is PatientEncounter => Boolean(item));
 
   const activeEncounters = mapped
@@ -124,7 +123,7 @@ export function mapPatientEncountersPage(
       (encounter) =>
         encounter.status === "completed" ||
         encounter.status === "cancelled" ||
-        encounter.status === "awaiting_confirmation",
+        encounter.status === "awaiting_feedback",
     )
     .sort((left, right) => sortByStartsAt(right, left))
     .slice(0, MAX_HISTORY_ENCOUNTERS);
@@ -192,6 +191,7 @@ function mapPatientEncounter(
       booking,
       feedbackPending:
         input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
+      actorRealized: input.actorRealizedBookingIds?.has(booking.id) ?? false,
       patientHasEntryEntitlement:
         input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
       payment,
@@ -235,6 +235,7 @@ function mapPatientEncounter(
 }
 
 export function getPatientEncounterStatusPresentation(input: {
+  actorRealized?: boolean;
   booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">;
   feedbackPending?: boolean;
   patientHasEntryEntitlement?: boolean;
@@ -251,6 +252,7 @@ export function getPatientEncounterStatusPresentation(input: {
     input.reschedule,
     input.patientHasEntryEntitlement ?? false,
     input.feedbackPending ?? false,
+    input.actorRealized ?? false,
   );
 
   return {
@@ -268,9 +270,13 @@ function getEncounterStatus(
   reschedule: RescheduleRecord | null,
   patientHasEntryEntitlement: boolean,
   feedbackPending: boolean,
+  actorRealized: boolean,
 ): PatientEncounterStatus {
-  if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
-    return "awaiting_confirmation";
+  if (!isCancelledBookingStatus(booking.status)) {
+    if (actorRealized) return "completed";
+    if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
+      return "awaiting_feedback";
+    }
   }
   if (isCompletedBookingStatus(booking.status)) return "completed";
   if (
@@ -359,7 +365,7 @@ function getPrimaryAction(
     };
   }
 
-  if (status === "awaiting_confirmation") {
+  if (status === "awaiting_feedback") {
     return {
       href: `${routes.patient.encounterDetail(booking.id)}?feedback=1`,
       kind: "link",
@@ -410,7 +416,7 @@ function getStatusLabel(
 
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
-    awaiting_confirmation: "Confirmação pendente",
+    awaiting_feedback: "Avaliação pendente",
     completed: "Já realizada",
     confirmed: "Confirmada",
     live: "Ao vivo agora",

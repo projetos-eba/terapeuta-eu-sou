@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  queryActorSessionStates,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
 } = vi.hoisted(() => ({
+  queryActorSessionStates: vi.fn(),
   queryTherapistPendingConfirmations: vi.fn(),
   queryTherapistSessionDetail: vi.fn(),
   queryTherapistSessionFeedback: vi.fn(),
@@ -13,6 +15,7 @@ const {
 }));
 
 vi.mock("./therapist-sessions.queries", () => ({
+  queryActorSessionStates,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
@@ -20,6 +23,7 @@ vi.mock("./therapist-sessions.queries", () => ({
 }));
 
 import {
+  getTherapistActorSessionStates,
   getTherapistPendingConfirmationsSummary,
   getTherapistSessionDetail,
   getTherapistSessionFeedbackSummary,
@@ -34,6 +38,28 @@ describe("therapist sessions service results", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  it("derives realized sessions only from the current actor state", async () => {
+    queryActorSessionStates.mockResolvedValueOnce({
+      "booking-answered": { actorRealized: true },
+      "booking-pending": {
+        actorRealized: false,
+        bothJoined: true,
+        classification: null,
+        sessionClosed: true,
+      },
+    });
+
+    await expect(
+      getTherapistActorSessionStates({
+        accessToken: "test-token",
+        bookingIds: ["booking-answered", "booking-pending"],
+      }),
+    ).resolves.toEqual({
+      pendingFeedbackIds: new Set(["booking-pending"]),
+      realizedIds: new Set(["booking-answered"]),
+    });
   });
 
   it("keeps an empty result distinct from a query failure", async () => {
@@ -158,7 +184,9 @@ describe("therapist sessions service results", () => {
   });
 
   it("preserves the incident-only state for the therapist action", async () => {
-    queryTherapistSessionFeedback.mockResolvedValueOnce({ status: "incident_only" });
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      status: "incident_only",
+    });
 
     await expect(
       getTherapistSessionFeedbackSummary({
@@ -177,6 +205,24 @@ describe("therapist sessions service results", () => {
         bookingId: "f2000000-0000-4000-8000-000000000001",
       }),
     ).resolves.toBe("unavailable");
+  });
+
+  it("keeps an automatic confirmation distinct from private feedback", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      actorConfirmation: { source: "automatic" },
+      feedback: null,
+      status: "automatically_confirmed",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "booking-1",
+      }),
+    ).resolves.toMatchObject({
+      outcome: null,
+      status: "automatically_confirmed",
+    });
   });
 
   it("maps the therapist feedback outcome used by the journey themes gate", async () => {

@@ -110,7 +110,10 @@ export default async function TherapistSessionDetailPage({
   return (
     <AppPageContainer className="max-w-[1146px] gap-5 pb-14 sm:gap-6 lg:gap-7">
       <SessionDetailHeader />
-      <SessionQualityStatus actorRole="therapist" payload={feedbackSummary.quality} />
+      <SessionQualityStatus
+        actorRole="therapist"
+        payload={feedbackSummary.quality}
+      />
       <SessionOverview
         booking={booking}
         feedbackStatus={feedbackStatus}
@@ -814,6 +817,7 @@ function feedbackStatusLabel(
 ) {
   if (status === "confirm") return "Avaliação disponível";
   if (status === "report_incident") return "Ocorrência disponível";
+  if (status === "automatically_confirmed") return "Sessão realizada";
   if (status === "submitted") return "Avaliação registrada";
   return "Avaliação indisponível";
 }
@@ -832,6 +836,9 @@ function feedbackStatusDescription(
   }
   if (status === "submitted") {
     return "Sua avaliação privada desta sessão já foi registrada.";
+  }
+  if (status === "automatically_confirmed") {
+    return "Esta sessão está registrada como realizada.";
   }
   return "A avaliação desta sessão exige o registro de entrada de ambos. Para acompanhamento, use o Suporte.";
 }

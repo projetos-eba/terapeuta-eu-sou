@@ -136,7 +136,12 @@ describe("OnlineSessionCard", () => {
     expect(screen.queryByText("Antes do encontro")).toBeNull();
   });
 
-  it.each(["submitted", "unavailable", "before_session"] as const)(
+  it.each([
+    "submitted",
+    "automatically_confirmed",
+    "unavailable",
+    "before_session",
+  ] as const)(
     "does not ask to assess the encounter when own quality state is %s",
     (status) => {
       const data = makeData({
@@ -336,6 +341,25 @@ describe("OnlineSessionCard", () => {
 
     expect(screen.getByText("Reservado")).toBeInTheDocument();
     expect(screen.getByText("Encontro reservado")).toBeInTheDocument();
+    expect(screen.queryByText("Encontro confirmado")).toBeNull();
+  });
+
+  it("shows an ended performed encounter as realized in the status strip", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.Confirmed,
+    });
+    data.sessionQuality = {
+      confirmation: null,
+      counterpartConfirmation: null,
+      feedback: null,
+      realizationStatus: "performed",
+      status: "eligible",
+    };
+
+    render(<SessionStatusStrip data={data} />);
+
+    expect(screen.getByText("Encontro realizado")).toBeInTheDocument();
     expect(screen.queryByText("Encontro confirmado")).toBeNull();
   });
 

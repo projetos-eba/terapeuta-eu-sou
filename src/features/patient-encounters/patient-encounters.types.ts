@@ -90,7 +90,7 @@ export type PatientEncounterStatus =
   | "confirmed"
   | "pending_payment"
   | "payment_incomplete"
-  | "awaiting_confirmation"
+  | "awaiting_feedback"
   | "reschedule_requested"
   | "completed"
   | "cancelled";

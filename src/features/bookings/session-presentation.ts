@@ -280,14 +280,15 @@ export function mapSessionPresentation(
   }
 
   if (
+    session.attendanceStatus === AttendanceStatus.Attended &&
     session.fulfillmentStatus === FulfillmentStatus.OccurredPendingConfirmation
   ) {
     return presentation(
-      "awaiting_confirmation",
-      "Aguardando confirmação",
-      "A sessão foi realizada e aguarda a confirmação dos participantes.",
-      "medium",
-      "warning",
+      "completed",
+      "Realizada",
+      "A realização da sessão foi registrada.",
+      "low",
+      "success",
       actions,
     );
   }

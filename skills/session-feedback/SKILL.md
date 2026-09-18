@@ -74,6 +74,12 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   Um relato privado não pausa a confirmação automática; o prazo de atendimento
   de cinco dias permanece independente, mantendo a análise aberta e alertando Admin.
   Resposta do TES não fabrica confirmação individual nem modifica registros.
+- Nas listas do cliente e terapeuta, a resposta privada da própria tentativa
+  remove a pendência visual e apresenta a sessão comprovadamente realizada.
+  A confirmação automática individual de 7/30 dias também a apresenta como
+  realizada e encerra o prompt de avaliação não respondido, sem fabricar nota
+  ou avaliação pública. O job horário existente continua executando mesmo
+  quando uma resposta privada foi enviada.
 - Admin lê relatos da tentativa atual e legados históricos separadamente,
   sem resposta privada cruzada para cliente ou terapeuta. QA: resposta
   positiva/negativa, idempotência, tentativa desatualizada, dois tickets,

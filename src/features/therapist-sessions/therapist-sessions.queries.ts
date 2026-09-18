@@ -40,6 +40,29 @@ export async function queryTherapistPendingConfirmations(accessToken: string) {
   );
 }
 
+export type ActorSessionStateRow = {
+  actorRealized?: boolean;
+  bothJoined?: boolean;
+  classification?: string | null;
+  sessionClosed?: boolean;
+};
+
+export async function queryActorSessionStates(
+  accessToken: string,
+  bookingIds: string[],
+) {
+  if (bookingIds.length === 0) return {};
+
+  const config = getSupabaseServerRestConfig(accessToken);
+  if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
+
+  return supabaseServerRestRpc<Record<string, ActorSessionStateRow>>(
+    config,
+    "get_session_attempt_attendance_batch_v1",
+    { p_booking_ids: bookingIds },
+  );
+}
+
 export async function queryTherapistSessionDetail(
   accessToken: string,
   bookingId: string,

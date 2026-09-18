@@ -2,18 +2,16 @@ import type { SessionPresentation } from "@/features/bookings";
 
 export function getTherapistSessionStatusBadge(
   presentation: SessionPresentation,
-  confirmationPending = false,
+  actorRealized = false,
+  feedbackPending = false,
 ) {
-  if (
-    confirmationPending &&
-    presentation.state !== "cancelled" &&
-    presentation.state !== "completed" &&
-    presentation.state !== "refunded"
-  ) {
-    return {
-      label: "Realizada — confirmação pendente",
-      tone: "warning" as const,
-    };
+  if (presentation.state !== "cancelled" && presentation.state !== "refunded") {
+    if (actorRealized) {
+      return { label: "Realizada", tone: "success" as const };
+    }
+    if (feedbackPending) {
+      return { label: "Avaliação pendente", tone: "warning" as const };
+    }
   }
 
   if (presentation.state === "payment_pending") {

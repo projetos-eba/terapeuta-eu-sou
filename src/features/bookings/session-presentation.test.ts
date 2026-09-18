@@ -240,7 +240,25 @@ describe("mapSessionPresentation", () => {
     expect(result.actions.primary.action).toBe("view_detail");
   });
 
-  it("shows an occurred session without bilateral confirmation as pending", () => {
+  it("shows an occurred session as realized while individual feedback remains separate", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        attendanceStatus: AttendanceStatus.Attended,
+        endsAt: "2026-07-26T12:00:00.000Z",
+        fulfillmentStatus: FulfillmentStatus.OccurredPendingConfirmation,
+        startsAt: "2026-07-26T11:00:00.000Z",
+      }),
+      now,
+    );
+
+    expect(result).toMatchObject({
+      label: "Realizada",
+      state: "completed",
+      tone: "success",
+    });
+  });
+
+  it("does not infer attendance solely from a financial fulfillment state", () => {
     const result = mapSessionPresentation(
       sessionFixture({
         endsAt: "2026-07-26T12:00:00.000Z",
@@ -250,11 +268,7 @@ describe("mapSessionPresentation", () => {
       now,
     );
 
-    expect(result).toMatchObject({
-      label: "Aguardando confirmação",
-      state: "awaiting_confirmation",
-      tone: "warning",
-    });
+    expect(result.state).not.toBe("completed");
   });
 
   it("maps fulfillment completion independently from booking payment", () => {

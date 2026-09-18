@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { PatientEncounterStatus } from "../patient-encounters.types";
 
 const statusClasses: Record<PatientEncounterStatus, string> = {
-  awaiting_confirmation: "bg-status-warningBg text-status-warning",
+  awaiting_feedback: "bg-status-warningBg text-status-warning",
   cancelled: "bg-status-dangerBg text-status-danger",
   completed: "bg-status-successBg text-status-success",
   confirmed: "text-brand-primary",
@@ -16,7 +16,7 @@ const statusClasses: Record<PatientEncounterStatus, string> = {
 };
 
 const emphasizedStatuses = new Set<PatientEncounterStatus>([
-  "awaiting_confirmation",
+  "awaiting_feedback",
   "cancelled",
   "completed",
   "live",

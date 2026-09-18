@@ -344,6 +344,33 @@ describe("SessionFeedbackForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows a completed automatic deadline without reopening the quality form", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: { feedback: null, status: "automatically_confirmed" },
+          ok: true,
+        }),
+      ),
+    );
+
+    render(
+      <SessionFeedbackForm
+        actorRole="patient"
+        bookingId={bookingId}
+        sessionLabel="Seu encontro foi encerrado"
+      />,
+    );
+
+    expect(
+      await screen.findByText(/está registrado como realizado/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /enviar feedback/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows journey themes after completed therapist feedback when enabled", async () => {
     const fetchMock = vi
       .fn()

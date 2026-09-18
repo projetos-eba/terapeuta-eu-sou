@@ -54,6 +54,16 @@ describe("getTherapistPostSessionAction", () => {
     ).toBe("unavailable");
   });
 
+  it("keeps automatic confirmation as a realized status without reopening feedback", () => {
+    expect(
+      getTherapistPostSessionAction({
+        endsAt: "2026-08-20T12:00:00.000Z",
+        feedbackStatus: "automatically_confirmed",
+        now,
+      }),
+    ).toBe("automatically_confirmed");
+  });
+
   it("keeps the operational sessions capability available to Free", () => {
     expect(canUseTherapistCapability("free", "operation_essentials")).toBe(
       true,

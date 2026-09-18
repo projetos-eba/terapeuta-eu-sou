@@ -50,7 +50,10 @@ type NotificationRow = {
   id: string;
 };
 
-type AttemptAttendance = { patientPresentAtTolerance: boolean };
+type AttemptAttendance = {
+  actorRealized?: boolean;
+  patientPresentAtTolerance: boolean;
+};
 
 export class PatientEncountersDataError extends Error {
   constructor() {
@@ -195,9 +198,11 @@ async function getSupabasePatientEncountersPage(
         )
       : Promise.resolve([]),
     bookingIds.length > 0
-      ? supabaseRequest<Record<string, AttemptAttendance>>(config,
+      ? supabaseRequest<Record<string, AttemptAttendance>>(
+          config,
           "/rest/v1/rpc/get_session_attempt_attendance_batch_v1",
-          { body: { p_booking_ids: bookingIds }, method: "POST" })
+          { body: { p_booking_ids: bookingIds }, method: "POST" },
+        )
       : Promise.resolve({} as Record<string, AttemptAttendance>),
   ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
@@ -209,6 +214,11 @@ async function getSupabasePatientEncountersPage(
   );
 
   const page = mapPatientEncountersPage({
+    actorRealizedBookingIds: new Set(
+      Object.entries(attemptAttendance)
+        .filter(([, state]) => state?.actorRealized === true)
+        .map(([bookingId]) => bookingId),
+    ),
     bookings,
     favoriteTherapistsCount: favorites.length,
     historyPage,
@@ -216,9 +226,12 @@ async function getSupabasePatientEncountersPage(
     pendingFeedbackBookingIds: new Set(
       feedbackQueue.map((session) => session.bookingId),
     ),
-    patientEntryEntitlementByBookingId: new Map(bookings.map((booking) => [
-      booking.id, attemptAttendance[booking.id]?.patientPresentAtTolerance === true,
-    ])),
+    patientEntryEntitlementByBookingId: new Map(
+      bookings.map((booking) => [
+        booking.id,
+        attemptAttendance[booking.id]?.patientPresentAtTolerance === true,
+      ]),
+    ),
     reviews,
     serviceById: new Map(services.map((service) => [service.id, service])),
     rescheduleByBookingId: new Map(

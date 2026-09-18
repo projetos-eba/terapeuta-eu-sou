@@ -3,29 +3,58 @@ import { describe, expect, it } from "vitest";
 import { getTherapistSessionStatusBadge } from "./session-status-badge";
 
 describe("therapist session status badge", () => {
-  it("does not overwrite a confirmed completed session", () => {
+  it("preserves a realized session", () => {
     expect(
       getTherapistSessionStatusBadge(
         presentation({ label: "Realizada", state: "completed" }),
+      ),
+    ).toEqual({ label: "Realizada", tone: "success" });
+  });
+
+  it("marks the session as realized after this participant responds", () => {
+    expect(
+      getTherapistSessionStatusBadge(
+        presentation({
+          label: "Realizada",
+          state: "completed",
+          tone: "success",
+        }),
         true,
       ),
     ).toEqual({ label: "Realizada", tone: "success" });
   });
 
-  it("uses the pending confirmation label only for non-terminal sessions", () => {
+  it("marks a scheduled financial state as realized after the actor responds", () => {
     expect(
       getTherapistSessionStatusBadge(
         presentation({ label: "Confirmada", state: "confirmed", tone: "info" }),
         true,
       ),
-    ).toEqual({ label: "Realizada — confirmação pendente", tone: "warning" });
+    ).toEqual({ label: "Realizada", tone: "success" });
   });
 
-  it("preserves the not performed status even if stale pending data arrives", () => {
+  it("keeps the evaluation pending before this participant responds", () => {
     expect(
       getTherapistSessionStatusBadge(
-        presentation({ label: "Não realizada", state: "cancelled", tone: "danger" }),
+        presentation({
+          label: "Realizada",
+          state: "completed",
+          tone: "success",
+        }),
+        false,
         true,
+      ),
+    ).toEqual({ label: "Avaliação pendente", tone: "warning" });
+  });
+
+  it("preserves the not performed status", () => {
+    expect(
+      getTherapistSessionStatusBadge(
+        presentation({
+          label: "Não realizada",
+          state: "cancelled",
+          tone: "danger",
+        }),
       ),
     ).toEqual({ label: "Não realizada", tone: "danger" });
   });

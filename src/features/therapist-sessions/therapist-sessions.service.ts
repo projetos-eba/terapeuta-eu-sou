@@ -20,6 +20,7 @@ import {
 import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 
 import {
+  queryActorSessionStates,
   queryTherapistPendingReschedule,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
@@ -40,6 +41,7 @@ export type TherapistSessionPendingReschedule = {
 };
 
 export type TherapistSessionFeedbackStatus =
+  | "automatically_confirmed"
   | "before_session"
   | "eligible"
   | "incident_only"
@@ -94,6 +96,38 @@ export async function getTherapistPendingConfirmationsSummary(input: {
     profileId: input.profileId,
     query: () => queryTherapistPendingConfirmations(input.accessToken),
   });
+}
+
+export async function getTherapistActorSessionStates(input: {
+  accessToken: string;
+  bookingIds: string[];
+}): Promise<{
+  pendingFeedbackIds: ReadonlySet<string>;
+  realizedIds: ReadonlySet<string>;
+}> {
+  try {
+    const states = await queryActorSessionStates(
+      input.accessToken,
+      input.bookingIds,
+    );
+
+    const pendingFeedbackIds = new Set<string>();
+    const realizedIds = new Set<string>();
+    for (const [bookingId, state] of Object.entries(states)) {
+      if (state?.actorRealized === true) {
+        realizedIds.add(bookingId);
+      } else if (
+        state?.bothJoined === true &&
+        state?.sessionClosed === true &&
+        state?.classification == null
+      ) {
+        pendingFeedbackIds.add(bookingId);
+      }
+    }
+    return { pendingFeedbackIds, realizedIds };
+  } catch {
+    return { pendingFeedbackIds: new Set(), realizedIds: new Set() };
+  }
 }
 
 export async function getTherapistSessionDetail(input: {
@@ -160,9 +194,15 @@ export async function getTherapistSessionFeedbackSummary(input: {
     );
     const status = getFeedbackStatus(payload);
     const outcome = getFeedbackOutcome(payload);
-    const quality = payload as import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
+    const quality =
+      payload as import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
 
-    if (status === "eligible" || status === "before_session" || status === "incident_only") {
+    if (
+      status === "eligible" ||
+      status === "before_session" ||
+      status === "incident_only" ||
+      status === "automatically_confirmed"
+    ) {
       return { outcome: null, status, quality };
     }
     if (status === "submitted") {
@@ -246,7 +286,8 @@ function getFeedbackOutcome(value: unknown) {
     return null;
   }
   const outcome = Reflect.get(feedback, "outcome");
-  if (typeof Reflect.get(feedback, "successful") === "boolean") return "completed";
+  if (typeof Reflect.get(feedback, "successful") === "boolean")
+    return "completed";
   return outcome === "completed" || outcome === "not_performed"
     ? outcome
     : null;
