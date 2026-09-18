@@ -26,7 +26,6 @@ type ControlJob = {
   booking_id: string;
   id: string;
   max_attempts: number;
-  metadata: { bookingVersion?: number; scheduledStartsAt?: string } | null;
   operation:
     | "end_scheduled"
     | "end_hard_timeout"
@@ -156,7 +155,7 @@ runtime.serve(async (request) => {
   }
 });
 
-async function processJob(input: {
+export async function processJob(input: {
   client: SupabaseRestClient;
   job: ControlJob;
   zoom: ZoomVideoSdkApiClient;
@@ -188,6 +187,21 @@ async function processJob(input: {
       input.job.operation === "end_attendance_no_show" ||
       input.job.operation === "end_patient_no_show"
     ) {
+      // The reservation RPC deliberately returns no metadata. Read the
+      // persisted fence for this exact reserved job before revalidating it.
+      const [persistedJob] = await input.client.get<
+        Array<{
+          metadata: {
+            bookingVersion?: number;
+            scheduledStartsAt?: string;
+          } | null;
+        }>
+      >(
+        `/rest/v1/video_session_control_jobs?select=metadata&id=eq.${encodeURIComponent(input.job.id)}&booking_id=eq.${encodeURIComponent(input.job.booking_id)}&video_session_id=eq.${encodeURIComponent(input.job.video_session_id)}&status=eq.processing&limit=1`,
+      );
+      if (!persistedJob) {
+        throw new Error("Reserved no-show job could not be revalidated.");
+      }
       const [room] = await input.client.get<
         Array<{
           scheduled_starts_at: string;
@@ -209,17 +223,18 @@ async function processJob(input: {
       const currentStatus =
         input.job.operation === "end_patient_no_show"
           ? booking?.status === "confirmed"
-          : booking?.status === "no_show_patient" || booking?.status === "no_show_therapist" ||
+          : booking?.status === "no_show_patient" ||
+            booking?.status === "no_show_therapist" ||
             booking?.status === "no_show_both";
       if (
         !room ||
         !booking ||
         !currentStatus ||
-        input.job.metadata?.bookingVersion !==
+        persistedJob.metadata?.bookingVersion !==
           (input.job.operation === "end_patient_no_show"
             ? booking.version
             : booking.version - 1) ||
-        Date.parse(input.job.metadata?.scheduledStartsAt ?? "") !==
+        Date.parse(persistedJob.metadata?.scheduledStartsAt ?? "") !==
           Date.parse(booking.starts_at) ||
         Date.parse(room.scheduled_starts_at) !==
           Date.parse(booking.starts_at) ||

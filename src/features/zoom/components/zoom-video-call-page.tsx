@@ -6,6 +6,7 @@ import type { TherapistPlan } from "@/domain/tes";
 import { BookingReference } from "@/features/bookings";
 
 import { ZoomVideoSessionAdapter } from "../zoom-video-session-adapter";
+import { ZoomAttendanceClosureBoundary } from "./zoom-attendance-closure-boundary";
 
 export function ZoomVideoCallPage({
   access,
@@ -93,22 +94,31 @@ export function ZoomVideoCallPage({
           </h1>
         </div>
 
-        <ZoomVideoSessionAdapter
-          access={access}
+        <ZoomAttendanceClosureBoundary
           actorRole={actorRole}
-          ambientAudioSrc={ambientAudioSrc}
-          backHref={backHref}
           bookingId={bookingId}
-          displayMode="dedicated"
-          initialFeedback={showFeedback}
-          publicReviewTherapist={publicReviewTherapist}
           participantLabel={participantLabel}
           scheduleLabel={scheduleLabel}
-          scheduledEndsAt={scheduledEndsAt}
           scheduledStartsAt={scheduledStartsAt}
-          sessionTitle={sessionTitle}
-          showJourneyThemes={therapistPlan === "premium_plus"}
-        />
+          showFeedback={showFeedback}
+        >
+          <ZoomVideoSessionAdapter
+            access={access}
+            actorRole={actorRole}
+            ambientAudioSrc={ambientAudioSrc}
+            backHref={backHref}
+            bookingId={bookingId}
+            displayMode="dedicated"
+            initialFeedback={showFeedback}
+            publicReviewTherapist={publicReviewTherapist}
+            participantLabel={participantLabel}
+            scheduleLabel={scheduleLabel}
+            scheduledEndsAt={scheduledEndsAt}
+            scheduledStartsAt={scheduledStartsAt}
+            sessionTitle={sessionTitle}
+            showJourneyThemes={therapistPlan === "premium_plus"}
+          />
+        </ZoomAttendanceClosureBoundary>
       </main>
     </div>
   );

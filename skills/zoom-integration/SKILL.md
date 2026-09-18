@@ -111,10 +111,12 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   `no_show_both`. Ambos presentes sem joins bilaterais até o fim abrem
   `requires_review`. Os três últimos casos bloqueiam efeitos financeiros e
   exigem decisão administrativa; Zoom nunca decide Refund, Reversal ou dívida.
-- Para `no_show_patient`, o classificador cria primeiro o job idempotente de
-  encerramento e só consolida o status/financeiro depois da confirmação do
-  provider. A maintenance faz uma segunda passagem no mesmo ciclo; não marque
-  a falta antes de preservar esse fence técnico.
+- Para `no_show_patient`, o classificador consolida a ausência e cria o job
+  idempotente de encerramento sem depender da resposta do provedor. Isso não
+  altera pagamentos. A maintenance revalida versão e horário antes de encerrar
+  a sessão exata; o RPC de reserva não retorna `metadata`, portanto o worker
+  lê esse fence no job persistido, limitado a ID, reserva, sala e estado em
+  processamento. Falha dessa leitura mantém retry, sem encerrar outra sessão.
 - Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
   agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
   provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.
