@@ -2290,15 +2290,13 @@ export function ZoomVideoSessionAdapter({
         return;
       }
 
-      const failures = await cleanup({
+      await cleanup({
         destroyClient: true,
         endSession: false,
       });
       setState("ended");
       setMessage(
-        failures.length > 0
-          ? "O encontro foi encerrado. Houve uma falha ao limpar a mídia local; a avaliação ficará disponível após o horário previsto se ambos tiverem entrado."
-          : "O encontro foi encerrado. A avaliação ficará disponível após o horário previsto se ambos tiverem entrado.",
+        "O encontro foi encerrado. A avaliação ficará disponível quando os registros da sala estiverem prontos.",
       );
     } catch {
       setState("joined");

@@ -1,7 +1,8 @@
 # ADR-023 — Tentativa da sessão, qualidade e confirmação independente
 
 Data: 2026-09-17  
-Status: evolução do envio único implementada localmente em 2026-09-17; PR manual e reteste HML pendentes.
+Status: parcialmente substituída pela ADR-024 em 2026-09-18; tentativa,
+presença e confirmação independente permanecem válidas.
 
 ## Decisão
 
@@ -27,14 +28,13 @@ Relatos dos dois participantes têm tickets e prazos independentes.
 A lista privada do terapeuta exibe apenas suas próprias respostas, inclusive
 as históricas; não projeta o comentário privado do cliente.
 
-Enquanto qualquer relato ainda estiver sem resposta e dentro dos cinco dias,
-novas confirmações automáticas pausam. Ao responder todos, a apresentação é
-“Realizada (confirmada)”, sem inventar confirmações individuais. Após o prazo,
-“Realizada, em análise” e alerta Admin persistem, mas a automação retoma.
-Vencimentos de confirmação continuam os originais: sete dias do fim previsto
-para cliente, trinta para terapeuta. A automação revalida a presença atual,
-nunca confirma “Não realizada”, registra autoria do sistema e não cria nota ou
-opinião em nome das pessoas. Confirmações prévias não são reescritas.
+O relato privado não pausa nem altera confirmações automáticas. A análise e o
+alerta Admin podem permanecer abertos após o prazo, sem mudar a apresentação
+de realização para paciente ou terapeuta. Vencimentos de confirmação continuam
+os originais: sete dias do fim previsto para cliente, trinta para terapeuta.
+A automação revalida a presença atual, nunca confirma “Não realizada”, registra
+autoria do sistema e não cria nota ou opinião em nome das pessoas. Confirmações
+prévias não são reescritas.
 
 Qualidade, classificação e confirmação não criam nem alteram pagamento,
 Transfer, Reversal ou Refund. O leitor V10 jamais infere confirmação do Transfer
@@ -50,23 +50,13 @@ vínculo, presença e versão são
 validados no servidor. Contrato antigo ou tentativa desatualizada não alteram
 a atual. Relatos legados ficam em seção histórica, sem conversão silenciosa.
 
-### Envio único de avaliação e confirmação individual
+### Nota histórica — envio único de avaliação e confirmação individual
 
-Para evitar duas respostas da mesma pessoa, o envio da avaliação privada da
-tentativa atual registra, na mesma transação, a confirmação individual de que
-essa pessoa participou da sessão. Tanto “Sim” quanto “Não” confirmam a
-participação; “Não” continua sendo uma avaliação negativa da experiência, não
-uma declaração de ausência. A identidade, os dois joins confiáveis, o
-encerramento e a tentativa atual são revalidados pelo servidor. A confirmação
-da outra pessoa permanece independente. Repetições preservam a resposta e a
-confirmação já registradas; conflito ou falha desfazem ambas as escritas.
-Esta união é somente da ação de interface: avaliação, confirmação, presença e
-financeiro continuam como registros e decisões separados.
-
-Uma migração progressiva regulariza somente avaliações já persistidas na
-tentativa atual que ainda não tinham confirmação individual, com presença
-bilateral e encerramento comprovados, sem ocorrência aberta e com pagamento em
-estado elegível. Não inventa respostas para formulários que não foram gravados.
+Esta decisão foi substituída pela ADR-024. A avaliação privada não confirma
+participação, não altera presença e não participa de qualquer fluxo financeiro.
+Confirmação individual permanece uma evidência operacional independente do TES.
+Registros criados durante a vigência desta regra histórica são preservados,
+sem migração destrutiva ou reclassificação retroativa.
 
 Para o Histórico da Jornada do Premium Plus, a mesma evidência operacional
 inclui a sessão passada realizada mesmo quando não houver resumo compartilhado.

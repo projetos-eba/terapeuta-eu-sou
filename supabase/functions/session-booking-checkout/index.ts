@@ -94,8 +94,6 @@ type CheckoutResponse = {
 };
 
 const runtime = getRuntime("session-booking-checkout");
-const DEFAULT_SHARED_NOTE =
-  "Você poderá complementar suas informações antes do encontro, se desejar.";
 
 function toExistingCheckoutHold(
   row: ExistingBookingHoldRow | undefined,
@@ -284,7 +282,7 @@ runtime.serve(async (request) => {
         bookingId: booking.id,
         client,
         patientProfileId: patient.id,
-        sharedNote: command.sharedNote ?? DEFAULT_SHARED_NOTE,
+        sharedNote: command.sharedNote ?? "",
         service,
       });
 

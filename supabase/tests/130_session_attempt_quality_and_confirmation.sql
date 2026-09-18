@@ -95,23 +95,26 @@ create temporary table positive_result as select public.submit_session_quality_f
   'f2000000-0000-4000-8000-000000000501') as result;
 select is((select result->'feedback'->>'successful' from positive_result),'true','quality success stored separately');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'positive quality also records the author confirmation');
-select is((select participant_role::text from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),'patient','quality response confirms only its author');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'positive quality does not record a participant confirmation');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','positive quality is no longer offered again to its author');
-select ok(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation' is not null,'positive quality returns the author confirmation');
-select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'positive quality keeps the counterpart confirmation pending');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'positive quality leaves internal confirmation untouched');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'positive quality does not affect the other participant confirmation');
+select is(
+  public.get_patient_therapist_review_v1('c1000000-0000-4000-8000-000000000001')->>'eligible',
+  'true',
+  'positive private quality makes the optional public review available without confirmation'
+);
 create temporary table negative_result as select public.submit_session_quality_feedback_v1(
   (select therapist_actor from quality_context order by id limit 1),'b1300000-0000-4000-8000-000000000011',
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),false,null::smallint,'internet_problem','Teste privado.',
   'f2000000-0000-4000-8000-000000000502') as result;
 select is((select result->'feedback'->>'successful' from negative_result),'false','negative is quality, not non-performance');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'negative quality also confirms author participation');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'negative quality does not record participant confirmation');
 select set_config('request.jwt.claim.sub',(select therapist_actor from quality_context order by id limit 1),true);
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','negative quality is no longer offered again to its author');
-select ok(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation' is not null,'negative quality returns the author confirmation');
-select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation'->>'source','manual','negative quality does not replace the counterpart confirmation');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'negative quality leaves internal confirmation untouched');
+select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'negative quality does not affect the other participant confirmation');
 select is((select count(*)::integer from public.session_quality_reviews where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),1,'one negative creates one review');
 select ok((select due_at=opened_at+interval '5 days' from public.session_quality_reviews order by opened_at desc limit 1),'SLA is five calendar days from server receipt');
@@ -120,11 +123,11 @@ select is(public.submit_session_quality_feedback_v1((select therapist_actor from
   false,null::smallint,'internet_problem','Teste privado.','f2000000-0000-4000-8000-000000000502')->>'idempotentReplay','true','negative retry is idempotent');
 select ok((select count(*)=1 from public.session_quality_reviews),'retry does not create a ticket or restart SLA');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'retry does not duplicate individual confirmations');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'quality retry leaves internal confirmations untouched');
 select set_config('request.jwt.claim.sub',(select patient_actor::text from quality_context order by id limit 1),true);
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->>'realizationStatus','performed','negative quality preserves performed classification');
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->>'supportTicketId',null,'patient cannot read therapist ticket through quality API');
-select is(public.session_quality_review_state_v1(public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),now()+interval '5 days')->>'automaticConfirmationPaused','false','exact SLA expiry resumes automation');
+select is(public.session_quality_review_state_v1(public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),now())->>'automaticConfirmationPaused','false','private quality never pauses confirmation automation');
 insert into public.support_ticket_messages(ticket_id,author_profile_id,author_role,body,visibility,request_id)
 select review.ticket_id,context.admin_actor,'admin','Nota interna não atende o relato.','internal',gen_random_uuid()
 from public.session_quality_reviews review cross join (select * from quality_context order by id limit 1) context;
@@ -138,13 +141,13 @@ select ok((select answered_at is not null and response_message_id is not null fr
 select is(public.session_quality_review_state_v1(public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'))->>'allAnswered','true','answered state is separate from participant confirmations');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '7 days'-interval '1 microsecond');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'manual confirmations remain before the automatic deadline');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'private quality does not create confirmations before the automatic deadline');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '7 days');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011') and participant_role='patient' and source='automatic'),0,'patient manual response is not replaced by automatic confirmation');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011') and participant_role='patient' and source='automatic'),1,'patient confirmation follows its independent automatic deadline');
 select public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '30 days');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
-  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'therapist auto at thirty days');
+  public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'therapist confirmation follows its independent thirty-day deadline');
 select is(public.auto_confirm_sessions((select ends_at from public.bookings where id='b1300000-0000-4000-8000-000000000011')+interval '31 days'),0,'automatic confirmations are idempotent');
 select ok(not exists(select 1 from public.session_quality_feedback where booking_id='f2000000-0000-4000-8000-000000000002'),'automatic confirmation creates no quality rating');
 select results_eq($$select md5(string_agg(to_jsonb(payment)::text,'' order by payment.id)) from public.session_payments payment$$,

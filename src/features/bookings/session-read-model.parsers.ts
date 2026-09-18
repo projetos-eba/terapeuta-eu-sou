@@ -83,6 +83,7 @@ export function parseTherapistSessionDetailReadModel(
 
   return {
     ...parseSessionReadModelItem(row),
+    sharedNote: nullableString(row.sharedNote),
     therapistProfileId: requiredString(row.therapistProfileId),
     version: version(row.version),
   };

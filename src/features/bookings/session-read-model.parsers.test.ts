@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseTherapistAgendaReadModel,
+  parseTherapistSessionDetailReadModel,
   parseTherapistPendingConfirmationsSummary,
   SessionReadModelContractError,
 } from "./session-read-model.parsers";
@@ -96,6 +97,75 @@ describe("parseTherapistPendingConfirmationsSummary", () => {
     ).toThrow(SessionReadModelContractError);
   });
 });
+
+describe("parseTherapistSessionDetailReadModel", () => {
+  it("accepts the optional booking note without adding it to session lists", () => {
+    const parsed = parseTherapistSessionDetailReadModel(
+      therapistDetailPayload({ sharedNote: "Quero chegar com calma." }),
+    );
+
+    expect(parsed.sharedNote).toBe("Quero chegar com calma.");
+  });
+
+  it("keeps older detail payloads compatible when the note is absent", () => {
+    const parsed = parseTherapistSessionDetailReadModel(
+      therapistDetailPayload(),
+    );
+
+    expect(parsed.sharedNote).toBeNull();
+  });
+});
+
+function therapistDetailPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    attendanceSource: "unavailable",
+    attendanceStatus: "pending",
+    bookingId: "booking-1",
+    bookingStatus: "confirmed",
+    bookingVersion: 1,
+    cancellationDecision: null,
+    cancellationRequiresReview: null,
+    currency: "BRL",
+    durationMinutes: 60,
+    endsAt: "2026-09-18T15:00:00.000Z",
+    financialStatus: "paid",
+    fulfillmentStatus: "scheduled",
+    grossAmountCents: 12000,
+    modality: "online",
+    patientAvatarUrl: null,
+    patientName: "Pessoa atendida",
+    patientProfileId: "patient-1",
+    priceCents: 12000,
+    proposedEndsAt: null,
+    proposedStartsAt: null,
+    proposedTimezone: null,
+    refundPending: null,
+    rescheduleStatus: null,
+    serviceId: "service-1",
+    serviceTitle: "Reiki",
+    sessionReference: "26S000001",
+    startsAt: "2026-09-18T14:00:00.000Z",
+    therapistAmountCents: 10200,
+    therapistProfileId: "therapist-1",
+    timezone: "America/Sao_Paulo",
+    transferStatus: null,
+    version: 1,
+    videoSessionProvider: "zoom_video_sdk",
+    videoSessionStatus: "ready",
+    zoomAccess: {
+      allowed: true,
+      availableFrom: "2026-09-18T13:45:00.000Z",
+      availableUntil: "2026-09-18T15:30:00.000Z",
+      hardEndsAt: null,
+      reason: null,
+      scheduledEndsAt: "2026-09-18T15:00:00.000Z",
+      scheduledStartsAt: "2026-09-18T14:00:00.000Z",
+      serverNow: "2026-09-18T14:00:00.000Z",
+      videoSessionStatus: "ready",
+    },
+    ...overrides,
+  };
+}
 
 function agendaPayload(rule: Record<string, unknown>) {
   return {

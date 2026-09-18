@@ -236,9 +236,7 @@ export const getPatientSessionDetailPage = cache(
                     : "Encontro não realizado — acesso em análise",
             }
           : sessionQuality.realizationStatus === "performed"
-            ? { ...detail.booking, statusLabel: sessionQuality.qualityReview?.isOpen
-              ? "Realizada, em análise" : sessionQuality.qualityReview?.allAnswered
-                ? "Realizada (confirmada)" : "Encontro realizado" }
+            ? { ...detail.booking, statusLabel: "Encontro realizado" }
             : detail.booking,
         delayNotice,
         paymentRecovery: {

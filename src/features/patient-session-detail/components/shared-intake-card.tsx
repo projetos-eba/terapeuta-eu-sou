@@ -1,14 +1,21 @@
 import Image from "next/image";
 import { Heart } from "lucide-react";
 
-import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
+type IntakeVisibility = "patient_therapist" | "private_patient" | "support";
 
 export function SharedIntakeCard({
-  intake,
+  perspective = "patient",
+  sharedNote,
+  visibility = "patient_therapist",
 }: {
-  intake: PatientSessionDetailPageData["intake"];
+  perspective?: "patient" | "therapist";
+  sharedNote: string | null;
+  visibility?: IntakeVisibility;
 }) {
-  const visibilityCopy = getVisibilityCopy(intake.visibility);
+  const note = sharedNote?.trim();
+  if (!note) return null;
+
+  const visibilityCopy = getVisibilityCopy({ perspective, visibility });
 
   return (
     <section className="relative overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
@@ -17,7 +24,9 @@ export function SharedIntakeCard({
           <Heart aria-hidden="true" size={20} />
         </span>
         <h2 className="font-display text-[1.85rem] font-light italic leading-none text-brand-deep sm:text-[2.1rem]">
-          O que você compartilhou ao agendar
+          {perspective === "patient"
+            ? "O que você compartilhou ao agendar"
+            : "Informações compartilhadas no agendamento"}
         </h2>
       </div>
 
@@ -26,7 +35,7 @@ export function SharedIntakeCard({
           {visibilityCopy.intro}
         </p>
         <blockquote className="mt-5 border-l-2 border-brand-lavender pl-4 font-display text-[1.55rem] font-light italic leading-8 text-brand-primary sm:pl-5 sm:text-[1.95rem] sm:leading-9">
-          “{intake.sharedNote}”
+          “{note}”
         </blockquote>
         <p className="mt-5 text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
           {visibilityCopy.footnote}
@@ -45,8 +54,20 @@ export function SharedIntakeCard({
 }
 
 function getVisibilityCopy(
-  visibility: PatientSessionDetailPageData["intake"]["visibility"],
+  input: {
+    perspective: "patient" | "therapist";
+    visibility: IntakeVisibility;
+  },
 ) {
+  if (input.perspective === "therapist") {
+    return {
+      footnote: "Esse contexto pode apoiar a preparação da sessão.",
+      intro:
+        "No agendamento, a pessoa compartilhou que gostaria de olhar com cuidado para:",
+    };
+  }
+
+  const { visibility } = input;
   if (visibility === "private_patient") {
     return {
       footnote:
