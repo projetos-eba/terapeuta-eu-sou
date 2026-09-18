@@ -50,6 +50,9 @@ agendamento`, separando claramente aprovação administrativa, publicação e
   path interno ou anexos via read model público.
 - Quando não houver versão pública elegível, informar a indisponibilidade de
   modo honesto; não inferir ou revelar conteúdo em rascunho.
+- A leitura de `public_therapist_profile_content_v` usa o `slug` canônico do
+  cadastro administrativo; essa view não expõe `therapist_profile_id`. Sem
+  slug, não consultar a projeção pública nem recorrer a tabelas internas.
 - `Perfil público` só pode ser aberto quando a projeção segura estiver
   disponível. A aprovação administrativa continua distinta da publicação.
 - Usar `StatusCluster` inline, hairlines e seções abertas antes de cards. A

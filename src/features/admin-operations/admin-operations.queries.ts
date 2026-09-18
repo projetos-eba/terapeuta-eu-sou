@@ -523,7 +523,6 @@ export const getAdminOperationDetailPage = cache(
         fetchAdminProfessionalPublishedProfile({
           accessToken,
           config,
-          profileId,
           slug,
         }),
         fetchAdminProfessionalVerificationSummary({
@@ -576,12 +575,10 @@ export const getAdminOperationDetailPage = cache(
 async function fetchAdminProfessionalPublishedProfile({
   accessToken,
   config,
-  profileId,
   slug,
 }: {
   accessToken: string;
   config: { apiKey: string; url: string };
-  profileId: string;
   slug?: string;
 }): Promise<AdminProfessionalPublishedProfile> {
   const unavailable = {
@@ -590,9 +587,12 @@ async function fetchAdminProfessionalPublishedProfile({
     status: "unavailable" as const,
   };
 
+  const publicSlug = slug?.trim();
+  if (!publicSlug) return unavailable;
+
   try {
     const contentResponse = await fetch(
-      `${config.url}/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=short_intro,essence_body,invitation_body,experience_years,guide_items`,
+      `${config.url}/rest/v1/public_therapist_profile_content_v?slug=eq.${encodeURIComponent(publicSlug)}&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1`,
       {
         cache: "no-store",
         headers: adminReadHeaders({ accessToken, config }),
@@ -610,13 +610,11 @@ async function fetchAdminProfessionalPublishedProfile({
       return { content: null, services: [], status: "available" };
     }
 
-    const services = slug
-      ? await fetchAdminProfessionalPublishedServices({
-          accessToken,
-          config,
-          slug,
-        })
-      : [];
+    const services = await fetchAdminProfessionalPublishedServices({
+      accessToken,
+      config,
+      slug: publicSlug,
+    });
 
     return {
       content: {
