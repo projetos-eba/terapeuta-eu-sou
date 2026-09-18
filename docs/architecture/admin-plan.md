@@ -2803,6 +2803,9 @@ Minimizacao de dados:
 - listagem de suporte nao envia descricao completa nem contexto diagnostico;
 - listagem de avaliacoes nao envia comentario completo;
 - listagem de verificacoes nao envia metadados/documentos privados;
+- listagem de profissionais entrega somente para Admin o e-mail cadastrado e a
+  foto pública do perfil, para desambiguação operacional; telefone, endereço,
+  documentos e rascunhos permanecem fora da lista;
 - listagem de profissionais nao permite alterar plano, publicacao ou status por
   update livre.
 
