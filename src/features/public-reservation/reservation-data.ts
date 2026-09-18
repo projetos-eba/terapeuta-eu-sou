@@ -120,7 +120,7 @@ export function resolveReservationContext(input: {
     serviceLabel,
     serviceSummary:
       durationMinutes && priceCents
-        ? `${serviceLabel} (${durationMinutes} min)`
+        ? `${serviceLabel} (até ${durationMinutes} min)`
         : serviceLabel,
     serviceDetailsUpdated: false,
     source,
@@ -392,7 +392,7 @@ export function mergeReservationContextWithPublicProfile(
     serviceId: input.service?.id ?? null,
     serviceLabel,
     serviceSummary: durationMinutes
-      ? `${serviceLabel} (${durationMinutes} min)`
+      ? `${serviceLabel} (até ${durationMinutes} min)`
       : serviceLabel,
     therapist: {
       avatarUrl: input.avatarUrl,

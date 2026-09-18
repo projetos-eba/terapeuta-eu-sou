@@ -113,7 +113,7 @@ describe("AvailabilitySelector", () => {
     );
 
     expect(
-      screen.getByText("Reiki online · 20 min · R$ 120"),
+      screen.getByText("Reiki online · até 20 min · R$ 120"),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "09:00" })).toHaveAttribute(
       "href",
@@ -124,7 +124,7 @@ describe("AvailabilitySelector", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tarô online" }));
 
     expect(
-      screen.getByText("Tarô online · 30 min · R$ 122"),
+      screen.getByText("Tarô online · até 30 min · R$ 122"),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "10:15" })).toHaveAttribute(
       "href",
@@ -135,7 +135,7 @@ describe("AvailabilitySelector", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reiki online" }));
 
     expect(
-      screen.getByText("Reiki online · 20 min · R$ 120"),
+      screen.getByText("Reiki online · até 20 min · R$ 120"),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "09:00" })).toHaveAttribute(
       "href",

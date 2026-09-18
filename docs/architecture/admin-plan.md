@@ -158,6 +158,13 @@ o salvamento da agenda o despublica e cria uma nova revisão com origem
 `availability_removed`. O Admin vê “Agenda sem horários”, não pode aprovar
 enquanto a completude permanecer abaixo de 100% e só restaura a publicação após
 recalcular todos os gates. Reservas existentes não são modificadas.
+
+A fila de Verificações é uma projeção do ciclo atual: cada terapeuta aparece uma
+única vez, usando a revisão mais recente. Reaprovações por retirada da agenda ou
+encerramento da conta de recebimento não apagam nem reescrevem decisões
+anteriores; o histórico completo permanece disponível para detalhe e auditoria,
+mas não cria linhas duplicadas na fila operacional.
+
 - `admin.matching.manage`
 - `admin.reviews.read`
 - `admin.reviews.moderate`

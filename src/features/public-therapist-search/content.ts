@@ -40,7 +40,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     cityState: "São Paulo, SP",
     description:
       "Um espaço de acolhimento para quem busca mais clareza, equilíbrio e leveza emocional.",
-    durationLabel: "50 min",
+    durationLabel: "até 50 min",
     hasVideo: true,
     highlight: "Destaque TES",
     highlightTone: "featured",
@@ -78,7 +78,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     cityState: "Rio de Janeiro, RJ",
     description:
       "Apoio para quem está vivendo mudanças importantes e deseja encontrar novos caminhos.",
-    durationLabel: "50 min",
+    durationLabel: "até 50 min",
     hasVideo: true,
     highlight: "Destaque TES",
     highlightTone: "featured",
@@ -116,7 +116,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     cityState: "Curitiba, PR",
     description:
       "Escuta cuidadosa para relações, luto e processos de transformação.",
-    durationLabel: "50 min",
+    durationLabel: "até 50 min",
     hasVideo: false,
     highlight: "Perfil Verificado",
     highlightTone: "verified",
@@ -154,7 +154,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     cityState: "Belo Horizonte, MG",
     description:
       "Apoio para famílias construírem diálogos mais leves e seguros.",
-    durationLabel: "50 min",
+    durationLabel: "até 50 min",
     hasVideo: false,
     highlight: "Perfil Verificado",
     highlightTone: "verified",
@@ -192,7 +192,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     cityState: "Florianópolis, SC",
     description:
       "Cuidado para autoconhecimento, escolhas e transições de vida.",
-    durationLabel: "60 min",
+    durationLabel: "até 60 min",
     hasVideo: true,
     highlight: "Destaque TES",
     highlightTone: "featured",

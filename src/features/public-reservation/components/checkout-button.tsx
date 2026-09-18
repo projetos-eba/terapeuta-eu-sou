@@ -470,7 +470,7 @@ export function CheckoutButton({
           </p>
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
             Confira antes de carregar o pagamento: {snapshotReview.serviceLabel}
-            , {snapshotReview.durationMinutes} min,{" "}
+            , até {snapshotReview.durationMinutes} min,{" "}
             {formatSnapshotPrice(snapshotReview)}.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">

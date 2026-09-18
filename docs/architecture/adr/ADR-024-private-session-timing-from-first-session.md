@@ -1,7 +1,9 @@
 # ADR-024 — Frequência privada de sessões desde o primeiro registro
 
 Data: 2026-09-18  
-Status: aceita; implantação depende da migration `20260918103000_therapist_metrics_session_timing_v2.sql`.
+Status: aceita; implantação corrigida pelas migrations
+`20260918103000_therapist_metrics_session_timing_v2.sql` e
+`20260918220000_restore_protected_therapy_distribution.sql`.
 
 ## Contexto
 
@@ -42,3 +44,18 @@ distinguindo frequência própria de coleções protegidas por amostra.
 Esta decisão substitui somente a aplicação da trava de dez observações à
 frequência privada de dia e horário descrita na ADR-011. A trava permanece
 íntegra para as leituras comparativas, percentuais e segmentadas.
+
+## Correção de implantação — 2026-09-18
+
+A primeira migration V2 usou uma substituição textual cujo padrão também
+existia no bloco `therapyDistribution`. Como efeito colateral, a distribuição
+por terapia perdeu `minimumSample: 10` e passou a expor itens abaixo da amostra
+mínima no contrato SQL. O mapper do servidor recusou corretamente o payload
+incompleto como `invalid_contract`, tornando as visões Geral e Sessões
+indisponíveis.
+
+A migration corretiva é forward-only e limita a alteração ao segmento
+`therapyDistribution`: restaura `insufficient_sample`, `minimumSample: 10` e
+itens vazios abaixo de dez sessões, sem reintroduzir a trava no mapa privado de
+dia e horário. A regressão SQL valida simultaneamente os dois comportamentos
+para impedir nova alteração colateral.

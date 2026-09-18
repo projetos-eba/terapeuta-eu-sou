@@ -632,14 +632,14 @@ function CompactBlockRow({
       </div>
       {block.status === "active" ? (
         <button
-          aria-label={`Remover bloqueio de ${formatBlockDate(
+          aria-label={`Liberar horário de ${formatBlockDate(
             block.startsAt,
             block.timezone,
           )}`}
           className="col-start-3 row-start-1 grid size-11 place-items-center rounded-lg border border-brand-lavender text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50 sm:col-start-auto sm:row-start-auto"
           disabled={busy}
           onClick={onCancel}
-          title="Remover bloqueio"
+          title="Liberar horário"
           type="button"
         >
           <MoreHorizontal aria-hidden="true" size={20} />
@@ -1237,38 +1237,45 @@ function CancelBlockDialog({
 
   return (
     <TESDialog
-      className="max-w-[520px]"
-      description="O período volta a participar do cálculo de horários. Sessões existentes permanecem inalteradas."
+      className="max-w-[830px] p-6 sm:p-8 [&>header>div>h2]:text-[38px] sm:[&>header>div>h2]:text-[48px] [&>header>div>p]:mt-3 [&>header>div>p]:max-w-none [&>header>div>p]:text-base [&>header>div>p]:leading-7 sm:[&>header>div>p]:text-lg"
+      description="Ao liberar, seus clientes poderão agendar sessões neste horário novamente. As sessões que já estão agendadas não serão alteradas."
       onClose={onClose}
-      title="Remover bloqueio?"
+      title="Quer liberar este horário?"
     >
       {recurring ? (
         <fieldset className="grid gap-3">
-          <legend className="mb-2 text-sm font-extrabold text-brand-deep">
-            O que deseja remover?
+          <legend className="mb-1 text-base font-extrabold text-brand-deep">
+            O que você deseja liberar?
           </legend>
           <RadioOption
             checked={scope === "occurrence"}
-            label="Somente esta ocorrência"
+            description="Libera somente este bloqueio."
+            label="Apenas este horário"
             onChange={() => setScope("occurrence")}
           />
           <RadioOption
             checked={scope === "series"}
-            label="Toda a série recorrente"
+            description="Libera este bloqueio em todas as datas em que ele se repete."
+            label="Todos os horários deste bloqueio"
             onChange={() => setScope("series")}
           />
         </fieldset>
       ) : (
-        <p className="rounded-lg bg-surface-soft p-4 text-sm font-semibold text-tesText-secondary">
-          {formatBlockDate(block.startsAt, block.timezone)} ·{" "}
-          {block.allDay
-            ? "Dia inteiro"
-            : formatBlockTime(block.startsAt, block.endsAt, block.timezone)}
-        </p>
+        <fieldset className="grid gap-3">
+          <legend className="mb-1 text-base font-extrabold text-brand-deep">
+            O que você deseja liberar?
+          </legend>
+          <RadioOption
+            checked
+            description="Libera somente este bloqueio."
+            label="Apenas este horário"
+            onChange={() => setScope("occurrence")}
+          />
+        </fieldset>
       )}
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <button
-          className="min-h-11 rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+          className="min-h-14 rounded-xl border border-brand-lavender px-7 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           disabled={busy}
           onClick={onClose}
           type="button"
@@ -1276,13 +1283,13 @@ function CancelBlockDialog({
           Voltar
         </button>
         <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-status-danger px-5 text-sm font-extrabold text-white disabled:opacity-50"
+          className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-status-danger px-7 text-sm font-extrabold text-white transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger disabled:cursor-not-allowed disabled:opacity-50"
           disabled={busy}
           onClick={() => void onConfirm(scope)}
           type="button"
         >
-          <Trash2 aria-hidden="true" size={16} />
-          {busy ? "Removendo..." : "Remover bloqueio"}
+          <Trash2 aria-hidden="true" size={20} />
+          {busy ? "Liberando..." : "Liberar horário"}
         </button>
       </div>
     </TESDialog>
@@ -1306,23 +1313,33 @@ function Field({
 
 function RadioOption({
   checked,
+  description,
   label,
   onChange,
 }: {
   checked: boolean;
+  description: string;
   label: string;
   onChange: () => void;
 }) {
   return (
-    <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-brand-lavender px-4 text-sm font-bold text-brand-deep">
+    <label
+      className="flex min-h-[94px] cursor-pointer items-center gap-4 rounded-xl border border-brand-lavender bg-white px-5 py-4 text-brand-deep transition hover:border-brand-primary focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/20"
+    >
       <input
+        aria-label={label}
         checked={checked}
-        className="size-4 accent-brand-primary"
+        className="size-5 shrink-0 accent-brand-primary"
         name="cancel-scope"
         onChange={onChange}
         type="radio"
       />
-      {label}
+      <span className="grid gap-1">
+        <span className="text-base font-extrabold">{label}</span>
+        <span className="text-sm font-semibold leading-5 text-tesText-secondary">
+          {description}
+        </span>
+      </span>
     </label>
   );
 }
