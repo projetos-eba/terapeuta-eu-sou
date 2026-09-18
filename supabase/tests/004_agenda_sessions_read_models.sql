@@ -85,9 +85,12 @@ select ok(
   'therapist detail does not expose other booking intake fields'
 );
 
+-- Only fixture setup may change the patient's sharing choice.
+reset role;
 update public.booking_intake_responses
 set visibility = 'private_patient'
 where booking_id = 'f2000000-0000-4000-8000-000000000004';
+set local role authenticated;
 
 select is(
   public.get_therapist_session_detail_v1(

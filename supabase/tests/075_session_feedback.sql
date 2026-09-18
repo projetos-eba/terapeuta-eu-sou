@@ -134,9 +134,11 @@ values (
 on conflict (booking_id) do update
 set financial_status = excluded.financial_status;
 
+-- Keep historical feedback outside the current-day bookings in the local seed.
+-- The booking and its evidence are restored by the final ROLLBACK.
 update public.bookings
-set starts_at = now() - interval '2 hours',
-    ends_at = now() - interval '1 hour'
+set starts_at = now() - interval '400 days 2 hours',
+    ends_at = now() - interval '400 days 1 hour'
 where id = '96000000-0000-4000-8000-000000000001';
 
 insert into public.video_sessions (
@@ -156,10 +158,10 @@ values (
   'development',
   'tes-feedback-video-session',
   'ended',
-  now() - interval '2 hours',
-  now() - interval '1 hour',
-  now() - interval '2 hours',
-  now() - interval '1 hour'
+  now() - interval '400 days 2 hours',
+  now() - interval '400 days 1 hour',
+  now() - interval '400 days 2 hours',
+  now() - interval '400 days 1 hour'
 )
 on conflict (booking_id) do update
 set status = excluded.status,
@@ -186,7 +188,7 @@ values
     'feedback-patient',
     'patient',
     'session.user_joined',
-    now() - interval '2 hours',
+    now() - interval '400 days 2 hours',
     '{}'::jsonb
   ),
   (
@@ -196,7 +198,7 @@ values
     'feedback-therapist',
     'therapist',
     'session.user_joined',
-    now() - interval '2 hours',
+    now() - interval '400 days 2 hours',
     '{}'::jsonb
   )
 on conflict (id) do nothing;

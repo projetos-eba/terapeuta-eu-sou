@@ -206,15 +206,16 @@ set onboarding_status = excluded.onboarding_status,
     payout_schedule_interval = excluded.payout_schedule_interval;
 
 -- Historical trusted joins must match the current attempt and its effective dates.
+-- Keep the intervals away from the current-day bookings in the local seed.
 update public.bookings set
   starts_at = case when id = '96000000-0000-4000-8000-000000000002'
-    then now() - interval '8 days 1 hour'
-    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '4 hours'
-    else now() - interval '2 hours' end,
+    then now() - interval '408 days 1 hour'
+    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '400 days 4 hours'
+    else now() - interval '400 days 2 hours' end,
   ends_at = case when id = '96000000-0000-4000-8000-000000000002'
-    then now() - interval '8 days'
-    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '3 hours'
-    else now() - interval '1 hour' end
+    then now() - interval '408 days'
+    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '400 days 3 hours'
+    else now() - interval '400 days 1 hour' end
 where id in ('96000000-0000-4000-8000-000000000001',
   '96000000-0000-4000-8000-000000000002','96000000-0000-4000-8000-000000000003');
 do $$ declare v_id uuid; begin
