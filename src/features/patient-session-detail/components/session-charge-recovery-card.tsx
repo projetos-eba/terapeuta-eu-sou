@@ -39,7 +39,7 @@ export function SessionChargeRecoveryCard({
   bookingId: string;
   stripePublishableKey: string;
 }) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const stripeRef = useRef<RecoveryStripe | null>(null);
   const elementsRef = useRef<RecoveryElements | null>(null);
@@ -47,8 +47,34 @@ export function SessionChargeRecoveryCard({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [phase, setPhase] = useState<
-    "idle" | "loading" | "ready" | "submitting"
+    | "idle"
+    | "loading"
+    | "ready"
+    | "submitting"
+    | "verifying"
+    | "verification_pending"
   >("idle");
+
+  useEffect(() => {
+    if (phase !== "verifying") return;
+
+    // The signed webhook, not the browser response, confirms the encounter.
+    // Refresh until the server removes this recovery card from the paid page.
+    refresh();
+    const refreshInterval = window.setInterval(() => refresh(), 2_000);
+    const verificationTimeout = window.setTimeout(() => {
+      window.clearInterval(refreshInterval);
+      setMessage(
+        "Ainda estamos conferindo o pagamento. Atualize os detalhes em instantes e não tente pagar novamente enquanto isso.",
+      );
+      setPhase("verification_pending");
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.clearTimeout(verificationTimeout);
+    };
+  }, [phase, refresh]);
 
   useEffect(() => {
     if (!clientSecret || !mountRef.current || !stripePublishableKey) return;
@@ -148,15 +174,17 @@ export function SessionChargeRecoveryCard({
         return;
       }
 
-      setMessage("Pagamento enviado para confirmação.");
-      router.refresh();
+      setMessage(
+        "Estamos conferindo o pagamento. Não tente pagar novamente enquanto atualizamos o encontro.",
+      );
+      setPhase("verifying");
     } catch {
       setMessage(
         "Não foi possível concluir o pagamento agora. Tente novamente em instantes.",
       );
     } finally {
       submittingRef.current = false;
-      setPhase("ready");
+      setPhase((current) => (current === "submitting" ? "ready" : current));
     }
   }
 
@@ -197,7 +225,13 @@ export function SessionChargeRecoveryCard({
             type="button"
           >
             <ShieldCheck aria-hidden="true" size={19} />
-            {phase === "submitting" ? "Confirmando…" : "Confirmar pagamento"}
+            {phase === "submitting"
+              ? "Confirmando…"
+              : phase === "verifying"
+                ? "Verificando pagamento…"
+                : phase === "verification_pending"
+                  ? "Aguardando confirmação"
+                  : "Confirmar pagamento"}
           </TESButton>
         </div>
       )}
@@ -208,6 +242,16 @@ export function SessionChargeRecoveryCard({
       >
         {message}
       </p>
+      {phase === "verification_pending" ? (
+        <TESButton
+          className="w-full sm:w-fit"
+          onClick={() => refresh()}
+          type="button"
+          variant="secondary"
+        >
+          Atualizar detalhes
+        </TESButton>
+      ) : null}
     </section>
   );
 }
