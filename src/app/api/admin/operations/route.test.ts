@@ -29,6 +29,7 @@ vi.mock("@/lib/auth/admin-session", () => ({
 }));
 
 import { POST } from "./route";
+import { revalidatePath } from "next/cache";
 
 describe("admin operation command route", () => {
   beforeEach(() => {
@@ -87,6 +88,59 @@ describe("admin operation command route", () => {
         method: "POST",
       }),
     );
+  });
+
+  it.each(["patient.suspend", "patient.reactivate"])(
+    "authorizes %s with the dedicated permission and revalidates client surfaces",
+    async (action) => {
+      sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
+        permissions: ["admin.patients.suspend"],
+        role: "admin",
+      });
+      const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
+      vi.stubGlobal("fetch", fetchMock);
+      const response = await POST(
+        makeJsonRequest({
+          action,
+          entityId: "11111111-1111-4111-8111-111111111111",
+          reason: "Motivo administrativo válido",
+          requestId: "client-request-123",
+        }),
+      );
+      expect(response.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: expect.stringContaining(action),
+          headers: expect.objectContaining({
+            Authorization: "Bearer admin-token",
+          }),
+        }),
+      );
+      expect(revalidatePath).toHaveBeenCalledWith("/admin/pacientes");
+      expect(revalidatePath).toHaveBeenCalledWith(
+        "/admin/pacientes/11111111-1111-4111-8111-111111111111",
+      );
+    },
+  );
+
+  it("does not allow a read-only client permission to suspend accounts", async () => {
+    sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
+      permissions: ["admin.patients.read"],
+      role: "admin",
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await POST(
+      makeJsonRequest({
+        action: "patient.suspend",
+        entityId: "11111111-1111-4111-8111-111111111111",
+        reason: "Motivo administrativo válido",
+        requestId: "client-request-123",
+      }),
+    );
+    expect(response.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("does not execute unsupported actions", async () => {

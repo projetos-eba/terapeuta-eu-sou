@@ -4,6 +4,7 @@ export const adminPermissions = [
   "admin.professionals.verify",
   "admin.professionals.suspend",
   "admin.patients.read",
+  "admin.patients.suspend",
   "admin.sessions.read",
   "admin.sessions.manage",
   "admin.payments.read",

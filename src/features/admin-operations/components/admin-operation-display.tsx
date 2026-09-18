@@ -462,6 +462,8 @@ export function formatAuditActionLabel(value?: string) {
 
   const labels: Record<string, string> = {
     "professional.reactivate": "Profissional reativado",
+    "patient.reactivate": "Agendamentos do cliente reativados",
+    "patient.suspend": "Novos agendamentos suspensos",
     "professional.suspend": "Profissional suspenso",
     "review.hide": "Avaliação ocultada",
     "review.restore": "Avaliação restaurada",
