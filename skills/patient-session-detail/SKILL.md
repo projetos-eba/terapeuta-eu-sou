@@ -44,6 +44,11 @@ Use this skill when implementing or refactoring the authenticated client/patient
   `/api/zoom/video-session-access` to request a backend-signed Video SDK
   payload for the canonical room flow.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to client components.
+- Scheduled-charge recovery uses the authenticated booking detail and the
+  existing PaymentIntent. The Next route must validate and unwrap the Function's
+  `ApiSuccess<T>` once; the component receives `data.clientSecret`, not a nested
+  success envelope. Contract regressions must model the actual Function response
+  and keep unavailable responses fail-closed without exposing internal fields.
 - Demo data belongs in `supabase/seed.sql`, not migrations.
 
 ## Supporting Tables
