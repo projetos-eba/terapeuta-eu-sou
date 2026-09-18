@@ -3,6 +3,12 @@
 Data: 2026-09-18. Contrato normativo: ADR-024 — avaliação privada independente
 de confirmação. Documentação atualizada.
 
+Este arquivo registra a primeira etapa, anterior ao PR e ao deploy autorizado.
+As pendências abaixo são históricas. A Function V2 foi posteriormente publicada
+em HML, os dois envios foram salvos e o gate SQL local passou integralmente.
+Estado atual, comandos e correções das fixtures:
+[conclusão do deploy V2 e gate SQL](session-feedback-v2-deployment-sql-gate-2026-09-18.md).
+
 ## Evidência HML
 
 - Projeto explicitamente linkado: `emzwqkmrryuqvqiohqnu`.
@@ -52,7 +58,7 @@ que a ADR-024 removeu. Nenhum deploy foi executado nesta tarefa.
 - Falha do POST mantém campos e permite retry com o mesmo request ID. Sucesso
   do POST permanece autoritativo mesmo se a leitura posterior falhar ou atrasar.
 
-## Handoff
+## Handoff da primeira etapa (histórico)
 
 STATUS
 

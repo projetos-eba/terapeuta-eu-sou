@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/isolated-booking-window-local.inc
 select plan(7);
 select public.ensure_video_session_for_paid_booking_v1(
   'f2000000-0000-4000-8000-000000000001', 'development', 'attendance-role-fences'
@@ -11,6 +12,8 @@ delete from public.video_session_control_jobs where booking_id = (select id from
 delete from public.video_session_participations where booking_id = (select id from target_booking);
 delete from public.booking_events where booking_id = (select id from target_booking)
   and event_type = 'zoom_waiting_room_entered';
+select pg_temp.isolate_booking_window((select id from target_booking),
+  now() - interval '12 minutes', now() + interval '8 minutes');
 update public.bookings set starts_at = now() - interval '12 minutes',
   ends_at = now() + interval '8 minutes', status = 'confirmed',
   payment_status = 'paid', meeting_provider = 'zoom', version = 121
@@ -54,6 +57,8 @@ select is((select status::text from target_booking), 'no_show_patient', 'therapi
 -- Legacy late arrivals cannot restore access entitlement even when an event exists.
 create or replace temporary view target_booking as select * from public.bookings
 where id = 'f2000000-0000-4000-8000-000000000002';
+select pg_temp.isolate_booking_window((select id from target_booking),
+  now() - interval '12 minutes', now() + interval '8 minutes');
 delete from public.booking_events where booking_id = (select id from target_booking)
   and event_type = 'zoom_waiting_room_entered';
 delete from public.video_session_participations where booking_id = (select id from target_booking);

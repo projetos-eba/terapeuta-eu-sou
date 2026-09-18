@@ -111,7 +111,7 @@ create temporary table negative_result as select public.submit_session_quality_f
 select is((select result->'feedback'->>'successful' from negative_result),'false','negative is quality, not non-performance');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'negative quality does not record participant confirmation');
-select set_config('request.jwt.claim.sub',(select therapist_actor from quality_context order by id limit 1),true);
+select set_config('request.jwt.claim.sub',(select therapist_actor::text from quality_context order by id limit 1),true);
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','negative quality is no longer offered again to its author');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'negative quality leaves internal confirmation untouched');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'negative quality does not affect the other participant confirmation');

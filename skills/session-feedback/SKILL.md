@@ -177,6 +177,23 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - Executar Vitest focado, Deno, typecheck, lint, build, migrações progressivas,
   `npx supabase db lint --local` e `npx supabase test db --local`. Nunca resetar
   dados locais sem autorização explícita.
+- Antes do gate SQL, confirmar o projeto linkado e revisar o dry-run; alinhar
+  somente migrations existentes no banco local, preservando volume e versão
+  PostgreSQL. A ADR-024 deve estar aplicada para testar qualidade independente.
+- Fixtures históricas devem manter booking, tentativa e evidências nas mesmas
+  datas, sem disputar a agenda atual do seed. Cenários vivos de T+10 podem usar
+  `supabase/tests/fixtures/isolated-booking-window-local.inc` dentro de
+  `BEGIN`/`ROLLBACK`, antes de assumir o papel autenticado. Nunca desativar
+  guards de sobreposição ou ampliar grants para preparar fixtures.
+- Distinguir erros das funções da aplicação de diagnósticos de funções
+  pertencentes ao pgTAP no lint SQL, comprovando ownership em `pg_depend`.
+  Registrar o resultado bruto; não remover a extensão para obter lint limpo.
+- Deploy HML de `session-feedback-command` exige autorização, projeto explícito,
+  preservação da configuração de autenticação e comparação semântica da fonte
+  remota com a local. V2 chama `submit_session_quality_feedback_v1`; não usar
+  fallback legado. Revalidar resposta própria nos dois perfis e ausência de
+  efeitos em confirmação/financeiro. Evidência:
+  `docs/zoom/session-feedback-v2-deployment-sql-gate-2026-09-18.md`.
 - QA visual: `1440x900`, `1024x768`, `390x844` e, se necessário, `360x800`,
   cobrindo sala de espera, chamada ativa, saída, feedback realizado, não
   realização e erro.
