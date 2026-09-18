@@ -136,6 +136,11 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   só toca após gesto explícito do usuário.
 - O feedback bilateral usa `skills/session-feedback`, é privado, independente
   de `reviews` públicos e também aparece somente como leitura no detalhe Admin.
+- Pela ADR-024, resposta privada não confirma presença. Após persistir, atualizar
+  os detalhes de ambos os perfis. Falha de envio mantém o formulário preenchido;
+  sucesso do POST permanece salvo mesmo se a leitura seguinte falhar.
+- Na sala do paciente, resposta positiva oferece avaliação pública opcional do
+  terapeuta por `PatientPublicReviewForm`, com publicação explícita e nota própria.
 - Paciente e terapeuta devem consultar os read models já existentes antes de
   renderizar a sala.
 - A autorização definitiva continua em `/api/zoom/video-session-access`.

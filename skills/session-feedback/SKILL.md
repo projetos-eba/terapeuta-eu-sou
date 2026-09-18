@@ -35,7 +35,7 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 
 ## Contrato de dados
 
-### Regra vigente da ADR-023 (substitui o contrato legado descrito abaixo)
+### Regra vigente das ADRs 023 e 024 (substitui o contrato legado descrito abaixo)
 
 - `booking_session_attempts` identifica a tentativa atual e só avança em
   reagendamento efetivo. `session_feedback` permanece histórico; novas respostas
@@ -56,17 +56,23 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   TES naquele ticket conta. Um ou dois relatos ficam separados. Sem joins
   bilaterais não há formulário, nota nem pendência de avaliação: usar suporte
   ou incidente de presença fora do feedback.
-- Um envio de avaliação “Sim” ou “Não” também grava a confirmação individual
-  `completed` do próprio autor, na mesma transação e tentativa atual. Os dois
-  registros permanecem separados; nunca confirmar a outra pessoa nem inferir
-  confirmação de Transfer. Repetições são idempotentes e conflito desfaz ambas
-  as escritas. Respostas anteriores só são regularizadas quando persistidas e
-  sustentadas por presença bilateral confiável e sala encerrada.
+- Pela ADR-024, o envio grava somente a resposta privada do próprio autor.
+  Não cria confirmação individual nem modifica presença ou financeiro.
+  O detalhe usa a qualidade da tentativa atual e do perfil autenticado:
+  `submitted` ou uma resposta já persistida removem a ação de avaliar,
+  independentemente da resposta ou confirmação da outra pessoa.
+- Na sala do paciente, uma resposta privada positiva oferece a etapa separada
+  “Avaliar terapeuta (opcional)”, inclusive ao reabrir uma resposta já enviada.
+  Reutilizar `PatientPublicReviewForm`; nunca copiar a nota privada para `reviews`
+  nem publicar sem ação explícita. O perfil do terapeuta vem do detalhe autorizado.
+- Falha de envio preserva os campos e permite retry com o mesmo request ID.
+  Falha da leitura posterior não transforma um envio confirmado em falha nem
+  mantém a avaliação pendente na superfície que recebeu a resposta salva.
 - Qualidade, confirmação e presença não chamam nem bloqueiam Transfer, Refund
   ou Reversal. Confirmação automática de cliente/terapeuta vence após 7/30 dias
   do término previsto, revalida a tentativa e nunca ocorre em “Não realizada”.
-  Um relato não respondido pausa a automação até seu prazo de cinco dias; depois
-  ela retoma o vencimento original, mantendo a análise aberta e alertando Admin.
+  Um relato privado não pausa a confirmação automática; o prazo de atendimento
+  de cinco dias permanece independente, mantendo a análise aberta e alertando Admin.
   Resposta do TES não fabrica confirmação individual nem modifica registros.
 - Admin lê relatos da tentativa atual e legados históricos separadamente,
   sem resposta privada cruzada para cliente ou terapeuta. QA: resposta

@@ -248,6 +248,7 @@ export function ZoomVideoSessionAdapter({
   bookingId,
   displayMode = "embedded",
   initialFeedback = false,
+  publicReviewTherapist,
   participantLabel = "Com outra pessoa",
   scheduleLabel,
   scheduledEndsAt,
@@ -262,6 +263,7 @@ export function ZoomVideoSessionAdapter({
   bookingId: string;
   displayMode?: "dedicated" | "embedded";
   initialFeedback?: boolean;
+  publicReviewTherapist?: { id: string; name: string };
   participantLabel?: string;
   scheduleLabel?: string;
   scheduledEndsAt?: string;
@@ -554,9 +556,12 @@ export function ZoomVideoSessionAdapter({
               );
             } else if (
               actorRole === "patient" &&
-              refreshedAccess.reason === ZoomAccessReason.TherapistArrivalWindowExpired
+              refreshedAccess.reason ===
+                ZoomAccessReason.TherapistArrivalWindowExpired
             ) {
-              setMessage("O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro.");
+              setMessage(
+                "O terapeuta não compareceu até o fim da tolerância. Sua espera foi registrada e o TES analisará este encontro.",
+              );
             } else if (
               actorRole === "patient" &&
               refreshedAccess.reason === ZoomAccessReason.ArrivalWindowExpired
@@ -2327,8 +2332,7 @@ export function ZoomVideoSessionAdapter({
       const feedbackStatus = payload?.data?.status;
       const feedbackAvailable =
         payload?.ok &&
-        (feedbackStatus === "eligible" ||
-          feedbackStatus === "submitted");
+        (feedbackStatus === "eligible" || feedbackStatus === "submitted");
 
       if (feedbackAvailable) {
         setState("ended");
@@ -3177,9 +3181,9 @@ export function ZoomVideoSessionAdapter({
   const handleFeedbackSubmitted = useCallback(() => {
     // The detail route was rendered before the answer existed. Clear the
     // client router cache so returning to it reads the persisted feedback and
-    // the respondent's individual confirmation.
-    if (actorRole === "therapist") router.refresh();
-  }, [actorRole, router]);
+    // the respondent's private quality response.
+    router.refresh();
+  }, [router]);
 
   if (state === "ended") {
     return (
@@ -3189,6 +3193,7 @@ export function ZoomVideoSessionAdapter({
           bookingId={bookingId}
           introductoryMessage={message}
           onSubmitted={handleFeedbackSubmitted}
+          publicReviewTherapist={publicReviewTherapist}
           sessionLabel={
             actorRole === "patient"
               ? "Seu encontro foi encerrado"
@@ -3219,7 +3224,9 @@ export function ZoomVideoSessionAdapter({
               waitingRoomKind === "arrival_expired" ||
               waitingRoomKind === "schedule_ended"
             ? waitingRoomKind
-            : waitingRoomKind === "therapist_absent_prolonged" || waitingRoomKind === "therapist_no_show" || waitingRoomKind === "both_no_show"
+            : waitingRoomKind === "therapist_absent_prolonged" ||
+                waitingRoomKind === "therapist_no_show" ||
+                waitingRoomKind === "both_no_show"
               ? waitingRoomKind
               : currentAccess?.reason === ZoomAccessReason.TherapistNotInSession
                 ? "waiting_therapist"

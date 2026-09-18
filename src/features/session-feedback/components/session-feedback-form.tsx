@@ -20,6 +20,7 @@ import {
   type SessionFeedbackStatus,
 } from "../session-feedback.types";
 import { TherapistJourneyThemesForm } from "./therapist-journey-themes-form";
+import { PatientPublicReviewForm } from "./patient-public-review-form";
 
 type SessionFeedbackFormProps = {
   actorRole: "patient" | "therapist";
@@ -30,6 +31,7 @@ type SessionFeedbackFormProps = {
     readPayload: SessionFeedbackReadPayload | null,
   ) => void;
   sessionLabel: string;
+  publicReviewTherapist?: { id: string; name: string };
   showJourneyThemes?: boolean;
 };
 
@@ -39,6 +41,7 @@ export function SessionFeedbackForm({
   introductoryMessage,
   onSubmitted,
   sessionLabel,
+  publicReviewTherapist,
   showJourneyThemes = false,
 }: SessionFeedbackFormProps) {
   const [status, setStatus] = useState<SessionFeedbackStatus>("loading");
@@ -53,6 +56,7 @@ export function SessionFeedbackForm({
   const [reason, setReason] = useState<SessionFeedbackReason | "">("");
   const [comment, setComment] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const requestIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -83,14 +87,18 @@ export function SessionFeedbackForm({
         setStatus(payload.data.feedback ? "sent" : payload.data.status);
         if (payload.data.feedback) {
           setRating(payload.data.feedback.rating ?? 0);
-          setReason(payload.data.feedback.qualityReason ?? payload.data.feedback.notPerformedReason ?? "");
+          setReason(
+            payload.data.feedback.qualityReason ??
+              payload.data.feedback.notPerformedReason ??
+              "",
+          );
           setComment(payload.data.feedback.comment);
         }
       } catch {
         if (!cancelled) {
           setStatus("error");
           setErrorMessage(
-            "Não conseguimos consultar seu feedback agora. Você ainda pode tentar enviar sua resposta.",
+            "Não conseguimos consultar seu feedback agora. Atualize a página para tentar novamente.",
           );
         }
       }
@@ -102,20 +110,24 @@ export function SessionFeedbackForm({
     };
   }, [actorRole, bookingId]);
 
-  const isSubmitting = status === "sent" && !existingFeedback;
   const isQualityEligible = status === "eligible";
   const canSubmit = useMemo(() => {
     if (!isQualityEligible) return false;
     if (selectedQuality === "successful") return rating >= 1 && rating <= 5;
-    if (selectedQuality === "unsuccessful")
-      return Boolean(reason);
+    if (selectedQuality === "unsuccessful") return Boolean(reason);
     return false;
   }, [isQualityEligible, rating, reason, selectedQuality]);
 
   async function submitFeedback() {
-    if (!canSubmit || isSubmitting || existingFeedback || !readPayload?.sessionAttemptId) return;
+    if (
+      !canSubmit ||
+      isSubmitting ||
+      existingFeedback ||
+      !readPayload?.sessionAttemptId
+    )
+      return;
 
-    setStatus("sent");
+    setIsSubmitting(true);
     setErrorMessage(null);
     requestIdRef.current ??= crypto.randomUUID();
 
@@ -148,15 +160,22 @@ export function SessionFeedbackForm({
       setExistingFeedback(payload.data.feedback);
       setStatus("sent");
       const refreshed = await loadReadPayload(bookingId, actorRole);
-      if (refreshed) setReadPayload(refreshed);
-      onSubmitted?.(payload.data.feedback, refreshed);
+      const submittedPayload = {
+        ...(refreshed ?? readPayload),
+        feedback: payload.data.feedback,
+        status: "submitted" as const,
+      };
+      setReadPayload(submittedPayload);
+      onSubmitted?.(payload.data.feedback, submittedPayload);
     } catch (error) {
-      setStatus("error");
+      setStatus("eligible");
       setErrorMessage(
         error instanceof Error && error.message !== "feedback_submit_failed"
           ? error.message
           : "Não conseguimos registrar seu feedback. Tente novamente.",
       );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -280,32 +299,33 @@ export function SessionFeedbackForm({
           feedback={existingFeedback}
           bookingId={bookingId}
           payload={readPayload}
+          publicReviewTherapist={publicReviewTherapist}
           showJourneyThemes={showJourneyThemes}
         />
       ) : isQualityEligible ? (
         <div className="mt-6 grid gap-6">
           <fieldset>
-              <legend className="text-base font-extrabold text-brand-deep">
-                Essa sessão foi bem-sucedida?
-              </legend>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <OutcomeButton
-                  checked={selectedQuality === "successful"}
-                  label="Sim"
-                  onClick={() => {
-                    setSelectedQuality("successful");
-                    setReason("");
-                  }}
-                />
-                <OutcomeButton
-                  checked={selectedQuality === "unsuccessful"}
-                  label="Não"
-                  onClick={() => {
-                    setSelectedQuality("unsuccessful");
-                    setRating(0);
-                  }}
-                />
-              </div>
+            <legend className="text-base font-extrabold text-brand-deep">
+              Essa sessão foi bem-sucedida?
+            </legend>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <OutcomeButton
+                checked={selectedQuality === "successful"}
+                label="Sim"
+                onClick={() => {
+                  setSelectedQuality("successful");
+                  setReason("");
+                }}
+              />
+              <OutcomeButton
+                checked={selectedQuality === "unsuccessful"}
+                label="Não"
+                onClick={() => {
+                  setSelectedQuality("unsuccessful");
+                  setRating(0);
+                }}
+              />
+            </div>
           </fieldset>
 
           {selectedQuality === "successful" ? (
@@ -475,14 +495,21 @@ function FeedbackSentState({
   bookingId,
   feedback,
   payload,
+  publicReviewTherapist,
   showJourneyThemes,
 }: {
   actorRole: "patient" | "therapist";
   bookingId: string;
   feedback: SessionFeedbackRecord;
   payload: SessionFeedbackReadPayload | null;
+  publicReviewTherapist?: { id: string; name: string };
   showJourneyThemes: boolean;
 }) {
+  const [publicReviewOpen, setPublicReviewOpen] = useState(false);
+  const canReviewTherapist =
+    actorRole === "patient" &&
+    feedback.successful === true &&
+    Boolean(publicReviewTherapist);
   return (
     <div className="mt-6 grid gap-4 rounded-2xl border border-status-success/30 bg-status-successBg/60 p-5">
       <p className="flex items-center gap-2 text-base font-extrabold text-brand-deep">
@@ -518,16 +545,54 @@ function FeedbackSentState({
           </span>
         ) : null}
       </div>
+      {canReviewTherapist && publicReviewTherapist ? (
+        <div className="grid gap-4 border-t border-status-success/30 pt-4">
+          {publicReviewOpen ? (
+            <>
+              <PatientPublicReviewForm
+                therapistName={publicReviewTherapist.name}
+                therapistProfileId={publicReviewTherapist.id}
+              />
+              <TESButton
+                onClick={() => setPublicReviewOpen(false)}
+                type="button"
+                variant="secondary"
+              >
+                Voltar à resposta do encontro
+              </TESButton>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+                Se desejar, compartilhe uma avaliação pública sobre seu
+                terapeuta.
+              </p>
+              <TESButton
+                onClick={() => setPublicReviewOpen(true)}
+                type="button"
+                variant="secondary"
+              >
+                Avaliar terapeuta (opcional)
+              </TESButton>
+            </>
+          )}
+        </div>
+      ) : null}
       {showJourneyThemes &&
       actorRole === "therapist" &&
-      (feedback.successful === true || (feedback.successful === undefined && feedback.outcome === "completed")) ? (
+      (feedback.successful === true ||
+        (feedback.successful === undefined &&
+          feedback.outcome === "completed")) ? (
         <TherapistJourneyThemesForm bookingId={bookingId} />
       ) : null}
     </div>
   );
 }
 
-async function loadReadPayload(bookingId: string, actorRole: "patient" | "therapist") {
+async function loadReadPayload(
+  bookingId: string,
+  actorRole: "patient" | "therapist",
+) {
   try {
     const response = await fetch(
       `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}&actorRole=${actorRole}`,

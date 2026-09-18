@@ -201,6 +201,13 @@ anotação.
 
 ## Copy Safety
 
+- Pela ADR-024, a ação de avaliar depende de `sessionQuality.status ===
+"eligible"` e da ausência da resposta do próprio cliente. Uma resposta
+  persistida remove essa ação, independentemente de confirmações ou da resposta
+  do terapeuta. Qualidade privada não cria confirmação nem efeito financeiro.
+- A sala oferece `PatientPublicReviewForm` como etapa opcional e separada após
+  resposta privada positiva, usando o terapeuta do detalhe autorizado.
+
 - Regra vigente ADR-023: a presença do cliente no detalhe e na lista usa a
   evidência autenticada da tentativa atual, nunca uma participação antiga ou
   a presença do terapeuta. Após T+10 ultrapassado, a ausência é classificada

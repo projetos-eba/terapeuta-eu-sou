@@ -20,6 +20,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt,
   sessionTitle,
   showFeedback = false,
+  publicReviewTherapist,
   therapistPlan,
 }: {
   access: ZoomAccessState | null;
@@ -34,6 +35,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt: string;
   sessionTitle: string;
   showFeedback?: boolean;
+  publicReviewTherapist?: { id: string; name: string };
   therapistPlan?: TherapistPlan;
 }) {
   const audienceLabel = actorRole === "patient" ? "SEU ENCONTRO" : "SUA SESSÃO";
@@ -99,6 +101,7 @@ export function ZoomVideoCallPage({
           bookingId={bookingId}
           displayMode="dedicated"
           initialFeedback={showFeedback}
+          publicReviewTherapist={publicReviewTherapist}
           participantLabel={participantLabel}
           scheduleLabel={scheduleLabel}
           scheduledEndsAt={scheduledEndsAt}

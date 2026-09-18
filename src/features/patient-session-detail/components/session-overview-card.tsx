@@ -296,7 +296,9 @@ function HeroAction({
         {data.onlineSession.joinRecommendation}
       </p>
 
-      {showFeedback && canReviewFeedback(data.booking.status) ? (
+      {showFeedback &&
+      data.sessionQuality?.status === "eligible" &&
+      !data.sessionQuality.feedback ? (
         <Link
           className="inline-flex min-h-11 items-center justify-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={
@@ -472,17 +474,6 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     label: "Falar com suporte",
     variant: "secondary",
   };
-}
-
-function canReviewFeedback(
-  status: PatientSessionDetailPageData["booking"]["status"],
-) {
-  return (
-    status === BookingStatus.Completed ||
-    status === BookingStatus.NoShowPatient ||
-    status === BookingStatus.NoShowTherapist ||
-    status === BookingStatus.NoShowBoth
-  );
 }
 
 function getStatusTone(
