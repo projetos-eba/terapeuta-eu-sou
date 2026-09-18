@@ -32,6 +32,7 @@ type ZoomWaitingRoomProps = {
     | "operational_unavailable"
     | "therapist_absent_prolonged"
     | "therapist_no_show"
+    | "patient_no_show"
     | "both_no_show"
     | "not_performed"
     | "too_early"
@@ -97,7 +98,10 @@ export function ZoomWaitingRoom({
   const isTherapistNoShow = kind === "therapist_no_show";
   const isBothNoShow = kind === "both_no_show";
   const isAttendanceNoShow =
-    isTherapistNoShow || isBothNoShow || kind === "not_performed";
+    isTherapistNoShow ||
+    kind === "patient_no_show" ||
+    isBothNoShow ||
+    kind === "not_performed";
   const isEnded = kind === "ended";
   const hasCameraPreview = cameraPreviewEnabled;
   const hasAmbientAudio = Boolean(ambientAudioSrc);
@@ -301,26 +305,28 @@ export function ZoomWaitingRoom({
   const statusMessage =
     isTherapistNoShow && actorRole === "patient"
       ? "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte."
-      : isAttendanceNoShow
-        ? "Se precisar de ajuda, fale com o suporte."
-        : !isOnline
-          ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
-          : message ||
-            (kind === "arrival_expired"
-              ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
-              : kind === "schedule_ended"
-                ? "O horário deste encontro terminou e não permite nova entrada."
-                : isEnded
-                  ? "Este encontro foi encerrado e não permite nova entrada."
-                  : isTooEarly
-                    ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
-                    : kind === "waiting_therapist"
-                      ? actorRole === "patient"
-                        ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
-                        : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
-                      : isOperationalUnavailable
-                        ? "Não foi possível confirmar a disponibilidade da sala. Tente atualizar."
-                        : "Estamos confirmando a disponibilidade da sala.");
+      : kind === "patient_no_show" && actorRole === "therapist"
+        ? "O paciente não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte."
+        : isAttendanceNoShow
+          ? "Se precisar de ajuda, fale com o suporte."
+          : !isOnline
+            ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
+            : message ||
+              (kind === "arrival_expired"
+                ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
+                : kind === "schedule_ended"
+                  ? "O horário deste encontro terminou e não permite nova entrada."
+                  : isEnded
+                    ? "Este encontro foi encerrado e não permite nova entrada."
+                    : isTooEarly
+                      ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
+                      : kind === "waiting_therapist"
+                        ? actorRole === "patient"
+                          ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
+                          : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
+                        : isOperationalUnavailable
+                          ? "Não foi possível confirmar a disponibilidade da sala. Tente atualizar."
+                          : "Estamos confirmando a disponibilidade da sala.");
 
   return (
     <section

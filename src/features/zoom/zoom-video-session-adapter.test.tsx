@@ -312,7 +312,7 @@ describe("ZoomVideoSessionAdapter", () => {
             ? "Como foi seu encontro?"
             : "Como foi sua sessão?",
       });
-      fireEvent.click(screen.getByRole("button", { name: "Sim" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Sim" }));
       fireEvent.click(screen.getByRole("button", { name: "5 estrelas" }));
       fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
 

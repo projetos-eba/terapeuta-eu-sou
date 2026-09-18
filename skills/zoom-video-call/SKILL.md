@@ -45,6 +45,14 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Reutilizar `ZoomVideoCallPage` para a estrutura imersiva.
 - Reutilizar `ZoomVideoSessionAdapter` para preflight, espera, entrada,
   controles, reconexão e encerramento.
+- A sala dedicada do terapeuta observa a evidência de presença pelo endpoint
+  autenticado de feedback, sem escrever avaliações. Somente a classificação
+  `no_show_patient` do mesmo horário, com terapeuta pontual e cliente ausente,
+  desmonta a chamada e mostra a ausência do paciente na sala. Uma chegada
+  pontual do paciente na espera ou no vídeo interrompe essa observação e
+  preserva a reentrada. Erros de consulta não interrompem a mídia. O adapter
+  permanece responsável pela limpeza existente ao desmontar; não há mudança
+  no join host-first nem no formulário ao concluir uma sessão bilateral.
 - O cabeçalho da sala e o cartão da sala de espera exibem o ID completo da
   reserva logo abaixo do participante. A referência é o `bookingId` já
   autorizado pela rota e não é um identificador do provedor Zoom. No cartão
