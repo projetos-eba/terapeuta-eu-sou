@@ -7,7 +7,7 @@ import {
 import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
 import { PatientSessionQualityFeedback } from "./components/patient-session-quality-feedback";
-import { SessionChargeRecoveryCard } from "./components/session-charge-recovery-card";
+import { SessionChargeRecoveryModal } from "./components/session-charge-recovery-modal";
 import { PreparationCard } from "./components/preparation-card";
 import { QuickSupportCard } from "./components/quick-support-card";
 import { ReminderCard } from "./components/reminder-card";
@@ -48,7 +48,7 @@ export function PatientSessionDetailPage({
         }}
       />
       {data.paymentRecovery?.available ? (
-        <SessionChargeRecoveryCard
+        <SessionChargeRecoveryModal
           bookingId={data.booking.id}
           stripePublishableKey={stripePublishableKey}
         />

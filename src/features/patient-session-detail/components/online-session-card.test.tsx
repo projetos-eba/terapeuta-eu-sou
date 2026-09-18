@@ -242,6 +242,45 @@ describe("OnlineSessionCard", () => {
     ).toBeNull();
   });
 
+  it("shows an actionable message after a scheduled charge needs recovery", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.Confirmed,
+    });
+    data.booking.statusLabel = "Reservado";
+    data.paymentRecovery = {
+      available: true,
+      checkoutAvailable: false,
+      dueAt: "2026-08-01T13:00:00.000Z",
+      status: "requires_customer_action",
+    };
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Reservado")).toBeInTheDocument();
+    expect(screen.getByText("Pagamento não concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Confirme com o banco ou use outro cartão antes do horário do encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "O pagamento não foi concluído. Confirme com o banco ou use outro cartão antes do horário do encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Estamos confirmando o pagamento. O horário permanece em análise por enquanto.",
+      ),
+    ).toBeNull();
+  });
+
   it("shows a saved future slot as reserved until payment is confirmed", () => {
     const data = makeData({
       financialStatus: SessionFinancialStatus.Pending,
