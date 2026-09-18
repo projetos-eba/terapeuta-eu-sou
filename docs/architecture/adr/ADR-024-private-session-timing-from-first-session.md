@@ -3,7 +3,7 @@
 Data: 2026-09-18  
 Status: aceita; implantação corrigida pelas migrations
 `20260918103000_therapist_metrics_session_timing_v2.sql` e
-`20260918220000_restore_protected_therapy_distribution.sql`.
+`20260918223000_restore_protected_therapy_distribution.sql`.
 
 ## Contexto
 
