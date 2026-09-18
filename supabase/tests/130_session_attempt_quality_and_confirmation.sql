@@ -86,6 +86,9 @@ create temporary table financial_snapshot as
   union all select 'jobs',md5(string_agg(to_jsonb(job)::text,'' order by job.id)) from public.session_transfer_jobs job
   union all select 'transfers',md5(string_agg(to_jsonb(transfer)::text,'' order by transfer.id)) from public.stripe_transfers transfer;
 select set_config('request.jwt.claim.sub',(select patient_actor::text from quality_context order by id limit 1),true);
+select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','false',
+  'patient session remains pending before own private response');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'confirmationState','awaiting_both',
   'Transfer sent is not a participant confirmation');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'policy'->>'transferSafetyHours','0','retired safety gate stays retired');
@@ -97,6 +100,9 @@ select is((select result->'feedback'->>'successful' from positive_result),'true'
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'positive quality does not record a participant confirmation');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','positive quality is no longer offered again to its author');
+select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','true',
+  'own private response marks the patient encounter as realized without a public review');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'positive quality leaves internal confirmation untouched');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'positive quality does not affect the other participant confirmation');
 select is(
@@ -104,6 +110,10 @@ select is(
   'true',
   'positive private quality makes the optional public review available without confirmation'
 );
+select set_config('request.jwt.claim.sub',(select therapist_actor::text from quality_context order by id limit 1),true);
+select ok(exists(select 1 from public.therapist_pending_confirmation_rows_v1('c1000000-0000-4000-8000-000000000001')
+  where booking_id='b1300000-0000-4000-8000-000000000011'),
+  'therapist evaluation is pending before the own private response');
 create temporary table negative_result as select public.submit_session_quality_feedback_v1(
   (select therapist_actor from quality_context order by id limit 1),'b1300000-0000-4000-8000-000000000011',
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011'),false,null::smallint,'internet_problem','Teste privado.',
@@ -113,6 +123,12 @@ select is((select count(*)::integer from public.session_participant_confirmation
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'negative quality does not record participant confirmation');
 select set_config('request.jwt.claim.sub',(select therapist_actor::text from quality_context order by id limit 1),true);
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','negative quality is no longer offered again to its author');
+select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','true',
+  'own private quality response marks the therapist session as realized');
+select ok(not exists(select 1 from public.therapist_pending_confirmation_rows_v1('c1000000-0000-4000-8000-000000000001')
+  where booking_id='b1300000-0000-4000-8000-000000000011'),
+  'private therapist response removes the dashboard and reviews pending item');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'negative quality leaves internal confirmation untouched');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'negative quality does not affect the other participant confirmation');
 select is((select count(*)::integer from public.session_quality_reviews where session_attempt_id=
@@ -163,6 +179,9 @@ select pg_temp.prepare_attempt('b1300000-0000-4000-8000-000000000011',now()-inte
 select isnt(public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')::text,(select id::text from old_attempt),'effective reschedule creates a new attempt');
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->'feedback','null'::jsonb,'reschedule does not inherit quality');
 select is(public.get_session_quality_feedback_v1('b1300000-0000-4000-8000-000000000011')->>'confirmationState','awaiting_both','reschedule does not inherit confirmations');
+select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','false',
+  'rescheduled attempt does not inherit the prior realized badge');
 select throws_ok($$select public.submit_session_quality_feedback_v1((select patient_actor from quality_context order by id limit 1),
   'b1300000-0000-4000-8000-000000000011',(select id from old_attempt),true,5::smallint,null,'','f2000000-0000-4000-8000-000000000503')$$,
   '40001','FEEDBACK_ATTEMPT_CHANGED','stale API attempt rejected');

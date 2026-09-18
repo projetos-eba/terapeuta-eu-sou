@@ -84,9 +84,10 @@ histórica.
 
 - A página `/terapeuta/sessoes` usa o frame Figma `13366:2768`
   (`Page / Terapeuta Pro / Sessões`) como referência visual.
-- A tela lista apenas dados do `get_therapist_sessions_v1`; não cria booking,
-  não confirma pagamento, não cria sala Zoom e não executa transições
-  financeiras.
+- A tela lista sessões de `get_therapist_sessions_v1` e consulta apenas o estado
+  da tentativa atual do próprio terapeuta em
+  `get_session_attempt_attendance_batch_v1`; não cria booking, não confirma
+  pagamento, não cria sala Zoom e não executa transições financeiras.
 - Métricas, faixa de resumo, busca textual e exportação CSV são derivados dos
   itens carregados no read model da página.
 - A composição de Sessões usa o grid compartilhado `AppPage*`: cabeçalho aberto
@@ -109,6 +110,13 @@ histórica.
   `pastCursor*` e preservam busca, status e período.
 - O badge de estado `cancelled` usa o tom TES de perigo; estados
   `refunded` continuam visualmente diferenciados.
+- Uma sessão com presença bilateral e encerramento comprovados usa
+  `Avaliação pendente` enquanto faltar a resposta privada do próprio terapeuta.
+  Depois dessa resposta, ou da confirmação automática individual no dia 30,
+  usa `Realizada` mesmo que a confirmação operacional da outra pessoa ou o
+  service status financeiro continuem pendentes. A avaliação pública do
+  terapeuta não participa dessa apresentação. O cron de confirmação continua
+  independente da resposta privada.
 - Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
   detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
   autorização final continua por `zoom-video-session-access`.

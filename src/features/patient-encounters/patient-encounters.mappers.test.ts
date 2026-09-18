@@ -430,7 +430,7 @@ describe("patient encounters mapper", () => {
     );
   });
 
-  it("sends a pending confirmation to the corresponding encounter details", () => {
+  it("sends a pending evaluation to the corresponding encounter details", () => {
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000008",
       new Date(Date.now() - 3 * 60 * 60 * 1000),
@@ -458,6 +458,41 @@ describe("patient encounters mapper", () => {
       href: `/app/encontros/${booking.id}?feedback=1`,
       kind: "link",
       label: "Ver detalhes do encontro",
+    });
+    expect(result.historyEncounters[0]).toMatchObject({
+      status: "awaiting_feedback",
+      statusLabel: "Avaliação pendente",
+    });
+  });
+
+  it("shows the encounter as realized after the current patient responds", () => {
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000009",
+      new Date(Date.now() - 3 * 60 * 60 * 1000),
+    );
+
+    const result = mapPatientEncountersPage({
+      actorRealizedBookingIds: new Set([booking.id]),
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      pendingFeedbackBookingIds: new Set(),
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters[0]).toMatchObject({
+      status: "completed",
+      statusLabel: "Já realizada",
     });
   });
 

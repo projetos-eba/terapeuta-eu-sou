@@ -262,6 +262,12 @@ export function SessionFeedbackForm({
         </FeedbackInfoState>
       ) : null}
 
+      {status === "automatically_confirmed" ? (
+        <FeedbackInfoState>
+          {subjectEnded} e está registrado como realizado.
+        </FeedbackInfoState>
+      ) : null}
+
       {status === "waiting_for_participants" ? (
         <FeedbackInfoState>
           Ainda não há registro da entrada dos dois participantes. Quando{" "}

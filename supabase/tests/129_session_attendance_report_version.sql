@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/isolated-booking-window-local.inc
 select plan(10);
 create temporary view target_booking as select * from public.bookings
 where id = 'f2000000-0000-4000-8000-000000000002';
@@ -9,6 +10,8 @@ delete from public.booking_events where booking_id = (select id from target_book
 delete from public.session_feedback where booking_id = (select id from target_booking);
 delete from public.session_participant_confirmations where booking_id = (select id from target_booking);
 delete from public.session_confirmation_incidents where booking_id = (select id from target_booking);
+select pg_temp.isolate_booking_window((select id from target_booking),
+  now() - interval '21 minutes', now() - interval '1 minute');
 update public.bookings set starts_at = now() - interval '21 minutes', ends_at = now() - interval '1 minute',
   status = 'confirmed', payment_status = 'paid', meeting_provider = 'zoom' where id = (select id from target_booking);
 update public.session_payments set financial_status = 'paid' where booking_id = (select id from target_booking);
@@ -52,6 +55,8 @@ select set_config('request.jwt.claim.sub', (select therapist.user_id::text from 
   join public.therapist_profiles therapist on therapist.id = booking.therapist_profile_id), true);
 select is((select "attendanceStatus" from public.therapist_session_read_model_v1
   where "bookingId" = (select id from target_booking)), 'therapist_no_show', 'therapist read model exposes the classified current encounter');
+select pg_temp.isolate_booking_window((select id from target_booking),
+  '2040-01-16T21:00:00Z', '2040-01-16T21:20:00Z');
 update public.bookings set status = 'confirmed', starts_at = '2040-01-16T21:00:00Z', ends_at = '2040-01-16T21:20:00Z'
 where id = (select id from target_booking);
 select is((select "attendanceStatus" from public.therapist_session_read_model_v1

@@ -45,7 +45,7 @@ import { PendingNavigationLink } from "@/components/tes/pending-navigation-link"
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   buildNextSessionsHref,
-  getTherapistPendingConfirmationsSummary,
+  getTherapistActorSessionStates,
   getTherapistSessionsPage,
   parseTherapistSessionCursor,
   parseTherapistSessionFilters,
@@ -102,23 +102,18 @@ export default async function TherapistSessionsPage({
     periodPreset: undefined,
     periodStart: now,
   };
-  const [historyResult, upcomingResult, pendingConfirmationsResult] =
-    await Promise.all([
-      getTherapistSessionsPage({
-        accessToken: session.accessToken,
-        filters: historyFilters,
-        profileId: session.profileId,
-      }),
-      getTherapistSessionsPage({
-        accessToken: session.accessToken,
-        filters: upcomingFilters,
-        profileId: session.profileId,
-      }),
-      getTherapistPendingConfirmationsSummary({
-        accessToken: session.accessToken,
-        profileId: session.profileId,
-      }),
-    ]);
+  const [historyResult, upcomingResult] = await Promise.all([
+    getTherapistSessionsPage({
+      accessToken: session.accessToken,
+      filters: historyFilters,
+      profileId: session.profileId,
+    }),
+    getTherapistSessionsPage({
+      accessToken: session.accessToken,
+      filters: upcomingFilters,
+      profileId: session.profileId,
+    }),
+  ]);
   const readError =
     historyResult.status === "error"
       ? historyResult
@@ -152,11 +147,10 @@ export default async function TherapistSessionsPage({
     : null;
   const csvHref = allItems.length > 0 ? buildCsvDataHref(allItems) : "#";
   const hasActiveFilters = hasFilterState(parsedFilters.filters, searchQuery);
-  const pendingConfirmationIds = new Set(
-    pendingConfirmationsResult.status === "success"
-      ? pendingConfirmationsResult.data.pendingBookingIds
-      : [],
-  );
+  const actorSessionStates = await getTherapistActorSessionStates({
+    accessToken: session.accessToken,
+    bookingIds: allItems.map((item) => item.bookingId),
+  });
 
   return (
     <AppPageContainer className="gap-6">
@@ -224,7 +218,7 @@ export default async function TherapistSessionsPage({
                     { past: pastCursor, upcoming: upcomingCursor },
                   )}
                   page={upcomingData?.page ?? null}
-                  pendingConfirmationIds={pendingConfirmationIds}
+                  actorSessionStates={actorSessionStates}
                   title="Sessões que irão acontecer"
                 />
                 <SessionGroup
@@ -239,7 +233,7 @@ export default async function TherapistSessionsPage({
                     { past: pastCursor, upcoming: upcomingCursor },
                   )}
                   page={historyData?.page ?? null}
-                  pendingConfirmationIds={pendingConfirmationIds}
+                  actorSessionStates={actorSessionStates}
                   title="Sessões que já passaram"
                   id="pending-confirmations"
                 />
@@ -285,7 +279,7 @@ function SessionMetricsGrid({ metrics }: { metrics: SessionMetrics }) {
         value={metrics.completed}
       />
       <MetricCard
-        description="aguardando confirmação"
+        description="com atenção necessária"
         icon={<Clock4 aria-hidden="true" size={20} />}
         label="Pendentes"
         tone="warning"
@@ -478,11 +472,11 @@ function SelectField({
 }
 
 function SessionsTable({
+  actorSessionStates,
   items,
-  pendingConfirmationIds,
 }: {
+  actorSessionStates: ActorSessionStates;
   items: SessionReadModelItem[];
-  pendingConfirmationIds: ReadonlySet<string>;
 }) {
   return (
     <div className="hidden xl:block">
@@ -546,7 +540,10 @@ function SessionsTable({
                 </td>
                 <td className="px-2.5 py-4">
                   <StatusBadge
-                    confirmationPending={pendingConfirmationIds.has(
+                    actorRealized={actorSessionStates.realizedIds.has(
+                      booking.bookingId,
+                    )}
+                    feedbackPending={actorSessionStates.pendingFeedbackIds.has(
                       booking.bookingId,
                     )}
                     presentation={presentation}
@@ -574,11 +571,11 @@ function SessionsTable({
 }
 
 function SessionsMobileList({
+  actorSessionStates,
   items,
-  pendingConfirmationIds,
 }: {
+  actorSessionStates: ActorSessionStates;
   items: SessionReadModelItem[];
-  pendingConfirmationIds: ReadonlySet<string>;
 }) {
   return (
     <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
@@ -614,7 +611,10 @@ function SessionsMobileList({
                 </span>
               </span>
               <StatusBadge
-                confirmationPending={pendingConfirmationIds.has(
+                actorRealized={actorSessionStates.realizedIds.has(
+                  booking.bookingId,
+                )}
+                feedbackPending={actorSessionStates.pendingFeedbackIds.has(
                   booking.bookingId,
                 )}
                 presentation={presentation}
@@ -870,10 +870,12 @@ function SessionTimingBadge({
 }
 
 function StatusBadge({
-  confirmationPending,
+  actorRealized,
+  feedbackPending,
   presentation,
 }: {
-  confirmationPending?: boolean;
+  actorRealized?: boolean;
+  feedbackPending?: boolean;
   presentation: SessionPresentation;
 }) {
   const toneClasses = {
@@ -886,7 +888,8 @@ function StatusBadge({
 
   const { label, tone } = getTherapistSessionStatusBadge(
     presentation,
-    confirmationPending,
+    actorRealized,
+    feedbackPending,
   );
 
   return (
@@ -948,6 +951,10 @@ type SessionMetrics = {
   weekSessions: number;
 };
 
+type ActorSessionStates = Awaited<
+  ReturnType<typeof getTherapistActorSessionStates>
+>;
+
 const bookingStatusOptions = [
   { label: "Confirmadas", value: BookingStatus.Confirmed },
   { label: "Pagamento pendente", value: BookingStatus.PendingPayment },
@@ -972,15 +979,16 @@ const periodOptions = [
 ];
 
 function SessionGroup({
+  actorSessionStates,
   description,
   emptyMessage,
   items,
   nextHref,
   page,
-  pendingConfirmationIds,
   title,
   id,
 }: {
+  actorSessionStates: ActorSessionStates;
   description: string;
   emptyMessage: string;
   items: SessionReadModelItem[];
@@ -989,7 +997,6 @@ function SessionGroup({
     hasMore: boolean;
     nextCursor: TherapistSessionsCursor | null;
   } | null;
-  pendingConfirmationIds: ReadonlySet<string>;
   title: string;
   id?: string;
 }) {
@@ -1020,12 +1027,12 @@ function SessionGroup({
       {items.length > 0 ? (
         <>
           <SessionsMobileList
+            actorSessionStates={actorSessionStates}
             items={items}
-            pendingConfirmationIds={pendingConfirmationIds}
           />
           <SessionsTable
+            actorSessionStates={actorSessionStates}
             items={items}
-            pendingConfirmationIds={pendingConfirmationIds}
           />
         </>
       ) : (

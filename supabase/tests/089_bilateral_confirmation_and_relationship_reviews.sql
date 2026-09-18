@@ -1,7 +1,7 @@
 begin;
 \ir fixtures/attended-attempt-local.inc
 
-select plan(55);
+select plan(60);
 
 select is(
   (select patient_auto_confirmation_days from public.financial_policy_versions where is_active),
@@ -219,9 +219,40 @@ select is(
   0,
   'therapist remains unanswered before day thirty'
 );
+select set_config('request.jwt.claim.sub','90000000-0000-4000-8000-000000000001',true);
+select is(
+  public.get_session_quality_feedback_v1('b8000000-0000-4000-8000-000000000002')->>'status',
+  'automatically_confirmed',
+  'day-seven patient confirmation closes the own feedback prompt without a public review'
+);
+select is(
+  public.get_session_attempt_attendance_batch_v1(array['b8000000-0000-4000-8000-000000000002'::uuid])
+    #>> '{b8000000-0000-4000-8000-000000000002,actorRealized}',
+  'true',
+  'day-seven confirmation marks the patient encounter as realized'
+);
+select ok(
+  not exists (
+    select 1 from jsonb_array_elements(public.get_patient_session_feedback_queue_v1()) item
+    where item->>'bookingId' = 'b8000000-0000-4000-8000-000000000002'
+  ),
+  'automatic patient confirmation removes the private feedback prompt'
+);
+select set_config('request.jwt.claim.sub','90000000-0000-4000-8000-000000000011',true);
+select is(
+  public.get_session_attempt_attendance_batch_v1(array['b8000000-0000-4000-8000-000000000002'::uuid])
+    #>> '{b8000000-0000-4000-8000-000000000002,actorRealized}',
+  'false',
+  'patient deadline does not mark the therapist response as realized'
+);
 select ok(
   public.auto_confirm_sessions((select ends_at + interval '30 days' from public.bookings where id = 'b8000000-0000-4000-8000-000000000002')) >= 1,
   'day thirty creates only the missing therapist confirmation'
+);
+select is(
+  public.get_session_quality_feedback_v1('b8000000-0000-4000-8000-000000000002')->>'status',
+  'automatically_confirmed',
+  'day-thirty therapist confirmation closes the own feedback prompt'
 );
 select is(
   (select service_confirmed_at from public.session_payments where booking_id = 'b8000000-0000-4000-8000-000000000002'),
