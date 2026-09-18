@@ -51,8 +51,11 @@ describe("session charge recovery API", () => {
 
   it("forwards only the authenticated booking to the recovery function", async () => {
     mocks.invokeSupabaseFunction.mockResolvedValue({
-      clientSecret: "pi_bound_secret_test",
-      status: "requires_action",
+      ok: true,
+      data: {
+        clientSecret: "pi_bound_secret_test",
+        status: "requires_action",
+      },
     });
     const response = await POST(
       new Request("http://localhost/api/patient/session-charge-recovery", {
@@ -62,6 +65,13 @@ describe("session charge recovery API", () => {
       }),
     );
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ok: true,
+      data: {
+        clientSecret: "pi_bound_secret_test",
+        status: "requires_action",
+      },
+    });
     expect(mocks.invokeSupabaseFunction).toHaveBeenCalledWith(
       expect.any(Object),
       "prepare-session-charge-recovery",
@@ -91,6 +101,86 @@ describe("session charge recovery API", () => {
     expect(text).toContain("Não foi possível abrir");
     expect(text).not.toMatch(/Supabase|PaymentIntent|service_role/i);
   });
+
+  it("opens replacement-card recovery using the existing payment response", async () => {
+    mocks.invokeSupabaseFunction.mockResolvedValue({
+      ok: true,
+      data: {
+        clientSecret: "pi_bound_secret_test",
+        status: "requires_payment_method",
+        internalMetadata: "not-for-the-browser",
+      },
+      requestId: "not-for-the-browser",
+    });
+    const response = await POST(
+      new Request("http://localhost/api/patient/session-charge-recovery", {
+        body: JSON.stringify({ bookingId }),
+        method: "POST",
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual({
+      ok: true,
+      data: {
+        clientSecret: "pi_bound_secret_test",
+        status: "requires_payment_method",
+      },
+    });
+  });
+
+  it.each([
+    null,
+    [],
+    { clientSecret: "pi_bound_secret_test", status: "requires_action" },
+    {
+      ok: false,
+      data: { clientSecret: "pi_bound_secret_test", status: "requires_action" },
+    },
+    { ok: true, data: null },
+    { ok: true, data: [] },
+    {
+      ok: true,
+      data: {
+        ok: true,
+        data: {
+          clientSecret: "pi_bound_secret_test",
+          status: "requires_action",
+        },
+      },
+    },
+    { ok: true, data: { clientSecret: "", status: "requires_action" } },
+    { ok: true, data: { clientSecret: "   ", status: "requires_action" } },
+    { ok: true, data: { clientSecret: 123, status: "requires_action" } },
+    {
+      ok: true,
+      data: { clientSecret: "pi_bound_secret_test", status: "succeeded" },
+    },
+    {
+      ok: true,
+      data: { clientSecret: "pi_bound_secret_test", status: "processing" },
+    },
+  ])(
+    "rejects malformed or unavailable recovery responses without exposing them (%#)",
+    async (payload) => {
+      mocks.invokeSupabaseFunction.mockResolvedValue(payload);
+      const response = await POST(
+        new Request("http://localhost/api/patient/session-charge-recovery", {
+          body: JSON.stringify({ bookingId }),
+          method: "POST",
+        }),
+      );
+      expect(response.status).toBe(503);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      const body = await response.json();
+      expect(body.ok).toBe(false);
+      expect(body.data).toBeUndefined();
+      expect(JSON.stringify(body)).not.toContain("pi_bound_secret_test");
+      expect(body.error.message).toBe(
+        "Não foi possível abrir a confirmação do pagamento agora.",
+      );
+    },
+  );
 
   it("requires the patient session cookie", async () => {
     mocks.cookieGet.mockReturnValue(undefined);

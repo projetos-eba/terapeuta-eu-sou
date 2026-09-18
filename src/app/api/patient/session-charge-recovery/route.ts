@@ -29,13 +29,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = await invokeSupabaseFunction<{
-      clientSecret: string;
-      status: string;
-    }>(config, "prepare-session-charge-recovery", {
-      accessToken,
-      body: { bookingId },
-    });
+    const payload = await invokeSupabaseFunction<unknown>(
+      config,
+      "prepare-session-charge-recovery",
+      {
+        accessToken,
+        body: { bookingId },
+      },
+    );
+    const data = parseRecoveryResponse(payload);
+    if (!data) {
+      return failure(
+        "Não foi possível abrir a confirmação do pagamento agora.",
+        503,
+      );
+    }
     return NextResponse.json({ ok: true, data }, { headers: noStoreHeaders });
   } catch (error) {
     if (error instanceof SupabaseFunctionError) {
@@ -57,6 +65,22 @@ export async function POST(request: Request) {
       503,
     );
   }
+}
+
+function parseRecoveryResponse(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if (Reflect.get(value, "ok") !== true) return null;
+  const data: unknown = Reflect.get(value, "data");
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const clientSecret: unknown = Reflect.get(data, "clientSecret");
+  const status: unknown = Reflect.get(data, "status");
+  if (
+    typeof clientSecret !== "string" ||
+    !clientSecret.trim() ||
+    (status !== "requires_action" && status !== "requires_payment_method")
+  )
+    return null;
+  return { clientSecret, status };
 }
 
 function parseBookingId(value: unknown) {

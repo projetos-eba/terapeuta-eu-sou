@@ -53,6 +53,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   second PaymentIntent. No V10 cron is active. The local direct Transfer worker
   creates a source-linked obligation against the frozen Connect account and
   compensates existing therapist debt before it calls Stripe.
+  `prepare-session-charge-recovery` returns the shared `ApiSuccess<T>` envelope.
+  `invokeSupabaseFunction` does not unwrap it: the Next patient recovery route
+  must validate and extract its `data`, returning one envelope to the browser.
+  Contract tests must use the actual Function envelope, reject malformed or
+  non-recoverable responses, and never expose extra internal fields.
   A full debt offset creates no Stripe Transfer and must be projected to users
   as `Compensado`, with zero bank-bound net amount and no contribution to
   processing totals or status charts.
