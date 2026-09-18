@@ -77,7 +77,10 @@ export function PatientSessionDetailPage({
           }
         >
           <SessionAboutCard data={data} />
-          <SharedIntakeCard intake={data.intake} />
+          <SharedIntakeCard
+            sharedNote={data.intake.sharedNote}
+            visibility={data.intake.visibility}
+          />
           <OnlineSessionCard data={data} />
           <SessionActionCards data={data} />
           {showContextAside ? (

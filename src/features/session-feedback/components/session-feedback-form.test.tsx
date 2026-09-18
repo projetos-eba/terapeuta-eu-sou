@@ -92,9 +92,7 @@ describe("SessionFeedbackForm", () => {
       await screen.findByText("Sua avaliação foi registrada"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Sua participação foi confirmada. Obrigado por compartilhar como foi.",
-      ),
+      screen.getByText("Obrigado por compartilhar como foi."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/prazo de segurança/i)).not.toBeInTheDocument();
   });

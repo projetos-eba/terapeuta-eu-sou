@@ -107,7 +107,7 @@ update public.session_quality_reviews set opened_at=opened_at-interval '1 day',d
  where requester_profile_id=(select patient_actor from quality_context order by id limit 1);
 select public.auto_confirm_sessions(now()+interval '4 days');
 select is((select count(*)::integer from public.session_participant_confirmations where session_attempt_id=
- public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'one younger review pauses only automatic confirmations; both manual responses remain');
+ public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),2,'private quality reviews do not pause automatic confirmations');
 select set_config('request.jwt.claim.sub',(select patient_actor::text from quality_context order by id limit 1),true);
 set local role authenticated;
 select is((select count(*)::integer from public.session_quality_feedback),1,'RLS shows only own private quality response');

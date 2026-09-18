@@ -231,7 +231,7 @@ export function SessionFeedbackForm({
             size={18}
           />
           {readPayload?.attendance?.sessionClosed
-            ? "A avaliação ficará disponível quando a presença dos dois participantes estiver confirmada."
+            ? "A avaliação ficará disponível quando os registros de entrada dos dois participantes estiverem prontos."
             : `A avaliação ficará disponível depois do encerramento ${subjectWithPreposition}.`}
         </div>
       ) : null}
@@ -495,11 +495,11 @@ function FeedbackSentState({
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
         {payload?.qualityReview?.isOpen
           ? payload.qualityReview.overdue
-            ? "Sua participação foi confirmada. A equipe TES continua acompanhando seu relato pelo suporte."
-            : "Sua participação foi confirmada. A equipe TES responderá seu relato pelo suporte em até 5 dias corridos."
+            ? "A equipe TES continua acompanhando seu relato pelo suporte."
+            : "A equipe TES responderá seu relato pelo suporte em até 5 dias corridos."
           : payload?.qualityReview?.allAnswered
-            ? "Sua participação foi confirmada e a equipe TES respondeu aos relatos."
-            : "Sua participação foi confirmada. Obrigado por compartilhar como foi."}
+            ? "A equipe TES respondeu aos relatos enviados."
+            : "Obrigado por compartilhar como foi."}
       </p>
       <div className="flex flex-wrap gap-2 text-sm font-extrabold text-brand-deep">
         <span className="rounded-full bg-white px-3 py-2">
