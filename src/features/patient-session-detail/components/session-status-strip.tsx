@@ -62,7 +62,7 @@ export function SessionStatusStrip({
               ? "Seu horário está reservado para você."
               : encounterReserved
                 ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
-                : data.booking.statusLabel
+                : undefined
         }
         tone={encounterRealized || encounterConfirmed ? "success" : "neutral"}
         title={

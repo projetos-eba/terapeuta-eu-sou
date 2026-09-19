@@ -363,6 +363,13 @@ describe("OnlineSessionCard", () => {
 
     expect(screen.getByText("Reservado")).toBeInTheDocument();
     expect(screen.getByText("Encontro reservado")).toBeInTheDocument();
+    expect(screen.getByText("Sala segura")).toBeInTheDocument();
+    expect(screen.queryByText("Sala externa")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Este encontro não usa a sala Zoom autenticada. Siga as orientações exibidas para a videochamada.",
+      ),
+    ).toBeNull();
     expect(screen.queryByText("Encontro confirmado")).toBeNull();
   });
 
@@ -458,6 +465,22 @@ describe("OnlineSessionCard", () => {
     expect(screen.getAllByText("Sessão não realizada")).not.toHaveLength(0);
     expect(screen.queryByText("Encontro reservado")).toBeNull();
     expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
+  });
+
+  it("does not repeat the not-performed status as its own supporting text", () => {
+    const data = makeData({
+      canJoin: false,
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.NoShowBoth,
+    });
+    data.booking.statusLabel = "Sessão não realizada";
+
+    render(<SessionStatusStrip data={data} />);
+
+    expect(screen.getAllByText("Sessão não realizada")).toHaveLength(2);
+    expect(
+      screen.getByText("Se precisar de ajuda, fale com o suporte."),
+    ).toBeInTheDocument();
   });
 });
 
