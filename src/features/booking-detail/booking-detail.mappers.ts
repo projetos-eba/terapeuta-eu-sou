@@ -169,13 +169,16 @@ export function mapBookingDetail(
     startsAt: input.booking.starts_at,
     status: input.booking.status,
   });
-  const provider = getMeetingProvider(input.booking.meeting_provider);
   const isReservedAwaitingPayment =
     input.sessionPayment?.payment_flow_version === "v10" &&
     input.booking.status === "confirmed" &&
     (input.sessionPayment.financial_status === SessionFinancialStatus.Pending ||
       input.sessionPayment.financial_status ===
         SessionFinancialStatus.Processing);
+  const provider = getMeetingProvider(
+    input.booking.meeting_provider ??
+      (isReservedAwaitingPayment ? "zoom_video_sdk" : null),
+  );
   const canJoin =
     status === "live" &&
     input.sessionPayment?.financial_status === SessionFinancialStatus.Paid &&

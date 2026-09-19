@@ -111,6 +111,11 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Entry link is active only when the booking is paid, confirmed and inside the
   allowed join window. Do not select or expose `meeting_url` in patient lists;
   Zoom access must be requested from the detail page via authenticated backend.
+- In the encounter detail, a V10 reservation awaiting its scheduled charge can
+  have no `meeting_provider` until the Zoom session is provisioned. Present that
+  state as the future authenticated Zoom room without enabling entry before
+  payment. Preserve an explicitly configured external provider. Do not repeat a
+  status label as the supporting text of the same status item.
 - `bookings.starts_at` e `ends_at` são instantes UTC. Cada registro deve manter
   e usar `bookings.timezone` para formatar data e hora; nunca depender do
   timezone do servidor ou do navegador para a agenda apresentada.
