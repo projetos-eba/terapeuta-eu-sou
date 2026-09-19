@@ -66,6 +66,28 @@ describe("OnlineSessionCard", () => {
     );
   });
 
+  it.each([
+    BookingStatus.NoShowPatient,
+    BookingStatus.NoShowTherapist,
+    BookingStatus.NoShowBoth,
+  ])("shows ended access for a not-performed session %s", (status) => {
+    render(
+      <OnlineSessionCard
+        data={makeData({
+          canJoin: false,
+          financialStatus: SessionFinancialStatus.Paid,
+          status,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Acesso encerrado")).toBeInTheDocument();
+    expect(screen.queryByText("Acesso ainda não liberado")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Entrar no encontro" }),
+    ).toBeNull();
+  });
+
   it("does not expose raw meeting URLs for external providers", () => {
     render(
       <OnlineSessionCard
@@ -433,9 +455,7 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(screen.getByText("Pagamento confirmado")).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Sessão não realizada"),
-    ).not.toHaveLength(0);
+    expect(screen.getAllByText("Sessão não realizada")).not.toHaveLength(0);
     expect(screen.queryByText("Encontro reservado")).toBeNull();
     expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
   });

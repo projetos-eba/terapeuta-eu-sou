@@ -379,8 +379,19 @@ export function isSessionUpcoming(
   return state !== "cancelled" && state !== "completed" && state !== "refunded";
 }
 
-export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
+export function getZoomAccessLabel(
+  access: SessionReadModelItem["zoomAccess"],
+  bookingStatus?: SessionReadModelItem["bookingStatus"],
+) {
   if (access.allowed) return "Entrar na sessão";
+
+  if (
+    bookingStatus === BookingStatus.NoShowPatient ||
+    bookingStatus === BookingStatus.NoShowTherapist ||
+    bookingStatus === BookingStatus.NoShowBoth
+  ) {
+    return "Sessão não realizada";
+  }
 
   const labels = {
     [ZoomAccessReason.BookingCancelled]: "Sessão cancelada",
