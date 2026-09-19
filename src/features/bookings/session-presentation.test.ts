@@ -13,6 +13,7 @@ import {
 
 import type { SessionReadModelItem } from "./session-read-model.types";
 import {
+  getZoomAccessLabel,
   getSessionOperationDisabledReason,
   isSessionUpcoming,
   mapSessionPresentation,
@@ -21,6 +22,43 @@ import {
 const now = new Date("2026-07-26T13:00:00.000Z");
 
 describe("mapSessionPresentation", () => {
+  it.each([
+    BookingStatus.NoShowPatient,
+    BookingStatus.NoShowTherapist,
+    BookingStatus.NoShowBoth,
+  ])(
+    "labels the closed room as not performed for attendance status %s",
+    (bookingStatus) => {
+      expect(
+        getZoomAccessLabel(
+          {
+            allowed: false,
+            availableFrom: null,
+            availableUntil: null,
+            reason: ZoomAccessReason.BookingCancelled,
+            videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+          },
+          bookingStatus,
+        ),
+      ).toBe("Sessão não realizada");
+    },
+  );
+
+  it("preserves the cancelled room label for a cancelled booking", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: false,
+          availableFrom: null,
+          availableUntil: null,
+          reason: ZoomAccessReason.BookingCancelled,
+          videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+        },
+        BookingStatus.CancelledByPatient,
+      ),
+    ).toBe("Sessão cancelada");
+  });
+
   it("presents a confirmed slot awaiting payment as reserved", () => {
     const result = mapSessionPresentation(
       sessionFixture({
@@ -155,19 +193,10 @@ describe("mapSessionPresentation", () => {
   });
 
   it.each([
-    [
-      AttendanceStatus.PatientNoShow,
-      "Sessão não realizada",
-    ],
-    [
-      AttendanceStatus.TherapistNoShow,
-      "Sessão não realizada",
-    ],
+    [AttendanceStatus.PatientNoShow, "Sessão não realizada"],
+    [AttendanceStatus.TherapistNoShow, "Sessão não realizada"],
     [AttendanceStatus.BothNoShow, "Sessão não realizada"],
-    [
-      AttendanceStatus.RequiresReview,
-      "Sessão não realizada",
-    ],
+    [AttendanceStatus.RequiresReview, "Sessão não realizada"],
   ])(
     "presents the authoritative attendance outcome %s",
     (attendanceStatus, label) => {

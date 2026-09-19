@@ -254,7 +254,10 @@ function SessionOverview({
               icon={Video}
               label="Sala"
               supporting="Videoconferência"
-              value={getZoomAccessLabel(booking.zoomAccess)}
+              value={getZoomAccessLabel(
+                booking.zoomAccess,
+                booking.bookingStatus,
+              )}
             />
           </dl>
 
@@ -348,7 +351,7 @@ function SessionStatusStrip({
             ? "Sala encerrada"
             : sessionEnded
               ? "Horário encerrado"
-              : getZoomAccessLabel(booking.zoomAccess)
+              : getZoomAccessLabel(booking.zoomAccess, booking.bookingStatus)
         }
       />
       <StatusStripItem
