@@ -1,6 +1,6 @@
 begin;
 
-select plan(111);
+select plan(118);
 
 select ok(
   has_function_privilege(
@@ -996,28 +996,27 @@ select is(
   public.begin_session_payment_retry_v10(
     'b1150000-0000-4000-8000-000000000014'
   ) ->> 'allowed',
-  'true',
-  'a V10 payment retry atomically reopens an expired checkout booking'
+  'false',
+  'a closed scheduled charge cannot fall back to the initial Checkout retry'
 );
 select is(
   (select status::text from public.bookings
    where id = 'b1150000-0000-4000-8000-000000000014'),
-  'pending_payment',
-  'the retry restores the booking payment state without confirming the session'
+  'cancelled_by_payment',
+  'preparing a retry leaves the released booking unoccupied'
 );
 select is(
   (select financial_status::text from public.session_payments
    where booking_id = 'b1150000-0000-4000-8000-000000000014'),
-  'pending',
-  'the retry restores only the canonical pending financial state'
+  'failed',
+  'preparing a retry preserves the terminal payment until Stripe confirms it'
 );
 select is(
-  public.prepare_session_payment_v10(
-    'b1150000-0000-4000-8000-000000000014',
-    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
-  ) ->> 'paymentFlowVersion',
-  'v10',
-  'the reopened booking can create a replacement V10 Checkout session'
+  public.begin_session_payment_retry_v10(
+    'b1150000-0000-4000-8000-000000000014'
+  ) ->> 'reason',
+  'booking_not_retryable',
+  'the setup-backed payment stays outside the expired Checkout retry path'
 );
 
 select lives_ok(
@@ -1071,16 +1070,57 @@ select is(
 select is(
   public.begin_session_payment_retry_v10(
     'b1150000-0000-4000-8000-000000000015'
-  ) ->> 'allowed',
-  'true',
-  'the same V10 booking can start a replacement payment attempt'
+  ) ->> 'reason',
+  'retry_ready',
+  'the same V10 booking can prepare a replacement payment attempt'
 );
 select is(
-  public.begin_session_payment_retry_v10(
-    'b1150000-0000-4000-8000-000000000015'
+  public.commit_session_payment_retry_checkout_v10(
+    p_session_payment_id => (
+      select id from public.session_payments
+      where booking_id = 'b1150000-0000-4000-8000-000000000015'
+    ),
+    p_booking_version => (
+      select version from public.bookings
+      where id = 'b1150000-0000-4000-8000-000000000015'
+    ),
+    p_stripe_environment => 'test',
+    p_expected_checkout_session_id => 'cs_test_v10_115_expired',
+    p_new_checkout_session_id => 'cs_test_v10_115_retry',
+    p_original_amount_cents => 17000,
+    p_discount_amount_cents => 0,
+    p_total_amount_cents => 17000,
+    p_checkout_timing => 'scheduled',
+    p_attempt_idempotency_key => 'tes:v10:attempt:115:retry',
+    p_request_metadata => '{"checkout_mode":"payment_retry"}'::jsonb,
+    p_response_metadata => '{"totalAmountCents":17000}'::jsonb
+  ) ->> 'applied',
+  'true',
+  'the replacement Checkout and its attempt are committed atomically'
+);
+select is(
+  public.commit_session_payment_retry_checkout_v10(
+    p_session_payment_id => (
+      select id from public.session_payments
+      where booking_id = 'b1150000-0000-4000-8000-000000000015'
+    ),
+    p_booking_version => (
+      select version from public.bookings
+      where id = 'b1150000-0000-4000-8000-000000000015'
+    ),
+    p_stripe_environment => 'test',
+    p_expected_checkout_session_id => 'cs_test_v10_115_expired',
+    p_new_checkout_session_id => 'cs_test_v10_115_retry',
+    p_original_amount_cents => 17000,
+    p_discount_amount_cents => 0,
+    p_total_amount_cents => 17000,
+    p_checkout_timing => 'scheduled',
+    p_attempt_idempotency_key => 'tes:v10:attempt:115:retry',
+    p_request_metadata => '{"checkout_mode":"payment_retry"}'::jsonb,
+    p_response_metadata => '{"totalAmountCents":17000}'::jsonb
   ) ->> 'reason',
-  'retry_already_started',
-  'a failure before persisting the replacement remains safely retryable'
+  'already_committed',
+  'replaying the same commit is idempotent'
 );
 set local role authenticated;
 select set_config(
@@ -1096,20 +1136,77 @@ select is(
     'b1150000-0000-4000-8000-000000000015'
   ) ->> 'canRetry',
   'true',
-  'the patient can resume after a failure before the replacement is persisted'
+  'the authenticated retry remains recoverable while its Checkout is open'
 );
 reset role;
 select is(
   (select status::text from public.bookings
    where id = 'b1150000-0000-4000-8000-000000000015'),
+  'cancelled_by_payment',
+  'persisting the replacement does not occupy the released slot'
+);
+select is(
+  (select financial_status::text from public.session_payments
+   where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+  'canceled',
+  'persisting the replacement preserves the terminal payment state'
+);
+select is(
+  public.claim_session_payment_setup_retry_v10(
+    (select id from public.session_payments
+     where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+    (select version from public.bookings
+     where id = 'b1150000-0000-4000-8000-000000000015'),
+    'cs_test_v10_115_retry',
+    'evt_test_v10_115_retry_claim',
+    now()
+  ) ->> 'claimed',
+  'true',
+  'a successful Stripe setup claims the slot atomically'
+);
+select is(
+  (select status::text from public.bookings
+   where id = 'b1150000-0000-4000-8000-000000000015'),
   'pending_payment',
-  'the replacement attempt restores the booking without a new initial hold'
+  'the provider-backed claim reopens the booking'
 );
 select is(
   (select financial_status::text from public.session_payments
    where booking_id = 'b1150000-0000-4000-8000-000000000015'),
   'pending',
-  'the replacement attempt restores only the pending financial state'
+  'the provider-backed claim restores the pending payment'
+);
+select is(
+  public.complete_session_payment_setup_v10(
+    (select id from public.session_payments
+     where booking_id = 'b1150000-0000-4000-8000-000000000015'),
+    (select version from public.bookings
+     where id = 'b1150000-0000-4000-8000-000000000015'),
+    'test',
+    'cs_test_v10_115_retry',
+    'cus_test_v10_115_1',
+    'seti_test_v10_115_retry',
+    'pm_card_visa_115_retry',
+    'tes-session-off-session-consent-v1',
+    'evt_test_v10_115_retry_complete',
+    now()
+  ) ->> 'status',
+  'scheduled',
+  'the claimed retry schedules the existing V10 payment normally'
+);
+select is(
+  (select status::text from public.bookings
+   where id = 'b1150000-0000-4000-8000-000000000015'),
+  'confirmed',
+  'the booking is confirmed only after the provider-backed setup completes'
+);
+select is(
+  (select count(*)::integer
+   from public.session_payment_schedules
+   where booking_id = 'b1150000-0000-4000-8000-000000000015'
+     and status = 'scheduled'),
+  1,
+  'the retry creates exactly one active charge schedule'
 );
 
 select * from finish();

@@ -87,6 +87,8 @@ function startFunctions(secret) {
       cwd: root,
       env: {
         ...process.env,
+        STRIPE_CONNECT_V2_WEBHOOK_SECRET: secret,
+        STRIPE_CONNECT_WEBHOOK_SECRET: secret,
         STRIPE_WEBHOOK_SECRET: secret,
         STRIPE_PLATFORM_WEBHOOK_SECRET: secret,
         TES_FINANCE_TEST_CONTROLS_ENABLED: "true",

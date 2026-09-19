@@ -249,7 +249,13 @@ async function handleEvent(
       );
       return "processed";
     case "charge.refunded":
-      await handleChargeRefunded(client, stripe, dataObject, eventId, eventTime);
+      await handleChargeRefunded(
+        client,
+        stripe,
+        dataObject,
+        eventId,
+        eventTime,
+      );
       return "processed";
     case "refund.created":
     case "refund.updated":
@@ -535,8 +541,28 @@ async function handleSessionPaymentSetupCheckout(
     throw new Error("session_payment_setup_intent_invalid");
   }
 
+  let effectiveBookingVersion = bookingVersion;
+  if (input.metadata.tes_checkout_mode === "payment_retry") {
+    const retryClaim = await client.rpc<{
+      bookingVersion?: number;
+      claimed?: boolean;
+      reason?: string;
+    }>("claim_session_payment_setup_retry_v10", {
+      p_booking_version: bookingVersion,
+      p_session_payment_id: input.sessionPaymentId,
+      p_stripe_checkout_session_id: checkoutSessionId,
+      p_stripe_event_created_at: input.eventTime,
+      p_stripe_event_id: input.eventId,
+    });
+    if (!retryClaim.claimed || !retryClaim.bookingVersion) {
+      await updateAttemptStatus(client, checkoutSessionId, "slot_conflict");
+      return;
+    }
+    effectiveBookingVersion = retryClaim.bookingVersion;
+  }
+
   await client.rpc("complete_session_payment_setup_v10", {
-    p_booking_version: bookingVersion,
+    p_booking_version: effectiveBookingVersion,
     p_consent_version: String(input.metadata.tes_consent_version ?? ""),
     p_session_payment_id: input.sessionPaymentId,
     p_stripe_checkout_session_id: checkoutSessionId,
@@ -1200,7 +1226,9 @@ async function handleChargeRefunded(
   const paymentIntentId = stringOrNull(charge.payment_intent);
   if (!paymentIntentId) return;
 
-  const rows = await client.get<Array<{ id: string; payment_flow_version: string }>>(
+  const rows = await client.get<
+    Array<{ id: string; payment_flow_version: string }>
+  >(
     `/rest/v1/session_payments?select=id,payment_flow_version&stripe_payment_intent_id=eq.${encodeURIComponent(
       paymentIntentId,
     )}&limit=1`,
@@ -1210,7 +1238,10 @@ async function handleChargeRefunded(
   if (rows[0].payment_flow_version === "v10") {
     const chargeId = stringOrNull(charge.id);
     if (!chargeId) return;
-    for await (const refund of stripe.refunds.list({ charge: chargeId, limit: 100 })) {
+    for await (const refund of stripe.refunds.list({
+      charge: chargeId,
+      limit: 100,
+    })) {
       await client.rpc("reconcile_session_refund_event_v10", {
         p_amount_cents: refund.amount,
         p_currency: refund.currency,
@@ -1261,8 +1292,14 @@ async function handleRefundEvent(
     ? `stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntentId)}`
     : `stripe_charge_id=eq.${encodeURIComponent(chargeId ?? "")}`;
   const [payment] = await client.get<
-    Array<{ gross_amount_cents: number; id: string; payment_flow_version: string }>
-  >(`/rest/v1/session_payments?select=id,gross_amount_cents,payment_flow_version&${filter}&limit=1`);
+    Array<{
+      gross_amount_cents: number;
+      id: string;
+      payment_flow_version: string;
+    }>
+  >(
+    `/rest/v1/session_payments?select=id,gross_amount_cents,payment_flow_version&${filter}&limit=1`,
+  );
 
   if (!payment) return;
 
@@ -1483,13 +1520,19 @@ async function handleTransferEvent(
       `/rest/v1/therapist_connect_accounts?select=stripe_account_id&id=eq.${encodeURIComponent(localTransfer.connect_account_id)}&limit=1`,
     );
     const providerTransfer = await stripe.transfers.retrieve(transferId);
-    if (!account || providerTransfer.amount !== localTransfer.amount_cents ||
+    if (
+      !account ||
+      providerTransfer.amount !== localTransfer.amount_cents ||
       providerTransfer.currency.toUpperCase() !== "BRL" ||
       providerTransfer.destination !== account.stripe_account_id ||
-      providerTransfer.source_transaction !== localTransfer.stripe_source_charge_id) {
+      providerTransfer.source_transaction !==
+        localTransfer.stripe_source_charge_id
+    ) {
       throw new Error("V10_TRANSFER_PROVIDER_BINDING_MISMATCH");
     }
-    for await (const reversal of stripe.transfers.listReversals(transferId, { limit: 100 })) {
+    for await (const reversal of stripe.transfers.listReversals(transferId, {
+      limit: 100,
+    })) {
       await client.rpc("reconcile_session_transfer_reversal_v10", {
         p_amount_cents: reversal.amount,
         p_currency: reversal.currency,

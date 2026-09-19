@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(18);
 
 select ok(
   to_regprocedure('public.private_therapist_charge_status_v3(uuid)') is not null,
@@ -29,6 +29,15 @@ select is(
    where oid = 'public.private_therapist_charge_status_v3(uuid)'::regprocedure),
   's',
   'the charge-language projection is declared stable and read-only'
+);
+select ok(
+  pg_get_functiondef(
+    'public.private_therapist_charge_status_v3(uuid)'::regprocedure
+  ) like '%else ''under_review''%'
+  and pg_get_functiondef(
+    'public.private_therapist_charge_status_v3(uuid)'::regprocedure
+  ) not like '%else ''processing''%',
+  'an unknown pending state cannot fabricate money in processing'
 );
 select is(
   (select provolatile::text from pg_proc

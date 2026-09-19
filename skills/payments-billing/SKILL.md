@@ -142,11 +142,16 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - An expired V10 Checkout retry must honor the explicit `payment_retry` mode;
   never infer an initial hold merely because the booking was already reopened.
   Replacing the terminal current Checkout is allowed only through the
-  idempotent V10 retry command. If that command reopened the booking before a
-  provider or persistence failure, a repeated call may resume only while the
-  current attempt is terminal and unclaimed and no succeeded setup, active
-  schedule, PaymentIntent, Charge, transfer job or Transfer exists. The
-  authenticated retry page must require the server-derived `canRetry` flag.
+  idempotent V10 retry command. Preparation is read-only; after Stripe creates
+  the replacement, one database transaction swaps the current Checkout and
+  persists the `payment_retry` attempt while the booking remains released.
+  While that retry Checkout is still open, reloads must retrieve and reuse the
+  persisted Stripe session instead of creating a sibling attempt or replacing
+  its authority.
+  Only the signed provider authorization/setup may reclaim the slot. A
+  repeated request may resume only while no succeeded setup, active schedule,
+  PaymentIntent, Charge, transfer job or Transfer exists. The authenticated
+  retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
@@ -159,8 +164,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `cancel_unstarted_initial_checkout_v1`; maintenance also sweeps expired
   bootstrap orphans. Never cancel when a Checkout Session is already persisted.
 - `cancelled_by_payment -> pending_payment` is forbidden to RLS, direct SQL and
-  generic booking commands; only `claim_session_payment_authorization_v1` may
-  reopen it. Superseded attempts never release or confirm the current one.
+  generic booking commands; only the provider-backed claim commands
+  `claim_session_payment_authorization_v1` and
+  `claim_session_payment_setup_retry_v10` may reopen it. Superseded attempts
+  never release or confirm the current one.
 - Subscription plan comes from the effective Stripe Price mapping.
 - Paid catalog Prices are monthly only. Public catalog reads require
   `is_public=true`; hidden offers require a server-resolved `offer_key` and

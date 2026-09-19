@@ -32,6 +32,18 @@ export function requiresLegacyRetryPreflight(input: {
   return input.mode === "payment_retry" && input.paymentFlowVersion !== "v10";
 }
 
+export function shouldReusePersistedPaymentRetryCheckout(input: {
+  checkoutSessionId?: string | null;
+  mode: ReservationCheckoutMode;
+  retryReason?: string | null;
+}) {
+  return (
+    input.mode === "payment_retry" &&
+    input.retryReason === "checkout_already_created" &&
+    Boolean(input.checkoutSessionId)
+  );
+}
+
 function requireReservationCheckoutMode(
   value: string,
 ): ReservationCheckoutMode {
