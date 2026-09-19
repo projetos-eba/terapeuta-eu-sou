@@ -59,6 +59,58 @@ describe("mapSessionPresentation", () => {
     ).toBe("Sessão cancelada");
   });
 
+  it.each([
+    BookingStatus.CancelledByPatient,
+    BookingStatus.CancelledByTherapist,
+    BookingStatus.CancelledByPayment,
+  ])(
+    "does not describe a cancelled session as awaiting payment for %s",
+    (bookingStatus) => {
+      expect(
+        getZoomAccessLabel(
+          {
+            allowed: false,
+            availableFrom: null,
+            availableUntil: null,
+            reason: ZoomAccessReason.PaymentNotConfirmed,
+            videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+          },
+          bookingStatus,
+        ),
+      ).toBe("Sessão cancelada");
+    },
+  );
+
+  it("keeps the room awaiting payment for an active unpaid session", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: false,
+          availableFrom: null,
+          availableUntil: null,
+          reason: ZoomAccessReason.PaymentNotConfirmed,
+          videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+        },
+        BookingStatus.Confirmed,
+      ),
+    ).toBe("Aguardando pagamento");
+  });
+
+  it("does not offer entry when a stale access snapshot accompanies a cancelled booking", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: true,
+          availableFrom: null,
+          availableUntil: null,
+          reason: null,
+          videoSessionStatus: ZoomVideoSessionStatus.Ready,
+        },
+        BookingStatus.CancelledByPayment,
+      ),
+    ).toBe("Sessão cancelada");
+  });
+
   it("presents a confirmed slot awaiting payment as reserved", () => {
     const result = mapSessionPresentation(
       sessionFixture({
