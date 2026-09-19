@@ -391,7 +391,7 @@ function getPrimaryAction(
     return {
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Ver reembolso",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -407,7 +407,7 @@ function getPrimaryAction(
     return {
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Ver reembolso",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -436,7 +436,7 @@ function getStatusLabel(status: PatientEncounterStatus) {
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
     awaiting_feedback: "Avaliação pendente",
-    completed: "Já realizada",
+    completed: "Sessão Realizada",
     not_performed: "Sessão não realizada",
     refunded: "Reembolsado",
     confirmed: "Confirmada",

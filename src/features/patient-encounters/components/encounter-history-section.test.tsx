@@ -103,7 +103,7 @@ function createEncounter(id: string): PatientEncounter {
     serviceLabel: "Reiki",
     startsAt: "2026-08-14T11:00:00.000Z",
     status: "completed",
-    statusLabel: "Já realizada",
+    statusLabel: "Sessão Realizada",
     summaryId: null,
     therapist: {
       avatarUrl: null,

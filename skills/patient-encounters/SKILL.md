@@ -83,10 +83,10 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
   paginates the history in groups of ten through the existing `/app/encontros`
   route using `historyPage`; the pagination controls must remain outside the
   scroll region and preserve the history anchor. Completed encounters use the
-  green status badge `Já realizada`. An ended, eligible encounter without the
+  green status badge `Sessão Realizada`. An ended, eligible encounter without the
   client's own response uses `Avaliação pendente`. After the client's private
   response or its independent seven-day automatic confirmation, the current
-  attempt shows `Já realizada` without requiring a public therapist review or
+  attempt shows `Sessão Realizada` without requiring a public therapist review or
   a financial service-status change. Revalidate bilateral presence and closure;
   a cancelled or absent encounter cannot become realized from stale feedback.
 - The next encounter may use one tokenized accent surface because it groups the

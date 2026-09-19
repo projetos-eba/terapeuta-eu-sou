@@ -364,7 +364,7 @@ describe("patient encounters mapper", () => {
     expect(secondPage.historyPagination.page).toBe(2);
   });
 
-  it("labels a completed encounter as already performed", () => {
+  it("labels a completed encounter as a realized session", () => {
     const booking = {
       ...createBooking(
         "95000000-0000-4000-8000-000000000009",
@@ -390,14 +390,14 @@ describe("patient encounters mapper", () => {
     });
 
     expect(result.historyEncounters[0]?.status).toBe("completed");
-    expect(result.historyEncounters[0]?.statusLabel).toBe("Já realizada");
+    expect(result.historyEncounters[0]?.statusLabel).toBe("Sessão Realizada");
     expect(result.historyEncounters[0]?.primaryAction).toMatchObject({
       href: `/app/encontros/${booking.id}`,
       label: "Ver detalhes do encontro",
     });
   });
 
-  it("keeps cancelled encounters in history with refund-oriented action", () => {
+  it("keeps cancelled encounters in history with a details action", () => {
     const booking = {
       ...createBooking(
         "95000000-0000-4000-8000-000000000004",
@@ -427,7 +427,48 @@ describe("patient encounters mapper", () => {
     expect(result.historyEncounters).toHaveLength(1);
     expect(result.historyEncounters[0]?.status).toBe("cancelled");
     expect(result.historyEncounters[0]?.primaryAction.label).toBe(
-      "Ver reembolso",
+      "Ver detalhes do encontro",
+    );
+    expect(getEncounterGuidance(result.historyEncounters[0])).toBe(
+      "Este encontro foi cancelado. Consulte os detalhes da sessão.",
+    );
+  });
+
+  it("keeps a cancellation without a charge linked to encounter details", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000015",
+        new Date(Date.now() - 72 * 60 * 60 * 1000),
+      ),
+      cancelled_at: new Date(Date.now() - 70 * 60 * 60 * 1000).toISOString(),
+      status: "cancelled_by_patient",
+    };
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map(),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters[0]).toMatchObject({
+      status: "cancelled",
+      statusLabel: "Encontro cancelado",
+      primaryAction: {
+        href: `/app/encontros/${booking.id}`,
+        label: "Ver detalhes do encontro",
+      },
+    });
+    expect(getEncounterGuidance(result.historyEncounters[0])).toBe(
+      "Este encontro foi cancelado. Consulte os detalhes da sessão.",
     );
   });
 
@@ -539,7 +580,7 @@ describe("patient encounters mapper", () => {
       expect(result.historyEncounters[0]).toMatchObject({
         status: "refunded",
         statusLabel: "Reembolsado",
-        primaryAction: { label: "Ver reembolso" },
+        primaryAction: { label: "Ver detalhes do encontro" },
       });
       expect(result.upcomingEncounters).toHaveLength(0);
     },
@@ -572,8 +613,11 @@ describe("patient encounters mapper", () => {
 
     expect(result.historyEncounters[0]).toMatchObject({
       status: "completed",
-      statusLabel: "Já realizada",
+      statusLabel: "Sessão Realizada",
     });
+    expect(getEncounterGuidance(result.historyEncounters[0])).toBe(
+      "Este encontro foi realizado. Consulte os detalhes do encontro.",
+    );
   });
 
   it("formats encounter times in the booking timezone instead of the server timezone", () => {

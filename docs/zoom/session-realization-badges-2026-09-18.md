@@ -11,7 +11,7 @@ Status: **implementado e validado localmente; HML permanece na versão anterior 
 
 ## Regra e mudança local
 
-- A realização continua exigindo evidência confiável de presença bilateral e encerramento na tentativa atual. O badge individual passa para `Já realizada`/`Realizada` após a resposta privada **do próprio participante**, sem exigir a avaliação pública opcional, a resposta da outra pessoa ou alteração financeira.
+- A realização continua exigindo evidência confiável de presença bilateral e encerramento na tentativa atual. O badge individual passa para `Sessão Realizada` no cliente e `Realizada` no terapeuta após a resposta privada **do próprio participante**, sem exigir a avaliação pública opcional, a resposta da outra pessoa ou alteração financeira.
 - Antes da resposta, uma sessão realizada e elegível mostra `Avaliação pendente`. A fila do terapeuta deixa de tratar a resposta privada como confirmação operacional; exibe a pendência de avaliação apenas enquanto não houver resposta própria nem confirmação automática.
 - No vencimento de 7/30 dias, `auto_confirm_sessions` continua gravando confirmação individual `source=automatic` com idempotência e proteção da tentativa. O leitor do próprio participante retorna `automatically_confirmed`, encerra o formulário não respondido e apresenta a sessão realizada. O cron, a função de escrita e os estados financeiros não foram alterados por esta correção.
 - Cancelamento, ausência classificada e tentativa reagendada não herdam a realização visual anterior. A consulta em lote é autorizada apenas aos participantes das reservas solicitadas.

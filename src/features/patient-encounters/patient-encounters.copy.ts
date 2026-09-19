@@ -7,9 +7,9 @@ const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
   awaiting_feedback:
     "Conte como foi este encontro. Sua avaliação é privada e separada da avaliação pública do terapeuta.",
   cancelled:
-    "Este encontro foi cancelado. Consulte os detalhes para acompanhar o reembolso, quando aplicável.",
+    "Este encontro foi cancelado. Consulte os detalhes da sessão.",
   completed:
-    "Este encontro foi realizado. O resumo, a avaliação ou o suporte aparecem conforme o encontro.",
+    "Este encontro foi realizado. Consulte os detalhes do encontro.",
   not_performed: "Caso precise de ajuda, entre em contato com o suporte.",
   refunded:
     "O pagamento deste encontro foi reembolsado. Consulte os detalhes para acompanhar o registro.",
