@@ -119,14 +119,14 @@ describe("PatientEncountersPage", () => {
     expect(html).not.toContain("meeting_url");
   });
 
-  it("shows completed history with the green already-performed badge", () => {
+  it("shows completed history with the green realized-session badge", () => {
     const html = renderToStaticMarkup(
       <PatientEncountersPage
         data={createPageData({
           historyEncounters: [
             createEncounter({
               status: "completed",
-              statusLabel: "Já realizada",
+              statusLabel: "Sessão Realizada",
             }),
           ],
           historyPagination: {
@@ -140,7 +140,7 @@ describe("PatientEncountersPage", () => {
       />,
     );
 
-    expect(html).toContain("Já realizada");
+    expect(html).toContain("Sessão Realizada");
     expect(html).toContain("bg-status-successBg");
   });
 });
