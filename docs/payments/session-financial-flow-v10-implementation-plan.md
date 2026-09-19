@@ -111,6 +111,16 @@ pela RPC. A correção faz a lista abrir o detalhe canônico e só mostra
 o mesmo booking. Depois da publicação, o IAB autenticado confirmou em HML a
 ação, a mensagem simples e a URL correta, sem criar outra tentativa financeira
 durante a leitura.
+Na estabilização local posterior, a retomada do Checkout inicial foi endurecida
+para impedir que uma falha entre a criação na Stripe e a persistência local
+reabra a reserva sem uma tentativa válida. A preparação agora é somente
+leitura, o novo Checkout e a tentativa são persistidos atomicamente com o
+horário ainda liberado e a reivindicação ocorre apenas após confirmação
+assinada do provedor. A mesma migration reconcilia somente órfãos históricos
+vencidos sem qualquer autoridade de cobrança, repasse, reembolso, disputa ou
+sala. Em Recebimentos, estados desconhecidos deixam de inflar o valor
+“Processando”; o estado real continua consultável no filtro, mas o card agregado
+foi retirado da interface.
 As
 rotas legadas de cancelamento e reagendamento delegam os casos V10 pré-cobrança
 aos comandos transacionais próprios e recusam as demais mutações V10 com

@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   CalendarClock,
   CheckCircle2,
-  LoaderCircle,
   RotateCcw,
   type LucideIcon,
 } from "lucide-react";
@@ -73,46 +72,44 @@ const defaultReceiptListCopy: ReceiptListCopy = {
   title: "Movimentações por sessão",
 };
 
-const receiptListCopyByStatus: Record<
-  TherapistChargeStatus,
-  ReceiptListCopy
-> = {
-  approved: receiptListCopy(
-    "Sessões com pagamento aprovado",
-    "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
-    "Não há sessões com pagamento aprovado neste período.",
-  ),
-  canceled: receiptListCopy(
-    "Sessões canceladas",
-    "Confira as sessões canceladas. Nenhuma cobrança será feita.",
-    "Não há sessões canceladas neste período.",
-  ),
-  failed: receiptListCopy(
-    "Sessões com cobrança não concluída",
-    "Confira as sessões cuja cobrança não foi concluída.",
-    "Não há sessões com cobrança não concluída neste período.",
-  ),
-  processing: receiptListCopy(
-    "Sessões com cobrança em processamento",
-    "Confira as sessões cuja cobrança foi iniciada e ainda aguarda conclusão.",
-    "Não há sessões com cobrança em processamento neste período.",
-  ),
-  refunded: receiptListCopy(
-    "Sessões reembolsadas",
-    "Confira as sessões cujo valor foi devolvido ao paciente.",
-    "Não há sessões reembolsadas neste período.",
-  ),
-  scheduled: receiptListCopy(
-    "Sessões com cobrança agendada",
-    "Confira as sessões com cobrança prevista antes do atendimento.",
-    "Não há sessões com cobrança agendada neste período.",
-  ),
-  under_review: receiptListCopy(
-    "Sessões com cobrança em análise",
-    "Confira as sessões cuja cobrança está sendo analisada.",
-    "Não há sessões com cobrança em análise neste período.",
-  ),
-};
+const receiptListCopyByStatus: Record<TherapistChargeStatus, ReceiptListCopy> =
+  {
+    approved: receiptListCopy(
+      "Sessões com pagamento aprovado",
+      "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
+      "Não há sessões com pagamento aprovado neste período.",
+    ),
+    canceled: receiptListCopy(
+      "Sessões canceladas",
+      "Confira as sessões canceladas. Nenhuma cobrança será feita.",
+      "Não há sessões canceladas neste período.",
+    ),
+    failed: receiptListCopy(
+      "Sessões com cobrança não concluída",
+      "Confira as sessões cuja cobrança não foi concluída.",
+      "Não há sessões com cobrança não concluída neste período.",
+    ),
+    processing: receiptListCopy(
+      "Sessões com cobrança em processamento",
+      "Confira as sessões cuja cobrança foi iniciada e ainda aguarda conclusão.",
+      "Não há sessões com cobrança em processamento neste período.",
+    ),
+    refunded: receiptListCopy(
+      "Sessões reembolsadas",
+      "Confira as sessões cujo valor foi devolvido ao paciente.",
+      "Não há sessões reembolsadas neste período.",
+    ),
+    scheduled: receiptListCopy(
+      "Sessões com cobrança agendada",
+      "Confira as sessões com cobrança prevista antes do atendimento.",
+      "Não há sessões com cobrança agendada neste período.",
+    ),
+    under_review: receiptListCopy(
+      "Sessões com cobrança em análise",
+      "Confira as sessões cuja cobrança está sendo analisada.",
+      "Não há sessões com cobrança em análise neste período.",
+    ),
+  };
 
 export function FinancialReceiptsTab({
   dateRange,
@@ -153,7 +150,7 @@ export function FinancialReceiptsTab({
 
       <section
         aria-label="Resumo das cobranças"
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 md:grid-cols-3"
       >
         <ReceiptMetricCard
           description="Seu valor nas sessões cuja cobrança foi concluída."
@@ -161,13 +158,6 @@ export function FinancialReceiptsTab({
           icon={CheckCircle2}
           label="Pagamentos aprovados"
           value={receipts.summary.approvedCents}
-        />
-        <ReceiptMetricCard
-          description="Cobranças iniciadas que ainda aguardam uma resposta."
-          href={statusHref("processing", dateRange, filters)}
-          icon={LoaderCircle}
-          label="Processando"
-          value={receipts.summary.processingCents}
         />
         <ReceiptMetricCard
           description="Seu valor previsto em sessões cuja cobrança ainda ocorrerá."

@@ -35,6 +35,7 @@ import { resolveCheckoutReturnUrlBase } from "./checkout-return-url.ts";
 import {
   requiresLegacyRetryPreflight,
   resolveReservationCheckoutMode,
+  shouldReusePersistedPaymentRetryCheckout,
   type ReservationCheckoutMode,
 } from "./checkout-mode.ts";
 
@@ -252,6 +253,54 @@ runtime.serve(async (request) => {
       preparedV10?.bookingVersion ?? booking.version;
     const paymentFlowVersion = sessionPayment.payment_flow_version;
     const isV10 = paymentFlowVersion === SESSION_FINANCIAL_FLOW_V10;
+    const paymentTiming: SessionChargeTiming = isV10
+      ? getSessionChargeTiming(booking.starts_at)
+      : "immediate";
+    const retryReason =
+      preparedV10 && "retryReason" in preparedV10
+        ? preparedV10.retryReason
+        : null;
+    if (
+      isV10 &&
+      shouldReusePersistedPaymentRetryCheckout({
+        checkoutSessionId: sessionPayment.stripe_checkout_session_id,
+        mode,
+        retryReason,
+      })
+    ) {
+      const persistedCheckout = await validateReplacementCheckout({
+        booking,
+        checkoutSessionId: sessionPayment.stripe_checkout_session_id!,
+        customerId: customer.stripe_customer_id,
+        environment: config.environment,
+        sessionPayment,
+        stripe,
+        stripeMode: config.stripeMode,
+        expectedMode: undefined,
+      });
+      const persistedAmounts =
+        persistedCheckout.mode === "setup"
+          ? getSessionPaymentFinancials(
+              sessionPayment,
+              snapshot.grossAmountCents,
+            )
+          : checkoutAmounts(persistedCheckout);
+
+      return success({
+        bookingId: booking.id,
+        clientSecret: persistedCheckout.client_secret ?? null,
+        checkoutSessionId: persistedCheckout.id,
+        ...persistedAmounts,
+        mode,
+        paymentFlowVersion,
+        paymentTiming,
+        promotion: null,
+        reservationExpiresAt: null,
+        serverNow: new Date().toISOString(),
+        sessionPaymentId: sessionPayment.id,
+        url: persistedCheckout.url,
+      });
+    }
     const replacementAlreadyApplied = Boolean(
       replaceCheckoutSessionId &&
       sessionPayment.stripe_checkout_session_id !== replaceCheckoutSessionId,
@@ -285,9 +334,6 @@ runtime.serve(async (request) => {
           promotion: promotion?.summary ?? null,
         })
       : null;
-    const paymentTiming: SessionChargeTiming = isV10
-      ? getSessionChargeTiming(booking.starts_at)
-      : "immediate";
     const stripeCheckoutMode =
       isV10 &&
       paymentTiming === "scheduled" &&
@@ -497,34 +543,57 @@ runtime.serve(async (request) => {
         );
       }
     }
+    const attemptRequestMetadata = {
+      checkout_attempt_id: checkoutAttemptId,
+      checkout_mode: mode,
+      payment_flow_version: paymentFlowVersion,
+      payment_timing: paymentTiming,
+      stripe_checkout_mode: stripeCheckoutMode,
+      has_promotion: Boolean(promotion),
+      replaces_checkout_session_id: replaceCheckoutSessionId,
+    };
     let updatedPayments: { applied?: boolean } | SessionPaymentRow[];
     try {
-      updatedPayments = isV10
-        ? await swapSessionPaymentCheckoutV10(client, {
-            amounts,
-            bookingVersion: checkoutBookingVersion,
-            checkoutSessionId: checkout.id,
-            expectedCheckoutSessionId: compareCheckoutId,
-            idempotencyKey,
-            paymentTiming,
-            promotion: promotion?.summary ?? null,
-            sessionPaymentId: sessionPayment.id,
-            stripeEnvironment: config.environment,
-          })
-        : await client.patch<SessionPaymentRow[]>(
-            `/rest/v1/session_payments?select=id,stripe_checkout_session_id&id=eq.${encodeURIComponent(
-              sessionPayment.id,
-            )}&stripe_checkout_session_id=${
-              compareCheckoutId
-                ? `eq.${encodeURIComponent(compareCheckoutId)}`
-                : "is.null"
-            }`,
-            {
-              stripe_checkout_session_id: checkout.id,
-              updated_at: new Date().toISOString(),
-            },
-            "return=representation",
-          );
+      updatedPayments =
+        isV10 && mode === "payment_retry"
+          ? await commitSessionPaymentRetryCheckoutV10(client, {
+              amounts,
+              bookingVersion: checkoutBookingVersion,
+              checkoutSessionId: checkout.id,
+              expectedCheckoutSessionId: compareCheckoutId,
+              idempotencyKey,
+              paymentTiming,
+              promotion: promotion?.summary ?? null,
+              requestMetadata: attemptRequestMetadata,
+              sessionPaymentId: sessionPayment.id,
+              stripeEnvironment: config.environment,
+            })
+          : isV10
+            ? await swapSessionPaymentCheckoutV10(client, {
+                amounts,
+                bookingVersion: checkoutBookingVersion,
+                checkoutSessionId: checkout.id,
+                expectedCheckoutSessionId: compareCheckoutId,
+                idempotencyKey,
+                paymentTiming,
+                promotion: promotion?.summary ?? null,
+                sessionPaymentId: sessionPayment.id,
+                stripeEnvironment: config.environment,
+              })
+            : await client.patch<SessionPaymentRow[]>(
+                `/rest/v1/session_payments?select=id,stripe_checkout_session_id&id=eq.${encodeURIComponent(
+                  sessionPayment.id,
+                )}&stripe_checkout_session_id=${
+                  compareCheckoutId
+                    ? `eq.${encodeURIComponent(compareCheckoutId)}`
+                    : "is.null"
+                }`,
+                {
+                  stripe_checkout_session_id: checkout.id,
+                  updated_at: new Date().toISOString(),
+                },
+                "return=representation",
+              );
     } catch (error) {
       await expireCheckoutQuietly(stripe, checkout.id);
       throw error;
@@ -543,32 +612,31 @@ runtime.serve(async (request) => {
         );
       }
     }
-    await client.post(
-      "/rest/v1/session_payment_attempts?on_conflict=idempotency_key",
-      {
-        attempt_kind: mode,
-        booking_hold_id: bookingHoldId,
-        idempotency_key: idempotencyKey,
-        reservation_expires_at:
-          mode === "initial_hold" ? reservationExpiresAt : null,
-        session_payment_id: sessionPayment.id,
-        status: "checkout_created",
-        stripe_checkout_session_id: checkout.id,
-        request_metadata: {
-          checkout_attempt_id: checkoutAttemptId,
-          checkout_mode: mode,
-          payment_flow_version: paymentFlowVersion,
-          payment_timing: paymentTiming,
-          stripe_checkout_mode: stripeCheckoutMode,
-          has_promotion: Boolean(promotion),
-          replaces_checkout_session_id: replaceCheckoutSessionId,
+    if (mode !== "payment_retry") {
+      await client.post(
+        "/rest/v1/session_payment_attempts?on_conflict=idempotency_key",
+        {
+          attempt_kind: mode,
+          booking_hold_id: bookingHoldId,
+          idempotency_key: idempotencyKey,
+          reservation_expires_at:
+            mode === "initial_hold" ? reservationExpiresAt : null,
+          session_payment_id: sessionPayment.id,
+          status: "checkout_created",
+          stripe_checkout_session_id: checkout.id,
+          request_metadata: attemptRequestMetadata,
+          response_metadata: amounts,
         },
-        response_metadata: amounts,
-      },
-      "resolution=merge-duplicates,return=minimal",
-    );
+        "resolution=merge-duplicates,return=minimal",
+      );
+    }
 
-    if (previousCheckout && didSwapCheckout && isV10) {
+    if (
+      previousCheckout &&
+      didSwapCheckout &&
+      isV10 &&
+      mode !== "payment_retry"
+    ) {
       await markAttemptSuperseded(client, previousCheckout.id);
     } else if (previousCheckout && didSwapCheckout) {
       await markAttemptSuperseded(client, previousCheckout.id);
@@ -915,10 +983,17 @@ async function prepareSessionPaymentV10AfterOptionalRetry(
   },
 ) {
   if (input.mode === "payment_retry") {
-    const retry = await client.rpc<{ allowed?: boolean; reason?: string }>(
-      "begin_session_payment_retry_v10",
-      { p_booking_id: input.bookingId },
-    );
+    const retry = await client.rpc<{
+      allowed?: boolean;
+      bookingVersion?: number;
+      paymentDueAt?: string;
+      paymentFlowVersion?: string;
+      reason?: string;
+      sessionPaymentId?: string;
+      stripeCheckoutSessionId?: string | null;
+    }>("begin_session_payment_retry_v10", {
+      p_booking_id: input.bookingId,
+    });
     if (!retry.allowed) {
       throw new DomainError(
         retry.reason === "patient_schedule_conflict"
@@ -930,6 +1005,29 @@ async function prepareSessionPaymentV10AfterOptionalRetry(
         "Este pagamento não pode ser retomado agora.",
       );
     }
+    if (
+      !retry.bookingVersion ||
+      !retry.paymentFlowVersion ||
+      !retry.sessionPaymentId
+    ) {
+      throw new DomainError(
+        "booking_not_payable",
+        409,
+        "Este pagamento não pode ser retomado agora.",
+      );
+    }
+    return {
+      bookingVersion: retry.bookingVersion,
+      retryReason: retry.reason ?? null,
+      payment: {
+        gross_amount_cents: input.originalAmountCents,
+        id: retry.sessionPaymentId,
+        metadata: null,
+        payment_due_at: retry.paymentDueAt ?? null,
+        payment_flow_version: retry.paymentFlowVersion,
+        stripe_checkout_session_id: retry.stripeCheckoutSessionId ?? null,
+      } satisfies SessionPaymentRow,
+    };
   }
   return prepareSessionPaymentV10(client, input);
 }
@@ -1001,6 +1099,66 @@ async function swapSessionPaymentCheckoutV10(
       p_new_checkout_session_id: input.checkoutSessionId,
       p_original_amount_cents: input.amounts.originalAmountCents,
       p_promotion_code: input.promotion?.code ?? null,
+      p_session_payment_id: input.sessionPaymentId,
+      p_stripe_coupon_id: input.promotion?.couponId ?? null,
+      p_stripe_environment: input.stripeEnvironment,
+      p_stripe_promotion_code_id: input.promotion?.promotionCodeId ?? null,
+      p_total_amount_cents: input.amounts.totalAmountCents,
+    },
+  );
+}
+
+async function commitSessionPaymentRetryCheckoutV10(
+  client: SupabaseRestClient,
+  input: {
+    amounts: {
+      discountAmountCents: number;
+      originalAmountCents: number;
+      totalAmountCents: number;
+    };
+    bookingVersion: number;
+    checkoutSessionId: string;
+    expectedCheckoutSessionId: string | null;
+    idempotencyKey: string;
+    paymentTiming: SessionChargeTiming;
+    promotion: PromotionSummary | null;
+    requestMetadata: Record<string, unknown>;
+    sessionPaymentId: string;
+    stripeEnvironment: string;
+  },
+) {
+  if (!input.expectedCheckoutSessionId) {
+    throw new DomainError(
+      "checkout_replacement_conflict",
+      409,
+      "Não foi possível atualizar o pagamento. Tente novamente.",
+    );
+  }
+
+  return await client.rpc<{ applied?: boolean }>(
+    "commit_session_payment_retry_checkout_v10",
+    {
+      p_attempt_idempotency_key: input.idempotencyKey,
+      p_booking_version: input.bookingVersion,
+      p_checkout_timing: input.paymentTiming,
+      p_discount_amount_cents: input.amounts.discountAmountCents,
+      p_discount_type:
+        input.promotion?.amountOffCents !== undefined
+          ? "fixed_amount"
+          : input.promotion?.percentOff !== undefined
+            ? "percent"
+            : null,
+      p_discount_value:
+        input.promotion?.amountOffCents ??
+        (input.promotion?.percentOff !== undefined
+          ? Math.round(input.promotion.percentOff * 100)
+          : null),
+      p_expected_checkout_session_id: input.expectedCheckoutSessionId,
+      p_new_checkout_session_id: input.checkoutSessionId,
+      p_original_amount_cents: input.amounts.originalAmountCents,
+      p_promotion_code: input.promotion?.code ?? null,
+      p_request_metadata: input.requestMetadata,
+      p_response_metadata: input.amounts,
       p_session_payment_id: input.sessionPaymentId,
       p_stripe_coupon_id: input.promotion?.couponId ?? null,
       p_stripe_environment: input.stripeEnvironment,

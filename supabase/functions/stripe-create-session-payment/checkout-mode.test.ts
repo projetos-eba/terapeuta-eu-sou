@@ -7,6 +7,7 @@ import { DomainError } from "../_shared/payments/http.ts";
 import {
   requiresLegacyRetryPreflight,
   resolveReservationCheckoutMode,
+  shouldReusePersistedPaymentRetryCheckout,
 } from "./checkout-mode.ts";
 
 Deno.test(
@@ -72,5 +73,24 @@ Deno.test("V10 delegates retry claiming to its idempotent command", () => {
       paymentFlowVersion: "v9",
     }),
     true,
+  );
+});
+
+Deno.test("an open persisted payment retry is reused on page reload", () => {
+  assertEquals(
+    shouldReusePersistedPaymentRetryCheckout({
+      checkoutSessionId: "cs_test_retry_open",
+      mode: "payment_retry",
+      retryReason: "checkout_already_created",
+    }),
+    true,
+  );
+  assertEquals(
+    shouldReusePersistedPaymentRetryCheckout({
+      checkoutSessionId: "cs_test_expired",
+      mode: "payment_retry",
+      retryReason: "retry_ready",
+    }),
+    false,
   );
 });

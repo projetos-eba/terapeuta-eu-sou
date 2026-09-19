@@ -16478,6 +16478,16 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_session_payment_setup_retry_v10: {
+        Args: {
+          p_booking_version: number
+          p_session_payment_id: string
+          p_stripe_checkout_session_id: string
+          p_stripe_event_created_at: string
+          p_stripe_event_id: string
+        }
+        Returns: Json
+      }
       claim_session_transfer_jobs_v10: {
         Args: {
           p_lease_minutes?: number
@@ -16497,6 +16507,28 @@ export type Database = {
           p_now: string
           p_observed_stripe_status: string
           p_schedule_id: string
+        }
+        Returns: Json
+      }
+      commit_session_payment_retry_checkout_v10: {
+        Args: {
+          p_attempt_idempotency_key: string
+          p_booking_version: number
+          p_checkout_timing: string
+          p_discount_amount_cents: number
+          p_discount_type?: string
+          p_discount_value?: number
+          p_expected_checkout_session_id: string
+          p_new_checkout_session_id: string
+          p_original_amount_cents: number
+          p_promotion_code?: string
+          p_request_metadata?: Json
+          p_response_metadata?: Json
+          p_session_payment_id: string
+          p_stripe_coupon_id?: string
+          p_stripe_environment: string
+          p_stripe_promotion_code_id?: string
+          p_total_amount_cents: number
         }
         Returns: Json
       }

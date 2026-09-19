@@ -328,6 +328,15 @@ ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
 retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
 atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
+leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
+em uma única transação ainda com a reserva liberada, e somente o
+`checkout.session.completed` assinado reivindica o intervalo antes de vincular
+o SetupIntent e criar a agenda T-24. Falha entre provedor e persistência expira
+a nova Checkout e não reabre a reserva. Recarregar uma retomada já aberta
+recupera e reutiliza a mesma Checkout Session persistida, sem criar uma tentativa
+irmã nem substituir sua autoridade. Repetição usa a mesma chave
+idempotente. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
@@ -341,6 +350,10 @@ o `canceled` financeiro herdado da tentativa anterior: `checkout_created` e
 `waiting_payment` permanecem aguardando, e somente um estado terminal da nova
 tentativa pode apresentar falha. Isso evita uma falsa falha enquanto o webhook
 de autorização ainda está em trânsito.
+Um pagamento `pending` sem tentativa atual ativa, agenda ou autoridade de
+cobrança não é apresentado como valor em processamento. Órfãos históricos já
+vencidos só são encerrados quando não existe SetupIntent confirmado,
+PaymentIntent, Charge, agenda ativa, Transfer, reembolso, disputa ou sala.
 O aceite e o identificador idempotente da jornada ficam limitados à aba por
 `history.state` e `sessionStorage`, pois o Next pode substituir o primeiro no
 reload. Texto de preparação, client secret e dados do formulário Stripe nunca

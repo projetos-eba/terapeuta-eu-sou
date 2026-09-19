@@ -67,6 +67,9 @@ for (const line of baseEnv.split(/\r?\n/)) {
   ) {
     continue;
   }
+  if (key && runtimeSecrets.includes(key) && process.env[key]?.trim()) {
+    continue;
+  }
   if (key && runtimeOverrides.includes(key)) {
     baseKeys.add(key);
     continue;
@@ -77,7 +80,7 @@ for (const line of baseEnv.split(/\r?\n/)) {
 
 for (const key of runtimeSecrets) {
   const value = process.env[key]?.trim();
-  if (value && !baseKeys.has(key)) lines.push(`${key}=${value}`);
+  if (value) lines.push(`${key}=${value}`);
 }
 
 // Stripe CLI signs every locally forwarded payload with its listener secret,

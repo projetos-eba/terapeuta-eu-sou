@@ -361,6 +361,14 @@ describe("TherapistFinancePage", () => {
       screen.queryByText("Distribuição por status"),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Custos da plataforma")).not.toBeInTheDocument();
+    const chargeSummary = screen.getByLabelText("Resumo das cobranças");
+    expect(within(chargeSummary).getAllByRole("link")).toHaveLength(3);
+    expect(
+      within(chargeSummary).queryByRole("link", { name: /Processando/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Processando" }),
+    ).toBeInTheDocument();
   });
 
   it("keeps the generic receipts copy when no charge status is selected", () => {
@@ -638,11 +646,7 @@ describe("TherapistFinancePage", () => {
       within(summary)
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual([
-      "A receber",
-      "A caminho da sua conta",
-      "Recebido no período",
-    ]);
+    ).toEqual(["A receber", "A caminho da sua conta", "Recebido no período"]);
   });
 
   it("orders upcoming payouts with in-transit values before predictions", () => {
