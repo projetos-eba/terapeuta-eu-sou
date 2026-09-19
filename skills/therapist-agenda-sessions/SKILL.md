@@ -186,6 +186,10 @@ histórica.
   mostram apenas a situação encerrada e o caminho de suporte aplicável. A copy
   deve ser clara para a pessoa terapeuta, sem termos técnicos, de
   desenvolvimento, integração ou arquitetura.
+- No resumo da sala, um booking cancelado deve mostrar “Sessão cancelada” mesmo
+  quando a última razão de acesso recebida seja pagamento não confirmado; uma
+  sessão ativa sem pagamento mantém “Aguardando pagamento”. O estado encerrado
+  também prevalece sobre um snapshot de acesso desatualizado.
 - No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.
