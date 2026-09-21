@@ -73,7 +73,9 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Compensação: R$ 10,00");
     expect(html).toContain("Valor encaminhado: R$ 75,00");
     expect(html).toContain("A caminho do banco");
-    expect(html).toContain("Reembolso");
+    expect(html).not.toContain("Abrir avaliação de reembolso da sessão");
+    expect(html).not.toContain(">Reembolso</a>");
+    expect(html).toContain("Ver detalhes");
     expect(html).not.toMatch(
       /source_transaction|transfer reversal|payout_display_status/i,
     );

@@ -151,7 +151,7 @@ describe("admin finance mappers", () => {
       not_eligible: "Ainda não elegível",
       reversed: "Repasse revertido",
       transfer_pending: "Em processamento",
-      transferred: "A caminho do banco",
+      transferred: "Processando",
       waiting_confirmation: "Aguardando confirmação",
       waiting_safety_period: "Em liquidação",
       waiting_settlement: "Em liquidação",
