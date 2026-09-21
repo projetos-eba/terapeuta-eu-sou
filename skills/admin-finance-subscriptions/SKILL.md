@@ -94,6 +94,14 @@ Do not send generic `select *` payloads to React.
   detail hierarchy already established for professionals and clients:
   breadcrumbs, editorial heading, transaction hero, value KPIs, grouped
   sections and recent movements.
+- The payments list offers only `Ver detalhes`. Full-session refund review is
+  available exclusively inside `/admin/pagamentos/[paymentId]`, so the admin
+  sees the complete financial context before starting the audited command.
+- A Connect Transfer is not a bank Payout. In the Admin payout projection,
+  `Processando` covers a completed Transfer that has no fully associated bank
+  Payout; `A caminho do banco` requires a full allocation to a provider Payout
+  in `pending` or `in_transit`; `Pago` still requires the Payout, provider
+  reconciliation and allocation to be fully completed.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
