@@ -14,6 +14,8 @@ import type { ReactNode } from "react";
 
 import { TESButton } from "@/components/tes";
 
+import { MobileMediaRecoveryNotice } from "./mobile-media-recovery-notice";
+
 type ZoomVideoControlsProps = {
   actorRole: "patient" | "therapist";
   audioMuted: boolean;
@@ -119,6 +121,7 @@ export function ZoomVideoControls({
   return (
     <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-start">
       <div className="grid gap-3">
+        <MobileMediaRecoveryNotice onOpenSupport={onOpenSupport} />
         <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
           <ControlButton
             active={!audioMuted}
