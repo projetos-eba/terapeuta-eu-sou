@@ -1,6 +1,6 @@
 begin;
 
-select plan(75);
+select plan(81);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -592,6 +592,32 @@ select is(
   'the provider Transfer contains only the amount remaining after debt offset'
 );
 
+do $$ begin
+  perform public.record_payout_operational_incident_v1(
+    'session-transfer-v10:' || job.id::text,
+    'session_direct_transfer_attention', 'critical', 'prior_ambiguous_result',
+    'A transfer needs reconciliation.', null, null, null,
+    job.stripe_transfer_id, null, payment.therapist_profile_id,
+    jsonb_build_object('sessionPaymentId', payment.id)
+  )
+  from public.session_transfer_jobs as job
+  join public.session_payments as payment on payment.id=job.session_payment_id
+  where payment.id='b1140000-0000-4000-8000-000000000021';
+end $$;
+
+select is(
+  (select notification.href from public.notifications as notification
+    join public.payout_operational_incidents as incident
+      on notification.event_key='payout_incident:' || incident.id::text
+    join public.session_transfer_jobs as job
+      on incident.incident_key='session-transfer-v10:' || job.id::text
+    where job.session_payment_id='b1140000-0000-4000-8000-000000000021'
+      and notification.kind='payout_operational_alert_admin'
+    limit 1),
+  '/admin/pagamentos/b1140000-0000-4000-8000-000000000021',
+  'the admin session-transfer notice links to the exact payment detail'
+);
+
 select is(
   public.complete_session_transfer_job_v10(
     (select id from public.session_transfer_jobs
@@ -621,6 +647,65 @@ select is(
       and status = 'pending_source'),
   1,
   'a provider Transfer awaiting source availability remains explicitly pending'
+);
+
+select is(
+  (select incident.status from public.payout_operational_incidents as incident
+    join public.session_transfer_jobs as job
+      on incident.incident_key='session-transfer-v10:' || job.id::text
+    where job.session_payment_id='b1140000-0000-4000-8000-000000000021'
+      and incident.incident_type='session_direct_transfer_attention'),
+  'resolved',
+  'confirmed Transfer closes its prior attention incident without claiming bank payment'
+);
+select is(
+  (select notification.title from public.notifications as notification
+    join public.payout_operational_incidents as incident
+      on notification.event_key='payout_incident:' || incident.id::text
+    join public.session_transfer_jobs as job
+      on incident.incident_key='session-transfer-v10:' || job.id::text
+    where job.session_payment_id='b1140000-0000-4000-8000-000000000021'
+      and notification.kind='payout_operational_alert_admin'
+    limit 1),
+  'Ocorrência de repasse resolvida',
+  'the admin notice reflects confirmed Transfer success without erasing history'
+);
+
+update public.payout_operational_incidents as incident
+set status='open', resolved_at=null,
+    metadata=jsonb_set(incident.metadata, '{sessionPaymentId}', '"other-payment"'::jsonb)
+from public.session_transfer_jobs as job
+where incident.incident_key='session-transfer-v10:' || job.id::text
+  and job.session_payment_id='b1140000-0000-4000-8000-000000000021';
+select is(
+  public.resolve_successful_session_direct_transfer_attention_v10(
+    'b1140000-0000-4000-8000-000000000021'
+  ),
+  0,
+  'an unbound historical incident with a different payment identity stays open'
+);
+select is(
+  (select incident.status from public.payout_operational_incidents as incident
+    join public.session_transfer_jobs as job
+      on incident.incident_key='session-transfer-v10:' || job.id::text
+    where job.session_payment_id='b1140000-0000-4000-8000-000000000021'),
+  'open',
+  'a mismatched incident is not silently removed'
+);
+update public.payout_operational_incidents as incident
+set metadata=jsonb_set(
+      incident.metadata, '{sessionPaymentId}',
+      '"b1140000-0000-4000-8000-000000000021"'::jsonb
+    )
+from public.session_transfer_jobs as job
+where incident.incident_key='session-transfer-v10:' || job.id::text
+  and job.session_payment_id='b1140000-0000-4000-8000-000000000021';
+select is(
+  public.resolve_successful_session_direct_transfer_attention_v10(
+    'b1140000-0000-4000-8000-000000000021'
+  ),
+  1,
+  'the exact historical incident can be resolved idempotently after its identity is restored'
 );
 
 select is(
