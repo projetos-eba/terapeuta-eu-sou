@@ -29,25 +29,25 @@ describe("public profile theme catalog", () => {
     }
   });
 
-  it("keeps the botanical hero source wide enough for the public profile banner", () => {
-    const botanicalTheme = publicProfileThemes.find(
-      (theme) => theme.id === "botanico",
+  it("keeps every paid theme source wide enough for the public profile banner", () => {
+    const paidThemes = publicProfileThemes.filter(
+      (theme) => theme.tier !== "free",
     );
 
-    expect(botanicalTheme?.backgroundAsset).toBe(
-      "/therapists/profile-themes/library/botanico-hero.png",
-    );
+    for (const theme of paidThemes) {
+      expect(theme.backgroundAsset).toContain("-hero-v2.png");
 
-    const asset = readFileSync(
-      resolve(
-        process.cwd(),
-        "public",
-        botanicalTheme!.backgroundAsset!.slice(1),
-      ),
-    );
+      const asset = readFileSync(
+        resolve(
+          process.cwd(),
+          "public",
+          theme.backgroundAsset!.slice(1),
+        ),
+      );
 
-    expect(asset.readUInt32BE(16)).toBeGreaterThanOrEqual(1920);
-    expect(asset.readUInt32BE(20)).toBeGreaterThanOrEqual(640);
+      expect(asset.readUInt32BE(16)).toBeGreaterThanOrEqual(1920);
+      expect(asset.readUInt32BE(20)).toBeGreaterThanOrEqual(640);
+    }
   });
 
   it("applies entitlement consistently across current therapist plans", () => {

@@ -29,6 +29,9 @@ export function LegalDocumentPreview({
     return (
       <article className="rounded-card border border-brand-lavender bg-white p-6 text-sm font-semibold leading-7 text-tesText-secondary shadow-card sm:p-8">
         <header className="border-b border-brand-lavender pb-6">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">
+            Versão {document.version} · Atualizado em {formatLegalDate(document.effectiveDate)}
+          </p>
           <h2 className="mt-3 text-2xl font-extrabold text-brand-deep">
             {document.title}
           </h2>
@@ -94,4 +97,17 @@ function isProductionRuntime() {
     process.env.NODE_ENV === "production" ||
     process.env.VERCEL_ENV === "production"
   );
+}
+
+function formatLegalDate(date: string | null) {
+  if (!date) {
+    return "data não informada";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
 }

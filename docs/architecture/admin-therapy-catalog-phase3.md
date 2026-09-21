@@ -49,6 +49,13 @@ agenda e métricas usando as mesmas fontes de verdade.
     `under_review`, `needs_information`, `approved`, `merged` e `rejected`.
     Toda decisão exige motivo, gera auditoria, notificação interna e tentativa
     de e-mail, sem reverter uma decisão confirmada em caso de falha de entrega.
+11. Campos textuais da solicitação têm limites compartilhados entre interface e
+    PostgreSQL: nome da prática (30), outro nome (80), descrição (600),
+    objetivo (180), situações (600), processo (800), formação (120), tempo de
+    atuação (50), cuidados/limitações (600), referência (500) e informações
+    extras (500). A interface informa o contador e bloqueia o avanço com erro
+    acessível; as RPCs rejeitam conteúdo acima do limite sem truncá-lo. Uma
+    solicitação legada acima desses limites deve ser ajustada antes do reenvio.
 
 ## Matriz de Estados
 
@@ -93,6 +100,9 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
     views `security_invoker` sem recriar tabela ou colunas legadas;
   - aplica a matriz única de elegibilidade por status, disponibilidade e ao
     menos um Tema do Match ativo.
+- `20260921143000_therapy_catalog_request_character_limits.sql`
+  - aplica os limites de caracteres do request v2 em envio e reenvio;
+  - rejeita payloads acima do limite sem alterar o conteúdo enviado.
 
 ## APIs
 

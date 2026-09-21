@@ -105,7 +105,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "free",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/sereno-horizonte.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/sereno-horizonte-hero-v2.png",
     description: "Horizonte suave com detalhes orgânicos e dourados.",
     id: "sereno_horizonte",
     label: "Sereno — Horizonte",
@@ -115,7 +116,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/frequencia.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/frequencia-hero-v2.png",
     description: "Linhas e ritmos para uma presença contemporânea.",
     id: "frequencia",
     label: "Frequencia",
@@ -125,7 +127,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/energia.png",
+    backgroundAsset: "/therapists/profile-themes/library/energia-hero-v2.png",
     description: "Cores vibrantes em uma composição expressiva.",
     id: "energia",
     label: "Energia",
@@ -135,7 +137,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/geometria.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/geometria-hero-v2.png",
     description: "Estrutura gráfica com contraste e precisão.",
     id: "geometria",
     label: "Geometria",
@@ -145,7 +148,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/cristalino.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/cristalino-hero-v2.png",
     description: "Transparências leves e luminosidade delicada.",
     id: "cristalino",
     label: "Cristalino",
@@ -155,7 +159,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/oraculo.png",
+    backgroundAsset: "/therapists/profile-themes/library/oraculo-hero-v2.png",
     description: "Símbolos sutis em uma atmosfera contemplativa.",
     id: "oraculo",
     label: "Oráculo",
@@ -165,7 +169,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/celestial.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/celestial-hero-v2.png",
     description: "Uma composição ampla, calma e luminosa.",
     id: "celestial",
     label: "Celestial",
@@ -175,7 +180,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/lunar.png",
+    backgroundAsset: "/therapists/profile-themes/library/lunar-hero-v2.png",
     description: "Contraste noturno com detalhes de luz.",
     id: "lunar",
     label: "Lunar",
@@ -185,7 +190,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/botanico-hero.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/botanico-hero-v2.png",
     description: "Formas naturais para uma apresentação orgânica.",
     id: "botanico",
     label: "Botânico",
@@ -195,7 +201,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/ancestral.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/ancestral-hero-v2.png",
     description: "Texturas marcantes e uma composição estruturada.",
     id: "ancestral",
     label: "Ancestral",
@@ -205,7 +212,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/vinculos.png",
+    backgroundAsset: "/therapists/profile-themes/library/vinculos-hero-v2.png",
     description: "Elementos conectados para destacar sua identidade.",
     id: "vinculos",
     label: "Vinculos",
@@ -215,7 +222,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/sagrado.png",
+    backgroundAsset: "/therapists/profile-themes/library/sagrado-hero-v2.png",
     description: "Camadas delicadas em uma atmosfera acolhedora.",
     id: "sagrado",
     label: "Sagrado",
@@ -225,7 +232,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/aurora.png",
+    backgroundAsset: "/therapists/profile-themes/library/aurora-hero-v2.png",
     description: "Luz e cor em movimento para uma presença viva.",
     id: "aurora",
     label: "Aurora",
@@ -235,7 +242,7 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/profundo.png",
+    backgroundAsset: "/therapists/profile-themes/library/profundo-hero-v2.png",
     description: "Profundidade cromática com leitura serena.",
     id: "profundo",
     label: "Profundo",
@@ -245,7 +252,8 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
     tier: "premium",
   },
   {
-    backgroundAsset: "/therapists/profile-themes/library/essencial-editorial.png",
+    backgroundAsset:
+      "/therapists/profile-themes/library/essencial-editorial-hero-v2.png",
     description: "Composição limpa com acabamento editorial.",
     id: "essencial_editorial",
     label: "Essencial — Editorial",
