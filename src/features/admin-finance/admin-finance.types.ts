@@ -83,6 +83,11 @@ export type AdminFinanceDetailPageData = {
   generatedAt: string;
   id: string;
   module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+  fullRefundStatus?: {
+    available: boolean;
+    state: string;
+    followup?: { requestId: string; reason: string };
+  };
   safetyNotes: string[];
   sections: AdminFinanceDetailSection[];
   statusLabel?: string;

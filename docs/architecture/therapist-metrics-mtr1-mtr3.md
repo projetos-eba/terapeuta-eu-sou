@@ -1,6 +1,6 @@
 # Métricas & Relatórios — MTR-1 a MTR-3
 
-Status em 2026-07-28:
+Status revisado em 2026-09-11:
 
 | Corte                        | `implementation_status` | `data_source`                       | `qa_status`                                 | `external_homologation`              | `production_readiness`           |
 | ---------------------------- | ----------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------ | -------------------------------- |
@@ -64,7 +64,7 @@ O RPC privado `get_therapist_metrics_overview_v1(period)`:
 
 - deriva a identidade de `auth.uid()`;
 - exige `advanced_metrics` e plano Premium ou Premium Plus;
-- aceita somente 30 ou 90 dias locais completos;
+- aceita somente 30, 60, 90 ou 120 dias locais completos;
 - exclui o dia atual;
 - compara com o período imediatamente anterior de mesmo tamanho;
 - não retorna nome ou ID de paciente;
@@ -78,9 +78,16 @@ Read models:
 - série diária de sessões concluídas;
 - estágios de descoberta;
 - conversões por coorte pseudônima;
-- favoritos do perfil com amostra mínima de 10;
+- comparações e tendências de favoritos do perfil com amostra mínima de 10;
 - ranking das próprias terapias com amostra mínima de 10;
 - ocupação explicitamente indisponível.
+
+O RPC complementar `get_therapist_metrics_today_v1()` é exclusivo do Premium
+Plus e retorna apenas a quantidade agregada de favoritos recebidos no dia local
+atual. Essa projeção pequena existe para dar retorno imediato ao terapeuta sem
+misturar um dia incompleto às comparações históricas. Ela não retorna
+identificadores de pacientes e falha fechada quando o perfil, o plano ou o
+timezone não são elegíveis.
 
 ## Limitações Honestas
 
@@ -132,16 +139,25 @@ Com a telemetria desativada, o contrato retorna `unavailable` com
 
 ### Favoritos e ranking
 
-Valores abaixo de 10 não são expostos. O contrato retorna somente
-`minimumSample` e `observedSample`. Favoritos nunca são quebrados por serviço,
-terapia ou técnica.
+Valores abaixo de 10 não são expostos em comparações, tendências, percentuais
+ou rankings. Na aba Interesse do Premium Plus, a contagem agregada de favoritos
+do período é a exceção controlada: ela usa dias locais completos e fica visível
+desde o primeiro favorito, sem qualquer identificador ou recorte por serviço,
+terapia ou técnica. O contrato separa essa atividade (`empty` ou `ready`) da
+comparação protegida (`insufficient_sample` ou `ready`), que continua retornando
+somente `minimumSample` e `observedSample` antes da amostra mínima.
+
+Na aba Interesse, a comparação protegida continua terminando no dia anterior.
+Quando houver favoritos no dia atual, o card mostra `+N favorito(s) hoje` e
+explica que o valor entra no comparativo no dia seguinte. A indisponibilidade
+da projeção não é convertida em zero.
 
 ## MTR-3 e composição visual MTR-8
 
 `/terapeuta/insights` usa leitura inicial server-side e oferece:
 
 - hero e hierarquia baseados no Figma `13366:3628`;
-- períodos compartilháveis de 30 e 90 dias;
+- períodos compartilháveis de 30, 60, 90 e 120 dias;
 - seis indicadores com sparklines responsivas;
 - evolução de sessões, rankings, roscas e mapas de calor;
 - funil quando a coleta estiver autorizada e houver amostra;

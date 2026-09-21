@@ -21,24 +21,27 @@ Deno.test("email verification template escapes dynamic values", () => {
   assert(rendered.text.includes("https://example.test/confirmar-email"));
 });
 
-Deno.test("every registered event renders the TES email shell from its controlled fixture", () => {
-  for (const entry of Object.values(emailActionRegistry)) {
-    const rendered = renderEmailTemplate(entry.actionKey, entry.previewFixture);
-    assertEquals(rendered.html.includes("{{"), false);
-    assert(rendered.html.includes('role="presentation"'));
-    assertEquals(rendered.html.includes("<img"), false);
-    assert(rendered.html.includes("<h1"));
-    assertEquals(rendered.html.match(/<h1\b/g)?.length, 1);
-    assert(rendered.html.includes("Central de Ajuda"));
-    assert(rendered.html.includes("display:none"));
-    assertEquals(rendered.html.includes("<title"), false);
-    const head = rendered.html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? "";
-    assertEquals(
-      head.replace(/<meta\b[^>]*>/g, "").trim(),
-      "",
-    );
-  }
-});
+Deno.test(
+  "every registered event renders the TES email shell from its controlled fixture",
+  () => {
+    for (const entry of Object.values(emailActionRegistry)) {
+      const rendered = renderEmailTemplate(
+        entry.actionKey,
+        entry.previewFixture,
+      );
+      assertEquals(rendered.html.includes("{{"), false);
+      assert(rendered.html.includes('role="presentation"'));
+      assertEquals(rendered.html.includes("<img"), false);
+      assert(rendered.html.includes("<h1"));
+      assertEquals(rendered.html.match(/<h1\b/g)?.length, 1);
+      assert(rendered.html.includes("Central de Ajuda"));
+      assert(rendered.html.includes("display:none"));
+      assertEquals(rendered.html.includes("<title"), false);
+      const head = rendered.html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? "";
+      assertEquals(head.replace(/<meta\b[^>]*>/g, "").trim(), "");
+    }
+  },
+);
 
 Deno.test(
   "auth defaults render the Manual preheaders and official CTAs",
@@ -98,7 +101,7 @@ Deno.test(
 Deno.test(
   "booking templates keep participant-specific CTAs and omit cancellation reasons",
   () => {
-    const patientConfirmation = renderEmailTemplate("booking_confirmed_patient", {
+    const patientReservation = renderEmailTemplate("booking_reserved_patient", {
       counterparty_name: "Terapeuta de exemplo",
       encounter_url: "https://example.test/app/encontros/exemplo",
       meeting_date_time: "20 de agosto de 2026 às 15:00",
@@ -106,6 +109,28 @@ Deno.test(
       recipient_name: "Pessoa de exemplo",
       service_title: "Terapia de exemplo",
     });
+    const therapistReservation = renderEmailTemplate(
+      "booking_reserved_therapist",
+      {
+        counterparty_name: "Pessoa de exemplo",
+        encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Terapeuta de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
+    const patientConfirmation = renderEmailTemplate(
+      "booking_confirmed_patient",
+      {
+        counterparty_name: "Terapeuta de exemplo",
+        encounter_url: "https://example.test/app/encontros/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Pessoa de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
     const therapistConfirmation = renderEmailTemplate(
       "booking_confirmed_therapist",
       {
@@ -130,12 +155,22 @@ Deno.test(
     );
 
     assertEquals(patientConfirmation.subject, "Seu encontro foi confirmado");
+    assertEquals(patientReservation.subject, "Seu encontro foi reservado");
+    assert(patientReservation.text.includes("24 horas antes"));
+    assert(therapistReservation.text.includes("reservado para"));
+    assert(
+      !/SetupIntent|PaymentIntent|source_transaction|webhook|T-24|cron/i.test(
+        `${patientReservation.subject} ${patientReservation.text} ${therapistReservation.text}`,
+      ),
+    );
     assertEquals(
       therapistConfirmation.subject,
       "Confirmação da sua sessão no TES",
     );
     assert(therapistConfirmation.html.includes("<h1"));
-    assert(therapistConfirmation.html.includes("Sua sessão foi confirmada</h1>"));
+    assert(
+      therapistConfirmation.html.includes("Sua sessão foi confirmada</h1>"),
+    );
     assert(
       !therapistConfirmation.subject.includes("Sua sessão foi confirmada"),
     );
@@ -146,32 +181,55 @@ Deno.test(
   },
 );
 
-Deno.test("patient booking reminder templates keep the authenticated encounter CTA", () => {
-  const data = {
-    counterparty_name: "Terapeuta de exemplo",
-    encounter_url: "https://example.test/app/encontros/exemplo",
-    meeting_date_time: "20 de agosto de 2026 às 15:00",
-    meeting_timezone: "America/Sao_Paulo",
-    recipient_name: "Pessoa de exemplo",
-    service_title: "Terapia de exemplo",
-  };
+Deno.test(
+  "patient booking reminder templates keep the authenticated encounter CTA",
+  () => {
+    const data = {
+      counterparty_name: "Terapeuta de exemplo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      recipient_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+    };
 
-  const reminder24h = renderEmailTemplate(
-    "booking_reminder_24h_patient",
-    data,
-  );
-  const reminder1h = renderEmailTemplate(
-    "booking_reminder_1h_patient",
-    data,
-  );
+    const reminder24h = renderEmailTemplate(
+      "booking_reminder_24h_patient",
+      data,
+    );
+    const reminder1h = renderEmailTemplate("booking_reminder_1h_patient", data);
 
-  assertEquals(reminder24h.subject, "Falta 1 dia para seu encontro no TES");
-  assertEquals(reminder1h.subject, "Seu encontro começa em 1 hora");
-  assert(reminder24h.text.includes("Ver encontro"));
-  assert(reminder1h.text.includes("Ver encontro"));
-  assert(reminder1h.html.includes("/app/encontros/exemplo"));
-  assert(!reminder1h.text.toLowerCase().includes("zoom.us"));
-});
+    assertEquals(reminder24h.subject, "Falta 1 dia para seu encontro no TES");
+    assertEquals(reminder1h.subject, "Seu encontro começa em 1 hora");
+    assert(reminder24h.text.includes("Ver encontro"));
+    assert(reminder1h.text.includes("Ver encontro"));
+    assert(reminder1h.html.includes("/app/encontros/exemplo"));
+    assert(!reminder1h.text.toLowerCase().includes("zoom.us"));
+  },
+);
+
+Deno.test(
+  "therapist V10 reschedule request asks the patient to choose without inventing a proposed time",
+  () => {
+    const rendered = renderEmailTemplate(
+      "booking_therapist_reschedule_requested_patient",
+      {
+        counterparty_name: "Terapeuta de exemplo",
+        encounter_url: "https://example.test/app/encontros/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Pessoa de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
+
+    assertEquals(rendered.subject, "Escolha um novo horário para seu encontro");
+    assert(rendered.html.includes("Escolher outro horário"));
+    assert(rendered.text.includes("Horário atual"));
+    assert(!rendered.text.includes("Horário proposto"));
+    assert(!rendered.text.includes("enviou uma proposta"));
+  },
+);
 
 Deno.test("booking templates reject an unknown token", () => {
   try {
@@ -212,39 +270,63 @@ Deno.test("booking templates reject an unsafe CTA", () => {
   }
 });
 
-Deno.test("financial templates keep authoritative payment copy and safe CTAs", () => {
-  const payment = renderEmailTemplate("session_payment_approved", {
-    amount: "R$ 150,00",
-    payment_url: "https://example.test/app/pagamentos",
-    recipient_name: "Pessoa",
-    service_title: "Terapia de exemplo",
-  });
-  const payout = renderEmailTemplate("therapist_payout_completed", {
-    amount: "R$ 120,00",
-    finance_url: "https://example.test/terapeuta/financeiro",
-    recipient_name: "Terapeuta",
-  });
+Deno.test(
+  "financial templates keep authoritative payment copy and safe CTAs",
+  () => {
+    const payment = renderEmailTemplate("session_payment_approved", {
+      amount: "R$ 150,00",
+      payment_url: "https://example.test/app/pagamentos",
+      recipient_name: "Pessoa",
+      service_title: "Terapia de exemplo",
+    });
+    const payout = renderEmailTemplate("therapist_payout_completed", {
+      amount: "R$ 120,00",
+      finance_url: "https://example.test/terapeuta/financeiro",
+      recipient_name: "Terapeuta",
+    });
+    const recovery = renderEmailTemplate("session_payment_declined", {
+      amount: "R$ 150,00",
+      payment_url: "https://example.test/app/encontros/exemplo",
+      recipient_name: "Pessoa",
+      service_title: "Terapia de exemplo",
+    });
 
-  assertEquals(payment.subject, "Pagamento confirmado com sucesso");
-  assert(payment.html.includes("Recebemos seu pagamento"));
-  assert(payment.text.includes("Ver detalhes"));
-  assertEquals(payout.subject, "Seu repasse bancário foi confirmado");
-  assert(payout.text.includes("Ver painel financeiro"));
+    assertEquals(payment.subject, "Pagamento confirmado com sucesso");
+    assert(payment.html.includes("Recebemos seu pagamento"));
+    assert(payment.text.includes("Ver detalhes"));
+    assertEquals(payout.subject, "Seu repasse bancário foi confirmado");
+    assert(payout.text.includes("Ver painel financeiro"));
+    assertEquals(
+      recovery.subject,
+      "Confirme seu pagamento para manter o encontro",
+    );
+    assert(recovery.text.includes("confirmar a operação com seu banco"));
+    assert(
+      !/PaymentIntent|SetupIntent|source_transaction|webhook|T-24/i.test(
+        `${recovery.subject} ${recovery.text} ${recovery.html}`,
+      ),
+    );
 
-  const failure = renderEmailTemplate("therapist_payout_failed_after_paid", {
-    amount: "R$ 120,00",
-    finance_url: "https://example.test/terapeuta/financeiro",
-    recipient_name: "Terapeuta",
-  });
-  assert(failure.text.includes("Nenhuma nova movimentação"));
+    const failure = renderEmailTemplate("therapist_payout_failed_after_paid", {
+      amount: "R$ 120,00",
+      finance_url: "https://example.test/terapeuta/financeiro",
+      recipient_name: "Terapeuta",
+    });
+    assert(failure.text.includes("Nenhuma nova movimentação"));
 
-  const admin = renderEmailTemplate("payout_operational_alert_admin", {
-    admin_url: "https://example.test/admin/pagamentos",
-    incident_type: "reconciliação de payout",
-    recipient_name: "Admin",
-  });
-  assert(admin.text.includes("runbook"));
-});
+    const admin = renderEmailTemplate("payout_operational_alert_admin", {
+      admin_url: "https://example.test/admin/pagamentos",
+      incident_type: "reconciliação de payout",
+      recipient_name: "Admin",
+    });
+    assert(admin.text.includes("área administrativa"));
+    assert(
+      !/payload|runbook|payout\.paid|webhook|PaymentIntent|SetupIntent/i.test(
+        `${admin.subject} ${admin.text} ${admin.html}`,
+      ),
+    );
+  },
+);
 
 Deno.test("financial templates reject unsafe or unknown values", () => {
   try {
@@ -285,17 +367,14 @@ Deno.test(
       subscription_url:
         "https://example.test/terapeuta/configuracoes#plano-assinatura",
     });
-    const cancelled = renderEmailTemplate(
-      "therapist_subscription_cancelled",
-      {
-        account_status: "Plano Free",
-        date: "20 de agosto de 2026",
-        plan_name: "Premium",
-        recipient_name: "Terapeuta",
-        subscription_url:
-          "https://example.test/terapeuta/configuracoes#plano-assinatura",
-      },
-    );
+    const cancelled = renderEmailTemplate("therapist_subscription_cancelled", {
+      account_status: "Plano Free",
+      date: "20 de agosto de 2026",
+      plan_name: "Premium",
+      recipient_name: "Terapeuta",
+      subscription_url:
+        "https://example.test/terapeuta/configuracoes#plano-assinatura",
+    });
     const planChanged = renderEmailTemplate(
       "therapist_subscription_plan_changed",
       {

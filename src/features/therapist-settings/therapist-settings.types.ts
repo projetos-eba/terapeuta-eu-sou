@@ -37,11 +37,16 @@ export type TherapistSettingsData = {
   profile: {
     isAcceptingBookings: boolean;
     isPublic: boolean;
+    isPubliclyAvailable: boolean;
     plan: TherapistPlan;
     profileId: string;
     publicName: string;
     publicStatus: string;
     publicUrl: string;
+    publication: {
+      isPubliclyVisible: boolean;
+      needsReceivingAccount: boolean;
+    };
     status: TherapistStatus;
   };
 };

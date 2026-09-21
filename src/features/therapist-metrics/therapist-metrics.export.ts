@@ -199,7 +199,7 @@ export function buildTherapistMetricsCsv({
         },
       );
     });
-    appendProtectedItems(rows, "heatmap", data.heatmap, (item) => ({
+    appendOwnHistoryItems(rows, "heatmap", data.heatmap, (item) => ({
       detail: `day=${item.dayOfWeek};hour_start=${item.hourBucketStart}`,
       key: `${item.dayOfWeek}:${item.hourBucketStart}`,
       label: "Sessões por dia e faixa de horário",
@@ -228,18 +228,10 @@ export function buildTherapistMetricsCsv({
   }
 
   if (tab === "interest" && isReadyInterest(data)) {
-    appendSampled(
+    appendReturnSummary(
       rows,
       "interest",
-      "people_returned",
-      "Pessoas que voltaram",
       data.summary.peopleReturned,
-    );
-    appendSampled(
-      rows,
-      "interest",
-      "return_rate",
-      "Taxa de retorno",
       data.summary.returnRate,
     );
     appendSampled(
@@ -249,7 +241,7 @@ export function buildTherapistMetricsCsv({
       "Sessões por pessoa",
       data.summary.sessionsPerPerson,
     );
-    appendSampled(
+    appendFavoriteActivity(
       rows,
       "interest",
       "profile_favorites",
@@ -319,6 +311,44 @@ export function buildTherapistMetricsCsv({
   return serializeCsv(rows);
 }
 
+function appendReturnSummary(
+  rows: CsvRow[],
+  section: string,
+  peopleReturned: TherapistInterestMetricsReady["summary"]["peopleReturned"],
+  returnRate: TherapistInterestMetricsReady["summary"]["returnRate"],
+) {
+  const ready =
+    peopleReturned.status === "ready" && returnRate.status === "ready";
+
+  rows.push({
+    detail: `minimum_sample=${returnRate.minimumSample};observed_sample=${returnRate.observedSample};returned_people=${ready ? peopleReturned.value : ""};copy_key=${returnRate.directionCopyKey ?? ""}`,
+    key: "return_summary",
+    label: "Retorno no período",
+    section,
+    status: ready ? "ready" : "insufficient_sample",
+    unit: "percent",
+    value: ready ? returnRate.value : null,
+  });
+}
+
+function appendFavoriteActivity(
+  rows: CsvRow[],
+  section: string,
+  key: string,
+  label: string,
+  favorites: TherapistInterestMetricsReady["summary"]["profileFavorites"],
+) {
+  rows.push({
+    detail: `comparison_status=${favorites.comparison.status};minimum_sample=${favorites.comparison.minimumSample};observed_sample=${favorites.comparison.observedSample};copy_key=${favorites.comparison.directionCopyKey ?? ""}`,
+    key,
+    label,
+    section,
+    status: favorites.activity.status,
+    unit: favorites.activity.unit,
+    value: favorites.activity.value,
+  });
+}
+
 function appendCounter(
   rows: CsvRow[],
   section: string,
@@ -382,6 +412,36 @@ function appendProtectedItems<T>(
   if (collection.status !== "ready") {
     rows.push({
       detail: `minimum_sample=${collection.minimumSample};observed_sample=${collection.observedSample}`,
+      key: section,
+      label: section,
+      section,
+      status: collection.status,
+    });
+    return;
+  }
+
+  collection.items.forEach((item) => {
+    rows.push({
+      ...mapItem(item),
+      section,
+      status: collection.status,
+    });
+  });
+}
+
+function appendOwnHistoryItems<T>(
+  rows: CsvRow[],
+  section: string,
+  collection: {
+    items: T[];
+    observedSample: number;
+    status: string;
+  },
+  mapItem: (item: T) => Omit<CsvRow, "section" | "status">,
+) {
+  if (collection.status !== "ready") {
+    rows.push({
+      detail: `observed_sample=${collection.observedSample}`,
       key: section,
       label: section,
       section,

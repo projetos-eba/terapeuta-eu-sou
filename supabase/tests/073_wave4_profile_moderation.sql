@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 select has_table(
   'public',
@@ -97,7 +97,9 @@ select is(
 
 reset role;
 update public.profiles
-set role = 'admin'::public.user_role
+set role = 'admin'::public.user_role,
+    phone = '11999999999',
+    phone_country_code = '55'
 where id = 'aaaaaaaa-0000-4000-8000-000000000001';
 set local role authenticated;
 select set_config(
@@ -110,6 +112,12 @@ select is(
   (public.admin_get_therapist_profile_review_v1('c1000000-0000-4000-8000-000000000001')->'privateIdentity'->>'documentNumber'),
   '52998224725',
   'authorized Admin can review the private identity without using a public projection'
+);
+
+select is(
+  (public.admin_get_therapist_profile_review_v1('c1000000-0000-4000-8000-000000000001')->'privateIdentity'->>'phone'),
+  '11999999999',
+  'authorized Admin can review the therapist contact without using a public projection'
 );
 
 reset role;

@@ -5,6 +5,7 @@ import { TherapistInterestMetricsPage } from "./components/therapist-interest-me
 import { TherapistSessionMetricsPage } from "./components/therapist-session-metrics-page";
 import {
   mapTherapistInterestMetrics,
+  mapTherapistMetricsTodayActivity,
   mapTherapistSessionEvolutionComparison,
   mapTherapistSessionMetrics,
 } from "./therapist-metrics.detail-mappers";
@@ -13,6 +14,23 @@ import { buildTherapistMetricsCsv } from "./therapist-metrics.export";
 afterEach(cleanup);
 
 describe("therapist metric detail contracts", () => {
+  it("maps the separate current-day favorites projection", () => {
+    const mapped = mapTherapistMetricsTodayActivity(todayActivityPayload(2));
+
+    expect(mapped).toMatchObject({
+      meta: {
+        localDate: "2026-07-28",
+        timezone: "America/Sao_Paulo",
+      },
+      profileFavoritesAdded: {
+        status: "ready",
+        unit: "favorites",
+        value: 2,
+      },
+      status: "ready",
+    });
+  });
+
   it("maps a complete aligned current-versus-previous session series", () => {
     const payload = {
       contractVersion: 1,
@@ -65,6 +83,77 @@ describe("therapist metric detail contracts", () => {
     );
   });
 
+  it("combines absence classifications for the therapist chart and CSV", () => {
+    const payload = sessionPayload();
+    const distribution = payload.outcomeDistribution as {
+      items: Array<{
+        key: string;
+        label: string;
+        percentage: number;
+        value: number;
+      }>;
+      observedSample: number;
+    };
+    distribution.items[2] = {
+      key: "no_show_therapist",
+      label: "Ausência do terapeuta",
+      percentage: 11.8,
+      value: 2,
+    };
+    distribution.observedSample = 17;
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.outcomeDistribution.items).toContainEqual({
+      key: "not_performed",
+      label: "Sessão não realizada",
+      percentage: 17.6,
+      value: 3,
+    });
+    expect(JSON.stringify(mapped.outcomeDistribution)).not.toMatch(
+      /no_show_patient|no_show_therapist|Ausência da pessoa atendida|Ausência do terapeuta/,
+    );
+    expect(
+      buildTherapistMetricsCsv({ data: mapped, tab: "sessions" }),
+    ).not.toMatch(
+      /no_show_patient|no_show_therapist|Ausência da pessoa atendida|Ausência do terapeuta/,
+    );
+  });
+
+  it("maps private day and hour frequency from the first completed session", () => {
+    const payload = sessionPayload();
+    payload.metricDefinitionVersion = 2;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    };
+
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.heatmap).toEqual({
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    });
+  });
+
+  it("keeps the legacy heatmap contract readable during the rollout", () => {
+    const payload = sessionPayload();
+    payload.heatmap = {
+      items: [{ dayOfWeek: 7, hourBucketStart: 18, sessions: 12 }],
+      minimumSample: 10,
+      observedSample: 12,
+      status: "ready",
+    };
+    const mapped = mapTherapistSessionMetrics(payload);
+
+    expect(mapped.metricDefinitionVersion).toBe(1);
+    expect(mapped.heatmap.status).toBe("ready");
+    expect(mapped.heatmap.items).toEqual([
+      { dayOfWeek: 0, hourBucketStart: 18, sessions: 12 },
+    ]);
+  });
+
   it("rejects partial values below the minimum sample", () => {
     const payload = sessionPayload();
     payload.outcomeDistribution = {
@@ -98,6 +187,10 @@ describe("therapist metric detail contracts", () => {
     if (!("summary" in mapped)) throw new Error("Unexpected lock.");
 
     expect(mapped.summary.peopleReturned.status).toBe("insufficient_sample");
+    expect(mapped.summary.profileFavorites).toEqual({
+      activity: { status: "ready", unit: "favorites", value: 3 },
+      comparison: sampledInsufficient("favorites", 3),
+    });
     expect(mapped.segments.items).toEqual([]);
     expect(mapped.journeyThemes.reason).toBe("free_text_analysis_prohibited");
   });
@@ -112,6 +205,7 @@ describe("therapist metric detail contracts", () => {
     expect(csv).toContain("metric_definition_version");
     expect(csv).toContain("America/Sao_Paulo");
     expect(csv).toContain("cancellation_taxonomy_not_versioned");
+    expect(csv).toContain("day=1;hour_start=18");
     expect(csv).not.toMatch(/patient_profile_id|patientProfileId|public_name/i);
   });
 
@@ -140,7 +234,7 @@ describe("therapist metric detail contracts", () => {
       }),
     ).toBeInTheDocument();
     const outcomeDonut = screen.getByRole("img", {
-      name: "Distribuição dos resultados das sessões",
+      name: /Distribuição dos resultados das sessões: Compareceram, 12/,
     });
     expect(
       outcomeDonut.querySelector("[data-chart-graphics-layer]"),
@@ -151,6 +245,31 @@ describe("therapist metric detail contracts", () => {
     expect(
       screen.getByText(/motivos escritos livremente permanecem ocultos/i),
     ).toBeInTheDocument();
+  });
+
+  it("shows an initial reading without unlocking protected session metrics", () => {
+    const payload = sessionPayload();
+    payload.metricDefinitionVersion = 2;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    };
+
+    render(
+      <TherapistSessionMetricsPage
+        data={mapTherapistSessionMetrics(payload)}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Leitura inicial — o padrão fica mais claro conforme novas sessões forem concluídas.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/mais dados são necessários/i).length,
+    ).toBeGreaterThan(0);
   });
 
   it("renders the plan gate and protected MTR-5 states", () => {
@@ -201,7 +320,7 @@ describe("therapist metric detail contracts", () => {
     ).toBeInTheDocument();
     expect(
       container.querySelectorAll('[data-state="insufficient_sample"]'),
-    ).toHaveLength(6);
+    ).toHaveLength(4);
     expect(
       Array.from(
         container.querySelectorAll(
@@ -209,12 +328,9 @@ describe("therapist metric detail contracts", () => {
         ),
       ).map((element) => element.getAttribute("aria-label")),
     ).toEqual([
-      "8 de 10 registros necessários",
-      "3 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
-      "8 de 10 registros necessários",
+      "8 de 10 pessoas na base atual",
+      "8 de 10 pessoas na base atual",
+      "8 de 10 pessoas no período",
     ]);
   });
 
@@ -239,15 +355,18 @@ describe("therapist metric detail contracts", () => {
         20,
       ),
       profileFavorites: {
-        ...sampledReady(
-          "therapist_metrics.profile_favorites.stable",
-          3,
-          4,
-          "favorites",
-          20,
-        ),
-        direction: "down",
-        directionCopyKey: "therapist_metrics.profile_favorites.down",
+        activity: { status: "ready", unit: "favorites", value: 3 },
+        comparison: {
+          ...sampledReady(
+            "therapist_metrics.profile_favorites.stable",
+            3,
+            4,
+            "favorites",
+            20,
+          ),
+          direction: "down",
+          directionCopyKey: "therapist_metrics.profile_favorites.down",
+        },
       },
       returnRate: sampledReady(
         "therapist_metrics.return_rate.up",
@@ -268,14 +387,28 @@ describe("therapist metric detail contracts", () => {
     const { container } = render(
       <TherapistInterestMetricsPage
         data={mapTherapistInterestMetrics(payload)}
+        todayActivity={mapTherapistMetricsTodayActivity(
+          todayActivityPayload(2),
+        )}
       />,
     );
 
-    expect(screen.getByText("↑ 50%")).toBeInTheDocument();
     expect(screen.getByText("↑ 10 p.p.")).toBeInTheDocument();
     expect(screen.getByText("↑ 20%")).toBeInTheDocument();
     expect(screen.getByText("↓ 25%")).toBeInTheDocument();
-    expect(screen.getAllByText("vs. período anterior")).toHaveLength(4);
+    expect(screen.getAllByText("vs. período anterior")).toHaveLength(3);
+    expect(screen.getByText("+2 favoritos hoje")).toBeInTheDocument();
+    expect(
+      screen.getByText("Entra no comparativo amanhã."),
+    ).toBeInTheDocument();
+    const summaryGrid = screen.getByRole("heading", {
+      name: "Continuidade do acompanhamento",
+    }).parentElement?.nextElementSibling;
+    expect(summaryGrid).toHaveClass(
+      "sm:grid-cols-2",
+      "lg:grid-cols-3",
+      "xl:grid-cols-5",
+    );
     expect(
       screen.getByRole("heading", { name: "Pessoas ativas" }),
     ).toBeInTheDocument();
@@ -290,12 +423,51 @@ describe("therapist metric detail contracts", () => {
     ).toBeInTheDocument();
     expect(
       container.querySelectorAll('article[data-state="ready"]'),
-    ).toHaveLength(6);
+    ).toHaveLength(5);
     expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(
-      4,
+      3,
     );
+    expect(screen.getByText("Retorno no período")).toBeInTheDocument();
+    expect(screen.getByText("12 pessoas")).toBeInTheDocument();
+    expect(
+      screen.getByText("60% da base voltou para uma nova sessão"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Pessoas que voltaram")).not.toBeInTheDocument();
+    expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
+  });
+
+  it("exports immediate favorite activity and one protected return summary", () => {
+    const mapped = mapTherapistInterestMetrics(readyInterestPayload());
+    const csv = buildTherapistMetricsCsv({ data: mapped, tab: "interest" });
+
+    expect(csv).toContain("profile_favorites");
+    expect(csv).toContain("Novos favoritos do perfil");
+    expect(csv).toContain("ready,3,favorites");
+    expect(csv).toContain("return_summary");
+    expect(csv).toContain("Retorno no período");
+    expect(csv).not.toContain("Pessoas que voltaram");
+    expect(csv).not.toContain("Taxa de retorno");
   });
 });
+
+function todayActivityPayload(favorites: number) {
+  return {
+    contractVersion: 1,
+    meta: {
+      computedAt: "2026-07-28T16:00:00.000Z",
+      freshThrough: favorites > 0 ? "2026-07-28T15:59:00.000Z" : null,
+      localDate: "2026-07-28",
+      timezone: "America/Sao_Paulo",
+    },
+    metricDefinitionVersion: 1,
+    profileFavoritesAdded: {
+      status: favorites > 0 ? "ready" : "empty",
+      unit: "favorites",
+      value: favorites,
+    },
+    therapist: therapist("premium_plus"),
+  };
+}
 
 export function sessionPayload(): Record<string, unknown> {
   return {
@@ -447,7 +619,10 @@ export function readyInterestPayload(): Record<string, unknown> {
     },
     summary: {
       peopleReturned: sampledInsufficient("people", 8),
-      profileFavorites: sampledInsufficient("favorites", 3),
+      profileFavorites: {
+        activity: { status: "ready", unit: "favorites", value: 3 },
+        comparison: sampledInsufficient("favorites", 3),
+      },
       returnRate: sampledInsufficient("percent", 8),
       sessionsPerPerson: sampledInsufficient("ratio", 8),
     },

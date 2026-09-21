@@ -1,6 +1,7 @@
 begin;
+\ir fixtures/attended-attempt-local.inc
 
-select plan(33);
+select plan(34);
 
 select has_table(
   'public',
@@ -28,7 +29,7 @@ select is(
 select ok(
   has_function_privilege(
     'authenticated',
-    'public.get_session_feedback_v1(uuid)',
+    'public.get_session_quality_feedback_v1(uuid)',
     'EXECUTE'
   ),
   'participants can use the authenticated feedback read RPC'
@@ -37,7 +38,7 @@ select ok(
 select is(
   has_function_privilege(
     'authenticated',
-    'public.submit_session_feedback_for_actor_v1(uuid,uuid,text,smallint,text,text,uuid)',
+    'public.submit_session_quality_feedback_v1(uuid,uuid,uuid,boolean,smallint,text,text,uuid)',
     'EXECUTE'
   ),
   false,
@@ -47,7 +48,7 @@ select is(
 select ok(
   has_function_privilege(
     'service_role',
-    'public.submit_session_feedback_for_actor_v1(uuid,uuid,text,smallint,text,text,uuid)',
+    'public.submit_session_quality_feedback_v1(uuid,uuid,uuid,boolean,smallint,text,text,uuid)',
     'EXECUTE'
   ),
   'service role can execute the feedback command RPC'
@@ -56,7 +57,7 @@ select ok(
 select ok(
   has_function_privilege(
     'authenticated',
-    'public.admin_get_session_feedback_v1(uuid)',
+    'public.admin_get_session_feedback_v2(uuid)',
     'EXECUTE'
   ),
   'authenticated clients can reach the admin feedback read boundary'
@@ -66,7 +67,7 @@ select is(
   (
     select prosecdef::text
     from pg_proc
-    where oid = 'public.submit_session_feedback_for_actor_v1(uuid,uuid,text,smallint,text,text,uuid)'::regprocedure
+    where oid = 'public.submit_session_quality_feedback_v1(uuid,uuid,uuid,boolean,smallint,text,text,uuid)'::regprocedure
   ),
   'true',
   'feedback command RPC is security definer'
@@ -84,7 +85,7 @@ select is(
       ''
     )
     from pg_proc p
-    where p.oid = 'public.submit_session_feedback_for_actor_v1(uuid,uuid,text,smallint,text,text,uuid)'::regprocedure
+    where p.oid = 'public.submit_session_quality_feedback_v1(uuid,uuid,uuid,boolean,smallint,text,text,uuid)'::regprocedure
   ),
   'search_path=""',
   'feedback command RPC keeps an empty search_path'
@@ -133,9 +134,11 @@ values (
 on conflict (booking_id) do update
 set financial_status = excluded.financial_status;
 
+-- Keep historical feedback outside the current-day bookings in the local seed.
+-- The booking and its evidence are restored by the final ROLLBACK.
 update public.bookings
-set starts_at = '2020-01-01 14:00:00-03'::timestamptz,
-    ends_at = '2020-01-01 15:00:00-03'::timestamptz
+set starts_at = now() - interval '400 days 2 hours',
+    ends_at = now() - interval '400 days 1 hour'
 where id = '96000000-0000-4000-8000-000000000001';
 
 insert into public.video_sessions (
@@ -155,10 +158,10 @@ values (
   'development',
   'tes-feedback-video-session',
   'ended',
-  now() - interval '2 hours',
-  now() - interval '1 hour',
-  now() - interval '2 hours',
-  now() - interval '1 hour'
+  now() - interval '400 days 2 hours',
+  now() - interval '400 days 1 hour',
+  now() - interval '400 days 2 hours',
+  now() - interval '400 days 1 hour'
 )
 on conflict (booking_id) do update
 set status = excluded.status,
@@ -185,7 +188,7 @@ values
     'feedback-patient',
     'patient',
     'session.user_joined',
-    now() - interval '2 hours',
+    now() - interval '400 days 2 hours',
     '{}'::jsonb
   ),
   (
@@ -195,10 +198,12 @@ values
     'feedback-therapist',
     'therapist',
     'session.user_joined',
-    now() - interval '2 hours',
+    now() - interval '400 days 2 hours',
     '{}'::jsonb
   )
 on conflict (id) do nothing;
+
+select pg_temp.prepare_attended_attempt('96000000-0000-4000-8000-000000000001');
 
 reset role;
 set local role authenticated;
@@ -209,7 +214,7 @@ select set_config(
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000002')->'pendingRoles',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'pendingRoles',
   '["patient", "therapist"]'::jsonb,
   'admin read model shows both participants pending when no responses exist'
 );
@@ -223,15 +228,15 @@ select set_config(
 );
 
 select is(
-  (public.get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->>'status'),
+  (public.get_session_quality_feedback_v1('96000000-0000-4000-8000-000000000001')->>'status'),
   'eligible',
   'participant feedback read becomes eligible only after both trusted entries'
 );
 
 select is(
-  (public.get_session_feedback_v1('96000000-0000-4000-8000-000000000002')->>'status'),
+  (public.get_session_quality_feedback_v1('96000000-0000-4000-8000-000000000002')->>'status'),
   'unavailable',
-  'participant feedback read distinguishes a session without a confirmed payment'
+  'quality read is unavailable without trusted bilateral attendance in the current attempt'
 );
 
 reset role;
@@ -243,30 +248,32 @@ select set_config(
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000001',
-    'completed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    true,
     5::smallint,
     null,
     'A chamada teve boa qualidade.',
     '97700000-0000-4000-8000-000000000001'
-  )->'feedback'->>'outcome',
-  'completed',
-  'patient response stores the completed outcome'
+  )->'feedback'->>'successful',
+  'true',
+  'patient response stores successful quality independently of confirmation'
 );
 
 select is(
-  (select count(*)::integer from public.session_feedback where booking_id = '96000000-0000-4000-8000-000000000001' and author_role = 'patient'),
+  (select count(*)::integer from public.session_quality_feedback where booking_id = '96000000-0000-4000-8000-000000000001' and author_role = 'patient'),
   1,
   'one patient response is stored per booking'
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000001',
-    'completed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    true,
     5::smallint,
     null,
     'A chamada teve boa qualidade.',
@@ -277,21 +284,21 @@ select is(
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'pendingRoles',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'pendingRoles',
   '["therapist"]'::jsonb,
   'admin read model shows only the therapist pending after the patient response'
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'patient'->>'rating',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'patient'->>'rating',
   '5',
   'admin read model includes the patient rating'
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text,
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text,
   replace(
-    public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text,
+    public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text,
     '',
     ''
   ),
@@ -299,16 +306,17 @@ select is(
 );
 
 select ok(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text not like '%requestId%'
-    and public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text not like '%payloadHash%',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text not like '%requestId%'
+    and public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text not like '%payloadHash%',
   'admin read model omits replay and hashing internals'
 );
 
 select throws_ok(
-  $$select public.submit_session_feedback_for_actor_v1(
+  $$select public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000001',
-    'completed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    true,
     4::smallint,
     null,
     'Outra resposta.',
@@ -320,47 +328,48 @@ select throws_ok(
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000011',
     '96000000-0000-4000-8000-000000000001',
-    'not_performed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    false,
     null,
     'internet_problem',
-    'A sessão não aconteceu por instabilidade.',
+    'A sessão realizada teve instabilidade na conexão.',
     '97800000-0000-4000-8000-000000000001'
-  )->'feedback'->>'notPerformedReason',
+  )->'feedback'->>'qualityReason',
   'internet_problem',
-  'therapist response stores the non-performed reason'
+  'therapist response stores the private quality reason'
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'pendingRoles',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'pendingRoles',
   '[]'::jsonb,
   'admin read model has no pending participant after both responses'
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->>'divergent',
-  'true',
-  'admin read model explicitly marks conflicting participant reports'
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->>'divergent',
+  'false',
+  'different quality opinions are not conflicting attendance reports'
 );
 
 select is(
-  (select count(*)::integer from public.session_feedback where booking_id = '96000000-0000-4000-8000-000000000001'),
+  (select count(*)::integer from public.session_quality_feedback where booking_id = '96000000-0000-4000-8000-000000000001'),
   2,
   'bilateral responses remain independent records'
 );
 
 select is(
   (select service_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'not_performed',
-  'a non-performed participant report blocks service confirmation'
+  'scheduled',
+  'negative quality does not classify the service as not performed'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'blocked',
-  'negative feedback blocks the transfer for administrative review'
+  'not_eligible',
+  'negative quality preserves the original legacy transfer state'
 );
 
 select is(
@@ -370,10 +379,11 @@ select is(
 );
 
 select throws_ok(
-  $$select public.submit_session_feedback_for_actor_v1(
+  $$select public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000011',
     '96000000-0000-4000-8000-000000000001',
-    'not_performed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    false,
     null,
     null,
     '',
@@ -381,14 +391,15 @@ select throws_ok(
   )$$,
   '22023',
   'FEEDBACK_VALIDATION_ERROR',
-  'non-performed response requires a reason'
+  'negative quality requires a reason'
 );
 
 select throws_ok(
-  $$select public.submit_session_feedback_for_actor_v1(
+  $$select public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000011',
     '96000000-0000-4000-8000-000000000001',
-    'completed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000001'),
+    true,
     6::smallint,
     null,
     '',
@@ -408,7 +419,7 @@ select set_config(
 );
 
 select is(
-  public.get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'feedback'->>'authorRole',
+  public.get_session_quality_feedback_v1('96000000-0000-4000-8000-000000000001')->'feedback'->>'authorRole',
   'patient',
   'patient can read only the patient feedback projection'
 );
@@ -420,19 +431,31 @@ select set_config(
 );
 
 select throws_ok(
-  $$select public.get_session_feedback_v1('96000000-0000-4000-8000-000000000002')$$,
+  $$select public.get_session_quality_feedback_v1('96000000-0000-4000-8000-000000000002')$$,
   '42501',
   'FEEDBACK_PARTICIPANT_REQUIRED',
   'unrelated authenticated user cannot read another booking feedback'
 );
 
 select throws_ok(
-  $$select public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')$$,
+  $$select public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')$$,
   '42501',
-  'FEEDBACK_ADMIN_REQUIRED',
+  'SESSION_ATTENDANCE_ADMIN_REQUIRED',
   'non-admin authenticated user cannot use the admin audit read model'
 );
 
+reset role;
+set local role service_role;
+select throws_ok(
+  $$select public.submit_session_feedback_for_actor_v1(
+    '90000000-0000-4000-8000-000000000001',
+    '96000000-0000-4000-8000-000000000001',
+    'not_performed',null::smallint,'internet_problem','Contrato antigo.',
+    '97800000-0000-4000-8000-000000000099'
+  )$$,
+  '22023','FEEDBACK_CONTRACT_VERSION_REQUIRED',
+  'retired quality writer fails closed instead of creating an attendance or financial hold'
+);
 select * from finish();
 
 rollback;

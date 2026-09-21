@@ -4,12 +4,45 @@ import type {
   TherapistInterestSegmentKey,
   TherapistMetricDirection,
   TherapistMetricDirectionCopyKey,
+  TherapistMetricOwnHistoryCollection,
   TherapistMetricProtectedCollection,
   TherapistMetricsCommonMeta,
+  TherapistMetricsTodayActivity,
   TherapistSessionEvolutionComparison,
   TherapistSessionMetrics,
   TherapistSessionOutcomeKey,
 } from "./therapist-metrics.types";
+
+export function mapTherapistMetricsTodayActivity(
+  input: unknown,
+): TherapistMetricsTodayActivity {
+  try {
+    const value = record(input);
+    const meta = record(value.meta);
+    const favorites = record(value.profileFavoritesAdded);
+
+    return {
+      contractVersion: literal(value.contractVersion, 1),
+      meta: {
+        computedAt: dateTime(meta.computedAt),
+        freshThrough: nullableDateTime(meta.freshThrough),
+        localDate: metricDate(meta.localDate),
+        timezone: nonEmptyString(meta.timezone),
+      },
+      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
+      profileFavoritesAdded: {
+        status: emptyOrReady(favorites.status),
+        unit: literal(favorites.unit, "favorites"),
+        value: nonNegativeInteger(favorites.value),
+      },
+      status: "ready",
+      therapist: therapist(value.therapist),
+    };
+  } catch (error) {
+    if (error instanceof TherapistMetricsError) throw error;
+    throw new TherapistMetricsError("invalid_contract");
+  }
+}
 
 export function mapTherapistSessionEvolutionComparison(
   input: unknown,
@@ -59,6 +92,23 @@ export function mapTherapistSessionMetrics(
     const summary = record(value.summary);
     const evolution = record(value.evolution);
     const cancellationReasons = record(value.cancellationReasons);
+    const metricDefinitionVersion = oneOf(value.metricDefinitionVersion, 1, 2);
+    const mapSessionDayOfWeek =
+      metricDefinitionVersion === 1 ? legacyDayOfWeek : dayOfWeek;
+    const heatmapItem = (item: Record<string, unknown>) => ({
+      dayOfWeek: mapSessionDayOfWeek(item.dayOfWeek),
+      hourBucketStart: hourBucket(item.hourBucketStart),
+      sessions: nonNegativeInteger(item.sessions),
+    });
+    const outcomeDistribution = protectedCollection(
+      value.outcomeDistribution,
+      (item) => ({
+        key: outcomeKey(item.key),
+        label: nonEmptyString(item.label),
+        percentage: percentage(item.percentage),
+        value: nonNegativeInteger(item.value),
+      }),
+    );
 
     return {
       cancellationReasons: {
@@ -82,24 +132,16 @@ export function mapTherapistSessionMetrics(
         }),
         status: emptyOrReady(evolution.status),
       },
-      heatmap: protectedCollection(value.heatmap, (item) => ({
-        dayOfWeek: dayOfWeek(item.dayOfWeek),
-        hourBucketStart: hourBucket(item.hourBucketStart),
-        sessions: nonNegativeInteger(item.sessions),
-      })),
+      heatmap:
+        metricDefinitionVersion === 1
+          ? legacyHeatmap(value.heatmap, heatmapItem)
+          : ownHistoryCollection(value.heatmap, heatmapItem),
       meta: commonMeta(value.meta),
-      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
-      outcomeDistribution: protectedCollection(
-        value.outcomeDistribution,
-        (item) => ({
-          key: outcomeKey(item.key),
-          label: nonEmptyString(item.label),
-          percentage: percentage(item.percentage),
-          value: nonNegativeInteger(item.value),
-        }),
-      ),
+      metricDefinitionVersion,
+      outcomeDistribution:
+        neutralizeSessionOutcomeDistribution(outcomeDistribution),
       presenceByDay: protectedCollection(value.presenceByDay, (item) => ({
-        dayOfWeek: dayOfWeek(item.dayOfWeek),
+        dayOfWeek: mapSessionDayOfWeek(item.dayOfWeek),
         percentage: percentage(item.percentage),
         sample: nonNegativeInteger(item.sample),
       })),
@@ -236,11 +278,7 @@ export function mapTherapistInterestMetrics(
           "therapist_metrics.people_returned",
           "people",
         ),
-        profileFavorites: sampledMetric(
-          summary.profileFavorites,
-          "therapist_metrics.profile_favorites",
-          "favorites",
-        ),
+        profileFavorites: profileFavorites(summary.profileFavorites),
         returnRate: sampledMetric(
           summary.returnRate,
           "therapist_metrics.return_rate",
@@ -264,6 +302,24 @@ export function mapTherapistInterestMetrics(
     if (error instanceof TherapistMetricsError) throw error;
     throw new TherapistMetricsError("invalid_contract");
   }
+}
+
+function profileFavorites(input: unknown) {
+  const value = record(input);
+  const activity = record(value.activity);
+
+  return {
+    activity: {
+      status: emptyOrReady(activity.status),
+      unit: literal(activity.unit, "favorites"),
+      value: nonNegativeInteger(activity.value),
+    },
+    comparison: sampledMetric(
+      value.comparison,
+      "therapist_metrics.profile_favorites",
+      "favorites",
+    ),
+  } as const;
 }
 
 function commonMeta(input: unknown): TherapistMetricsCommonMeta {
@@ -380,6 +436,39 @@ function protectedCollection<T>(
   };
 }
 
+function ownHistoryCollection<T>(
+  input: unknown,
+  mapItem: (value: Record<string, unknown>) => T,
+): TherapistMetricOwnHistoryCollection<T> {
+  const value = record(input);
+  const status = emptyOrReady(value.status);
+  const items = array(value.items).map((item) => mapItem(record(item)));
+  const observedSample = nonNegativeInteger(value.observedSample);
+
+  if (status === "empty" && (observedSample !== 0 || items.length > 0)) {
+    throw new Error("Empty own-history collection contains data.");
+  }
+
+  if (status === "ready" && observedSample === 0) {
+    throw new Error("Ready own-history collection has no sample.");
+  }
+
+  return { items, observedSample, status };
+}
+
+function legacyHeatmap<T>(
+  input: unknown,
+  mapItem: (value: Record<string, unknown>) => T,
+): TherapistMetricOwnHistoryCollection<T> {
+  const collection = protectedCollection(input, mapItem);
+
+  return {
+    items: collection.status === "ready" ? collection.items : [],
+    observedSample: collection.observedSample,
+    status: collection.status === "ready" ? "ready" : "empty",
+  };
+}
+
 function unavailable<TReason extends string>(
   input: unknown,
   reason: TReason,
@@ -397,9 +486,35 @@ function outcomeKey(value: unknown): TherapistSessionOutcomeKey {
     "cancelled_by_patient",
     "cancelled_by_therapist",
     "completed",
+    "not_performed",
     "no_show_patient",
     "no_show_therapist",
+    "no_show_both",
   );
+}
+
+function neutralizeSessionOutcomeDistribution(
+  collection: TherapistSessionMetrics["outcomeDistribution"],
+): TherapistSessionMetrics["outcomeDistribution"] {
+  const isNotPerformed = (key: TherapistSessionOutcomeKey) =>
+    key === "not_performed" || key.startsWith("no_show_");
+  const firstIndex = collection.items.findIndex((item) =>
+    isNotPerformed(item.key),
+  );
+  if (firstIndex < 0) return collection;
+
+  const noShows = collection.items.filter((item) => isNotPerformed(item.key));
+  const value = noShows.reduce((total, item) => total + item.value, 0);
+  const items = collection.items.filter((item) => !isNotPerformed(item.key));
+  items.splice(firstIndex, 0, {
+    key: "not_performed",
+    label: "Sessão não realizada",
+    percentage: collection.observedSample
+      ? Math.round((value / collection.observedSample) * 1000) / 10
+      : 0,
+    value,
+  });
+  return { ...collection, items };
 }
 
 function segmentKey(value: unknown): TherapistInterestSegmentKey {
@@ -420,6 +535,11 @@ function dateTime(value: unknown) {
   return parsed;
 }
 
+function nullableDateTime(value: unknown) {
+  if (value === null) return null;
+  return dateTime(value);
+}
+
 function metricDate(value: unknown) {
   const parsed = nonEmptyString(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) {
@@ -429,7 +549,12 @@ function metricDate(value: unknown) {
 }
 
 function dayOfWeek(value: unknown) {
-  return boundedInteger(value, 1, 7);
+  return boundedInteger(value, 0, 6);
+}
+
+function legacyDayOfWeek(value: unknown) {
+  const parsed = boundedInteger(value, 1, 7);
+  return parsed === 7 ? 0 : parsed;
 }
 
 function hourBucket(value: unknown) {

@@ -24,8 +24,15 @@ type AvailableSlotsContract = {
 type AvailableDaysContract = {
   days?: Array<{ date?: unknown }>;
   horizonEndsAt?: unknown;
+  month?: unknown;
   timezone?: unknown;
 };
+
+type PublicAvailabilityMonthContract = PublicAvailabilityMonth & {
+  month: string;
+};
+
+const PUBLIC_PROFILE_COMPACT_DAY_LIMIT = 3;
 
 export type PublicAvailabilityMonth = {
   dates: string[];
@@ -122,6 +129,103 @@ export async function getPublicServiceAvailabilityForWindow(
     : { data: null, status: "error" };
 }
 
+export async function getPublicServiceCompactAvailability(
+  serviceId: string,
+): Promise<PublicServiceAvailabilityResult> {
+  const firstMonth = await requestPublicServiceAvailabilityMonth(
+    serviceId,
+    null,
+  );
+  if (!firstMonth) return { data: null, status: "error" };
+
+  const { horizonEndsAt, timezone } = firstMonth;
+  const horizon = new Date(horizonEndsAt);
+  const days: AvailabilityDay[] = [];
+  const visitedDates = new Set<string>();
+  let monthAvailability = firstMonth;
+
+  while (days.length < PUBLIC_PROFILE_COMPACT_DAY_LIMIT) {
+    const candidates = [...new Set(monthAvailability.dates)]
+      .filter((date) => {
+        if (visitedDates.has(date)) return false;
+        const startsAt = availabilityDateKeyStart(date, timezone);
+        return startsAt ? startsAt < horizon : false;
+      })
+      .sort();
+    let offset = 0;
+
+    while (
+      offset < candidates.length &&
+      days.length < PUBLIC_PROFILE_COMPACT_DAY_LIMIT
+    ) {
+      const missingDayCount = PUBLIC_PROFILE_COMPACT_DAY_LIMIT - days.length;
+      const batch = candidates.slice(offset, offset + missingDayCount);
+      batch.forEach((date) => visitedDates.add(date));
+
+      const detailResults = await Promise.all(
+        batch.map((date) =>
+          getPublicServiceAvailabilityForDay(serviceId, date),
+        ),
+      );
+      if (detailResults.some((result) => result.status === "error")) {
+        return { data: null, status: "error" };
+      }
+      if (
+        detailResults.some(
+          (result) =>
+            result.status === "success" && result.data.timezone !== timezone,
+        )
+      ) {
+        return { data: null, status: "error" };
+      }
+
+      detailResults.forEach((result, index) => {
+        if (result.status !== "success") return;
+
+        const requestedDate = batch[index];
+        const day = result.data.days.find(
+          (item) => item.date === requestedDate && item.slots.length > 0,
+        );
+        if (day) days.push(day);
+      });
+      days.sort((left, right) => left.date.localeCompare(right.date));
+      offset += batch.length;
+    }
+
+    if (days.length >= PUBLIC_PROFILE_COMPACT_DAY_LIMIT) break;
+
+    const nextMonth = addMonthKeyMonths(monthAvailability.month, 1);
+    const nextMonthStartsAt = nextMonth
+      ? availabilityDateKeyStart(`${nextMonth}-01`, timezone)
+      : null;
+    if (!nextMonth || !nextMonthStartsAt || nextMonthStartsAt >= horizon) {
+      break;
+    }
+
+    const nextMonthAvailability = await requestPublicServiceAvailabilityMonth(
+      serviceId,
+      nextMonth,
+    );
+    if (
+      !nextMonthAvailability ||
+      nextMonthAvailability.month !== nextMonth ||
+      nextMonthAvailability.timezone !== timezone
+    ) {
+      return { data: null, status: "error" };
+    }
+    monthAvailability = nextMonthAvailability;
+  }
+
+  return {
+    data: {
+      days: days.slice(0, PUBLIC_PROFILE_COMPACT_DAY_LIMIT),
+      horizonEndsAt,
+      timezone,
+    },
+    status: "success",
+  };
+}
+
 export async function getPublicServiceAvailabilityMonth(
   serviceId: string,
   month: string,
@@ -131,24 +235,45 @@ export async function getPublicServiceAvailabilityMonth(
 > {
   if (!isMonthKey(month)) return { data: null, status: "error" };
 
+  const result = await requestPublicServiceAvailabilityMonth(serviceId, month);
+  if (!result) return { data: null, status: "error" };
+
+  const { dates, horizonEndsAt, timezone } = result;
+  return { data: { dates, horizonEndsAt, timezone }, status: "success" };
+}
+
+async function requestPublicServiceAvailabilityMonth(
+  serviceId: string,
+  month: string | null,
+): Promise<PublicAvailabilityMonthContract | null> {
+  if (month !== null && !isMonthKey(month)) return null;
+
   const contract = await requestPublicAvailability<AvailableDaysContract>(
     "get_service_available_days_v1",
-    { p_month: `${month}-01`, p_service_id: serviceId },
+    month
+      ? { p_month: `${month}-01`, p_service_id: serviceId }
+      : { p_service_id: serviceId },
   );
-  if (!contract) return { data: null, status: "error" };
+  if (!contract) return null;
 
   const timezone = readTimezone(contract.timezone);
   const horizonEndsAt = readIsoDate(contract.horizonEndsAt);
+  const returnedMonth = readMonthKey(contract.month) ?? month;
   const dates = Array.isArray(contract.days)
     ? contract.days
         .map((day) => (typeof day?.date === "string" ? day.date : null))
         .filter((date): date is string => Boolean(date && isDateKey(date)))
     : null;
-  if (!timezone || !horizonEndsAt || !dates) {
-    return { data: null, status: "error" };
+  if (!timezone || !horizonEndsAt || !returnedMonth || !dates) {
+    return null;
   }
 
-  return { data: { dates, horizonEndsAt, timezone }, status: "success" };
+  return {
+    dates,
+    horizonEndsAt,
+    month: returnedMonth,
+    timezone,
+  };
 }
 
 async function requestPublicAvailability<T>(operation: string, body: object) {
@@ -188,6 +313,18 @@ function readIsoDate(value: unknown) {
   if (typeof value !== "string") return null;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+function readMonthKey(value: unknown) {
+  return typeof value === "string" && isMonthKey(value) ? value : null;
+}
+
+function addMonthKeyMonths(month: string, amount: number) {
+  if (!isMonthKey(month)) return null;
+
+  const [year, monthNumber] = month.split("-").map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1 + amount, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 export function isDateKey(value: string) {

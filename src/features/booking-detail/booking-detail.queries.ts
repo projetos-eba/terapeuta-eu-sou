@@ -1,10 +1,12 @@
 import "server-only";
 
 import { cache } from "react";
+import { getSessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 
 import {
   getSupabaseServerRestConfig,
   supabaseServerRestRequest,
+  supabaseServerRestRpc,
 } from "@/lib/supabase/server-rest";
 
 import {
@@ -23,7 +25,6 @@ import {
   type BookingDetailSessionSummaryRow,
   type BookingDetailTherapistRow,
   type BookingDetailTherapyRow,
-  type BookingDetailVideoParticipationRow,
 } from "./booking-detail.mappers";
 import type {
   BookingDetailPageData,
@@ -90,8 +91,10 @@ export const getPatientSessionDetailPage = cache(
         paymentRows,
         rescheduleRows,
         cancellationDecisionRows,
-        patientParticipationRows,
-        patientWaitingRoomEvents,
+        sessionQuality,
+        attendanceIncidentRows,
+        chargeStatus,
+        checkoutRetryContext,
       ] = await Promise.all([
         supabaseServerRestRequest<BookingDetailTherapistRow[]>(
           config,
@@ -111,24 +114,41 @@ export const getPatientSessionDetailPage = cache(
         ),
         supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
           config,
-          `/rest/v1/session_payments?select=id,financial_status,refund_pending&booking_id=eq.${booking.id}&limit=1`,
+          `/rest/v1/session_payments?select=id,financial_status,refund_pending,payment_flow_version&booking_id=eq.${booking.id}&limit=1`,
         ),
         supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
           config,
-          `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+          `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at,change_kind&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
         ),
         supabaseServerRestRequest<BookingDetailCancellationDecisionRow[]>(
           config,
           `/rest/v1/session_cancellation_decisions?select=decision,refund_amount_cents,requires_manual_review,review_due_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
         ),
-        supabaseServerRestRequest<BookingDetailVideoParticipationRow[]>(
+        supabaseServerRestRpc<
+          import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload
+        >(config, "get_session_quality_feedback_v1", {
+          p_booking_id: booking.id,
+        }),
+        supabaseServerRestRequest<
+          Array<{
+            classification: string | null;
+            financial_resolution: string | null;
+            status: string;
+          }>
+        >(
           config,
-          `/rest/v1/video_session_participations?select=id&booking_id=eq.${booking.id}&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
+          `/rest/v1/session_confirmation_incidents?select=classification,financial_resolution,status&booking_id=eq.${booking.id}&order=booking_version.desc,created_at.desc&limit=1`,
         ),
-        supabaseServerRestRequest<Array<{ payload: unknown }>>(
+        supabaseServerRestRpc<unknown>(
           config,
-          `/rest/v1/booking_events?select=payload&booking_id=eq.${booking.id}&event_type=eq.zoom_waiting_room_entered&limit=20`,
+          "get_patient_session_charge_status_v10",
+          { p_booking_id: booking.id },
         ),
+        supabaseServerRestRpc<unknown>(
+          config,
+          "get_patient_reservation_retry_context_v1",
+          { p_booking_id: booking.id },
+        ).catch(() => null),
       ]);
       const therapist = therapists[0];
       const service = services[0] ?? createSnapshotService(booking);
@@ -171,20 +191,17 @@ export const getPatientSessionDetailPage = cache(
             )
           : [];
 
-      return mapBookingDetail({
+      const detail = mapBookingDetail({
         booking,
         completedBookings,
         intake: intakeRows[0] ?? null,
         patient: profile,
         patientHasJoined:
-          patientParticipationRows.length > 0 ||
-          patientWaitingRoomEvents.some((event) =>
-            isCurrentBookingArrival(
-              event.payload,
-              booking.version,
-              booking.starts_at,
-            ),
-          ),
+          (
+            sessionQuality.attendance as
+              | { patientPresentAtTolerance?: boolean }
+              | undefined
+          )?.patientPresentAtTolerance === true,
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -198,6 +215,39 @@ export const getPatientSessionDetailPage = cache(
         therapist,
         therapy,
       });
+
+      const delayNotice = await getSessionDelayNoticeState({
+        accessToken: config.accessToken,
+        actorRole: "patient",
+        bookingId: booking.id,
+        bookingVersion: booking.version,
+        userId: profileId,
+      });
+
+      const attendanceReview = mapAttendanceReview(attendanceIncidentRows[0]);
+
+      return {
+        ...detail,
+        sessionQuality,
+        attendanceReview,
+        booking: attendanceReview?.isOpen
+          ? {
+              ...detail.booking,
+              canJoin: false,
+              statusLabel: "Sessão não realizada",
+            }
+          : sessionQuality.realizationStatus === "performed"
+            ? { ...detail.booking, statusLabel: "Encontro realizado" }
+            : detail.booking,
+        delayNotice,
+        paymentRecovery: {
+          ...mapSessionChargeStatus(chargeStatus),
+          checkoutAvailable: mapCheckoutRetryAvailability(
+            checkoutRetryContext,
+            booking.id,
+          ),
+        },
+      };
     } catch (error) {
       if (error instanceof BookingDetailDataError) throw error;
 
@@ -206,19 +256,53 @@ export const getPatientSessionDetailPage = cache(
   },
 );
 
-function isCurrentBookingArrival(
-  value: unknown,
-  bookingVersion: number,
-  startsAt: string,
-) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const payload = value as Record<string, unknown>;
+function mapAttendanceReview(
+  row:
+    | {
+        classification: string | null;
+        financial_resolution: string | null;
+        status: string;
+      }
+    | undefined,
+): BookingDetailPageData["attendanceReview"] {
+  if (
+    !row?.classification ||
+    ![
+      "no_show_therapist",
+      "no_show_both",
+      "requires_review",
+      "participant_report",
+    ].includes(row.classification)
+  ) {
+    return null;
+  }
 
-  return (
-    Number(payload.bookingVersion) === bookingVersion &&
-    typeof payload.scheduledStartsAt === "string" &&
-    Date.parse(payload.scheduledStartsAt) === Date.parse(startsAt)
-  );
+  return {
+    financialResolution: row.financial_resolution,
+    isOpen: row.status === "open",
+  };
+}
+
+function mapSessionChargeStatus(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { available: false, dueAt: null, status: null };
+  }
+
+  const row = value as Record<string, unknown>;
+  return {
+    available: row.recoveryAvailable === true,
+    dueAt: typeof row.dueAt === "string" ? row.dueAt : null,
+    status: typeof row.status === "string" ? row.status : null,
+  };
+}
+
+function mapCheckoutRetryAvailability(value: unknown, bookingId: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const row = value as Record<string, unknown>;
+  return row.bookingId === bookingId && row.canRetry === true;
 }
 
 function createDemoBookingDetail(

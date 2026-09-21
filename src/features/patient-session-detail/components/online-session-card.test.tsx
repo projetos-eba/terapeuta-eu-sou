@@ -45,7 +45,7 @@ describe("OnlineSessionCard", () => {
       screen.getByRole("link", { name: /pedir ajuda com pagamento/i }),
     ).toHaveAttribute(
       "href",
-      "/app/mensagens?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
+      "/app/suporte?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
     );
   });
 
@@ -64,6 +64,28 @@ describe("OnlineSessionCard", () => {
       "href",
       "/app/encontros/f2000000-0000-4000-8000-000000000001/video",
     );
+  });
+
+  it.each([
+    BookingStatus.NoShowPatient,
+    BookingStatus.NoShowTherapist,
+    BookingStatus.NoShowBoth,
+  ])("shows ended access for a not-performed session %s", (status) => {
+    render(
+      <OnlineSessionCard
+        data={makeData({
+          canJoin: false,
+          financialStatus: SessionFinancialStatus.Paid,
+          status,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Acesso encerrado")).toBeInTheDocument();
+    expect(screen.queryByText("Acesso ainda não liberado")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Entrar no encontro" }),
+    ).toBeNull();
   });
 
   it("does not expose raw meeting URLs for external providers", () => {
@@ -85,22 +107,33 @@ describe("OnlineSessionCard", () => {
     ).toHaveAttribute("href", "https://example.com/meeting");
   });
 
-  it("reopens private feedback from a terminal encounter detail", () => {
+  it("keeps the private assessment for a terminal encounter within its details", () => {
     render(
       <SessionOverviewCard
-        data={makeData({
-          financialStatus: SessionFinancialStatus.Paid,
-          status: BookingStatus.Completed,
-        })}
+        data={{
+          ...makeData({
+            financialStatus: SessionFinancialStatus.Paid,
+            status: BookingStatus.Completed,
+          }),
+          sessionQuality: {
+            confirmation: null,
+            feedback: null,
+            realizationStatus: "performed",
+            status: "eligible",
+          },
+        }}
       />,
     );
 
     expect(
-      screen.getByRole("link", { name: /avaliar encontro/i }),
-    ).toHaveAttribute(
-      "href",
-      "/app/encontros/f2000000-0000-4000-8000-000000000001/video?feedback=1",
-    );
+      screen
+        .getAllByRole("link", { name: /avaliar encontro/i })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/app/encontros/f2000000-0000-4000-8000-000000000001?feedback=1",
+        ),
+    ).toBe(true);
   });
 
   it("does not offer feedback for an encounter cancelled before it happened", () => {
@@ -124,6 +157,42 @@ describe("OnlineSessionCard", () => {
     expect(screen.queryByText("Seu encontro online")).toBeNull();
     expect(screen.queryByText("Antes do encontro")).toBeNull();
   });
+
+  it.each([
+    "submitted",
+    "automatically_confirmed",
+    "unavailable",
+    "before_session",
+  ] as const)(
+    "does not ask to assess the encounter when own quality state is %s",
+    (status) => {
+      const data = makeData({
+        financialStatus: SessionFinancialStatus.Paid,
+        status: BookingStatus.Completed,
+      });
+      data.sessionQuality = {
+        confirmation: null,
+        counterpartConfirmation: null,
+        realizationStatus: "performed",
+        status,
+        feedback:
+          status === "submitted"
+            ? {
+                authorRole: "patient",
+                successful: true,
+                rating: 5,
+                comment: "",
+                createdAt: "2026-09-18T17:06:00Z",
+                id: "own-answer",
+              }
+            : null,
+      };
+      render(<SessionOverviewCard data={data} />);
+      expect(
+        screen.queryByRole("link", { name: /avaliar encontro/i }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("highlights a confirmed encounter without repeating utility actions", () => {
     render(
@@ -207,6 +276,122 @@ describe("OnlineSessionCard", () => {
     ).toBeNull();
   });
 
+  it("offers the server-authorized checkout retry for an expired V10 checkout", () => {
+    const data = makeData({
+      checkoutRetryAvailable: true,
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.PendingPayment,
+    });
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Continuar pagamento" })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/reserva?booking=f2000000-0000-4000-8000-000000000001&etapa=pagamento",
+        ),
+    ).toBe(true);
+    expect(screen.getByText("Pagamento não concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText("Continue o pagamento para confirmar este horário."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Pedir ajuda com pagamento" }),
+    ).toBeNull();
+  });
+
+  it("shows an actionable message after a scheduled charge needs recovery", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.Confirmed,
+    });
+    data.booking.statusLabel = "Reservado";
+    data.paymentRecovery = {
+      available: true,
+      checkoutAvailable: false,
+      dueAt: "2026-08-01T13:00:00.000Z",
+      status: "requires_customer_action",
+    };
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Reservado")).toBeInTheDocument();
+    expect(screen.getByText("Pagamento não concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Confirme com o banco ou use outro cartão antes do horário do encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "O pagamento não foi concluído. Confirme com o banco ou use outro cartão antes do horário do encontro.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Estamos confirmando o pagamento. O horário permanece em análise por enquanto.",
+      ),
+    ).toBeNull();
+  });
+
+  it("shows a saved future slot as reserved until payment is confirmed", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Pending,
+      status: BookingStatus.Confirmed,
+    });
+    data.booking.statusLabel = "Reservado";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Reservado")).toBeInTheDocument();
+    expect(screen.getByText("Encontro reservado")).toBeInTheDocument();
+    expect(screen.getByText("Sala segura")).toBeInTheDocument();
+    expect(screen.queryByText("Sala externa")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Este encontro não usa a sala Zoom autenticada. Siga as orientações exibidas para a videochamada.",
+      ),
+    ).toBeNull();
+    expect(screen.queryByText("Encontro confirmado")).toBeNull();
+  });
+
+  it("shows an ended performed encounter as realized in the status strip", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.Confirmed,
+    });
+    data.sessionQuality = {
+      confirmation: null,
+      counterpartConfirmation: null,
+      feedback: null,
+      realizationStatus: "performed",
+      status: "eligible",
+    };
+
+    render(<SessionStatusStrip data={data} />);
+
+    expect(screen.getByText("Encontro realizado")).toBeInTheDocument();
+    expect(screen.queryByText("Encontro confirmado")).toBeNull();
+  });
+
   it("offers a new time instead of retrying an elapsed interrupted payment", () => {
     render(
       <SessionOverviewCard
@@ -229,10 +414,79 @@ describe("OnlineSessionCard", () => {
       screen.queryByRole("link", { name: "Tentar pagamento novamente" }),
     ).toBeNull();
   });
+
+  it("uses neutral guidance while a double no-show is under review", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.NoShowBoth,
+    });
+    data.attendanceReview = {
+      financialResolution: null,
+      isOpen: true,
+    };
+    data.booking.statusLabel = "Sessão não realizada";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getAllByText("Sessão não realizada")).not.toHaveLength(0);
+    expect(
+      screen.getAllByText(
+        "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
+    expect(screen.queryByText(/ninguém acessou|ambos ausentes/i)).toBeNull();
+  });
+
+  it("keeps payment confirmed and shows the operational review instead of a reserved state", () => {
+    const data = makeData({
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.Confirmed,
+    });
+    data.attendanceReview = {
+      financialResolution: "pending",
+      isOpen: true,
+    };
+    data.booking.statusLabel = "Sessão não realizada";
+
+    render(
+      <>
+        <SessionOverviewCard data={data} />
+        <SessionStatusStrip data={data} />
+      </>,
+    );
+
+    expect(screen.getByText("Pagamento confirmado")).toBeInTheDocument();
+    expect(screen.getAllByText("Sessão não realizada")).not.toHaveLength(0);
+    expect(screen.queryByText("Encontro reservado")).toBeNull();
+    expect(screen.queryByText(/Pagamento em análise pelo TES/)).toBeNull();
+  });
+
+  it("does not repeat the not-performed status as its own supporting text", () => {
+    const data = makeData({
+      canJoin: false,
+      financialStatus: SessionFinancialStatus.Paid,
+      status: BookingStatus.NoShowBoth,
+    });
+    data.booking.statusLabel = "Sessão não realizada";
+
+    render(<SessionStatusStrip data={data} />);
+
+    expect(screen.getAllByText("Sessão não realizada")).toHaveLength(2);
+    expect(
+      screen.getByText("Se precisar de ajuda, fale com o suporte."),
+    ).toBeInTheDocument();
+  });
 });
 
 function makeData({
   canJoin,
+  checkoutRetryAvailable = false,
   financialStatus,
   meetingUrl = null,
   now = new Date("2026-08-01T13:50:00.000Z"),
@@ -240,6 +494,7 @@ function makeData({
   status = BookingStatus.Confirmed,
 }: {
   canJoin?: boolean;
+  checkoutRetryAvailable?: boolean;
   financialStatus: SessionFinancialStatus;
   meetingUrl?: string | null;
   now?: Date;
@@ -306,6 +561,12 @@ function makeData({
       meetingUrl,
       provider,
       securityNote: "Acesso autenticado.",
+    },
+    paymentRecovery: {
+      available: false,
+      checkoutAvailable: checkoutRetryAvailable,
+      dueAt: null,
+      status: null,
     },
     patient: {
       avatarUrl: null,

@@ -47,6 +47,12 @@ describe("queryTherapistSettings", () => {
       if (url.includes("get_therapist_private_identity_v1")) {
         return jsonResponse({});
       }
+      if (url.includes("get_private_therapist_publication_state_v1")) {
+        return jsonResponse({
+          isPubliclyVisible: true,
+          needsReceivingAccount: false,
+        });
+      }
       if (url.includes("therapist-private-documents")) {
         return jsonResponse({
           data: {
@@ -67,12 +73,21 @@ describe("queryTherapistSettings", () => {
     ).resolves.toMatchObject({
       displayName: "Ana Oliveira",
       therapistProfile: { id: therapistProfileId, plan: "premium" },
+      publication: {
+        isPubliclyVisible: true,
+        needsReceivingAccount: false,
+      },
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(
       fetchMock.mock.calls.some(([input]) =>
         String(input).includes("/rest/v1/profiles?"),
+      ),
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).includes("get_private_therapist_publication_state_v1"),
       ),
     ).toBe(true);
   });

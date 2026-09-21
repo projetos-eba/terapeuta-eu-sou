@@ -24,12 +24,18 @@ const runtimeOverrides = [
   "NEXT_PUBLIC_SITE_URL",
   "TES_CONNECT_PAYOUT_SCHEDULE_CHANGES_ENABLED",
   "TES_FINANCE_TEST_CONTROLS_ENABLED",
+  "TES_SESSION_FINANCIAL_FLOW_V10_ENABLED",
 ];
 
-const status = spawnSync(process.execPath, [supabaseCliPath, "status", "-o", "env"], {
-  cwd: root,
-  encoding: "utf8",
-});
+const status = spawnSync(
+  process.execPath,
+  [supabaseCliPath, "status", "-o", "env"],
+  {
+    cwd: root,
+    encoding: "utf8",
+    env: process.env,
+  },
+);
 if (status.status !== 0) {
   throw new Error(
     "Supabase local indisponível. Execute npx supabase start antes das funções.",
@@ -61,6 +67,9 @@ for (const line of baseEnv.split(/\r?\n/)) {
   ) {
     continue;
   }
+  if (key && runtimeSecrets.includes(key) && process.env[key]?.trim()) {
+    continue;
+  }
   if (key && runtimeOverrides.includes(key)) {
     baseKeys.add(key);
     continue;
@@ -71,7 +80,7 @@ for (const line of baseEnv.split(/\r?\n/)) {
 
 for (const key of runtimeSecrets) {
   const value = process.env[key]?.trim();
-  if (value && !baseKeys.has(key)) lines.push(`${key}=${value}`);
+  if (value) lines.push(`${key}=${value}`);
 }
 
 // Stripe CLI signs every locally forwarded payload with its listener secret,

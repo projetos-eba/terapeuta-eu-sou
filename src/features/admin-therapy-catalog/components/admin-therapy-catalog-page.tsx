@@ -979,7 +979,7 @@ function RequestInspectionDialog({
           </h3>
           <p className="mt-1 text-sm leading-6 text-tesText-secondary">
             O motivo será registrado e enviado à pessoa solicitante pela Central
-            de Mensagens e por e-mail quando disponível.
+            de Suporte e por e-mail quando disponível.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="text-sm font-semibold text-brand-deep">

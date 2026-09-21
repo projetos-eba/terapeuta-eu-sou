@@ -138,18 +138,20 @@ runtime.serve(async (request) => {
       });
     }
 
-    let patientHasTimelyArrival = booking.patientHasTimelyArrival;
-    if (actor.role === "patient") {
-      const arrival = await client.rpc<WaitingRoomArrivalResult>(
-        "record_patient_zoom_waiting_room_arrival_v1",
-        {
-          p_booking_id: bookingId,
-          p_patient_profile_id: actor.profile.id,
-        },
-      );
-      patientHasTimelyArrival =
-        patientHasTimelyArrival || Boolean(arrival?.entitled);
-    }
+    const arrival = await client.rpc<WaitingRoomArrivalResult>(
+      "record_zoom_waiting_room_arrival_v2",
+      {
+        p_booking_id: bookingId,
+        p_participant_profile_id: actor.profile.id,
+        p_participant_role: actor.role,
+      },
+    );
+    const patientHasTimelyArrival = actor.role === "patient"
+      ? booking.patientHasTimelyArrival || Boolean(arrival?.entitled)
+      : booking.patientHasTimelyArrival;
+    const therapistHasTimelyArrival = actor.role === "therapist"
+      ? booking.therapistHasTimelyArrival || Boolean(arrival?.entitled)
+      : booking.therapistHasTimelyArrival;
     const access = evaluateVideoSessionAccess({
       actorRole: actor.role,
       bookingStatus: booking.bookingStatus,
@@ -162,6 +164,8 @@ runtime.serve(async (request) => {
         booking.videoSession?.terminationConfirmedAt ?? null,
       patientHasJoined: booking.patientHasJoined,
       patientHasTimelyArrival,
+      therapistHasTimelyArrival,
+      therapistHasTimelyJoin: booking.therapistHasTimelyJoin,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
       therapistProfileEligible: booking.therapistProfileEligible,

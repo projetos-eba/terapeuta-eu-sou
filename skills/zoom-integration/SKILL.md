@@ -5,6 +5,14 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 # Integracao Zoom Video SDK
 
+> Regra vigente ADR-023: chegada/join confiável são vinculados à tentativa
+> atual. T+10 exato é inclusivo; depois a ausência de qualquer pessoa é
+> classificada sem aguardar a chamada de encerramento ao provedor. Reentrada
+> usa a própria presença pontual. Encerramento de sala é protegido por
+> tentativa e versão, ID persistido ou correspondência exata única, sem
+> antecipar jobs em retry e sem deixar jobs antigos ocupar todo o limite.
+> Nenhuma classificação, avaliação ou confirmação chama Stripe.
+
 ## Contrato mobile de câmera
 
 Em mobile, a preferência de câmera da sala de espera não dispara publicação
@@ -69,7 +77,7 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   técnica, não prazo de expiração.
 - A reserva de maintenance revalida os motivos e marca o pedido de fim sob
   lock da sessão antes de chamar o provider. Somente fim manual autorizado, fim
-  agendado, hard timeout e no-show do paciente verificado bloqueiam novos
+  agendado, hard timeout e no-show verificado bloqueiam novos
   acessos. `end_patient_no_show` só é elegível após T+10 estrito sem chegada
   autenticada da versão atual nem `session.user_joined` confiável do paciente;
   ele usa o mesmo lock consultivo da chegada e nunca trata atraso/saída do
@@ -86,10 +94,29 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   watchdog usa `end_hard_timeout`. Nenhum deles altera o horário da reserva.
 - A espera autenticada registra chegada pontual da versão atual entre T-15 e
   T+10 inclusive. Essa chegada ou `session.user_joined` confiável preserva a
-  reconexão de paciente e terapeuta até, mas não incluindo,
+  reconexão do próprio participante até, mas não incluindo,
   `scheduled_ends_at`; todo join do paciente continua exigindo presença atual
-  do terapeuta. Portanto um paciente pontual pode esperar e entrar com o
-  terapeuta mesmo que ele só chegue após T+10.
+  do terapeuta. A chegada do paciente nunca autoriza primeira chegada do
+  terapeuta após T+10; o terapeuta precisa de evidência própria pontual.
+- O finalizador filtra candidatos classificáveis antes do limite, revalida
+  versão/horário sob lock e não deixa sessões antigas normais ou encerramentos
+  pendentes consumirem a fila. `end_attendance_no_show` encerra falta do
+  terapeuta/ambos, inclusive sala `ready`, com incidente e versão atuais.
+  Sem ID persistido, somente uma correspondência exata de nome autoriza o
+  encerramento remoto; ambiguidade falha fechado. A tela não chama `ready` de
+  disponível depois da classificação. Nenhuma classificação move dinheiro.
+- Antes de reservar encerramentos, a maintenance consolida a presença da
+  versão da reserva: terapeuta presente/cliente ausente é `no_show_patient`;
+  cliente presente/terapeuta ausente é `no_show_therapist`; ambos ausentes é
+  `no_show_both`. Ambos presentes sem joins bilaterais até o fim abrem
+  `requires_review`. Os três últimos casos bloqueiam efeitos financeiros e
+  exigem decisão administrativa; Zoom nunca decide Refund, Reversal ou dívida.
+- Para `no_show_patient`, o classificador consolida a ausência e cria o job
+  idempotente de encerramento sem depender da resposta do provedor. Isso não
+  altera pagamentos. A maintenance revalida versão e horário antes de encerrar
+  a sessão exata; o RPC de reserva não retorna `metadata`, portanto o worker
+  lê esse fence no job persistido, limitado a ID, reserva, sala e estado em
+  processamento. Falha dessa leitura mantém retry, sem encerrar outra sessão.
 - Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
   agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
   provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.

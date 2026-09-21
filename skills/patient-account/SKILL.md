@@ -23,6 +23,12 @@ description: Implementar e manter a página Minha conta do paciente TES, incluin
 
 ## Dados e segurança
 
+- A suspensão administrativa de novos agendamentos vive em
+  `patient_booking_restrictions`, nunca em `metadata.account` nem em Auth.
+  Editar o cadastro não pode removê-la; login, suporte e encontros existentes
+  continuam disponíveis. O Admin lê somente as chaves de contato/endereço
+  allowlisted no detalhe privado, sem receber metadata completa.
+
 - A leitura server-side consulta `profiles`, `patient_profiles`, `session_payments`, `bookings` e `therapist_profiles` com o token do paciente.
 - Pagamentos são resumidos a partir de `session_payments`; o navegador não decide confirmação, reembolso ou qualquer efeito financeiro.
 - O endereço é armazenado em `patient_profiles.metadata.account.address` até existir um contrato de endereço dedicado; a chave deve ser preservada ao atualizar outros metadados.
@@ -32,6 +38,12 @@ description: Implementar e manter a página Minha conta do paciente TES, incluin
 ## UI e copy
 
 - Reusar `AppPageHeader`, `AppPageGrid`, `AppPageMain`, `AppPageAside`, `AppPageSection`, `TESButton` e `PasswordVisibilityToggle`.
+- A composição aprovada usa hero editorial compacto com paisagem suave e
+  legibilidade protegida por gradiente, perfil resumido na coluna principal e
+  cartões claros de conta, pagamentos e suporte em uma coluna lateral estreita.
+- O desktop preserva a hierarquia assimétrica entre conteúdo principal e
+  lateral; tablet e mobile reorganizam os cartões sem esconder dados, ações ou
+  estados.
 - Usar “encontro” para a linguagem do paciente e “pagamento” para o resumo financeiro.
 - Informações pessoais são editáveis; e-mail é exibido como dado de acesso e não pode ser alterado nesta página.
 - O endereço é opcional e a página não deve exigir dados além do necessário.
@@ -53,8 +65,11 @@ superfície de carregamento correspondente.
 ## Pendências
 
 - Homologação de upload no Storage e provisionamento remoto do bucket permanecem pendentes; esta alteração declara o bucket no `supabase/config.toml` para o ambiente local.
+
 ### Contrato de telefone
 
 `PhoneInput` mantém o número nacional em `phone` e o DDI em
 `phone_country_code`; linhas antigas sem DDI usam `55` apenas como fallback de
 leitura.
+No detalhe ADM de Clientes, o DDI vem exclusivamente de `patient_profiles`;
+ausência é exibida como “Não informado”, sem aplicar esse fallback da área de conta.

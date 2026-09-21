@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { TherapistPlan } from "@/domain/tes";
 import {
   parseTherapistSessionDetailReadModel,
   parseTherapistPendingConfirmationsSummary,
@@ -19,6 +20,7 @@ import {
 import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 
 import {
+  queryActorSessionStates,
   queryTherapistPendingReschedule,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
@@ -29,19 +31,39 @@ import {
 export type TherapistSessionPendingReschedule = {
   expiresAt: string | null;
   id: string;
-  proposedEndsAt: string;
-  proposedStartsAt: string;
+  kind: "legacy" | "therapist_cancellation" | "therapist_reschedule";
+  proposedEndsAt: string | null;
+  proposedStartsAt: string | null;
   proposedTimezone: string;
   reason: string | null;
   requestedByCurrentUser: boolean;
-  status: "pending";
+  status: "pending" | "pending_admin_review";
 };
 
 export type TherapistSessionFeedbackStatus =
+  | "automatically_confirmed"
   | "before_session"
   | "eligible"
+  | "incident_only"
   | "submitted"
   | "unavailable";
+
+export type TherapistSessionFeedbackSummary = {
+  quality?: import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
+  outcome: "completed" | "not_performed" | null;
+  status: TherapistSessionFeedbackStatus;
+};
+
+export function shouldShowTherapistSessionJourneyThemes(
+  plan: TherapistPlan,
+  feedback: TherapistSessionFeedbackSummary,
+) {
+  return (
+    plan === "premium_plus" &&
+    feedback.status === "submitted" &&
+    feedback.outcome === "completed"
+  );
+}
 
 export async function getTherapistSessionsPage(input: {
   accessToken: string;
@@ -74,6 +96,38 @@ export async function getTherapistPendingConfirmationsSummary(input: {
     profileId: input.profileId,
     query: () => queryTherapistPendingConfirmations(input.accessToken),
   });
+}
+
+export async function getTherapistActorSessionStates(input: {
+  accessToken: string;
+  bookingIds: string[];
+}): Promise<{
+  pendingFeedbackIds: ReadonlySet<string>;
+  realizedIds: ReadonlySet<string>;
+}> {
+  try {
+    const states = await queryActorSessionStates(
+      input.accessToken,
+      input.bookingIds,
+    );
+
+    const pendingFeedbackIds = new Set<string>();
+    const realizedIds = new Set<string>();
+    for (const [bookingId, state] of Object.entries(states)) {
+      if (state?.actorRealized === true) {
+        realizedIds.add(bookingId);
+      } else if (
+        state?.bothJoined === true &&
+        state?.sessionClosed === true &&
+        state?.classification == null
+      ) {
+        pendingFeedbackIds.add(bookingId);
+      }
+    }
+    return { pendingFeedbackIds, realizedIds };
+  } catch {
+    return { pendingFeedbackIds: new Set(), realizedIds: new Set() };
+  }
 }
 
 export async function getTherapistSessionDetail(input: {
@@ -109,6 +163,7 @@ export async function getTherapistSessionPendingReschedule(input: {
     return {
       expiresAt: row.expires_at,
       id: row.id,
+      kind: row.change_kind,
       proposedEndsAt: row.proposed_ends_at,
       proposedStartsAt: row.proposed_starts_at,
       proposedTimezone: row.proposed_timezone,
@@ -125,20 +180,38 @@ export async function getTherapistSessionFeedbackStatus(input: {
   accessToken: string;
   bookingId: string;
 }): Promise<TherapistSessionFeedbackStatus> {
+  return (await getTherapistSessionFeedbackSummary(input)).status;
+}
+
+export async function getTherapistSessionFeedbackSummary(input: {
+  accessToken: string;
+  bookingId: string;
+}): Promise<TherapistSessionFeedbackSummary> {
   try {
     const payload = await queryTherapistSessionFeedback(
       input.accessToken,
       input.bookingId,
     );
     const status = getFeedbackStatus(payload);
+    const outcome = getFeedbackOutcome(payload);
+    const quality =
+      payload as import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
 
-    if (status === "eligible") return status;
-    if (status === "submitted") return status;
-    if (status === "before_session") return status;
+    if (
+      status === "eligible" ||
+      status === "before_session" ||
+      status === "incident_only" ||
+      status === "automatically_confirmed"
+    ) {
+      return { outcome: null, status, quality };
+    }
+    if (status === "submitted") {
+      return { outcome, status, quality };
+    }
 
-    return "unavailable";
+    return { outcome: null, status: "unavailable", quality };
   } catch {
-    return "unavailable";
+    return { outcome: null, status: "unavailable" };
   }
 }
 
@@ -204,6 +277,20 @@ function getFeedbackStatus(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const status = Reflect.get(value, "status");
   return typeof status === "string" ? status : null;
+}
+
+function getFeedbackOutcome(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const feedback = Reflect.get(value, "feedback");
+  if (!feedback || typeof feedback !== "object" || Array.isArray(feedback)) {
+    return null;
+  }
+  const outcome = Reflect.get(feedback, "outcome");
+  if (typeof Reflect.get(feedback, "successful") === "boolean")
+    return "completed";
+  return outcome === "completed" || outcome === "not_performed"
+    ? outcome
+    : null;
 }
 
 function getReadModelErrorCode(error: unknown): ReadModelErrorCode {

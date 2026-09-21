@@ -3,10 +3,20 @@ import "server-only";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 export class TherapistSettingsQueryError extends Error {
-  code: "cpf_in_use" | "cpf_invalid" | "forbidden" | "unavailable";
+  code:
+    | "cpf_in_use"
+    | "cpf_invalid"
+    | "phone_in_use"
+    | "forbidden"
+    | "unavailable";
 
   constructor(
-    code: "cpf_in_use" | "cpf_invalid" | "forbidden" | "unavailable",
+    code:
+      | "cpf_in_use"
+      | "cpf_invalid"
+      | "phone_in_use"
+      | "forbidden"
+      | "unavailable",
   ) {
     super(code);
     this.name = "TherapistSettingsQueryError";
@@ -52,14 +62,19 @@ export async function queryTherapistSettings({
   const profile = Array.isArray(profileValue)
     ? (profileValue[0] as Record<string, unknown> | undefined)
     : (profileValue as Record<string, unknown> | undefined);
-  const [identity, documentCenter] = await Promise.all([
-    profile?.id ? fetchPrivateIdentity({ accessToken, config }) : {},
-    profile?.id
+  const therapistProfileId =
+    typeof profile?.id === "string" ? profile.id : null;
+  const [identity, documentCenter, publication] = await Promise.all([
+    therapistProfileId ? fetchPrivateIdentity({ accessToken, config }) : {},
+    therapistProfileId
       ? fetchPrivateDocumentCenter({ accessToken, config })
       : { documents: [], verificationStatus: "draft" },
+    therapistProfileId
+      ? fetchPrivatePublicationState({ accessToken, config })
+      : { isPubliclyVisible: false, needsReceivingAccount: false },
   ]);
 
-  return { ...row, documentCenter, identity };
+  return { ...row, documentCenter, identity, publication };
 }
 
 export async function updateTherapistAccountSettings({
@@ -111,10 +126,12 @@ export async function updateTherapistAccountSettings({
     method: "PATCH",
   });
 
-  if (response.status === 401 || response.status === 403) {
-    throw new TherapistSettingsQueryError("forbidden");
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new TherapistSettingsQueryError(
+      classifyProfileSaveError(response.status, error),
+    );
   }
-  if (!response.ok) throw new TherapistSettingsQueryError("unavailable");
 
   const rows = (await response.json()) as unknown[];
   const row = rows[0];
@@ -160,6 +177,22 @@ export async function updateTherapistAccountSettings({
   return { ...row, identity: {} };
 }
 
+function classifyProfileSaveError(status: number, payload: unknown) {
+  if (status === 401 || status === 403) return "forbidden" as const;
+
+  const value =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {};
+  const message = typeof value.message === "string" ? value.message : "";
+
+  if (status === 409 && message === "PHONE_ALREADY_IN_USE") {
+    return "phone_in_use" as const;
+  }
+
+  return "unavailable" as const;
+}
+
 function classifyIdentitySaveError(status: number, payload: unknown) {
   if (status === 401 || status === 403) return "forbidden" as const;
 
@@ -188,6 +221,38 @@ async function fetchPrivateIdentity({
 }) {
   const response = await fetch(
     `${config.url}/rest/v1/rpc/get_therapist_private_identity_v1`,
+    {
+      body: "{}",
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    throw new TherapistSettingsQueryError(
+      response.status === 401 || response.status === 403
+        ? "forbidden"
+        : "unavailable",
+    );
+  }
+
+  return (await response.json().catch(() => ({}))) as unknown;
+}
+
+async function fetchPrivatePublicationState({
+  accessToken,
+  config,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+}) {
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/get_private_therapist_publication_state_v1`,
     {
       body: "{}",
       cache: "no-store",

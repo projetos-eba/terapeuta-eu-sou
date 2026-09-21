@@ -5,6 +5,14 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 
 # Agenda e Sessões do terapeuta
 
+> Regra vigente ADR-023: “Avaliar sessão” só após joins confiáveis de ambos
+> na tentativa atual e encerramento. “Não foi bem-sucedida” é relato privado de
+> qualidade, não ausência. A confirmação automática ocorre após 30 dias do fim
+> previsto, com proteção de tentativa. Pela ADR-024, qualidade não cria
+> confirmação nem pausa seus prazos. Transfer jamais é confirmação
+> e qualidade/confirmação não acionam financeiro. No-show é classificado logo
+> após T+10, com decisão de reembolso do Admin em fluxo separado.
+
 ## Fontes obrigatórias
 
 1. `AGENTS.md`.
@@ -76,9 +84,10 @@ histórica.
 
 - A página `/terapeuta/sessoes` usa o frame Figma `13366:2768`
   (`Page / Terapeuta Pro / Sessões`) como referência visual.
-- A tela lista apenas dados do `get_therapist_sessions_v1`; não cria booking,
-  não confirma pagamento, não cria sala Zoom e não executa transições
-  financeiras.
+- A tela lista sessões de `get_therapist_sessions_v1` e consulta apenas o estado
+  da tentativa atual do próprio terapeuta em
+  `get_session_attempt_attendance_batch_v1`; não cria booking, não confirma
+  pagamento, não cria sala Zoom e não executa transições financeiras.
 - Métricas, faixa de resumo, busca textual e exportação CSV são derivados dos
   itens carregados no read model da página.
 - A composição de Sessões usa o grid compartilhado `AppPage*`: cabeçalho aberto
@@ -101,6 +110,13 @@ histórica.
   `pastCursor*` e preservam busca, status e período.
 - O badge de estado `cancelled` usa o tom TES de perigo; estados
   `refunded` continuam visualmente diferenciados.
+- Uma sessão com presença bilateral e encerramento comprovados usa
+  `Avaliação pendente` enquanto faltar a resposta privada do próprio terapeuta.
+  Depois dessa resposta, ou da confirmação automática individual no dia 30,
+  usa `Realizada` mesmo que a confirmação operacional da outra pessoa ou o
+  service status financeiro continuem pendentes. A avaliação pública do
+  terapeuta não participa dessa apresentação. O cron de confirmação continua
+  independente da resposta privada.
 - Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
   detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
   autorização final continua por `zoom-video-session-access`.
@@ -118,32 +134,62 @@ histórica.
   conteúdo e são empilhados em fluxo de bloco no desktop.
 - O detalhe `/terapeuta/sessoes/:bookingId` preserva o mesmo grid `AppPage*`:
   breadcrumb, título IvyPresto, resumo de identidade/estado, superfícies de
-  pagamento e sala, preparação e ContextRail compacto. A referência raster da
+  pagamento e sala, orientação “Antes de entrar” e ContextRail compacto. A referência raster da
   rotina de atendimento serve à composição, não para inventar dados ou ações.
 - O detalhe acompanha a anatomia do detalhe de encontro do paciente sem
   reproduzir seu domínio: cabeçalho aberto, hero com identidade / horário e
   sala / estado e ação, faixa de três estados e sequência responsiva de
   contexto, sala, gestão e apoio. Em desktop, suporte e orientações ficam no
   rail; em mobile, entram no fluxo após o contexto crítico.
+- Na faixa de estados, uma reserva V10 que ainda aguarda a janela de cobrança
+  usa o título `Pagamento` com o estado `Agendado` e explica que a cobrança
+  ocorrerá 24 horas antes da sessão. `Aguardando confirmação` permanece
+  reservado a pagamentos que já estão em confirmação e não deve substituir o
+  estado agendado.
 - O detalhe só renderiza o DTO de `get_therapist_session_detail_v1`. Não exibir
   objetivo clínico, observações, prontuário, URL da sala, credenciais ou
-  supostos resultados de teste técnico. A preparação pode orientar a pessoa
+  supostos resultados de teste. A seção “Antes de entrar” pode orientar a pessoa
   terapeuta, mas não pode afirmar que câmera, microfone ou conexão já foram
-  validados.
+  validados nem usar termos técnicos, de desenvolvimento ou de arquitetura.
 - Abrir a sala usa exclusivamente `/terapeuta/sessoes/:bookingId/video`; a
   janela, pagamento, perfil responsável e elegibilidade são revalidados no
   backend a cada acesso. Reagendar e cancelar reutilizam
   `SessionOperationActions`, sem atalhos paralelos.
+- A terapeuta não escolhe nem aplica um horário diretamente. “Solicitar
+  alteração” e “Solicitar cancelamento” abrem uma decisão de 48 horas em
+  `booking_reschedule_requests`; a pessoa escolhe outro horário do mesmo
+  profissional ou pede análise de reembolso. Sem decisão, cancelamento ou
+  horário original já passado entram em revisão administrativa, bloqueiam
+  sala, falta e repasse, e não acionam Stripe automaticamente.
 - Depois de `endsAt`, o detalhe não oferece mais ações de acompanhar sala nem
-  status da sala. Se `get_session_feedback_v2` retornar `eligible`, o CTA é
-  `Confirmar sessão` para `/terapeuta/sessoes/:bookingId/video?feedback=1`;
-  `submitted` e `unavailable` mostram somente o estado honesto. A autorização
+  status da sala. Se `get_session_quality_feedback_v1` retornar `eligible` sem
+  resposta do próprio terapeuta, o CTA é `Avaliar sessão` para
+  `/terapeuta/sessoes/:bookingId/video?feedback=1`;
+  `eligible` exige entradas confiáveis de ambos. `incident_only` oferece
+  `Relatar ocorrência`, sem sugerir realização; falta do terapeuta ou de ambos
+  apresenta `Sessão não realizada` e orientação para falar com o suporte se
+  necessário, sem expor a classificação de presença nem prometer análise pelo TES.
+  `submitted` ou resposta persistida removem o CTA sem exigir confirmação
+  individual ou resposta da outra pessoa. `unavailable` mostra o estado honesto. A autorização
   final permanece no backend e esta rota operacional continua disponível para
   Free, Premium e Premium Plus.
+- Para Premium Plus, `submitted` com feedback do terapeuta `completed` também
+  exibe no detalhe o registro opcional de um a três temas da sessão. Free,
+  Premium, feedback não realizado, confirmação pendente e falha de leitura não
+  exibem essa seção; a Edge Function e o banco continuam autoritativos.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados
   (incluindo pagamento cancelado, reembolso ou sessão não realizada),
   `SessionOperationActions` mantém cancelamento e reagendamento desabilitados e
   informa o motivo em texto acessível; não repetir uma ação já concluída.
+- Sessões canceladas, integralmente reembolsadas ou bloqueadas por pagamento
+  não oferecem CTA ou link para a sala, não exibem preparação de entrada e
+  mostram apenas a situação encerrada e o caminho de suporte aplicável. A copy
+  deve ser clara para a pessoa terapeuta, sem termos técnicos, de
+  desenvolvimento, integração ou arquitetura.
+- No resumo da sala, um booking cancelado deve mostrar “Sessão cancelada” mesmo
+  quando a última razão de acesso recebida seja pagamento não confirmado; uma
+  sessão ativa sem pagamento mantém “Aguardando pagamento”. O estado encerrado
+  também prevalece sobre um snapshot de acesso desatualizado.
 - No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.
@@ -243,12 +289,18 @@ the related demand tip is not rendered without `agenda_insights`.
   no read model editável. Regras órfãs de terapia arquivada não devem transformar
   um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
   continua no RPC.
-- Duração pertence ao serviço e `slotStepMinutes` controla o intervalo das sessões
-  na interface. O nome técnico permanece no contrato para compatibilidade.
-  `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
-  e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
-  O buffer anterior amplia a ocupação sem deslocar o primeiro slot da faixa; a
-  duração e o buffer posterior devem caber antes do fim configurado.
+- Duração pertence ao serviço; `slotStepMinutes` controla a grade fixa de
+  horários de início, ancorada no começo de cada faixa. A UI chama esse controle
+  de "Horários de início — Disponibilizar novos horários a cada".
+- `bufferAfterMinutes` é o "Intervalo da sessão — Tempo livre depois de cada
+  sessão", escolhido por terapia. Novas terapias começam em zero; valores
+  existentes são exibidos e só mudam por escolha do terapeuta. O intervalo
+  registrado em uma reserva ou hold permanece imutável após uma alteração.
+- `bufferBeforeMinutes` permanece no contrato para compatibilidade, mas é zero
+  nas configurações atuais e futuras. Snapshots históricos podem conter valor
+  anterior. A sessão precisa caber na faixa; o intervalo posterior pode
+  ultrapassar seu fim. Reservas e holds conflitam pelos intervalos ocupados
+  completos, sem deslocar a grade de inícios.
 - O resumo geral une faixas iguais ou parcialmente sobrepostas de terapias
   diferentes antes de somar minutos. O potencial financeiro F3 aplica
   bloqueios no escopo correto e desconta a ocupação global de bookings pagos
@@ -335,7 +387,7 @@ the related demand tip is not rendered without `agenda_insights`.
   sessões canceladas ou reembolsadas quando ocuparem o mesmo intervalo; foco e
   hover podem elevar temporariamente qualquer cartão para permitir inspeção.
 - Na visão mensal, cada célula e cartão devem conter o conteúdo com `min-width:
-  0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
+0`, largura limitada e truncamento de paciente/referência. Nenhum cartão pode
   invadir visualmente outro dia; o nome completo continua preservado no rótulo
   acessível.
 
@@ -344,8 +396,11 @@ the related demand tip is not rendered without `agenda_insights`.
 - `reserve_booking_hold_v1`: cria hold somente via backend confiável.
 - `consume_booking_hold_v1`: converte hold em um booking `draft`.
 - `session-booking-checkout`: Edge Function autenticada para pessoa paciente;
-  seleciona slot por `get_service_available_slots_v1`, reserva hold
-  idempotente, consome hold em booking e inicia `stripe-create-session-payment`.
+  exige o slug do profissional, confere se ele é o proprietário exato do
+  serviço antes de criar hold, seleciona slot por
+  `get_service_available_slots_v1`, reserva hold idempotente, consome hold em
+  booking e inicia `stripe-create-session-payment`. A resposta devolve o
+  snapshot efetivamente reservado para revisão antes de exibir o pagamento.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
 - `apply_patient_booking_reschedule_v1`: aplica imediatamente, no mesmo booking,
   um horário escolhido pela pessoa após revalidação autoritativa; rejeita ator
@@ -362,6 +417,17 @@ the related demand tip is not rendered without `agenda_insights`.
   seleção cria hold ou libera o horário original. Aplicação direta, criação de
   proposta e aceite revalidam o slot sob locks; somente a operação terminal
   move o mesmo booking e sincroniza vídeo/lembretes.
+- A ADR-021 substitui o canal de mensagens entre participantes por avisos
+  unilaterais e decisões no detalhe. `Vou me atrasar` usa
+  `booking_events`, é idempotente por ator/versão de T−60 a T+10 e não
+  estende tolerância. Reagendamento normal do paciente exige 24 horas no
+  banco. A alteração aberta pelo terapeuta sem horário escolhido, a decisão
+  do paciente e a revisão financeira Admin usam o mesmo agregado
+  `booking_reschedule_requests`: durante a decisão a sala e a falta automática
+  ficam bloqueadas; em `pending_admin_review`, o repasse fica bloqueado e a
+  fila financeira do Admin mostra “Reembolso em análise”. Nenhuma mutação
+  Stripe parte da pessoa participante; a decisão Admin usa a ordem idempotente
+  Transfer Reversal aplicável antes do Refund.
 - `request-session-cancellation`: continua sendo a função canônica de
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
   necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo
@@ -372,7 +438,16 @@ the related demand tip is not rendered without `agenda_insights`.
   pagamento.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
-  serviço.
+  serviço. Links públicos antigos resolvem serviço por ID exato, substituem
+  duração e preço da URL pelos dados públicos atuais e avisam a pessoa. Se o
+  snapshot criado divergir do resumo anterior, o checkout fica oculto até nova
+  revisão; desistência cancela a tentativa pelo comando existente. Retomadas de
+  reservas anteriores usam os snapshots históricos.
+- Perfil, busca, oferta pública de horários e criação de hold exigem conta de
+  recebimento corrente, não encerrada e plenamente pronta para o fluxo V10.
+  Perda posterior de prontidão oculta essas superfícies, mas preserva publicação
+  armazenada e reservas existentes. O acesso privado da agenda mantém seu gate
+  operacional próprio durante processamento sem pendências atuais.
 - A confirmação de pagamento continua exclusivamente em webhook Stripe; retorno
   de Checkout e `session-booking-checkout` não confirmam pagamento, plano, Zoom
   ou repasse.

@@ -1,6 +1,6 @@
 begin;
 
-select plan(34);
+select plan(39);
 
 select ok(
   to_regprocedure(
@@ -98,9 +98,13 @@ select throws_ok(
 
 reset role;
 
+update public.profiles
+set role = 'admin'::public.user_role
+where id = 'aaaaaaaa-0000-4000-8000-000000000001';
+
 select set_config(
   'request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"authenticated"}',
+  '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',
   true
 );
 
@@ -119,6 +123,173 @@ select ok(
     public.admin_get_operation_module_v1('professionals') -> 'rows'
   ) > 0,
   'professionals list returns real rows for admin'
+);
+
+create temporary table admin_professional_projection_target (
+  therapist_profile_id uuid primary key
+) on commit drop;
+
+insert into admin_professional_projection_target (therapist_profile_id)
+select id
+from public.therapist_profiles
+order by updated_at desc, id desc
+limit 1;
+
+update public.profiles
+set email = 'admin-professional-list@example.test'
+where id = (
+  select therapist.user_id
+  from public.therapist_profiles as therapist
+  join admin_professional_projection_target as target
+    on target.therapist_profile_id = therapist.id
+);
+
+update public.therapist_profiles
+set photo_url = '/images/avatar-terapeuta.jpeg'
+where id = (select therapist_profile_id from admin_professional_projection_target);
+
+update public.therapist_connect_accounts
+set is_current = false,
+    updated_at = now()
+where therapist_profile_id = (
+  select therapist_profile_id from admin_professional_projection_target
+)
+  and is_current;
+
+insert into public.therapist_connect_accounts (
+  therapist_profile_id,
+  stripe_account_id,
+  account_generation,
+  is_current,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  pending_requirements
+)
+select
+  therapist_profile_id,
+  'acct_test_admin_projection_current_' || replace(therapist_profile_id::text, '-', ''),
+  (
+    select coalesce(max(account_generation), 0) + 1
+    from public.therapist_connect_accounts
+    where therapist_profile_id = admin_professional_projection_target.therapist_profile_id
+  ),
+  true,
+  'ready',
+  true,
+  true,
+  true,
+  'active',
+  'ready',
+  'enabled',
+  'daily',
+  '[]'::jsonb
+from admin_professional_projection_target;
+
+insert into public.therapist_connect_accounts (
+  therapist_profile_id,
+  stripe_account_id,
+  account_generation,
+  is_current,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  pending_requirements
+)
+select
+  therapist_profile_id,
+  'acct_test_admin_projection_historical_' || replace(therapist_profile_id::text, '-', ''),
+  (
+    select coalesce(max(account_generation), 0) + 1
+    from public.therapist_connect_accounts
+    where therapist_profile_id = admin_professional_projection_target.therapist_profile_id
+  ),
+  false,
+  'disabled',
+  false,
+  false,
+  false,
+  'inactive',
+  'disabled',
+  'disabled',
+  null,
+  '[]'::jsonb
+from admin_professional_projection_target;
+
+select is(
+  (
+    select count(*)::integer
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('professionals', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'id' = (
+      select therapist_profile_id::text from admin_professional_projection_target
+    )
+  ),
+  1,
+  'professional list keeps one row when Connect history has retired accounts'
+);
+
+select is(
+  (
+    select row_payload ->> 'connect_status'
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('professionals', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'id' = (
+      select therapist_profile_id::text from admin_professional_projection_target
+    )
+  ),
+  'ready',
+  'professional list reads only the current Connect account status'
+);
+
+select is(
+  (
+    select row_payload ->> 'email'
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('professionals', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'id' = (
+      select therapist_profile_id::text from admin_professional_projection_target
+    )
+  ),
+  'admin-professional-list@example.test',
+  'professional list includes the allowlisted email for Admin'
+);
+
+select is(
+  (
+    select row_payload ->> 'photo_url'
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('professionals', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'id' = (
+      select therapist_profile_id::text from admin_professional_projection_target
+    )
+  ),
+  '/images/avatar-terapeuta.jpeg',
+  'professional list includes the canonical therapist profile photo'
+);
+
+select is(
+  (
+    public.admin_get_operation_module_v2('professionals', '{}'::jsonb)
+      -> 'page'
+      ->> 'total'
+  )::integer,
+  (select count(*)::integer from public.therapist_profiles),
+  'paginated professionals total remains one row per canonical therapist profile'
 );
 
 select ok(
@@ -251,8 +422,11 @@ select is(
       -> 'metrics'
       ->> 'total-verifications'
   )::integer,
-  (select count(*)::integer from public.therapist_verifications),
-  'verifications metric uses canonical therapist_verifications count'
+  (
+    select count(distinct therapist_profile_id)::integer
+    from public.therapist_verifications
+  ),
+  'verifications metric counts the current queue identity per therapist'
 );
 
 select ok(

@@ -61,11 +61,112 @@ describe("public reservation data contract", () => {
       headline: "Terapeuta",
       isVerified: true,
       name: "Brunna P",
+      service: {
+        durationMinutes: 60,
+        id: "d1000000-0000-4000-8000-000000000001",
+        priceCents: 12000,
+        priceLabel: "R$ 120,00",
+        therapySlug: "reiki",
+        title: "Reiki online",
+      },
       slug: "brunna-p",
       timezone: "America/Sao_Paulo",
     });
 
     expect(hydrated.time?.timeRangeLabel).toBe("09:10 - 10:10");
+    expect(hydrated.serviceSummary).toBe("Reiki online (até 60 min)");
+  });
+
+  it("replaces stale link details with the current published service snapshot", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        duration: "40",
+        price: "10000",
+        service: "d1000000-0000-4000-8000-000000000001",
+        serviceName: "Nome antigo",
+        therapy: "reiki",
+        therapist: "ana-oliveira",
+      },
+    });
+    const hydrated = mergeReservationContextWithPublicProfile(context, {
+      avatarUrl: null,
+      headline: "Terapeuta integrativa",
+      isVerified: true,
+      name: "Ana Oliveira",
+      service: {
+        durationMinutes: 50,
+        id: "d1000000-0000-4000-8000-000000000001",
+        priceCents: 12300,
+        priceLabel: "R$ 123,00",
+        therapySlug: "reiki",
+        title: "Reiki online",
+      },
+      slug: "ana-oliveira",
+      timezone: "America/Sao_Paulo",
+    });
+
+    expect(hydrated).toMatchObject({
+      durationMinutes: 50,
+      priceCents: 12300,
+      priceLabel: "R$ 123,00",
+      reservationUnavailable: false,
+      serviceDetailsUpdated: true,
+      serviceLabel: "Reiki online",
+      serviceSummary: "Reiki online (até 50 min)",
+    });
+    expect(hydrated.prepareStepHref).toContain("duration=50");
+    expect(hydrated.prepareStepHref).toContain("price=12300");
+    expect(hydrated.prepareStepHref).toContain("serviceName=Reiki+online");
+  });
+
+  it("marks an unavailable service without reusing another therapy", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        service: "d1000000-0000-4000-8000-000000000001",
+        therapist: "ana-oliveira",
+      },
+    });
+    const hydrated = mergeReservationContextWithPublicProfile(context, {
+      avatarUrl: null,
+      headline: "Terapeuta integrativa",
+      isVerified: true,
+      name: "Ana Oliveira",
+      slug: "ana-oliveira",
+    });
+
+    expect(hydrated.reservationUnavailable).toBe(true);
+    expect(hydrated.serviceId).toBeNull();
+    expect(hydrated.hasRequiredCheckoutData).toBe(false);
+  });
+
+  it("fails closed when a service query parameter is malformed", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        service: "not-a-service-id",
+        therapist: "ana-oliveira",
+      },
+    });
+    const hydrated = mergeReservationContextWithPublicProfile(context, {
+      avatarUrl: null,
+      headline: "Terapeuta integrativa",
+      isVerified: true,
+      name: "Ana Oliveira",
+      service: {
+        durationMinutes: 50,
+        id: "d1000000-0000-4000-8000-000000000001",
+        priceCents: 12300,
+        priceLabel: "R$ 123,00",
+        therapySlug: "reiki",
+        title: "Reiki online",
+      },
+      slug: "ana-oliveira",
+    });
+
+    expect(context.reservationUnavailable).toBe(true);
+    expect(hydrated.reservationUnavailable).toBe(true);
   });
 
   it("keeps patient conflicts visible and preserves an exactly consecutive slot", () => {

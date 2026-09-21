@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(8);
 
 insert into public.profiles (id, role, display_name)
@@ -36,6 +38,37 @@ set status = excluded.status,
     is_public = excluded.is_public,
     is_accepting_bookings = excluded.is_accepting_bookings,
     accepts_online_sessions = excluded.accepts_online_sessions;
+
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  pending_requirements,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  is_current
+)
+values (
+  'f9600000-0000-4000-8000-000000000004',
+  'f9600000-0000-4000-8000-000000000002',
+  'acct_test_agenda_90_days',
+  'ready',
+  true,
+  true,
+  true,
+  'active',
+  '[]'::jsonb,
+  'ready',
+  'enabled',
+  'daily',
+  true
+);
 
 insert into public.therapist_schedule_settings (therapist_profile_id, timezone)
 values ('f9600000-0000-4000-8000-000000000002', 'America/Sao_Paulo')
@@ -103,6 +136,10 @@ select
   'America/Sao_Paulo',
   true
 from generate_series(0, 6) as day_of_week;
+
+do $$ begin
+  perform pg_temp.prepare_public_profile('f9600000-0000-4000-8000-000000000002');
+end $$;
 
 select is(
   (

@@ -114,6 +114,7 @@ Capacidades a consolidar antes ou durante a Fase 1:
 - `admin.professionals.verify`
 - `admin.professionals.suspend`
 - `admin.patients.read`
+- `admin.patients.suspend`
 - `admin.sessions.read`
 - `admin.sessions.manage`
 - `admin.payments.read`
@@ -124,16 +125,46 @@ Capacidades a consolidar antes ou durante a Fase 1:
 - `admin.therapies.manage`
 - `admin.matching.read`
 
+### Suspensão de novos agendamentos de clientes — 2026-09-18
+
+`patient.suspend` e `patient.reactivate` usam `admin.patients.suspend`, com Admin
+ativo, motivo, requestId idempotente, confirmação e auditoria em `patient_profile`.
+O estado vive em `patient_booking_restrictions`, sem acesso direto do cliente,
+separado de Auth e metadata editável. Um bloqueio transacional por cliente
+serializa o comando com INSERTs de holds/reservas; demais operações da agenda
+não são alteradas. Não há ban de login nem cancelamento, reembolso ou alteração
+financeira. Reservas existentes e seus retries permanecem disponíveis.
+
+Clientes usa paginação/filtros sobre a base completa, indicadores globais e
+detalhe privado de e-mail, telefone/DDI e endereço cadastrado. Contato é PRIVATE,
+nunca parte da lista nem de uma projeção pública. A referência de cards fornecida
+pelo usuário prevalece sobre os rasters históricos, com tokens TES e texto legível.
+
 ### Publicação administrativa de profissionais
 
 `professional.publish` reutiliza `admin.professionals.verify`. É um comando
 auditado, idempotente e com motivo obrigatório que pode ativar publicação e
-reservas somente para perfil aprovado, online e com serviço publicável. A
-validação autoritativa não permite contornar bloqueadores de serviço, terapia
-ou categoria; os únicos blockers removidos pelo comando são os próprios
+reservas somente para perfil aprovado, online, 100% completo, com ao menos uma
+disponibilidade recorrente ativa, serviço publicável e conta de recebimento
+pronta. A validação autoritativa não permite contornar bloqueadores de
+completude, agenda, serviço, terapia, categoria ou recebimento; os únicos
+blockers removidos pelo comando são os próprios
 switches públicos ativados na mesma transação. A lista de profissionais e a
 fila de verificações carregam referências internas seguras para direcionar o
 admin ao detalhe correto, sem renderizar identificadores técnicos.
+
+Quando um perfil aprovado e público remove a última disponibilidade recorrente,
+o salvamento da agenda o despublica e cria uma nova revisão com origem
+`availability_removed`. O Admin vê “Agenda sem horários”, não pode aprovar
+enquanto a completude permanecer abaixo de 100% e só restaura a publicação após
+recalcular todos os gates. Reservas existentes não são modificadas.
+
+A fila de Verificações é uma projeção do ciclo atual: cada terapeuta aparece uma
+única vez, usando a revisão mais recente. Reaprovações por retirada da agenda ou
+encerramento da conta de recebimento não apagam nem reescrevem decisões
+anteriores; o histórico completo permanece disponível para detalhe e auditoria,
+mas não cria linhas duplicadas na fila operacional.
+
 - `admin.matching.manage`
 - `admin.reviews.read`
 - `admin.reviews.moderate`
@@ -2779,6 +2810,9 @@ Minimizacao de dados:
 - listagem de suporte nao envia descricao completa nem contexto diagnostico;
 - listagem de avaliacoes nao envia comentario completo;
 - listagem de verificacoes nao envia metadados/documentos privados;
+- listagem de profissionais entrega somente para Admin o e-mail cadastrado e a
+  foto pública do perfil, para desambiguação operacional; telefone, endereço,
+  documentos e rascunhos permanecem fora da lista;
 - listagem de profissionais nao permite alterar plano, publicacao ou status por
   update livre.
 

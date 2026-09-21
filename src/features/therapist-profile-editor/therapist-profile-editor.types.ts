@@ -72,6 +72,10 @@ export type TherapistProfileVerificationSummary = {
   changesRequested?: string | null;
   id: string;
   rejectionReason: string | null;
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   reviewedAt: string | null;
   status: TherapistProfileVerificationStatus;
   submittedAt: string | null;
@@ -157,6 +161,11 @@ export type TherapistProfileDerivedData = {
   verificationStatus: TherapistProfileVerificationStatus;
 };
 
+export type TherapistProfilePublicationState = {
+  isPubliclyVisible: boolean;
+  needsReceivingAccount: boolean;
+};
+
 export type TherapistProfileEditorData = {
   capabilities: TherapistProfileCapabilities;
   completeness: TherapistProfileCompleteness;
@@ -164,6 +173,7 @@ export type TherapistProfileEditorData = {
   draft: TherapistProfileVersionedContent | null;
   privateDocuments: TherapistPrivateDocumentSummary[];
   privateLocation?: TherapistProfilePrivateLocation | null;
+  publication: TherapistProfilePublicationState;
   propagationNotice: string;
   publicProfileHref: string;
   publicProfileSlug: string;

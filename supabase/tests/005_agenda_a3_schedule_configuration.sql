@@ -82,8 +82,8 @@ select is(
 
 select is(
   public.get_therapist_schedule_v1() ->> 'contractVersion',
-  '1',
-  'the schedule read model publishes contract version 1'
+  '2',
+  'the schedule read model publishes contract version 2'
 );
 
 select is(
@@ -196,7 +196,7 @@ select is(
       jsonb_build_array(
         jsonb_build_object(
           'serviceId', 'd1000000-0000-4000-8000-000000000001',
-          'bufferBeforeMinutes', 10,
+          'bufferBeforeMinutes', 0,
           'bufferAfterMinutes', 15,
           'minimumNoticeMinutes', 180,
           'bookingHorizonDays', 45,
@@ -276,7 +276,7 @@ select throws_ok(
       'a3000000-0000-4000-8000-000000000002'
     )
   $$,
-  '40001',
+  'P0001',
   'schedule_version_conflict',
   'a stale version is rejected instead of overwriting a newer schedule'
 );

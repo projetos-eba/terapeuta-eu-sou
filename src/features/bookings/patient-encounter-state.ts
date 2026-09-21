@@ -16,7 +16,8 @@ export type PatientEncounterPaymentKind =
   | "failed"
   | "not_started"
   | "processing"
-  | "refunded";
+  | "refunded"
+  | "scheduled";
 
 export type PatientEncounterWaitingRoomKind =
   | "entry_available"
@@ -27,6 +28,9 @@ export type PatientEncounterWaitingRoomKind =
   | "payment_required"
   | "therapist_present"
   | "therapist_absent_prolonged"
+  | "therapist_no_show"
+  | "both_no_show"
+  | "not_performed"
   | "too_early"
   | "waiting_therapist";
 
@@ -69,6 +73,7 @@ type Input = {
   financialStatus: SessionFinancialStatus | null;
   now?: Date;
   patientHasJoined?: boolean;
+  paymentFlowVersion?: string;
   provider: "external" | "google_meet" | "zoom";
   startsAt: string;
   zoomAccess?: ZoomAccessState | null;
@@ -77,6 +82,7 @@ type Input = {
 const JOIN_WINDOW_BEFORE_MS = 15 * 60_000;
 const FIRST_JOIN_WINDOW_AFTER_MS = 10 * 60_000;
 const THERAPIST_ABSENCE_THRESHOLD_MS = 10 * 60_000;
+const CHARGE_LEAD_TIME_MS = 24 * 60 * 60_000;
 
 export function getPatientEncounterPresentationState({
   bookingStatus,
@@ -84,6 +90,7 @@ export function getPatientEncounterPresentationState({
   financialStatus,
   now = new Date(),
   patientHasJoined = false,
+  paymentFlowVersion = "v9",
   provider,
   startsAt,
   zoomAccess = null,
@@ -95,6 +102,7 @@ export function getPatientEncounterPresentationState({
     bookingStatus,
     financialStatus,
     nowMs,
+    paymentFlowVersion,
     startsAtMs,
   });
   const waitingRoom = getWaitingRoomState({
@@ -126,11 +134,18 @@ export function getPatientEncounterPresentationState({
       deviceCheckRecommended:
         payment.kind === "confirmed" &&
         waitingRoom.kind !== "ended" &&
+        waitingRoom.kind !== "therapist_no_show" &&
+        waitingRoom.kind !== "both_no_show" &&
+        waitingRoom.kind !== "not_performed" &&
         waitingRoom.kind !== "operational_unavailable",
       title:
-        payment.kind === "confirmed"
-          ? "Prepare seu encontro"
-          : "Confirme o pagamento para preparar a sala",
+        waitingRoom.kind === "therapist_no_show" ||
+        waitingRoom.kind === "both_no_show" ||
+        waitingRoom.kind === "not_performed"
+          ? "Sessão não realizada"
+          : payment.kind === "confirmed" || payment.kind === "scheduled"
+            ? "Prepare seu encontro"
+            : "Confirme o pagamento para preparar a sala",
     },
     waitingRoom,
   };
@@ -140,13 +155,30 @@ function getPaymentState({
   bookingStatus,
   financialStatus,
   nowMs,
+  paymentFlowVersion,
   startsAtMs,
 }: {
   bookingStatus: string;
   financialStatus: SessionFinancialStatus | null;
   nowMs: number;
+  paymentFlowVersion: string;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
+  if (
+    financialStatus === SessionFinancialStatus.Paid &&
+    (bookingStatus === BookingStatus.NoShowPatient ||
+      bookingStatus === BookingStatus.NoShowTherapist ||
+      bookingStatus === BookingStatus.NoShowBoth)
+  ) {
+    return {
+      kind: "confirmed",
+      message:
+        "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
+      retryAllowed: false,
+      slotState: "review",
+      title: "Pagamento confirmado",
+    };
+  }
   if (
     financialStatus === SessionFinancialStatus.Paid &&
     isCancelledBookingStatus(bookingStatus)
@@ -185,6 +217,22 @@ function getPaymentState({
 
   if (financialStatus === SessionFinancialStatus.Pending) {
     const expired = Number.isFinite(startsAtMs) && nowMs > startsAtMs;
+    const scheduled =
+      paymentFlowVersion === "v10" &&
+      bookingStatus === BookingStatus.Confirmed &&
+      Number.isFinite(startsAtMs) &&
+      startsAtMs - nowMs > CHARGE_LEAD_TIME_MS;
+
+    if (scheduled) {
+      return {
+        kind: "scheduled",
+        message:
+          "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
+        retryAllowed: false,
+        slotState: "confirmed",
+        title: "Cobrança programada",
+      };
+    }
 
     return {
       kind: expired ? "expired" : "awaiting_webhook",
@@ -292,6 +340,27 @@ function getWaitingRoomState({
   startsAtMs: number;
   zoomAccess: ZoomAccessState | null;
 }): PatientEncounterPresentationState["waitingRoom"] {
+  if (bookingStatus === BookingStatus.NoShowPatient) {
+    return {
+      kind: "not_performed",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
+    };
+  }
+  if (bookingStatus === BookingStatus.NoShowTherapist) {
+    return {
+      kind: "not_performed",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
+    };
+  }
+  if (bookingStatus === BookingStatus.NoShowBoth) {
+    return {
+      kind: "both_no_show",
+      message: "Se precisar de ajuda, fale com o suporte.",
+      title: "Sessão não realizada",
+    };
+  }
   if (isTerminalBookingStatus(bookingStatus)) {
     return {
       kind: "ended",
@@ -312,7 +381,7 @@ function getWaitingRoomState({
   if (financialStatus !== SessionFinancialStatus.Paid) {
     return {
       kind: "payment_required",
-      message: "A sala só abre após confirmação financeira persistida.",
+      message: "A sala será liberada quando o pagamento for confirmado.",
       title: "Pagamento necessário",
     };
   }
@@ -339,8 +408,7 @@ function getWaitingRoomState({
   if (zoomAccess?.reason === ZoomAccessReason.TooEarly) {
     return {
       kind: "too_early",
-      message:
-        "Sala estará disponível assim que o terapeuta liberar o acesso.",
+      message: "Sala estará disponível assim que o terapeuta liberar o acesso.",
       title: "A sala ainda não abriu",
     };
   }
@@ -355,6 +423,23 @@ function getWaitingRoomState({
       message:
         "A entrada do paciente é liberada quando a presença do terapeuta é confirmada pelo Zoom.",
       title: "Aguardando terapeuta",
+    };
+  }
+
+  if (zoomAccess?.reason === ZoomAccessReason.TherapistArrivalWindowExpired) {
+    return {
+      kind: "therapist_no_show",
+      title: "Sessão não realizada",
+      message:
+        "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte.",
+    };
+  }
+
+  if (zoomAccess?.reason === ZoomAccessReason.BothNoShow) {
+    return {
+      kind: "both_no_show",
+      title: "Sessão não realizada",
+      message: "Se precisar de ajuda, fale com o suporte.",
     };
   }
 
@@ -464,6 +549,14 @@ function getActions(
     return [...actions];
   }
 
+  if (
+    waitingRoomKind === "therapist_no_show" ||
+    waitingRoomKind === "both_no_show" ||
+    waitingRoomKind === "not_performed"
+  ) {
+    return ["contact_support"];
+  }
+
   actions.add("test_devices");
 
   if (
@@ -516,6 +609,7 @@ function isTerminalBookingStatus(status: string) {
     status === BookingStatus.CancelledByTherapist ||
     status === BookingStatus.NoShowPatient ||
     status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.NoShowBoth ||
     status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
   );
@@ -542,6 +636,9 @@ export function getZoomWaitingRoomStatusFromAccess(
   }
 
   if (access.reason === ZoomAccessReason.TooEarly) return "too_early";
+  if (access.reason === ZoomAccessReason.TherapistArrivalWindowExpired)
+    return "therapist_no_show";
+  if (access.reason === ZoomAccessReason.BothNoShow) return "both_no_show";
   if (
     access.reason === ZoomAccessReason.SessionEnded ||
     access.videoSessionStatus === ZoomVideoSessionStatus.Ended ||
@@ -552,16 +649,16 @@ export function getZoomWaitingRoomStatusFromAccess(
     return "arrival_expired";
   if (access.reason === ZoomAccessReason.TooLate) return "schedule_ended";
   if (access.reason === ZoomAccessReason.TherapistNotInSession) {
-    const availableFromMs = access.availableFrom
-      ? Date.parse(access.availableFrom)
+    const startsAtMs = access.scheduledStartsAt
+      ? Date.parse(access.scheduledStartsAt)
       : NaN;
     const serverNowMs = access.serverNow ? Date.parse(access.serverNow) : NaN;
     const referenceNowMs = Number.isFinite(serverNowMs)
       ? serverNowMs
       : now.getTime();
 
-    return Number.isFinite(availableFromMs) &&
-      referenceNowMs - availableFromMs >= THERAPIST_ABSENCE_THRESHOLD_MS
+    return Number.isFinite(startsAtMs) &&
+      referenceNowMs - startsAtMs >= THERAPIST_ABSENCE_THRESHOLD_MS
       ? "therapist_absent_prolonged"
       : "waiting_therapist";
   }
@@ -577,7 +674,12 @@ export function getZoomRecoveryActionLabels(
 ) {
   const base = ["Tentar novamente", "Revisar permissões", "Verificar conexão"];
 
-  if (kind === "therapist_absent_prolonged") {
+  if (
+    kind === "therapist_absent_prolonged" ||
+    kind === "therapist_no_show" ||
+    kind === "both_no_show" ||
+    kind === "not_performed"
+  ) {
     return [...base, "Copiar referência", "Falar com suporte"];
   }
 

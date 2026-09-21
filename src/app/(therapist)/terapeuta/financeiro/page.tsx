@@ -11,30 +11,13 @@ import { canUseTherapistCapability } from "@/domain/tes";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 const financialStatuses = new Set([
-  "bank_pending",
-  "blocked",
+  "approved",
   "canceled",
-  "disputed",
-  "eligible",
   "failed",
-  "paid",
-  "payout_processing",
-  "receivable",
+  "processing",
   "refunded",
-  "reversed",
-  "waiting_confirmation",
-  "waiting_safety_period",
-  "waiting_settlement",
-]);
-
-const payoutStatuses = new Set([
-  "bank_pending",
-  "batched",
-  "blocked",
-  "failed",
-  "paid",
-  "reversed",
-  "transfer_pending",
+  "scheduled",
+  "under_review",
 ]);
 
 export default async function TherapistFinanceRoute({
@@ -90,22 +73,22 @@ function parseFilters(
   params: Record<string, string | string[] | undefined> | undefined,
 ): TherapistFinanceFilters {
   const status = first(params?.status);
-  const payoutStatus = first(params?.payoutStatus);
+  const agendaDaysValue = Number.parseInt(
+    first(params?.agendaDays) ?? "15",
+    10,
+  );
   const page = Number.parseInt(first(params?.page) ?? "1", 10);
 
   return {
+    agendaDays:
+      agendaDaysValue === 7 || agendaDaysValue === 30 ? agendaDaysValue : 15,
     page: Number.isInteger(page) && page > 0 ? page : 1,
-    payoutStatus:
-      payoutStatus && payoutStatuses.has(payoutStatus)
-        ? (payoutStatus as TherapistFinanceFilters["payoutStatus"])
-        : null,
+    payoutStatus: null,
     search: normalizeSearch(first(params?.q)),
     status:
-      status === "waiting_safety_period"
-        ? "waiting_settlement"
-        : status && financialStatuses.has(status)
-          ? (status as TherapistFinanceFilters["status"])
-          : null,
+      status && financialStatuses.has(status)
+        ? (status as TherapistFinanceFilters["status"])
+        : null,
     therapyId: normalizeUuid(first(params?.therapyId)),
   };
 }

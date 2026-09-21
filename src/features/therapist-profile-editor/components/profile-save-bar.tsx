@@ -19,7 +19,6 @@ export function ProfileSaveBar({
   hasUnsavedChanges,
   onDiscardDraft,
   onPublish,
-  onSaveDraft,
   onUnpublish,
   pendingAction,
   propagationNotice,
@@ -32,7 +31,6 @@ export function ProfileSaveBar({
   hasUnsavedChanges: boolean;
   onDiscardDraft: () => void;
   onPublish: () => void;
-  onSaveDraft: () => void;
   onUnpublish: () => void;
   pendingAction: PendingAction | null;
   propagationNotice: string;
@@ -42,7 +40,7 @@ export function ProfileSaveBar({
   const publishDisabled =
     pendingAction !== null ||
     autoSaveState.status === "saving" ||
-    (firstConfiguration ? false : !hasDraft || hasUnsavedChanges);
+    (!firstConfiguration && !hasDraft && !hasUnsavedChanges);
   const message = getSaveBarMessage({
     firstConfiguration,
     hasDraft,
@@ -87,28 +85,6 @@ export function ProfileSaveBar({
           ) : null}
         </div>
         <AppPageActions className="justify-end">
-          {firstConfiguration ? null : (
-            <TESButton
-              className="min-h-11 rounded-lg"
-              disabled={
-                !hasUnsavedChanges ||
-                pendingAction !== null ||
-                autoSaveState.status === "saving"
-              }
-              onClick={onSaveDraft}
-              type="button"
-              variant="secondary"
-            >
-              {pendingAction === "save_draft" ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="animate-spin"
-                  size={18}
-                />
-              ) : null}
-              Salvar rascunho
-            </TESButton>
-          )}
           {hasDraft ? (
             <TESButton
               className="min-h-11 rounded-lg"
@@ -188,7 +164,7 @@ function getSaveBarMessage({
 
       return {
         description:
-          "Faça alterações, salve um rascunho e publique quando quiser atualizar o perfil público.",
+          "Faça alterações; elas serão salvas automaticamente como rascunho. Publique quando quiser atualizar o perfil público.",
         title: "Seu cadastro já foi aprovado.",
       };
     }
@@ -219,8 +195,8 @@ function getSaveBarMessage({
   if (hasUnsavedChanges) {
     return {
       description:
-        "Salve as alterações como rascunho antes de atualizar a versão pública.",
-      title: "Você tem alterações não salvas.",
+        "Suas alterações serão salvas automaticamente como rascunho. Publique quando estiverem prontas para atualizar a versão pública.",
+      title: "Você tem alterações ainda não publicadas.",
     };
   }
 
@@ -233,7 +209,7 @@ function getSaveBarMessage({
 
   return {
     description:
-      "Faça alterações, salve um rascunho e publique quando quiser atualizar o perfil público.",
+      "Faça alterações; elas serão salvas automaticamente como rascunho. Publique quando quiser atualizar o perfil público.",
     title: "Sua versão publicada está atualizada.",
   };
 }

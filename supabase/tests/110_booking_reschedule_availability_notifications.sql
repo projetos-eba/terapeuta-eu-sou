@@ -136,6 +136,14 @@ select is(
     from public.notifications
     where kind = 'booking_reschedule_requested_patient'
       and event_key like 'booking-event:%:patient'
+      and event_key in (
+        select 'booking-event:' || id::text || ':patient' from public.booking_events
+        where booking_id = 'f2000000-0000-4000-8000-000000000001'
+          and payload ->> 'rescheduleRequestId' = (
+            select id::text from public.booking_reschedule_requests
+            where request_id = 'reschedule-security-request-0001'
+          )
+      )
   ),
   1,
   'proposal creation notifies only the counterparty in app'
@@ -195,6 +203,15 @@ select lives_ok(
   'a new proposal can be created after rejection'
 );
 
+-- Local browser homologation can leave unrelated pending proposals in the
+-- Docker database. Expire those inside this transaction before measuring the
+-- deterministic fixture below; the final rollback preserves local data.
+do $$
+begin
+  perform public.expire_booking_reschedule_requests_v1(now());
+end;
+$$;
+
 update public.booking_reschedule_requests
 set expires_at = now() - interval '1 second'
 where request_id = 'reschedule-security-request-0002';
@@ -224,6 +241,14 @@ select is(
       'booking_reschedule_expired_patient',
       'booking_reschedule_expired_therapist'
     )
+      and event_key like 'booking-event:' || (
+        select id::text
+        from public.booking_events
+        where request_id = 'reschedule-expired:' || (
+          select id::text from public.booking_reschedule_requests
+          where request_id = 'reschedule-security-request-0002'
+        )
+      ) || ':%'
   ),
   2,
   'expiration notifies both participants exactly once'
@@ -307,6 +332,13 @@ select is(
   (
     select count(*)::integer from public.notifications
     where kind in ('booking_rescheduled_patient', 'booking_rescheduled_therapist')
+      and event_key like 'booking-event:%'
+      and split_part(event_key, ':', 2) in (
+        select id::text from public.booking_events
+        where booking_id = 'f2000000-0000-4000-8000-000000000001'
+          and event_type = 'booking_reschedule_resolved'
+          and payload ->> 'status' = 'applied'
+      )
   ),
   2,
   'an applied reschedule notifies both participants'

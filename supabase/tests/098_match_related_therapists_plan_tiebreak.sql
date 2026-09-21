@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(7);
 
 insert into public.profiles (id, role, display_name)
@@ -27,6 +29,43 @@ values
   ('f9810000-0000-4000-8000-000000000002', 'f9800000-0000-4000-8000-000000000002', 'match-premium', 'Match Premium', '9800002', 'premium', 'approved', 'published', true, true, true),
   ('f9810000-0000-4000-8000-000000000003', 'f9800000-0000-4000-8000-000000000003', 'match-premium-plus', 'Match Premium Plus', '9800003', 'premium_plus', 'approved', 'published', true, true, true),
   ('f9810000-0000-4000-8000-000000000004', 'f9800000-0000-4000-8000-000000000004', 'match-free-interesse', 'Match Free Interesse', '9800004', 'free', 'approved', 'published', true, true, true);
+
+insert into public.therapist_connect_accounts (
+  id,
+  therapist_profile_id,
+  stripe_account_id,
+  onboarding_status,
+  details_submitted,
+  charges_enabled,
+  payouts_enabled,
+  stripe_transfers_status,
+  pending_requirements,
+  operational_status,
+  payout_status,
+  payout_schedule_interval,
+  is_current
+)
+select
+  account_id,
+  therapist_profile_id,
+  stripe_account_id,
+  'ready',
+  true,
+  true,
+  true,
+  'active',
+  '[]'::jsonb,
+  'ready',
+  'enabled',
+  'daily',
+  true
+from (
+  values
+    ('f9830000-0000-4000-8000-000000000001'::uuid, 'f9810000-0000-4000-8000-000000000001'::uuid, 'acct_test_match_free'),
+    ('f9830000-0000-4000-8000-000000000002'::uuid, 'f9810000-0000-4000-8000-000000000002'::uuid, 'acct_test_match_premium'),
+    ('f9830000-0000-4000-8000-000000000003'::uuid, 'f9810000-0000-4000-8000-000000000003'::uuid, 'acct_test_match_premium_plus'),
+    ('f9830000-0000-4000-8000-000000000004'::uuid, 'f9810000-0000-4000-8000-000000000004'::uuid, 'acct_test_match_interest')
+) as fixtures(account_id, therapist_profile_id, stripe_account_id);
 
 -- Isolate the ranking contract from the broad local seed. The fixtures below
 -- are the only public candidates considered by this test.
@@ -145,6 +184,24 @@ where interest.is_active
   )
 order by interest.sort_order
 limit 1;
+
+do $$
+declare v_profile_id uuid;
+begin
+  foreach v_profile_id in array array[
+    'f9810000-0000-4000-8000-000000000001'::uuid,
+    'f9810000-0000-4000-8000-000000000002'::uuid,
+    'f9810000-0000-4000-8000-000000000003'::uuid,
+    'f9810000-0000-4000-8000-000000000004'::uuid
+  ] loop
+    perform pg_temp.prepare_public_profile(v_profile_id);
+    insert into public.availability_rules
+      (therapist_profile_id, service_id, day_of_week, start_time, end_time, timezone, is_active)
+    select v_profile_id, service.id, 1, '08:00', '18:00', 'America/Sao_Paulo', true
+    from public.therapist_services service
+    where service.therapist_profile_id = v_profile_id and service.status = 'active';
+  end loop;
+end $$;
 
 select is(
   public.get_public_therapy_therapists_v1(

@@ -5,6 +5,8 @@ import {
   AppPageMain,
 } from "@/components/app-page";
 import { routes } from "@/lib/routes";
+import Link from "next/link";
+import type { Route } from "next";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
 import { AlertTriangle, CheckCircle2, Star } from "lucide-react";
@@ -26,6 +28,7 @@ import {
   findSection,
   formatStatusLabel,
 } from "./admin-operation-display";
+import { AdminSessionAttendanceResolution } from "./admin-session-attendance-resolution";
 
 export function AdminSessionDetailPage({
   data,
@@ -44,9 +47,22 @@ export function AdminSessionDetailPage({
   const scheduleFields = fieldMap(schedule?.fields ?? []);
   const participantFields = fieldMap(participants?.fields ?? []);
   const onlineRoomFields = fieldMap(onlineRoom?.fields ?? []);
-  const status = formatStatusLabel(data.statusLabel);
-  const payment = formatPaymentLabel(sessionFields.get("Pagamento"));
-  const roomStatus = onlineRoomFields.get("Situação da sala") ?? "";
+  const quality = sessionFeedback?.status === "available" ? sessionFeedback.data.qualityReview : undefined;
+  const status = quality?.isOpen ? "Realizada, em análise" : quality?.allAnswered
+    ? "Realizada (confirmada)" : formatStatusLabel(data.statusLabel);
+  const rawRoomStatus = onlineRoomFields.get("Situação da sala") ?? "";
+  const attendanceClassification = sessionFeedback?.status === "available"
+    ? sessionFeedback.data.attendance.classification
+    : ["no_show_therapist", "no_show_both"].includes(data.statusLabel ?? "")
+      ? data.statusLabel
+      : null;
+  const rawPayment = formatPaymentLabel(sessionFields.get("Pagamento"));
+  const payment = rawPayment;
+  const roomStatus = ["no_show_therapist", "no_show_both"].includes(
+    attendanceClassification ?? "",
+  ) && ["Pronta para iniciar", "Em andamento"].includes(rawRoomStatus)
+    ? "Acesso bloqueado — encerramento pendente"
+    : rawRoomStatus;
   const therapistPresence = onlineRoomFields.get("Profissional na sala") ?? "";
   const participantCount = onlineRoomFields.get("Participantes ativos") ?? "";
   const terminationReason =
@@ -300,6 +316,8 @@ function SessionFeedbackAuditSection({
 }: {
   data: AdminSessionFeedbackData;
 }) {
+  const nonPerformed = data.attendance.classification?.startsWith("no_show_") ?? false;
+  const qualityEligible = data.attendance.bothJoined && !data.attendance.classification;
   return (
     <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-6 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -320,32 +338,88 @@ function SessionFeedbackAuditSection({
         ) : null}
       </div>
 
-      {data.pendingRoles.length > 0 ? (
+      {data.attendance.classification ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-status-warning/25 bg-status-warningBg p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-extrabold text-brand-deep">
+              {formatAttendanceClassification(data.attendance.classification)}
+            </p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              {data.attendance.resolution
+                ? `Desfecho registrado: ${formatAttendanceResolution(data.attendance.resolution)}.`
+                : "Classificação de presença registrada. Qualquer decisão financeira exige autorização explícita do Admin."}
+            </p>
+          </div>
+          <AdminSessionAttendanceResolution attendance={data.attendance} />
+        </div>
+      ) : null}
+
+      {!qualityEligible ? (
+        <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
+          {nonPerformed
+            ? "Sessão não realizada: avaliação de qualidade indisponível. A ocorrência permanece acessível ao suporte."
+            : "Avaliação de qualidade indisponível até a confirmação da entrada de ambos na tentativa atual."}
+        </p>
+      ) : data.pendingRoles.length > 0 ? (
         <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
           Pendente: {data.pendingRoles.map(feedbackRoleLabel).join(" e ")} ainda
           não enviou uma resposta.
         </p>
       ) : null}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      {data.qualityReview && qualityEligible ? (
+        <div className="mt-4 grid gap-3 rounded-2xl border border-brand-lavender bg-surface-soft p-4">
+          <p className="text-base font-extrabold text-brand-deep">{data.qualityReview.isOpen
+            ? "Realizada, em análise" : data.qualityReview.allAnswered ? "Realizada (confirmada)" : "Sessão realizada"}</p>
+          <p className="text-sm font-semibold leading-6">Análise de qualidade: somente auditoria e resposta pelo suporte. Não autoriza reagendamento, reembolso ou alteração financeira.</p>
+          {(data.qualityReports ?? []).map((report) => (
+            <div className="grid gap-1 text-sm font-semibold" key={report.id}>
+              <p>{feedbackRoleLabel(report.authorRole)} · {report.answeredAt ? "Respondido pelo TES" : report.overdue ? "Prazo de 5 dias vencido" : "Aguardando resposta do TES"}</p>
+              <p>Prazo: {formatFeedbackDate(report.dueAt)}</p>
+              <Link className="inline-flex min-h-11 items-center font-extrabold text-brand-primary underline" href={routes.admin.supportDetail(report.ticketId) as Route<string>}>Responder no ticket vinculado</Link>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <AuditStatusCard
-          label="Entrada do cliente"
+          label="Chegada do cliente até T+10"
+          value={
+            data.attendance.patientPresentAtTolerance
+              ? "Registrada"
+              : "Não registrada"
+          }
+          tone={
+            data.attendance.patientPresentAtTolerance ? "success" : "neutral"
+          }
+        />
+        <AuditStatusCard
+          label="Entrada do cliente na sala"
           value={
             data.attendance.patientJoined ? "Confirmada" : "Não confirmada"
           }
           tone={data.attendance.patientJoined ? "success" : "neutral"}
         />
         <AuditStatusCard
-          label="Entrada do terapeuta"
+          label="Chegada do terapeuta até T+10"
+          value={
+            data.attendance.therapistPresentAtTolerance
+              ? "Registrada"
+              : "Não registrada"
+          }
+          tone={
+            data.attendance.therapistPresentAtTolerance
+              ? "success"
+              : "neutral"
+          }
+        />
+        <AuditStatusCard
+          label="Entrada do terapeuta na sala"
           value={
             data.attendance.therapistJoined ? "Confirmada" : "Não confirmada"
           }
           tone={data.attendance.therapistJoined ? "success" : "neutral"}
-        />
-        <AuditStatusCard
-          label="Sala encerrada"
-          value={data.attendance.sessionClosed ? "Sim" : "Ainda não"}
-          tone={data.attendance.sessionClosed ? "success" : "neutral"}
         />
       </div>
 
@@ -353,16 +427,18 @@ function SessionFeedbackAuditSection({
         <ConfirmationAuditCard
           confirmation={data.confirmation.patient}
           label="Confirmação do cliente"
+          notApplicable={nonPerformed}
         />
         <ConfirmationAuditCard
           confirmation={data.confirmation.therapist}
           label="Confirmação do terapeuta"
+          notApplicable={nonPerformed}
         />
       </div>
 
       <div className="mt-4 rounded-2xl border border-brand-lavender/70 bg-surface-soft p-4">
         <p className="text-sm font-extrabold text-brand-deep">
-          Repasse e prazo de confirmação
+          Financeiro — independente da confirmação
         </p>
         <dl className="mt-3 grid gap-3 sm:grid-cols-3">
           <AuditValue
@@ -384,10 +460,19 @@ function SessionFeedbackAuditSection({
         </p>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <FeedbackAuditCard item={data.patient} label="Cliente" />
-        <FeedbackAuditCard item={data.therapist} label="Terapeuta" />
-      </div>
+      {qualityEligible || data.patient || data.therapist ? (
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <FeedbackAuditCard item={data.patient} label="Cliente" />
+          <FeedbackAuditCard item={data.therapist} label="Terapeuta" />
+        </div>
+      ) : null}
+      {(data.legacyFeedback?.length ?? 0) > 0 ? (
+        <div className="mt-5 grid gap-4">
+          <h3 className="text-base font-extrabold text-brand-deep">Relatos legados — histórico sem reclassificação</h3>
+          <p className="text-sm font-semibold">Estas declarações anteriores não são respostas de qualidade da tentativa atual.</p>
+          {data.legacyFeedback?.map((item, index) => <FeedbackAuditCard key={`${item.authorRole}-${index}`} item={item} label={`Histórico ${feedbackRoleLabel(item.authorRole)}`} />)}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -422,9 +507,11 @@ function AuditStatusCard({
 function ConfirmationAuditCard({
   confirmation,
   label,
+  notApplicable = false,
 }: {
   confirmation: AdminSessionFeedbackData["confirmation"]["patient"];
   label: string;
+  notApplicable?: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-brand-lavender/70 bg-white p-4">
@@ -458,7 +545,7 @@ function ConfirmationAuditCard({
         </dl>
       ) : (
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          Ainda pendente.
+          {notApplicable ? "Não se aplica — sessão não realizada." : "Ainda pendente."}
         </p>
       )}
     </div>
@@ -487,9 +574,8 @@ function formatFinancialStatus(
   )
     return "Em liquidação";
   if (financial.transferStatus === "not_eligible") return "Não elegível";
-  return financial.serviceStatus === "confirmed"
-    ? "Confirmação registrada"
-    : "Em análise";
+  if (financial.transferStatus === "transferred") return "Repasse enviado";
+  return "Em acompanhamento financeiro";
 }
 
 function formatTransferStatus(value: string | undefined) {
@@ -537,7 +623,7 @@ function FeedbackAuditCard({
             Resultado
           </dt>
           <dd className="mt-1 text-sm font-extrabold text-brand-deep">
-            {item.outcome === "completed"
+            {typeof item.successful === "boolean" ? item.successful ? "Sessão bem-sucedida" : "Sessão realizada — não foi bem-sucedida" : item.outcome === "completed"
               ? "Sessão realizada"
               : "Sessão não realizada"}
           </dd>
@@ -592,6 +678,29 @@ function FeedbackAuditCard({
 
 function feedbackRoleLabel(role: "patient" | "therapist") {
   return role === "patient" ? "o cliente" : "o terapeuta";
+}
+
+function formatAttendanceClassification(value: string) {
+  const labels: Record<string, string> = {
+    no_show_both: "Sessão não realizada — cliente e terapeuta não chegaram",
+    no_show_therapist: "Sessão não realizada — terapeuta não compareceu",
+    participant_report: "Sessão contestada por um participante",
+    requires_review: "Sessão não realizada — evidência inconclusiva",
+  };
+  return labels[value] ?? "Presença em análise";
+}
+
+function formatAttendanceResolution(value: string) {
+  const labels: Record<string, string> = {
+    performed: "sessão confirmada como realizada",
+    platform_failure: "falha atribuída à plataforma",
+    platform_refund: "reembolso por falha da plataforma",
+    platform_reschedule: "reagendamento por falha da plataforma",
+    refund: "reembolso integral",
+    reschedule: "reagendamento sem nova cobrança",
+    retain: "retenção autorizada pela política",
+  };
+  return labels[value] ?? "análise concluída";
 }
 
 function formatFeedbackReason(reason: string) {

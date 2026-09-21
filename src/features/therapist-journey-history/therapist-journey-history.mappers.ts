@@ -2,6 +2,7 @@ import {
   JOURNEY_THEME_LABEL_BY_KEY,
   type JourneyThemeKey,
 } from "@/features/session-feedback/session-journey-themes";
+import { FulfillmentStatus, type FulfillmentStatus as FulfillmentStatusValue } from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -30,15 +31,29 @@ export type JourneyPatientRow = {
 };
 
 export type JourneyBookingRow = {
+  confirmationStatus?: "confirmed" | "pending" | null;
   completed_at: string | null;
   created_at: string;
   ends_at: string;
+  fulfillmentStatus: FulfillmentStatusValue | null;
   id: string;
   patient_profile_id: string;
   payment_status: string;
+  realizationStatus?: "performed" | "pending" | "not_performed" | null;
   service_id: string;
   starts_at: string;
   status: string;
+};
+
+export type JourneyBookingBaseRow = Omit<
+  JourneyBookingRow,
+  "confirmationStatus" | "fulfillmentStatus" | "realizationStatus"
+>;
+
+export type JourneyBookingStateRow = {
+  booking_id: string;
+  confirmation_status: "confirmed" | "pending";
+  realization_status: "performed" | "pending" | "not_performed";
 };
 
 export type JourneyServiceRow = {
@@ -79,6 +94,14 @@ type MappingInput = JourneyHistoryRows & {
 };
 
 const COMPLETED_BOOKING_STATUS = "completed";
+
+const MEMORY_FULFILLMENT_STATUSES: ReadonlySet<FulfillmentStatusValue> = new Set([
+  FulfillmentStatus.AutoConfirmed,
+  FulfillmentStatus.ConfirmedBilateral,
+  FulfillmentStatus.ConfirmedByPatientReview,
+  FulfillmentStatus.ConfirmedByTherapist,
+  FulfillmentStatus.OccurredPendingConfirmation,
+]);
 
 const RECENT_ENCOUNTER_WINDOW_DAYS = 30;
 
@@ -152,9 +175,8 @@ export function mapJourneyHistoryDetail(
     .filter(
       (booking) =>
         booking.patient_profile_id === input.patientId &&
-        booking.status === COMPLETED_BOOKING_STATUS &&
-        new Date(booking.starts_at).getTime() <= now.getTime() &&
-        summaryByBooking.has(booking.id),
+        isMemoryEligibleBooking(booking) &&
+        new Date(booking.starts_at).getTime() <= now.getTime(),
     )
     .sort(
       (a, b) =>
@@ -162,17 +184,18 @@ export function mapJourneyHistoryDetail(
     )
     .map((booking) => {
       const service = serviceById.get(booking.service_id);
-      const summary = summaryByBooking.get(booking.id)!;
+      const summary = summaryByBooking.get(booking.id);
       const serviceTitle = service?.title ?? "Sessão TES";
       return {
         bookingId: booking.id,
         date: booking.starts_at,
-        description: summary.summary ?? "Sem detalhes adicionais.",
+        description: summary?.summary ?? "Nenhum resumo foi compartilhado nesta sessão.",
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
-        status: booking.status,
+        confirmationStatus: getJourneyConfirmationStatus(booking),
+        hasSummary: Boolean(summary),
         serviceTitle,
-        title: summary.title ?? "Resumo compartilhado",
+        title: summary?.title ?? "Sem resumo compartilhado",
         topicLabels: [],
       };
     });
@@ -182,7 +205,7 @@ export function mapJourneyHistoryDetail(
       .filter(
         (booking) =>
           booking.patient_profile_id === input.patientId &&
-          booking.status === COMPLETED_BOOKING_STATUS &&
+          isMemoryEligibleBooking(booking) &&
           new Date(booking.starts_at).getTime() <= now.getTime(),
       )
       .map((booking) => booking.id),
@@ -237,23 +260,25 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
           (a, b) =>
             new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
         );
-      const completedBookings = bookings.filter(
-        (booking) => booking.status === COMPLETED_BOOKING_STATUS,
+      const realizedOrAwaitingConfirmationBookings = bookings.filter(
+        isMemoryEligibleBooking,
       );
-      const completedPastBookings = completedBookings.filter(
+      const realizedOrAwaitingConfirmationPastBookings =
+        realizedOrAwaitingConfirmationBookings.filter(
         (booking) => new Date(booking.starts_at).getTime() <= now.getTime(),
-      );
+        );
       const futureBookings = bookings.filter(
         (booking) =>
           booking.status === "confirmed" &&
           new Date(booking.starts_at).getTime() > now.getTime(),
       );
-      const lastSession = completedPastBookings.at(-1) ?? null;
+      const lastSession = realizedOrAwaitingConfirmationPastBookings.at(-1) ?? null;
       const nextSession = futureBookings.at(0) ?? null;
       const relationship = relationshipByPatient.get(patientId);
-      const totalSharedMemories = completedPastBookings.filter((booking) =>
-        input.summaries.some((summary) => summary.booking_id === booking.id),
-      ).length;
+      const totalSharedMemories =
+        realizedOrAwaitingConfirmationPastBookings.filter((booking) =>
+          input.summaries.some((summary) => summary.booking_id === booking.id),
+        ).length;
       const therapyLabels = unique(
         bookings
           .map((booking) => serviceById.get(booking.service_id)?.title)
@@ -262,7 +287,8 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
       return {
         avatarUrl: patient.avatar_url,
         emailLabel: patient.timezone ?? "Cliente TES",
-        firstSessionAt: completedPastBookings[0]?.starts_at ?? null,
+        firstSessionAt:
+          realizedOrAwaitingConfirmationPastBookings[0]?.starts_at ?? null,
         id: patient.id,
         lastSessionAt: lastSession?.starts_at ?? null,
         lastSessionServiceTitle: lastSession
@@ -281,7 +307,7 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
         ),
         therapyLabels: therapyLabels.length ? therapyLabels : ["Jornada TES"],
         timelineHref: routes.therapist.patientJourney(patient.id),
-        totalEncounters: completedPastBookings.length,
+        totalEncounters: realizedOrAwaitingConfirmationPastBookings.length,
         totalSharedMemories,
         topicLabels: [],
       };
@@ -292,6 +318,30 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
       const nextB = b.lastSessionAt ? new Date(b.lastSessionAt).getTime() : 0;
       return nextB - nextA || a.name.localeCompare(b.name, "pt-BR");
     });
+}
+
+function isMemoryEligibleBooking(booking: JourneyBookingRow) {
+  if (booking.realizationStatus !== undefined && booking.realizationStatus !== null) {
+    return booking.realizationStatus === "performed";
+  }
+
+  return (
+    (booking.fulfillmentStatus !== null &&
+      MEMORY_FULFILLMENT_STATUSES.has(booking.fulfillmentStatus)) ||
+    (booking.fulfillmentStatus === null &&
+      booking.status === COMPLETED_BOOKING_STATUS)
+  );
+}
+
+function getJourneyConfirmationStatus(
+  booking: JourneyBookingRow,
+): "confirmed" | "pending" {
+  if (booking.confirmationStatus) return booking.confirmationStatus;
+
+  return booking.fulfillmentStatus !== null &&
+    MEMORY_FULFILLMENT_STATUSES.has(booking.fulfillmentStatus)
+    ? "confirmed"
+    : "pending";
 }
 
 function buildTopicCounts(
@@ -368,7 +418,7 @@ function buildReminders(
     {
       count: withoutReturn.length,
       description: "Sem sessão há mais de 30 dias",
-      href: routes.therapist.messages,
+      href: routes.therapist.sessions,
       id: "stale",
       label: "clientes sem retorno",
       tone: "warning",

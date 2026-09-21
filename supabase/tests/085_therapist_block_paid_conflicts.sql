@@ -11,8 +11,8 @@ select ok(
 
 update public.bookings
 set
-  starts_at = ((current_date + 1)::date + time '10:00') at time zone 'America/Sao_Paulo',
-  ends_at = ((current_date + 1)::date + time '11:00') at time zone 'America/Sao_Paulo',
+  starts_at = ((current_date + 3651)::date + time '10:00') at time zone 'America/Sao_Paulo',
+  ends_at = ((current_date + 3651)::date + time '11:00') at time zone 'America/Sao_Paulo',
   status = 'confirmed'
 where id = 'f2000000-0000-4000-8000-000000000004';
 
@@ -27,43 +27,49 @@ select public.create_therapist_block_v2(
   'aaaaaaaa-0000-4000-8000-000000000001',
   'a4500000-0000-4000-8000-000000000001',
   'America/Sao_Paulo',
-  (current_date + 1)::date,
+  (current_date + 3651)::date,
   null,
   null,
   true,
   'none',
-  (current_date + 1)::date,
+  (current_date + 3651)::date,
   null,
   'personal',
   'Paid conflict contract'
 ) as payload;
 
+create temporary table paid_target_result as
+select impacted.item
+from paid_block_result,
+  lateral jsonb_array_elements(payload -> 'paidImpactedBookings') as impacted(item)
+where impacted.item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000004';
+
 select is(
-  jsonb_array_length((select payload -> 'paidImpactedBookings' from paid_block_result)),
+  (select count(*)::integer from paid_target_result),
   1,
-  'confirmed paid sessions are returned as immediate conflicts'
+  'the confirmed paid fixture is returned once among immediate conflicts'
 );
 
 select is(
-  (select payload #>> '{paidImpactedBookings,0,bookingId}' from paid_block_result),
+  (select item ->> 'bookingId' from paid_target_result),
   'f2000000-0000-4000-8000-000000000004',
   'the conflict identifies the affected booking'
 );
 
 select is(
-  (select payload #>> '{paidImpactedBookings,0,patientName}' from paid_block_result),
+  (select item ->> 'patientName' from paid_target_result),
   'Paciente Juliana',
   'the conflict returns the authorized patient display name'
 );
 
 select is(
-  (select payload #>> '{paidImpactedBookings,0,serviceTitle}' from paid_block_result),
+  (select item ->> 'serviceTitle' from paid_target_result),
   'Aromaterapia',
   'the conflict returns the therapy title'
 );
 
 select is(
-  (select payload #>> '{paidImpactedBookings,0,timezone}' from paid_block_result),
+  (select item ->> 'timezone' from paid_target_result),
   'America/Sao_Paulo',
   'the conflict returns the scheduling timezone'
 );

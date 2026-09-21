@@ -21,7 +21,7 @@ export function PatientHeroCard({
       <div className="relative z-10 flex min-h-[278px] max-w-[390px] flex-col justify-center px-7 py-9 sm:px-[52px]">
         <h1 className="font-display text-[42px] font-light italic leading-none text-[var(--tes-color-primary-dark)] sm:text-[50px]">
           Olá,{" "}
-          <span className="font-semibold text-[var(--tes-color-accent-cyan)]">
+          <span className="bg-[linear-gradient(90deg,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-cyan)_100%)] bg-clip-text font-semibold text-transparent">
             {patient.name}.
           </span>
         </h1>

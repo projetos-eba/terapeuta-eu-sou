@@ -54,7 +54,20 @@ export function TherapistProfileRegistrationSurface({
       return Boolean(document && document.status !== "rejected");
     },
   );
-  const reviewStepState = reviewState(verificationStatus);
+  const documentsNeedResubmission = ["identity_document", "address_proof"].some(
+    (kind) => {
+      const document = documentsByKind.get(
+        kind as "identity_document" | "address_proof",
+      );
+      return document?.status === "rejected";
+    },
+  );
+  const reviewStepState = reviewState({
+    availabilityComplete: availabilityStepComplete,
+    documentsNeedResubmission,
+    reviewOrigin: editor.verificationSummary?.reviewOrigin,
+    status: verificationStatus,
+  });
   const reviewReason = getTherapistProfileReviewReason(editor);
 
   const steps = [
@@ -80,18 +93,27 @@ export function TherapistProfileRegistrationSurface({
       state: availabilityStepComplete ? "complete" : "pending",
     },
     {
-      description: "Preencha seus dados e envie os documentos obrigatórios.",
+      description: documentsNeedResubmission
+        ? "A equipe TES pediu que você envie os documentos novamente."
+        : documentsStepComplete
+          ? "Documentos enviados e aguardando análise."
+          : "Preencha seus dados e envie os documentos obrigatórios.",
       href: routes.therapist.settings,
       key: "documents",
       label: "Dados e documentos",
-      state: documentsStepComplete
-        ? verificationStatus === "changes_requested"
-          ? "attention"
-          : "current"
-        : "pending",
+      state: documentsNeedResubmission
+        ? "current"
+        : documentsStepComplete
+          ? "complete"
+          : "pending",
     },
     {
-      description: reviewDescription(verificationStatus),
+      description: reviewDescription({
+        availabilityComplete: availabilityStepComplete,
+        documentsNeedResubmission,
+        reviewOrigin: editor.verificationSummary?.reviewOrigin,
+        status: verificationStatus,
+      }),
       href: routes.therapist.profile,
       key: "review",
       label: "Revisão e envio",
@@ -100,11 +122,16 @@ export function TherapistProfileRegistrationSurface({
   ] as const;
 
   const completedStepCount = steps.filter(
-    (step) => step.state === "complete",
+    (step) =>
+      step.state === "complete" ||
+      (step.key === "review" && step.state === "current"),
   ).length;
   const progressPercent = Math.round((completedStepCount / steps.length) * 100);
   const pageMode = registrationMode({
+    availabilityComplete: availabilityStepComplete,
     documentsComplete: documentsStepComplete,
+    documentsNeedResubmission,
+    reviewOrigin: editor.verificationSummary?.reviewOrigin,
     verificationStatus,
   });
 
@@ -145,7 +172,10 @@ export function TherapistProfileRegistrationSurface({
                 </div>
                 <p className="mt-4 text-center text-sm font-semibold leading-6 text-tesText-secondary">
                   {progressSummaryCopy({
+                    availabilityComplete: availabilityStepComplete,
                     documentsComplete: documentsStepComplete,
+                    documentsNeedResubmission,
+                    reviewOrigin: editor.verificationSummary?.reviewOrigin,
                     verificationStatus,
                   })}
                 </p>
@@ -194,7 +224,9 @@ export function TherapistProfileRegistrationSurface({
               <p className="text-sm font-extrabold leading-6 text-brand-deep">
                 {documentsStepComplete
                   ? "Seus documentos foram recebidos."
-                  : "Ainda falta enviar documentos obrigatórios."}
+                  : documentsNeedResubmission
+                    ? "Reenvie os documentos solicitados pela equipe TES."
+                    : "Ainda falta enviar documentos obrigatórios."}
               </p>
               <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
                 Em Configurações, confirme também seus dados: só o conjunto de
@@ -254,10 +286,30 @@ export function TherapistProfileRegistrationSurface({
             {pageMode.supportCta ? (
               <TESButton
                 className="mt-5 min-h-11 w-full rounded-lg"
-                href={`${routes.therapist.messages}?context=suporte`}
+                href={`${routes.therapist.support}?context=suporte`}
                 variant="secondary"
               >
                 Falar com o suporte
+              </TESButton>
+            ) : null}
+            {editor.verificationSummary?.reviewOrigin ===
+            "connect_account_closed" ? (
+              <TESButton
+                className="mt-3 min-h-11 w-full rounded-lg"
+                href={`${routes.therapist.finance}?tab=conta`}
+              >
+                Conectar conta de recebimento
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </TESButton>
+            ) : null}
+            {editor.verificationSummary?.reviewOrigin ===
+            "availability_removed" ? (
+              <TESButton
+                className="mt-3 min-h-11 w-full rounded-lg"
+                href={`${routes.therapist.agenda}?aba=horarios`}
+              >
+                Configurar horários
+                <ChevronRight aria-hidden="true" className="size-4" />
               </TESButton>
             ) : null}
           </ProfileSection>
@@ -394,12 +446,99 @@ function ProgressRing({ value }: { value: number }) {
 }
 
 function registrationMode({
+  availabilityComplete,
   documentsComplete,
+  documentsNeedResubmission,
+  reviewOrigin,
   verificationStatus,
 }: {
+  availabilityComplete: boolean;
   documentsComplete: boolean;
+  documentsNeedResubmission: boolean;
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   verificationStatus: TherapistProfileVerificationStatus;
 }) {
+  if (reviewOrigin === "connect_account_closed") {
+    return {
+      asideTitle: "Próximos passos",
+      banner: {
+        description:
+          "Conecte uma nova conta de recebimento. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+        title: "Conta de recebimento encerrada",
+      },
+      checklist: [
+        "Abra o Financeiro e conecte uma nova conta de recebimento.",
+        "Aguarde a confirmação das informações da nova conta.",
+        "A equipe TES fará uma nova análise antes de liberar novos agendamentos.",
+      ],
+      mode: "attention" as const,
+      subtitle:
+        "Seu perfil está indisponível para novos agendamentos até a reconexão da conta e a nova análise da equipe TES.",
+      supportCta: true,
+      title: "Conecte uma nova conta de recebimento",
+    };
+  }
+
+  if (reviewOrigin === "availability_removed") {
+    return availabilityComplete
+      ? {
+          asideTitle: "Próximos passos",
+          banner: {
+            description:
+              "Seus horários foram atualizados. A equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+            title: "Horários enviados para análise",
+          },
+          checklist: [
+            "Mantenha ao menos um horário disponível na agenda.",
+            "Aguarde a nova análise da equipe TES.",
+            "Avisaremos quando seu perfil voltar a receber novos agendamentos.",
+          ],
+          mode: "in_review" as const,
+          subtitle:
+            "Seu perfil continua indisponível para novos agendamentos enquanto a equipe TES conclui a nova análise.",
+          supportCta: true,
+          title: "Horários em nova análise",
+        }
+      : {
+          asideTitle: "Próximos passos",
+          banner: {
+            description:
+              "Cadastre ao menos um horário disponível. Depois disso, a equipe TES poderá concluir uma nova análise.",
+            title: "Agenda sem horários disponíveis",
+          },
+          checklist: [
+            "Abra a Agenda e cadastre ao menos um horário disponível.",
+            "Salve a nova disponibilidade.",
+            "Aguarde a nova análise antes de receber novos agendamentos.",
+          ],
+          mode: "attention" as const,
+          subtitle:
+            "Seu perfil está indisponível para novos agendamentos porque a agenda ficou sem horários.",
+          supportCta: true,
+          title: "Cadastre novos horários",
+        };
+  }
+
+  if (documentsNeedResubmission) {
+    return {
+      asideTitle: "Documentos para reenviar",
+      banner: null,
+      checklist: [
+        "Leia a observação da equipe TES sobre os documentos enviados.",
+        "Envie novamente os documentos solicitados em Configurações.",
+        "Depois do novo envio, seu perfil volta para análise.",
+      ],
+      mode: "attention" as const,
+      subtitle:
+        "A equipe TES pediu o reenvio dos documentos para retomar a análise do seu perfil.",
+      supportCta: true,
+      title: "Reenvie seus documentos",
+    };
+  }
+
   if (
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
@@ -465,12 +604,35 @@ function registrationMode({
 }
 
 function progressSummaryCopy({
+  availabilityComplete,
   documentsComplete,
+  documentsNeedResubmission,
+  reviewOrigin,
   verificationStatus,
 }: {
+  availabilityComplete: boolean;
   documentsComplete: boolean;
+  documentsNeedResubmission: boolean;
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   verificationStatus: TherapistProfileVerificationStatus;
 }) {
+  if (reviewOrigin === "connect_account_closed") {
+    return "Conecte uma nova conta de recebimento. A equipe TES fará uma nova análise antes de liberar novos agendamentos.";
+  }
+
+  if (reviewOrigin === "availability_removed") {
+    return availabilityComplete
+      ? "Seus horários foram atualizados. A nova análise do TES continua em andamento."
+      : "Cadastre ao menos um horário disponível para que o TES possa concluir uma nova análise.";
+  }
+
+  if (documentsNeedResubmission) {
+    return "A equipe TES solicitou o reenvio dos documentos. Envie-os novamente para retomarmos a análise.";
+  }
+
   if (
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
@@ -489,7 +651,25 @@ function progressSummaryCopy({
   return "Envie os documentos obrigatórios para concluir seu cadastro.";
 }
 
-function reviewState(status: TherapistProfileVerificationStatus) {
+function reviewState({
+  availabilityComplete,
+  documentsNeedResubmission,
+  reviewOrigin,
+  status,
+}: {
+  availabilityComplete: boolean;
+  documentsNeedResubmission: boolean;
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
+  status: TherapistProfileVerificationStatus;
+}) {
+  if (reviewOrigin === "connect_account_closed") return "attention" as const;
+  if (reviewOrigin === "availability_removed") {
+    return availabilityComplete ? ("current" as const) : ("attention" as const);
+  }
+  if (documentsNeedResubmission) return "pending" as const;
   if (status === "approved") return "complete" as const;
   if (status === "submitted" || status === "in_review")
     return "current" as const;
@@ -499,7 +679,31 @@ function reviewState(status: TherapistProfileVerificationStatus) {
   return "pending" as const;
 }
 
-function reviewDescription(status: TherapistProfileVerificationStatus) {
+function reviewDescription({
+  availabilityComplete,
+  documentsNeedResubmission,
+  reviewOrigin,
+  status,
+}: {
+  availabilityComplete: boolean;
+  documentsNeedResubmission: boolean;
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
+  status: TherapistProfileVerificationStatus;
+}) {
+  if (reviewOrigin === "connect_account_closed") {
+    return "Conta de recebimento encerrada; conecte uma nova conta e aguarde nova análise.";
+  }
+  if (reviewOrigin === "availability_removed") {
+    return availabilityComplete
+      ? "Horários atualizados; aguarde a nova análise da equipe TES."
+      : "Agenda sem horários; cadastre uma nova disponibilidade para continuar.";
+  }
+  if (documentsNeedResubmission) {
+    return "A análise continua assim que os documentos solicitados forem reenviados.";
+  }
   if (status === "approved") return "Cadastro aprovado pela equipe TES.";
   if (status === "submitted" || status === "in_review") {
     return "Cadastro recebido e em análise.";

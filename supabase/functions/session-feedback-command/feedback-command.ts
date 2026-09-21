@@ -4,17 +4,17 @@ import { DomainError } from "../_shared/payments/http.ts";
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REASONS = new Set([
-  "patient_absent",
-  "therapist_absent",
   "internet_problem",
   "audio_video_problem",
-  "rescheduled",
-  "late_cancellation",
   "other",
 ]);
 
 export type SessionFeedbackCommandBody = {
   bookingId?: string;
+  contractVersion?: number;
+  sessionAttemptId?: string;
+  successful?: boolean;
+  qualityReason?: string | null;
   comment?: string;
   notPerformedReason?: string | null;
   outcome?: string;
@@ -24,9 +24,11 @@ export type SessionFeedbackCommandBody = {
 
 export type ValidSessionFeedbackCommand = {
   bookingId: string;
+  contractVersion: 2;
+  sessionAttemptId: string;
+  successful: boolean;
+  qualityReason: string | null;
   comment: string;
-  notPerformedReason: string | null;
-  outcome: "completed" | "not_performed";
   rating: number | null;
   requestId: string;
 };
@@ -37,13 +39,15 @@ export function validateSessionFeedbackCommand(
   if (!body || typeof body !== "object") invalid();
 
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
-  const outcome = body.outcome;
-  const reason = body.notPerformedReason ?? null;
+  const reason = body.qualityReason ?? null;
   const rating = body.rating ?? null;
 
-  if (!isUuid(body.bookingId) || !isUuid(body.requestId) || comment.length > 500) invalid();
+  if (body.contractVersion !== 2 || !isUuid(body.sessionAttemptId) ||
+    typeof body.successful !== "boolean" || !isUuid(body.bookingId) ||
+    !isUuid(body.requestId) || comment.length > 500 || body.outcome !== undefined ||
+    body.notPerformedReason !== undefined) invalid();
 
-  if (outcome === "completed") {
+  if (body.successful) {
     if (
       typeof rating !== "number" ||
       !Number.isInteger(rating) ||
@@ -54,7 +58,6 @@ export function validateSessionFeedbackCommand(
       invalid();
     }
   } else if (
-    outcome !== "not_performed" ||
     rating !== null ||
     typeof reason !== "string" ||
     !REASONS.has(reason)
@@ -64,9 +67,11 @@ export function validateSessionFeedbackCommand(
 
   return {
     bookingId: body.bookingId,
+    contractVersion: 2,
+    sessionAttemptId: body.sessionAttemptId,
+    successful: body.successful,
+    qualityReason: reason,
     comment,
-    notPerformedReason: reason,
-    outcome,
     rating,
     requestId: body.requestId,
   };
@@ -76,6 +81,9 @@ export function mapSessionFeedbackDatabaseError(error: unknown) {
   if (!(error instanceof SupabaseHttpError)) return error;
 
   const details = error.safeDetails ?? "";
+  if (details.includes("FEEDBACK_ATTEMPT_CHANGED")) {
+    return new DomainError("REQUEST_CONFLICT", 409, "O horário desta sessão mudou. Atualize a página antes de responder.");
+  }
   if (details.includes("FEEDBACK_REQUEST_CONFLICT")) {
     return new DomainError(
       "REQUEST_CONFLICT",

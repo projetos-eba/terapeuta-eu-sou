@@ -3,11 +3,14 @@ import "server-only";
 import {
   getRowsByIds,
   getSupabaseServerRestConfig,
+  supabaseServerRestRpc,
   supabaseServerRestRequest,
 } from "@/lib/supabase/server-rest";
 
 import type {
+  JourneyBookingBaseRow,
   JourneyBookingRow,
+  JourneyBookingStateRow,
   JourneyHistoryRows,
   JourneyPatientRow,
   JourneyRelationshipRow,
@@ -24,25 +27,27 @@ export async function queryTherapistJourneyHistory(input: {
   if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
 
   const therapistProfileId = encodeURIComponent(input.therapistProfileId);
-  const [relationships, bookings] = await Promise.all([
+  const [relationships, bookingRows] = await Promise.all([
     supabaseServerRestRequest<JourneyRelationshipRow[]>(
       config,
       `/rest/v1/therapist_patient_relationships?select=patient_profile_id,status,started_at&therapist_profile_id=eq.${therapistProfileId}&order=started_at.desc&limit=200`,
     ),
-    supabaseServerRestRequest<JourneyBookingRow[]>(
+    supabaseServerRestRequest<JourneyBookingBaseRow[]>(
       config,
       `/rest/v1/bookings?select=id,patient_profile_id,service_id,starts_at,ends_at,status,payment_status,completed_at,created_at&therapist_profile_id=eq.${therapistProfileId}&order=starts_at.desc&limit=500`,
     ),
   ]);
+  const bookingIds = bookingRows.map((row) => row.id);
   const patientIds = [
     ...new Set([
       ...relationships.map((row) => row.patient_profile_id),
-      ...bookings.map((row) => row.patient_profile_id),
+      ...bookingRows.map((row) => row.patient_profile_id),
     ]),
   ];
-  const serviceIds = [...new Set(bookings.map((row) => row.service_id))];
+  const serviceIds = [...new Set(bookingRows.map((row) => row.service_id))];
 
-  const [patients, services, summaries, themeSelections] = await Promise.all([
+  const [patients, services, summaries, themeSelections, journeyStateRows] =
+    await Promise.all([
     getRowsByIds<JourneyPatientRow>(
       config,
       "patient_profiles",
@@ -67,7 +72,25 @@ export async function queryTherapistJourneyHistory(input: {
           `/rest/v1/booking_journey_theme_selections?select=booking_id,patient_profile_id,theme_keys,taxonomy_version,created_at&therapist_profile_id=eq.${therapistProfileId}&patient_profile_id=in.(${patientIds.join(",")})&order=created_at.desc&limit=500`,
         )
       : Promise.resolve([]),
+    bookingIds.length > 0
+      ? supabaseServerRestRpc<JourneyBookingStateRow[]>(
+          config,
+          "get_therapist_journey_session_states_v1",
+          { p_booking_ids: bookingIds },
+        )
+      : Promise.resolve([]),
   ]);
+  const journeyStateByBookingId = new Map(
+    journeyStateRows.map((row) => [row.booking_id, row]),
+  );
+  const bookings: JourneyBookingRow[] = bookingRows.map((booking) => ({
+    ...booking,
+    confirmationStatus:
+      journeyStateByBookingId.get(booking.id)?.confirmation_status ?? null,
+    fulfillmentStatus: null,
+    realizationStatus:
+      journeyStateByBookingId.get(booking.id)?.realization_status ?? null,
+  }));
 
   return {
     bookings,

@@ -52,7 +52,9 @@ export type TherapistScheduleService = {
 };
 
 export type TherapistScheduleReadModel = {
-  contractVersion: 1;
+  activeRuleCount: number;
+  contractVersion: 2;
+  isPubliclyVisible: boolean;
   rules: TherapistScheduleRule[];
   scheduleVersion: number;
   services: TherapistScheduleService[];
@@ -78,7 +80,9 @@ export type SaveTherapistScheduleInput = {
 };
 
 export type SaveTherapistScheduleResult = {
+  activeRuleCount: number;
   idempotentReplay: boolean;
+  publicationImpact: "none" | "reapproval_required";
   scheduleVersion: number;
   timezone: string;
 };

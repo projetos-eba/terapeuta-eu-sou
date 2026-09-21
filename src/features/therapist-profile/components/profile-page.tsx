@@ -73,6 +73,7 @@ function Hero({
             data-theme-hero-background={theme.id}
             fill
             priority
+            quality={85}
             sizes="100vw"
             src={theme.backgroundAsset ?? theme.heroBackgroundSrc ?? ""}
           />
@@ -421,7 +422,7 @@ function Services({
               />
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-brand-deep">
                 <Clock className="size-4" />
-                {service.durationMinutes} min
+                até {service.durationMinutes} min
               </p>
               {service.themeNames.length ? (
                 <div

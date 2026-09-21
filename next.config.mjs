@@ -3,7 +3,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   images: {
-    qualities: [75, 95],
+    qualities: [75, 85, 95],
     remotePatterns: [
       {
         protocol: "https",
@@ -136,6 +136,76 @@ const nextConfig = {
         source: "/app/sessoes",
         destination: "/app/encontros",
         permanent: false,
+      },
+      {
+        source: "/app/mensagens/suporte/:ticketId",
+        destination: "/app/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/app/mensagens",
+        destination: "/app/suporte",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/terapeuta/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/basico/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/pro/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens",
+        destination: "/terapeuta/suporte",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens/suporte/:ticketId",
+        destination: "/terapeuta/suporte/:ticketId",
+        permanent: true,
+      },
+      {
+        source: "/plus/mensagens/solicitar-terapia",
+        destination: "/terapeuta/servicos/solicitar-terapia",
+        permanent: true,
       },
       {
         source: "/plus/servi%C3%A7os",

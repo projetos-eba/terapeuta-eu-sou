@@ -108,6 +108,20 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof TherapistAuthSupabaseError) {
+      if (error.safeCode === "phone_already_in_use") {
+        return NextResponse.json(
+          {
+            ok: false,
+            fieldErrors: {
+              phone: "Este telefone já está em uso em outra conta de terapeuta.",
+            },
+            message:
+              "Este telefone já está em uso em outra conta de terapeuta.",
+          },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
         {
           ok: false,

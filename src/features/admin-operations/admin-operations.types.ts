@@ -7,6 +7,8 @@ import type {
 import type { AdminProfessionalDocumentReviewData } from "@/features/therapist-private-documents/private-documents.types";
 
 export type AdminOperationMetric = {
+  comparisonValue?: number | null;
+  percentage?: number | null;
   description: string;
   key: string;
   label: string;
@@ -22,7 +24,9 @@ export type AdminOperationField = {
 };
 
 export type AdminOperationRow = {
+  avatarUrl?: string;
   detailHref?: string;
+  email?: string;
   fields: AdminOperationField[];
   id: string;
   statusLabel?: string;
@@ -135,6 +139,8 @@ export type AdminProfessionalProfileReview = {
     documentType: "cpf" | "rg" | "passport" | null;
     neighborhood: string | null;
     postalCode: string | null;
+    phone: string | null;
+    phoneCountryCode: string | null;
     state: string | null;
     street: string | null;
     streetNumber: string | null;
@@ -154,6 +160,10 @@ export type AdminProfessionalProfileReview = {
 };
 
 export type AdminProfessionalVerificationSummary = {
+  reviewOrigin?:
+    | "availability_removed"
+    | "connect_account_closed"
+    | "profile_submission";
   reviewedAt: string | null;
   /**
    * Usada somente para explicar a linha do tempo sem inventar registros de
@@ -178,6 +188,8 @@ export type AdminOperationDetailPageData = {
   generatedAt: string;
   id: string;
   module: AdminOperationModuleKey;
+  patientContact?: AdminPatientContact | null;
+  canManagePatientBookings?: boolean;
   /**
    * Relacionamento usado exclusivamente para navegação e comandos entre
    * Profissionais e Verificações. Nunca é apresentado como dado de interface.
@@ -186,6 +198,8 @@ export type AdminOperationDetailPageData = {
   relatedVerificationId?: string | null;
   /** Indica se a publicação administrativa pode ser solicitada agora. */
   canPublish?: boolean;
+  /** Indica se a verificação pode ser aprovada com o cadastro atual. */
+  canApprove?: boolean;
   privateDocuments?: AdminProfessionalDocumentReviewData | null;
   profileReview?: AdminProfessionalProfileReview | null;
   safetyNotes: string[];
@@ -198,7 +212,22 @@ export type AdminOperationDetailPageData = {
   verificationSummary?: AdminProfessionalVerificationSummary | null;
 };
 
+/** Private, allowlisted registration fields returned only by the Admin detail. */
+export type AdminPatientContact = {
+  email: string | null;
+  phone: string | null;
+  phoneCountryCode: string | null;
+  postalCode: string | null;
+  street: string | null;
+  streetNumber: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+};
+
 export type AdminSessionFeedbackItem = {
+  successful?: boolean;
   authorRole: "patient" | "therapist";
   comment: string;
   createdAt: string;
@@ -209,12 +238,27 @@ export type AdminSessionFeedbackItem = {
 
 export type AdminSessionAttendance = {
   bothJoined: boolean;
+  classification: string | null;
+  classificationSource: string | null;
+  financialResolution: string | null;
+  incidentId: string | null;
+  patientArrivedAt: string | null;
   patientJoined: boolean;
+  patientJoinedAt: string | null;
+  patientPresentAtTolerance: boolean;
+  processingCostRecoveryAuthorized: boolean;
+  resolution: string | null;
+  responsibility: string | null;
+  retentionAuthorized: boolean;
+  reviewDueAt: string | null;
   sessionClosed: boolean;
   sessionEndedAt: string | null;
   sessionEndsAt: string | null;
   sessionStartedAt: string | null;
   therapistJoined: boolean;
+  therapistArrivedAt: string | null;
+  therapistJoinedAt: string | null;
+  therapistPresentAtTolerance: boolean;
 };
 
 export type AdminSessionConfirmation = {
@@ -232,6 +276,9 @@ export type AdminSessionFinancialAudit = {
 };
 
 export type AdminSessionFeedbackData = {
+  qualityReview?: { isOpen: boolean; overdue: boolean; allAnswered: boolean };
+  qualityReports?: Array<{ id: string; authorRole: "patient" | "therapist"; ticketId: string; dueAt: string; answeredAt: string | null; overdue: boolean }>;
+  legacyFeedback?: AdminSessionFeedbackItem[];
   attendance: AdminSessionAttendance;
   confirmation: {
     patient: AdminSessionConfirmation | null;

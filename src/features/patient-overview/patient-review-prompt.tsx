@@ -1,11 +1,8 @@
-"use client";
-
 import Image from "next/image";
 import { CalendarCheck2, Clock3 } from "lucide-react";
-import { useMemo, useState } from "react";
 
 import { TESButton } from "@/components/tes";
-import { PatientSessionFeedbackDialog } from "@/features/session-feedback";
+import { routes } from "@/lib/routes";
 
 import type { PendingPatientReview } from "./patient-overview.types";
 
@@ -14,25 +11,20 @@ export function PatientReviewPrompt({
 }: {
   review: PendingPatientReview | null;
 }) {
-  const [open, setOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const labels = useMemo(
-    () => (review ? formatSessionDate(review.startsAt, review.timezone) : null),
-    [review],
-  );
+  const labels = review
+    ? formatSessionDate(review.startsAt, review.timezone)
+    : null;
 
-  if (!review || dismissed) return null;
+  if (!review) return null;
 
   return (
-    <>
-      <section
+    <section
         aria-labelledby="patient-review-title"
         className="relative overflow-hidden rounded-[var(--tes-radius-auth-card)] border border-[var(--tes-color-border)]/40 bg-white p-5 shadow-[var(--tes-shadow-auth-card)]"
       >
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-brand-primary">
           <CalendarCheck2 aria-hidden="true" size={16} />
-          Confirmação pendente
+          Avaliação disponível
         </span>
         <h2
           id="patient-review-title"
@@ -60,30 +52,17 @@ export function PatientReviewPrompt({
           </div>
         </div>
         <p className="mt-4 text-sm font-semibold leading-6 text-[var(--tes-color-text-secondary-app)]">
-          Confirme se o encontro aconteceu. Sua resposta privada é separada da avaliação pública do terapeuta.
+          Conte como foi o encontro. Sua resposta é privada, separada da
+          avaliação pública do terapeuta.
         </p>
-        <TESButton className="mt-4 w-full" onClick={() => setOpen(true)} type="button" variant="gradient">
-          Confirmar encontro
+        <TESButton
+          className="mt-4 w-full"
+          href={`${routes.patient.encounterDetail(review.appointmentId)}?feedback=1`}
+          variant="gradient"
+        >
+          Ver detalhes do encontro
         </TESButton>
-      </section>
-
-      {open && labels ? (
-        <PatientSessionFeedbackDialog
-          onClose={() => {
-            setOpen(false);
-            if (submitted) setDismissed(true);
-          }}
-          onSessionSubmitted={() => setSubmitted(true)}
-          session={{
-            bookingId: review.appointmentId,
-            dateLabel: labels.dateLabel,
-            serviceLabel: review.serviceLabel,
-            therapist: { id: review.professional.id, name: review.professional.name },
-            timeLabel: labels.timeLabel,
-          }}
-        />
-      ) : null}
-    </>
+    </section>
   );
 }
 

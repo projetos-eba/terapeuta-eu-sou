@@ -1,20 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  queryActorSessionStates,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
-} = vi.hoisted(
-  () => ({
-    queryTherapistPendingConfirmations: vi.fn(),
-    queryTherapistSessionDetail: vi.fn(),
-    queryTherapistSessionFeedback: vi.fn(),
-    queryTherapistSessions: vi.fn(),
-  }),
-);
+} = vi.hoisted(() => ({
+  queryActorSessionStates: vi.fn(),
+  queryTherapistPendingConfirmations: vi.fn(),
+  queryTherapistSessionDetail: vi.fn(),
+  queryTherapistSessionFeedback: vi.fn(),
+  queryTherapistSessions: vi.fn(),
+}));
 
 vi.mock("./therapist-sessions.queries", () => ({
+  queryActorSessionStates,
   queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
@@ -22,10 +23,13 @@ vi.mock("./therapist-sessions.queries", () => ({
 }));
 
 import {
+  getTherapistActorSessionStates,
   getTherapistPendingConfirmationsSummary,
   getTherapistSessionDetail,
+  getTherapistSessionFeedbackSummary,
   getTherapistSessionFeedbackStatus,
   getTherapistSessionsPage,
+  shouldShowTherapistSessionJourneyThemes,
 } from "./therapist-sessions.service";
 
 const therapistProfileId = "c1000000-0000-4000-8000-000000000001";
@@ -34,6 +38,28 @@ describe("therapist sessions service results", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  it("derives realized sessions only from the current actor state", async () => {
+    queryActorSessionStates.mockResolvedValueOnce({
+      "booking-answered": { actorRealized: true },
+      "booking-pending": {
+        actorRealized: false,
+        bothJoined: true,
+        classification: null,
+        sessionClosed: true,
+      },
+    });
+
+    await expect(
+      getTherapistActorSessionStates({
+        accessToken: "test-token",
+        bookingIds: ["booking-answered", "booking-pending"],
+      }),
+    ).resolves.toEqual({
+      pendingFeedbackIds: new Set(["booking-pending"]),
+      realizedIds: new Set(["booking-answered"]),
+    });
   });
 
   it("keeps an empty result distinct from a query failure", async () => {
@@ -157,6 +183,19 @@ describe("therapist sessions service results", () => {
     ).resolves.toBe("eligible");
   });
 
+  it("preserves the incident-only state for the therapist action", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      status: "incident_only",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: null, status: "incident_only" });
+  });
+
   it("keeps an unknown feedback state unavailable to the session detail", async () => {
     queryTherapistSessionFeedback.mockResolvedValueOnce({ status: "internal" });
 
@@ -167,6 +206,83 @@ describe("therapist sessions service results", () => {
       }),
     ).resolves.toBe("unavailable");
   });
+
+  it("keeps an automatic confirmation distinct from private feedback", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      actorConfirmation: { source: "automatic" },
+      feedback: null,
+      status: "automatically_confirmed",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "booking-1",
+      }),
+    ).resolves.toMatchObject({
+      outcome: null,
+      status: "automatically_confirmed",
+    });
+  });
+
+  it("maps the therapist feedback outcome used by the journey themes gate", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      feedback: { outcome: "completed" },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: "completed", status: "submitted" });
+  });
+
+  it("keeps a persisted V2 quality response submitted for the therapist detail", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      actorConfirmation: { source: "manual" },
+      feedback: { successful: true },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: "completed", status: "submitted" });
+  });
+
+  it("fails closed when a submitted feedback has no recognized outcome", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      feedback: { outcome: "internal" },
+      status: "submitted",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackSummary({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ outcome: null, status: "submitted" });
+  });
+
+  it.each([
+    ["premium_plus", "submitted", "completed", true],
+    ["premium", "submitted", "completed", false],
+    ["free", "submitted", "completed", false],
+    ["premium_plus", "submitted", "not_performed", false],
+    ["premium_plus", "eligible", null, false],
+    ["premium_plus", "unavailable", null, false],
+  ] as const)(
+    "gates journey themes for plan %s with feedback %s/%s",
+    (plan, status, outcome, expected) => {
+      expect(
+        shouldShowTherapistSessionJourneyThemes(plan, { outcome, status }),
+      ).toBe(expected);
+    },
+  );
 });
 
 function sessionsResponse(profileId = therapistProfileId) {

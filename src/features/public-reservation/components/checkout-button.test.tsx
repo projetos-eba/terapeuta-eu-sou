@@ -1,4 +1,11 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CheckoutButton } from "./checkout-button";
@@ -28,13 +35,17 @@ function props(
 ) {
   return {
     acceptedTerms: true,
+    expectedDurationMinutes: 50,
+    expectedPriceCents: 12300,
     isPatientAuthenticated: true,
     loginHref: "/entrar",
     onCheckoutChange: vi.fn(),
     onPromotionSettled: vi.fn(),
+    reviewHref: "/reserva?etapa=momento",
     serviceId: "s1000000-0000-4000-8000-000000000001",
     sharedNote: "",
     startsAt: "2026-08-29T04:30:00.000Z",
+    therapistSlug: "ana-oliveira",
     ...overrides,
   };
 }
@@ -47,6 +58,58 @@ afterEach(() => {
 });
 
 describe("CheckoutButton", () => {
+  it("pauses payment until the patient reviews a changed booking snapshot", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    const initEmbeddedCheckout = vi.fn().mockResolvedValue({
+      destroy: vi.fn(),
+      mount,
+    });
+    window.Stripe = vi.fn(() => ({ initEmbeddedCheckout }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ...checkoutResponse,
+        checkout: {
+          ...checkoutResponse.checkout,
+          snapshot: {
+            bookingId: checkoutResponse.checkout.bookingId,
+            currency: "BRL",
+            durationMinutes: 60,
+            endsAt: "2026-08-29T05:30:00.000Z",
+            priceCents: 14500,
+            serviceId: "s1000000-0000-4000-8000-000000000001",
+            serviceLabel: "Reiki online",
+            startsAt: "2026-08-29T04:30:00.000Z",
+            therapist: { name: "Ana Oliveira", slug: "ana-oliveira" },
+          },
+        },
+      }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutButton {...props()} />);
+
+    expect(
+      await screen.findByText("Os detalhes desta terapia mudaram"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/até 60 min, R\$ 145,00/)).toBeInTheDocument();
+    expect(initEmbeddedCheckout).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Revisei os detalhes" }),
+    );
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+
+    const createRequests = fetchMock.mock.calls.filter(
+      ([url]) => url === "/api/public/reservation/checkout",
+    );
+    expect(createRequests).toHaveLength(2);
+    expect(JSON.parse(createRequests[0]?.[1]?.body as string)).toMatchObject({
+      therapistSlug: "ana-oliveira",
+    });
+  });
+
   it("does not mount a late Stripe instance after the reservation expires", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     const mount = vi.fn();

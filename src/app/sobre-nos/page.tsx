@@ -137,6 +137,11 @@ export default function AboutUsPage() {
                 className="object-contain"
               />
             </div>
+            <p className="mt-1 max-w-[240px] text-center text-sm font-semibold leading-[1.3] text-tesText-secondary">
+              <span className="block">O encontro é uma parte.</span>
+              <span className="block">O TES foi pensado para tudo</span>
+              <span className="block">o que acontece ao redor dele.</span>
+            </p>
           </div>
 
           <div className="min-w-0 md:col-start-1 md:row-start-2 lg:col-start-1 lg:row-start-1 xl:col-start-1">

@@ -9,9 +9,11 @@ Sistema de Métricas · TES · guia do desenvolvedor · 1
    (texto de ação). Se não há direcionamento, o número não vai para a tela.
    • Comparação só com o próprio histórico. Nunca comparar um terapeuta com outros. Sem ranking,
    sem média do mercado, sem pagar para subir (pay-to-rank).
-   • Trava de acúmulo. Métricas que dependem de volume só aparecem a partir de 10 atendimentos
-   (favoritos: 10 favoritos). Antes disso, exibir um estado de espera — nunca um número parcial
-   enganoso.
+   • Trava de acúmulo. Comparações, percentuais e tendências que dependem de volume só aparecem
+   a partir de 10 observações elegíveis (favoritos: 10 favoritos). A contagem agregada dos
+   favoritos recebidos pelo próprio perfil é uma exceção controlada: no Premium Plus ela aparece
+   desde o primeiro registro, sem expor pessoas, serviços ou técnicas. Antes do limiar, a
+   comparação permanece em espera — nunca um número parcial enganoso.
    • Plano vem da assinatura. Premium ou Premium Plus é lido da assinatura (Stripe). O terapeuta
    nunca escolhe; o sistema só lê.
    • Fala Humana em todo texto. Todo texto segue o documento “Fala Humana do TES”: fala de
@@ -76,7 +78,7 @@ Sistema de Métricas · TES · guia do desenvolvedor · 1
    Sua trajetória Série temporal, mês a mês (recorte a definir — ver
    §9)
    série 10
-   Quantas vezes foi favoritado COUNT(favoritar) pessoas 10
+   Quantas vezes foi favoritado COUNT(favoritar) pessoas imediato; comparação 10
    Favoritos que viraram
    encontro
    Favoritadores que agendaram ÷ total de

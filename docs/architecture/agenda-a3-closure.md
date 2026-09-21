@@ -47,11 +47,31 @@ Página /terapeuta/agenda?aba=horarios
 O frontend nunca recebe chave administrativa. A função Next encaminha apenas
 o access token autenticado para a Edge Function.
 
+## Expansão de elegibilidade pública — 2026-09-17
+
+- O read model v2 informa a quantidade global de regras recorrentes ativas e se
+  o perfil está efetivamente público.
+- O comando de salvamento detecta, sob o mesmo advisory lock, a transição de
+  uma ou mais regras ativas para zero regras ativas em todas as terapias.
+- Para perfil aprovado e público, essa transição salva a agenda e, na mesma
+  transação, despublica o perfil, interrompe novos agendamentos, cria uma nova
+  verificação com origem `availability_removed` e registra o impacto no evento
+  de agenda.
+- A interface usa `TESDialog` antes de remover a última faixa ou desativar o
+  último dia disponível. Sessões já confirmadas não são alteradas.
+- Adicionar horários novamente não republica o perfil: a nova aprovação do TES
+  continua obrigatória e recalcula todos os gates de publicação.
+- Bloqueios temporários, férias e exceções não contam como remoção da última
+  disponibilidade recorrente.
+
 ## Concorrência e idempotência
 
 - o advisory lock serializa comandos do mesmo terapeuta;
 - `expectedVersion` impede overwrite silencioso;
 - versão obsoleta retorna `schedule_version_conflict`;
+- a interface absorve imediatamente a versão devolvida por cada comando;
+- ao detectar uma alteração concorrente, a interface fecha a confirmação,
+  recarrega os dados e orienta uma nova revisão sem exibir o código interno;
 - o mesmo `requestId` retorna `idempotentReplay = true`;
 - replay não incrementa versão e não duplica evento;
 - cada regra exige uma terapia existente e não arquivada;

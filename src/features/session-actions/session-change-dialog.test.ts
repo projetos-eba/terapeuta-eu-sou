@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getSessionChangeDialogDescription,
   groupNextAvailableSlots,
   type RescheduleSlot,
 } from "./session-change-dialog";
@@ -35,6 +36,20 @@ describe("groupNextAvailableSlots", () => {
       slots.slice(6, 11),
       slots.slice(11, 16),
     ]);
+  });
+});
+
+describe("getSessionChangeDialogDescription", () => {
+  it("does not suggest a refund before the therapist proposes a pre-charge change", () => {
+    expect(
+      getSessionChangeDialogDescription({
+        actorRole: "therapist",
+        mode: "reschedule",
+        screen: "therapist_change",
+      }),
+    ).toBe(
+      "A pessoa poderá escolher outro horário disponível ou cancelar a sessão.",
+    );
   });
 });
 

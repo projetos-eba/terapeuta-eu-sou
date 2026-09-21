@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,7 +9,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-import { TESFeedbackDialog } from "@/components/tes";
+import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 
 import type {
   AdminOperationDetailPageData,
@@ -17,6 +17,8 @@ import type {
 } from "../admin-operations.types";
 
 type CommandAction =
+  | "patient.suspend"
+  | "patient.reactivate"
   | "professional.publish"
   | "professional.reactivate"
   | "professional.suspend"
@@ -32,6 +34,7 @@ type CommandAction =
 
 type CommandOption = {
   action: CommandAction;
+  disabled?: boolean;
   entityId?: string;
   label: string;
   tone: "danger" | "neutral" | "success" | "warning";
@@ -51,10 +54,13 @@ export function AdminOperationCommandPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
-  const options = useMemo(
-    () => getCommandOptions(data),
-    [data],
-  );
+  const [confirmation, setConfirmation] = useState<CommandOption | null>(null);
+  const pendingPatientRequest = useRef<{
+    signature: string;
+    id: string;
+  } | null>(null);
+  const submitting = useRef(false);
+  const options = useMemo(() => getCommandOptions(data), [data]);
 
   if (options.length === 0) {
     return (
@@ -65,6 +71,7 @@ export function AdminOperationCommandPanel({
   }
 
   async function submitCommand(option: CommandOption) {
+    if (submitting.current) return;
     const trimmedReason = reason.trim();
 
     setError(null);
@@ -75,7 +82,16 @@ export function AdminOperationCommandPanel({
       return;
     }
 
+    setConfirmation(null);
+    submitting.current = true;
     setIsSubmitting(true);
+    const signature = JSON.stringify([option.action, data.id, trimmedReason]);
+    if (
+      option.action.startsWith("patient.") &&
+      pendingPatientRequest.current?.signature !== signature
+    ) {
+      pendingPatientRequest.current = { signature, id: crypto.randomUUID() };
+    }
 
     try {
       const response = await fetch("/api/admin/operations", {
@@ -83,7 +99,9 @@ export function AdminOperationCommandPanel({
           action: option.action,
           entityId: option.entityId ?? data.id,
           reason: trimmedReason,
-          requestId: crypto.randomUUID(),
+          requestId: option.action.startsWith("patient.")
+            ? pendingPatientRequest.current!.id
+            : crypto.randomUUID(),
         }),
         cache: "no-store",
         headers: {
@@ -103,11 +121,13 @@ export function AdminOperationCommandPanel({
       }
 
       setReason("");
+      pendingPatientRequest.current = null;
       setSuccess(getCommandSuccessMessage(option.action, payload));
       router.refresh();
     } catch {
       setError("Não foi possível conectar agora. Tente novamente.");
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   }
@@ -154,9 +174,19 @@ export function AdminOperationCommandPanel({
         {options.map((option) => (
           <button
             className={commandButtonClass(option.tone)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || option.disabled}
             key={option.action}
-            onClick={() => void submitCommand(option)}
+            onClick={() => {
+              if (option.action.startsWith("patient.")) {
+                if (reason.trim().length < 8) {
+                  setError("Informe um motivo com pelo menos 8 caracteres.");
+                } else {
+                  setConfirmation(option);
+                }
+              } else {
+                void submitCommand(option);
+              }
+            }}
             type="button"
           >
             {option.tone === "success" ? (
@@ -170,6 +200,38 @@ export function AdminOperationCommandPanel({
           </button>
         ))}
       </div>
+      {confirmation ? (
+        <TESDialog
+          description={
+            confirmation.action === "patient.suspend"
+              ? "Somente novos agendamentos serão bloqueados. Login, suporte e sessões já contratadas continuarão disponíveis."
+              : "O cliente poderá voltar a criar novos agendamentos. As sessões existentes não serão alteradas."
+          }
+          onClose={() => setConfirmation(null)}
+          title={confirmation.label}
+        >
+          <p className="mt-4 break-words text-sm font-semibold leading-6 text-tesText-secondary">
+            Motivo: {reason.trim()}
+          </p>
+          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              className={commandButtonClass("neutral")}
+              onClick={() => setConfirmation(null)}
+              type="button"
+            >
+              Cancelar
+            </button>
+            <button
+              className={commandButtonClass(confirmation.tone)}
+              disabled={isSubmitting}
+              onClick={() => void submitCommand(confirmation)}
+              type="button"
+            >
+              Confirmar
+            </button>
+          </div>
+        </TESDialog>
+      ) : null}
     </div>
   );
 }
@@ -177,10 +239,44 @@ export function AdminOperationCommandPanel({
 export function getCommandOptions(
   data: Pick<
     AdminOperationDetailPageData,
-    "canPublish" | "module" | "relatedProfessionalId" | "statusLabel"
+    | "canApprove"
+    | "canManagePatientBookings"
+    | "canPublish"
+    | "module"
+    | "relatedProfessionalId"
+    | "statusLabel"
   >,
 ): CommandOption[] {
-  const { canPublish, module, relatedProfessionalId, statusLabel } = data;
+  const {
+    canApprove,
+    canManagePatientBookings,
+    canPublish,
+    module,
+    relatedProfessionalId,
+    statusLabel,
+  } = data;
+  if (module === "patients") {
+    if (!canManagePatientBookings) return [];
+    if (statusLabel === "active") {
+      return [
+        {
+          action: "patient.suspend",
+          label: "Suspender novos agendamentos",
+          tone: "danger",
+        },
+      ];
+    }
+    if (statusLabel === "suspended") {
+      return [
+        {
+          action: "patient.reactivate",
+          label: "Reativar agendamentos",
+          tone: "neutral",
+        },
+      ];
+    }
+    return [];
+  }
   if (module === "professionals") {
     if (statusLabel === "suspended") {
       return [
@@ -203,12 +299,12 @@ export function getCommandOptions(
               },
             ]
           : []),
-          {
-            action: "professional.suspend",
-            label: "Suspender profissional",
-            tone: "danger",
-          },
-        ];
+        {
+          action: "professional.suspend",
+          label: "Suspender profissional",
+          tone: "danger",
+        },
+      ];
     }
 
     return [];
@@ -229,6 +325,7 @@ export function getCommandOptions(
       return [
         {
           action: "verification.approve",
+          disabled: canApprove === false,
           label: "Aprovar verificação",
           tone: "success",
         },
@@ -255,11 +352,7 @@ export function getCommandOptions(
       ];
     }
 
-    if (
-      statusLabel === "approved" &&
-      canPublish &&
-      relatedProfessionalId
-    ) {
+    if (statusLabel === "approved" && canPublish && relatedProfessionalId) {
       return [
         {
           action: "professional.publish",
@@ -287,7 +380,7 @@ export function getCommandOptions(
     return [
       {
         action: "support.resolve",
-          label: "Resolver chamado",
+        label: "Resolver chamado",
         tone: "success",
       },
     ];
@@ -320,6 +413,12 @@ function getEmptyActionMessage(
   module: AdminOperationModuleKey,
   statusLabel?: string,
 ) {
+  if (
+    module === "patients" &&
+    (statusLabel === "active" || statusLabel === "suspended")
+  ) {
+    return "A gestão de agendamentos está indisponível no momento.";
+  }
   if (module === "verifications" && statusLabel === "approved") {
     return "Esta análise foi concluída. A publicação só fica disponível quando o perfil atende a todos os critérios.";
   }
@@ -331,7 +430,10 @@ function getEmptyActionMessage(
   return "Nenhuma ação administrativa está disponível para este estado.";
 }
 
-function getCommandSuccessMessage(action: CommandAction, payload?: ApiEnvelope) {
+function getCommandSuccessMessage(
+  action: CommandAction,
+  payload?: ApiEnvelope,
+) {
   const eligibility =
     payload && payload.ok && isRecord(payload.data)
       ? publicationEligibility(payload.data)
@@ -343,6 +445,8 @@ function getCommandSuccessMessage(action: CommandAction, payload?: ApiEnvelope) 
       : "Verificação aprovada. A publicação ainda está pendente.";
   }
   const messages: Record<CommandAction, string> = {
+    "patient.suspend": "Novos agendamentos suspensos.",
+    "patient.reactivate": "Novos agendamentos reativados.",
     "professional.publish": "Perfil publicado e disponível para reservas.",
     "professional.reactivate": "Profissional reativado com sucesso.",
     "professional.suspend": "Profissional suspenso com sucesso.",
@@ -373,11 +477,15 @@ function publicationEligibility(value: Record<string, unknown>) {
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
   const labels: Record<string, string> = {
+    no_active_availability: "nenhum horário disponível",
     no_active_bookable_online_service: "nenhum serviço publicável",
     not_accepting_bookings: "não aceita novos agendamentos",
     profile_not_public: "perfil público desativado",
     profile_not_published: "perfil ainda não publicado",
+    profile_incomplete: "perfil ainda não está 100% completo",
+    receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_not_public: "terapia não publicada ou não visível",
+    therapy_without_active_theme: "terapia sem tema ativo",
   };
   return value
     .filter((item): item is string => typeof item === "string")

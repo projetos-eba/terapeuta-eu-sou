@@ -7,16 +7,24 @@ import {
   ArrowRight,
   Check,
   FileUp,
+  Flower2,
   Heart,
   Info,
   Leaf,
   Loader2,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
-import { TESDialog } from "@/components/tes";
+import { TESButton, TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 export type TherapyRequestTheme = {
@@ -108,8 +116,42 @@ const acceptedTypes = new Set([
   "image/webp",
 ]);
 
-const controlClassName =
-  "min-h-11 w-full rounded-control border border-brand-lavender bg-white px-3 py-2 text-sm text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-brand-lavenderSoft";
+const textFieldLimits = {
+  additionalInformation: 500,
+  aliases: 80,
+  description: 600,
+  informedName: 30,
+  objective: 180,
+  practiceDuration: 50,
+  referenceUrl: 500,
+  safetyNotes: 600,
+  sessionProcess: 800,
+  trainingDescription: 120,
+  useCases: 600,
+} as const;
+
+type TextFieldKey = keyof typeof textFieldLimits;
+
+function controlClassName(hasError = false) {
+  return `min-h-11 w-full rounded-control border bg-white px-3 py-2 text-sm text-brand-deep outline-none transition ${
+    hasError
+      ? "border-state-danger focus:border-state-danger focus:ring-4 focus:ring-state-danger/20"
+      : "border-brand-lavender focus:border-brand-primary focus:ring-4 focus:ring-brand-lavenderSoft"
+  }`;
+}
+
+function fieldId(field: string) {
+  return `therapy-request-${field}`;
+}
+
+function describedBy(field: string, hasError: boolean) {
+  return [
+    `${fieldId(field)}-counter`,
+    hasError ? `${fieldId(field)}-error` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 export function TherapyCatalogRequestPage({
   themes,
@@ -128,20 +170,29 @@ export function TherapyCatalogRequestPage({
   const canResubmit = existingRequest?.status === "needs_information";
   const [screen, setScreen] = useState<
     "form" | "intro" | "confirmation" | "success"
-  >(
-    existingRequest ? "form" : "intro",
-  );
+  >(existingRequest ? "form" : "intro");
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<FormValues>(() =>
     existingRequest ? toFormValues(existingRequest) : defaultValues,
   );
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const pendingFocusField = useRef<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!pendingFocusField.current) return;
+
+    const field = document.querySelector<HTMLElement>(
+      `[data-therapy-request-field="${pendingFocusField.current}"]`,
+    );
+    field?.focus();
+    pendingFocusField.current = null;
+  }, [errors, step]);
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -153,6 +204,7 @@ export function TherapyCatalogRequestPage({
 
   function next() {
     const nextErrors = validateStep(step, values);
+    pendingFocusField.current = Object.keys(nextErrors)[0] ?? null;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0)
       setStep((current) => Math.min(5, current + 1));
@@ -160,6 +212,7 @@ export function TherapyCatalogRequestPage({
 
   function requestConfirmation() {
     const nextErrors = validateStep(5, values);
+    pendingFocusField.current = Object.keys(nextErrors)[0] ?? null;
     setErrors(nextErrors);
     setSubmissionError(null);
     if (Object.keys(nextErrors).length === 0) setScreen("confirmation");
@@ -167,6 +220,7 @@ export function TherapyCatalogRequestPage({
 
   async function submit() {
     const nextErrors = validateStep(5, values);
+    pendingFocusField.current = Object.keys(nextErrors)[0] ?? null;
     setErrors(nextErrors);
     setSubmissionError(null);
     if (Object.keys(nextErrors).length > 0) return;
@@ -376,40 +430,93 @@ export function TherapyCatalogRequestPage({
 
 function Intro({ onStart }: { onStart: () => void }) {
   return (
-    <main className="mx-auto grid min-h-[620px] max-w-3xl place-items-center px-4 pb-10 text-center">
-      <section className="w-full rounded-panel border border-brand-lavender/60 bg-white px-6 py-10 shadow-card sm:px-12">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <Leaf aria-hidden="true" className="size-8" />
-        </span>
-        <h1 className="mt-6 font-display text-5xl italic leading-[0.95] text-brand-deep sm:text-6xl">
-          Sugerir uma nova prática
-        </h1>
-        <div className="mx-auto mt-6 max-w-xl space-y-4 text-sm leading-7 text-tesText-secondary sm:text-base">
-          <p>
-            Se você utiliza uma prática que ainda não está disponível no TES,
-            envie sua sugestão para análise.
-          </p>
-          <p>
-            Nossa equipe avaliará as informações, a compatibilidade com a
-            plataforma e os materiais compartilhados.
-          </p>
-        </div>
-        <button
-          className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-control bg-brand-primary px-6 text-sm font-semibold text-white hover:bg-brand-deep"
-          onClick={onStart}
-          type="button"
+    <main className="mx-auto flex w-full max-w-3xl justify-center px-4 pb-10 pt-2 text-center sm:px-6 sm:pb-12 sm:pt-4">
+      <section
+        aria-labelledby="therapy-request-intro-title"
+        className="relative isolate w-full max-w-[540px] overflow-hidden rounded-panel border border-brand-lavender/60 bg-white px-5 pb-5 pt-14 shadow-float sm:px-10 sm:pb-8 sm:pt-16"
+        data-testid="therapy-request-intro"
+      >
+        <Link
+          aria-label="Fechar solicitação"
+          className="absolute right-2 top-2 z-20 grid size-11 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 sm:right-3 sm:top-3"
+          href={routes.therapist.services}
         >
-          <Sparkles aria-hidden="true" className="size-4" />
-          Iniciar solicitação
-        </button>
-        <p className="mx-auto mt-7 flex max-w-xl items-start gap-3 rounded-card bg-brand-lavenderSoft/60 p-4 text-left text-sm leading-6 text-tesText-secondary">
-          <ShieldCheck
+          <X aria-hidden="true" className="size-5" />
+        </Link>
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-[radial-gradient(circle_at_50%_115%,var(--tes-color-brand-lavender-soft)_0%,transparent_70%)]"
+        />
+        <Leaf
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-10 -left-10 size-44 -rotate-[28deg] text-brand-lavender opacity-20"
+          strokeWidth={0.8}
+        />
+        <Leaf
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-12 -right-9 size-48 rotate-[34deg] -scale-x-100 text-brand-lavender opacity-20"
+          strokeWidth={0.8}
+        />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <span className="relative grid size-20 place-items-center rounded-full bg-[radial-gradient(circle,var(--tes-color-brand-lavender-soft)_0%,transparent_72%)] text-brand-primary">
+            <Flower2 aria-hidden="true" className="size-10" strokeWidth={1.5} />
+            <Sparkles
+              aria-hidden="true"
+              className="absolute -right-1 top-1 size-4 text-brand-lavender"
+            />
+          </span>
+
+          <h1
+            className="mt-4 max-w-md font-display text-[42px] italic leading-[0.96] text-brand-deep sm:text-[52px]"
+            id="therapy-request-intro-title"
+          >
+            Sugerir uma nova prática
+          </h1>
+          <span
             aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0 text-brand-primary"
+            className="mt-5 h-px w-12 bg-brand-lavender"
           />
-          Toda solicitação passa por análise. O envio não cria nem publica uma
-          terapia automaticamente.
-        </p>
+
+          <div className="mt-5 max-w-[430px] space-y-3 text-sm leading-6 text-tesText-secondary">
+            <p>
+              Acreditamos que o universo terapêutico está em constante evolução.
+            </p>
+            <p>
+              Se você utiliza uma prática que ainda não está disponível no TES,
+              envie sua sugestão.
+            </p>
+            <p>
+              Nossa equipe irá conhecê-la, analisá-la e verificar se ela faz
+              sentido para a plataforma.
+            </p>
+            <p>
+              Se aprovada, ela poderá ficar disponível para todos os terapeutas
+              da plataforma.
+            </p>
+          </div>
+
+          <TESButton
+            className="mt-7 w-full max-w-[380px] font-semibold"
+            onClick={onStart}
+            size="lg"
+            type="button"
+          >
+            <Sparkles aria-hidden="true" className="size-4" />
+            Iniciar solicitação
+          </TESButton>
+
+          <div className="mt-5 flex w-full max-w-[430px] items-start gap-3 rounded-card bg-brand-lavenderSoft/80 p-4 text-left text-sm leading-5 text-tesText-secondary">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full border border-brand-lavender bg-white/70 text-brand-primary">
+              <ShieldCheck aria-hidden="true" className="size-5" />
+            </span>
+            <p>
+              Todas as práticas passam por uma análise de alinhamento com os
+              princípios do TES antes de serem disponibilizadas.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
   );
@@ -506,7 +613,8 @@ function SubmissionConfirmationDialog({
           Li e estou de acordo com as informações acima e confirmo minha
           responsabilidade pela sugestão enviada.
           <span aria-hidden="true" className="text-state-danger">
-            {" "}*
+            {" "}
+            *
           </span>
         </span>
       </label>
@@ -549,8 +657,8 @@ function SubmissionConfirmationDialog({
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0 text-brand-primary"
         />
-        O envio da solicitação não garante que a prática será disponibilizada
-        no TES.
+        O envio da solicitação não garante que a prática será disponibilizada no
+        TES.
       </p>
     </TESDialog>
   );
@@ -574,7 +682,7 @@ function SuccessDialog({ onClose }: { onClose: () => void }) {
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
           Obrigado por contribuir com a evolução do TES. Nossa equipe analisará
           as informações com cuidado e você receberá uma atualização na Central
-          de Mensagens e, quando disponível, por e-mail.
+          de Suporte e, quando disponível, por e-mail.
         </p>
       </div>
 
@@ -583,16 +691,15 @@ function SuccessDialog({ onClose }: { onClose: () => void }) {
           aria-hidden="true"
           className="mt-0.5 size-5 shrink-0 text-brand-primary"
         />
-        Caso a prática seja aprovada, ela seguirá para as etapas
-        administrativas do catálogo. A aprovação não a disponibiliza
-        automaticamente.
+        Caso a prática seja aprovada, ela seguirá para as etapas administrativas
+        do catálogo. A aprovação não a disponibiliza automaticamente.
       </p>
 
       <div className="mt-6 grid divide-y divide-brand-lavender border-y border-brand-lavender sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <SuccessDetail
           icon={Heart}
           text="Você receberá uma atualização quando houver novidade."
-          title="Central de Mensagens"
+          title="Suporte TES"
         />
         <SuccessDetail
           icon={ShieldCheck}
@@ -639,20 +746,40 @@ function SuccessDetail({
 
 function RequestAside() {
   return (
-    <aside className="hidden bg-brand-lavenderSoft/45 p-8 lg:block">
-      <Leaf aria-hidden="true" className="size-12 text-brand-primary" />
-      <h2 className="mt-8 font-display text-4xl italic leading-none text-brand-deep">
+    <aside
+      aria-label="Orientações sobre a solicitação"
+      className="relative hidden overflow-hidden border-r border-brand-lavender/50 bg-[linear-gradient(180deg,var(--tes-color-surface-soft)_0%,var(--tes-color-brand-lavender-soft)_100%)] px-6 py-12 lg:flex lg:flex-col lg:items-center lg:text-center"
+    >
+      <span className="relative grid size-16 place-items-center rounded-full bg-[radial-gradient(circle,var(--tes-color-brand-lavender-soft)_0%,transparent_72%)] text-brand-lavender">
+        <Flower2 aria-hidden="true" className="size-9" strokeWidth={1.45} />
+        <Sparkles
+          aria-hidden="true"
+          className="absolute -right-1 top-0 size-4 text-brand-lavender"
+        />
+      </span>
+
+      <h2 className="mt-7 max-w-[190px] font-display text-[32px] italic leading-[1.02] text-brand-deep">
         Sugerir uma nova prática
       </h2>
-      <p className="mt-6 text-sm leading-7 text-tesText-secondary">
-        Preencha as informações que ajudam nossa equipe a conhecer a prática com
-        cuidado e responsabilidade.
+
+      <div aria-hidden="true" className="mt-6 flex w-full items-center gap-3">
+        <span className="h-px flex-1 bg-brand-lavender" />
+        <Sparkles className="size-3.5 shrink-0 text-brand-primary/60" />
+        <span className="h-px flex-1 bg-brand-lavender" />
+      </div>
+
+      <p className="mt-6 max-w-[190px] text-sm font-semibold leading-6 text-tesText-secondary">
+        Preencha as informações sobre a prática que você utiliza. Nossa equipe
+        irá analisá-la com carinho.
       </p>
-      <div className="mt-10 rounded-card bg-white/75 p-4">
-        <ShieldCheck aria-hidden="true" className="size-6 text-brand-primary" />
-        <p className="mt-3 text-sm leading-6 text-tesText-secondary">
-          Materiais e informações ficam disponíveis apenas para a análise da
-          plataforma.
+
+      <div className="mt-12 w-full rounded-card bg-brand-lavenderSoft/90 p-5 shadow-soft">
+        <span className="mx-auto grid size-11 place-items-center rounded-full bg-white/70 text-brand-primary">
+          <ShieldCheck aria-hidden="true" className="size-6" />
+        </span>
+        <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
+          Todas as práticas passam por uma análise de alinhamento com os
+          princípios do TES antes de serem disponibilizadas.
         </p>
       </div>
     </aside>
@@ -709,24 +836,46 @@ function PracticeStep({
 
   return (
     <Step title="1. Sobre a prática">
-      <Field error={errors.informedName} label="Nome da prática" required>
+      <Field
+        error={errors.informedName}
+        field="informedName"
+        label="Nome da prática"
+        limit={textFieldLimits.informedName}
+        required
+        value={values.informedName}
+      >
         <input
-          className={controlClassName}
+          aria-describedby={describedBy("informedName", Boolean(errors.informedName))}
+          aria-invalid={Boolean(errors.informedName)}
+          className={controlClassName(Boolean(errors.informedName))}
+          data-therapy-request-field="informedName"
+          id={fieldId("informedName")}
+          maxLength={textFieldLimits.informedName}
           onChange={(event) => onChange("informedName", event.target.value)}
           placeholder="Ex.: Mesa Radiônica"
           value={values.informedName}
         />
       </Field>
-      <Field label="Outro nome pelo qual ela é conhecida">
+      <Field
+        field="aliases"
+        label="Outro nome pelo qual ela é conhecida"
+        limit={textFieldLimits.aliases}
+        value={values.aliases}
+      >
         <input
-          className={controlClassName}
+          aria-describedby={describedBy("aliases", false)}
+          className={controlClassName()}
+          id={fieldId("aliases")}
+          maxLength={textFieldLimits.aliases}
           onChange={(event) => onChange("aliases", event.target.value)}
           placeholder="Ex.: nomes alternativos ou variações"
           value={values.aliases}
         />
       </Field>
-      <fieldset>
-        <legend className="text-sm font-semibold text-brand-deep">
+      <fieldset aria-describedby={errors.themeIds ? "therapy-request-themeIds-error" : undefined}>
+        <legend
+          className={`text-sm font-semibold ${errors.themeIds ? "text-state-danger" : "text-brand-deep"}`}
+        >
           Temas que melhor representam essa prática
           <span className="text-state-danger"> *</span>
         </legend>
@@ -735,7 +884,9 @@ function PracticeStep({
           para a análise do TES.
         </p>
         {errors.themeIds ? (
-          <p className="mt-2 text-sm text-state-danger">{errors.themeIds}</p>
+          <p className="mt-2 text-sm text-state-danger" id="therapy-request-themeIds-error" role="alert">
+            {errors.themeIds}
+          </p>
         ) : null}
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {themes.map((theme) => {
@@ -744,7 +895,8 @@ function PracticeStep({
             return (
               <button
                 aria-pressed={selected}
-                className={`rounded-card border p-4 text-left transition ${selected ? "border-brand-primary bg-brand-lavenderSoft/70 text-brand-deep" : "border-brand-lavender bg-white text-brand-deep"} ${disabled ? "cursor-not-allowed opacity-55" : "hover:border-brand-primary/60"}`}
+                className={`rounded-card border p-4 text-left transition ${errors.themeIds ? "border-state-danger focus:outline-none focus:ring-4 focus:ring-state-danger/20" : selected ? "border-brand-primary bg-brand-lavenderSoft/70 text-brand-deep" : "border-brand-lavender bg-white text-brand-deep"} ${disabled ? "cursor-not-allowed opacity-55" : "hover:border-brand-primary/60"}`}
+                data-therapy-request-field="themeIds"
                 disabled={disabled}
                 key={theme.id}
                 onClick={() => toggleTheme(theme.id)}
@@ -780,12 +932,19 @@ function UnderstandingStep({ errors, onChange, values }: StepProps) {
     <Step title="2. Entendendo a terapia">
       <Field
         error={errors.description}
+        field="description"
         label="Como você descreveria essa terapia para alguém que nunca ouviu falar dela?"
+        limit={textFieldLimits.description}
         required
+        value={values.description}
       >
         <textarea
-          className={`${controlClassName} min-h-32`}
-          maxLength={1000}
+          aria-describedby={describedBy("description", Boolean(errors.description))}
+          aria-invalid={Boolean(errors.description)}
+          className={`${controlClassName(Boolean(errors.description))} min-h-32`}
+          data-therapy-request-field="description"
+          id={fieldId("description")}
+          maxLength={textFieldLimits.description}
           onChange={(event) => onChange("description", event.target.value)}
           placeholder="Explique de forma simples e clara…"
           value={values.description}
@@ -793,12 +952,19 @@ function UnderstandingStep({ errors, onChange, values }: StepProps) {
       </Field>
       <Field
         error={errors.objective}
+        field="objective"
         label="Qual é o principal objetivo dessa terapia?"
+        limit={textFieldLimits.objective}
         required
+        value={values.objective}
       >
         <input
-          className={controlClassName}
-          maxLength={200}
+          aria-describedby={describedBy("objective", Boolean(errors.objective))}
+          aria-invalid={Boolean(errors.objective)}
+          className={controlClassName(Boolean(errors.objective))}
+          data-therapy-request-field="objective"
+          id={fieldId("objective")}
+          maxLength={textFieldLimits.objective}
           onChange={(event) => onChange("objective", event.target.value)}
           placeholder="Ex.: promover equilíbrio emocional…"
           value={values.objective}
@@ -806,12 +972,19 @@ function UnderstandingStep({ errors, onChange, values }: StepProps) {
       </Field>
       <Field
         error={errors.useCases}
+        field="useCases"
         label="Em quais situações as pessoas costumam procurar essa terapia?"
+        limit={textFieldLimits.useCases}
         required
+        value={values.useCases}
       >
         <textarea
-          className={`${controlClassName} min-h-28`}
-          maxLength={600}
+          aria-describedby={describedBy("useCases", Boolean(errors.useCases))}
+          aria-invalid={Boolean(errors.useCases)}
+          className={`${controlClassName(Boolean(errors.useCases))} min-h-28`}
+          data-therapy-request-field="useCases"
+          id={fieldId("useCases")}
+          maxLength={textFieldLimits.useCases}
           onChange={(event) => onChange("useCases", event.target.value)}
           placeholder="Liste situações, desafios ou objetivos…"
           value={values.useCases}
@@ -819,12 +992,19 @@ function UnderstandingStep({ errors, onChange, values }: StepProps) {
       </Field>
       <Field
         error={errors.sessionProcess}
+        field="sessionProcess"
         label="Como normalmente acontece um atendimento?"
+        limit={textFieldLimits.sessionProcess}
         required
+        value={values.sessionProcess}
       >
         <textarea
-          className={`${controlClassName} min-h-28`}
-          maxLength={800}
+          aria-describedby={describedBy("sessionProcess", Boolean(errors.sessionProcess))}
+          aria-invalid={Boolean(errors.sessionProcess)}
+          className={`${controlClassName(Boolean(errors.sessionProcess))} min-h-28`}
+          data-therapy-request-field="sessionProcess"
+          id={fieldId("sessionProcess")}
+          maxLength={textFieldLimits.sessionProcess}
           onChange={(event) => onChange("sessionProcess", event.target.value)}
           placeholder="Explique processo, duração, etapas e ferramentas utilizadas…"
           value={values.sessionProcess}
@@ -839,6 +1019,7 @@ function AboutYouStep({ errors, onChange, values }: StepProps) {
     <Step title="3. Sobre você">
       <Field
         error={errors.experienceLevel}
+        field="experienceLevel"
         label="Há quanto tempo você pratica essa técnica?"
         required
       >
@@ -849,6 +1030,8 @@ function AboutYouStep({ errors, onChange, values }: StepProps) {
             ["three_to_five", "3 a 5 anos"],
             ["more_than_five", "Mais de 5 anos"],
           ]}
+          error={errors.experienceLevel}
+          field="experienceLevel"
           onChange={(value) =>
             onChange("experienceLevel", value as FormValues["experienceLevel"])
           }
@@ -857,16 +1040,24 @@ function AboutYouStep({ errors, onChange, values }: StepProps) {
       </Field>
       <RadioField
         error={errors.hasTraining}
+        field="hasTraining"
         label="Você possui formação ou certificação relacionada à terapia?"
         onChange={(value) => onChange("hasTraining", value)}
         required
         value={values.hasTraining}
       />
       {values.hasTraining === "yes" ? (
-        <Field label="Onde foi sua formação?">
+        <Field
+          field="trainingDescription"
+          label="Onde foi sua formação?"
+          limit={textFieldLimits.trainingDescription}
+          value={values.trainingDescription}
+        >
           <input
-            className={controlClassName}
-            maxLength={100}
+            aria-describedby={describedBy("trainingDescription", false)}
+            className={controlClassName()}
+            id={fieldId("trainingDescription")}
+            maxLength={textFieldLimits.trainingDescription}
             onChange={(event) =>
               onChange("trainingDescription", event.target.value)
             }
@@ -877,16 +1068,24 @@ function AboutYouStep({ errors, onChange, values }: StepProps) {
       ) : null}
       <RadioField
         error={errors.practicesProfessionally}
+        field="practicesProfessionally"
         label="Você atua profissionalmente com essa terapia?"
         onChange={(value) => onChange("practicesProfessionally", value)}
         required
         value={values.practicesProfessionally}
       />
       {values.practicesProfessionally === "yes" ? (
-        <Field label="Há quanto tempo você atende com essa terapia?">
+        <Field
+          field="practiceDuration"
+          label="Há quanto tempo você atende com essa terapia?"
+          limit={textFieldLimits.practiceDuration}
+          value={values.practiceDuration}
+        >
           <input
-            className={controlClassName}
-            maxLength={50}
+            aria-describedby={describedBy("practiceDuration", false)}
+            className={controlClassName()}
+            id={fieldId("practiceDuration")}
+            maxLength={textFieldLimits.practiceDuration}
             onChange={(event) =>
               onChange("practiceDuration", event.target.value)
             }
@@ -904,6 +1103,7 @@ function CompatibilityStep({ errors, onChange, values }: StepProps) {
     <Step title="4. Compatibilidade com o TES">
       <RadioField
         error={errors.guaranteesResults}
+        field="guaranteesResults"
         label="Essa terapia faz promessas de resultados garantidos?"
         onChange={(value) => onChange("guaranteesResults", value)}
         required
@@ -911,6 +1111,7 @@ function CompatibilityStep({ errors, onChange, values }: StepProps) {
       />
       <RadioField
         error={errors.invasiveProcedure}
+        field="invasiveProcedure"
         label="Ela envolve algum procedimento físico ou invasivo?"
         onChange={(value) => onChange("invasiveProcedure", value)}
         required
@@ -918,6 +1119,7 @@ function CompatibilityStep({ errors, onChange, values }: StepProps) {
       />
       <RadioField
         error={errors.requiresInPerson}
+        field="requiresInPerson"
         label="Ela exige contato físico obrigatório?"
         onChange={(value) => onChange("requiresInPerson", value)}
         required
@@ -930,10 +1132,17 @@ function CompatibilityStep({ errors, onChange, values }: StepProps) {
           qualquer decisão.
         </p>
       ) : null}
-      <Field label="Existe algum cuidado ou limitação importante que deveríamos conhecer?">
+      <Field
+        field="safetyNotes"
+        label="Existe algum cuidado ou limitação importante que deveríamos conhecer?"
+        limit={textFieldLimits.safetyNotes}
+        value={values.safetyNotes}
+      >
         <textarea
-          className={`${controlClassName} min-h-28`}
-          maxLength={600}
+          aria-describedby={describedBy("safetyNotes", false)}
+          className={`${controlClassName()} min-h-28`}
+          id={fieldId("safetyNotes")}
+          maxLength={textFieldLimits.safetyNotes}
           onChange={(event) => onChange("safetyNotes", event.target.value)}
           placeholder="Ex.: cuidados especiais, restrições de público ou orientações relevantes…"
           value={values.safetyNotes}
@@ -965,10 +1174,18 @@ function MaterialsStep({
     <Step title="5. Materiais e referências">
       <Field
         error={errors.referenceUrl}
+        field="referenceUrl"
         label="Existe algum site, livro ou referência para conhecermos melhor essa terapia?"
+        limit={textFieldLimits.referenceUrl}
+        value={values.referenceUrl}
       >
         <input
-          className={controlClassName}
+          aria-describedby={describedBy("referenceUrl", Boolean(errors.referenceUrl))}
+          aria-invalid={Boolean(errors.referenceUrl)}
+          className={controlClassName(Boolean(errors.referenceUrl))}
+          data-therapy-request-field="referenceUrl"
+          id={fieldId("referenceUrl")}
+          maxLength={textFieldLimits.referenceUrl}
           onChange={(event) => onChange("referenceUrl", event.target.value)}
           placeholder="https://… ou título de uma referência"
           value={values.referenceUrl}
@@ -1014,10 +1231,17 @@ function MaterialsStep({
           </ul>
         ) : null}
       </Field>
-      <Field label="Há mais alguma informação que você gostaria de compartilhar?">
+      <Field
+        field="additionalInformation"
+        label="Há mais alguma informação que você gostaria de compartilhar?"
+        limit={textFieldLimits.additionalInformation}
+        value={values.additionalInformation}
+      >
         <textarea
-          className={`${controlClassName} min-h-28`}
-          maxLength={500}
+          aria-describedby={describedBy("additionalInformation", false)}
+          className={`${controlClassName()} min-h-28`}
+          id={fieldId("additionalInformation")}
+          maxLength={textFieldLimits.additionalInformation}
           onChange={(event) =>
             onChange("additionalInformation", event.target.value)
           }
@@ -1064,41 +1288,90 @@ function Step({ children, title }: { children: ReactNode; title: string }) {
 function Field({
   children,
   error,
+  field,
   label,
+  limit,
   required,
+  value,
 }: {
   children: ReactNode;
   error?: string;
+  field?: string;
   label: string;
+  limit?: number;
   required?: boolean;
+  value?: string;
 }) {
+  const isTextControl = typeof limit === "number";
+  const labelContent = (
+    <>
+      {label}
+      {required ? <span className="text-state-danger"> *</span> : null}
+    </>
+  );
+
   return (
-    <label className="block text-sm font-semibold text-brand-deep">
-      <span>
-        {label}
-        {required ? <span className="text-state-danger"> *</span> : null}
-      </span>
-      <span className="mt-2 block">{children}</span>
-      {error ? (
-        <span className="mt-1 block text-sm text-state-danger">{error}</span>
+    <div className="block">
+      {field && isTextControl ? (
+        <label
+          className={`text-sm font-semibold ${error ? "text-state-danger" : "text-brand-deep"}`}
+          htmlFor={fieldId(field)}
+        >
+          {labelContent}
+        </label>
+      ) : (
+        <p
+          className={`text-sm font-semibold ${error ? "text-state-danger" : "text-brand-deep"}`}
+          id={field ? `${fieldId(field)}-label` : undefined}
+        >
+          {labelContent}
+        </p>
+      )}
+      <div className="mt-2">{children}</div>
+      {field && limit ? (
+        <p
+          className="mt-1 text-xs text-tesText-secondary"
+          id={`${fieldId(field)}-counter`}
+        >
+          {value?.length ?? 0}/{limit} caracteres
+        </p>
       ) : null}
-    </label>
+      {error ? (
+        <p
+          className="mt-1 text-sm text-state-danger"
+          id={field ? `${fieldId(field)}-error` : undefined}
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 function ChoiceGrid({
   choices,
+  error,
+  field,
   onChange,
   value,
 }: {
   choices: Array<[string, string]>;
+  error?: string;
+  field: string;
   onChange: (value: string) => void;
   value: string;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div
+      aria-describedby={error ? `${fieldId(field)}-error` : undefined}
+      aria-labelledby={`${fieldId(field)}-label`}
+      className="grid gap-3 sm:grid-cols-2"
+      role="group"
+    >
       {choices.map(([key, label]) => (
         <button
-          className={`min-h-12 rounded-control border px-4 text-left text-sm font-semibold ${value === key ? "border-brand-primary bg-brand-lavenderSoft text-brand-deep" : "border-brand-lavender text-tesText-secondary"}`}
+          className={`min-h-12 rounded-control border px-4 text-left text-sm font-semibold ${error ? "border-state-danger text-state-danger focus:outline-none focus:ring-4 focus:ring-state-danger/20" : value === key ? "border-brand-primary bg-brand-lavenderSoft text-brand-deep" : "border-brand-lavender text-tesText-secondary"}`}
+          data-therapy-request-field={field}
           key={key}
           onClick={() => onChange(key)}
           type="button"
@@ -1111,27 +1384,35 @@ function ChoiceGrid({
 }
 function RadioField({
   error,
+  field,
   label,
   onChange,
   required,
   value,
 }: {
   error?: string;
+  field: string;
   label: string;
   onChange: (value: "no" | "yes") => void;
   required?: boolean;
   value: "" | "no" | "yes";
 }) {
   return (
-    <fieldset>
-      <legend className="text-sm font-semibold text-brand-deep">
+    <fieldset aria-describedby={error ? `${fieldId(field)}-error` : undefined}>
+      <legend
+        className={`text-sm font-semibold ${error ? "text-state-danger" : "text-brand-deep"}`}
+      >
         {label}
         {required ? <span className="text-state-danger"> *</span> : null}
       </legend>
-      <div className="mt-3 flex gap-6">
+      <div
+        className={`mt-3 flex gap-6 ${error ? "rounded-control border border-state-danger bg-state-dangerSoft/30 p-3" : ""}`}
+      >
         <label className="flex items-center gap-2 text-sm">
           <input
             checked={value === "yes"}
+            className={error ? "accent-state-danger" : "accent-brand-primary"}
+            data-therapy-request-field={field}
             name={label}
             onChange={() => onChange("yes")}
             type="radio"
@@ -1141,6 +1422,8 @@ function RadioField({
         <label className="flex items-center gap-2 text-sm">
           <input
             checked={value === "no"}
+            className={error ? "accent-state-danger" : "accent-brand-primary"}
+            data-therapy-request-field={field}
             name={label}
             onChange={() => onChange("no")}
             type="radio"
@@ -1148,7 +1431,11 @@ function RadioField({
           Não
         </label>
       </div>
-      {error ? <p className="mt-1 text-sm text-state-danger">{error}</p> : null}
+      {error ? (
+        <p className="mt-1 text-sm text-state-danger" id={`${fieldId(field)}-error`} role="alert">
+          {error}
+        </p>
+      ) : null}
     </fieldset>
   );
 }
@@ -1173,6 +1460,21 @@ function validateStep(step: number, values: FormValues) {
   for (const field of required[step])
     if (!values[field].trim())
       errors[field] = "Preencha este campo para continuar.";
+  for (const [field, limit] of Object.entries(textFieldLimits) as Array<
+    [TextFieldKey, number]
+  >) {
+    if (
+      fieldBelongsToStep(field, step) &&
+      values[field].trim().length > limit
+    )
+      errors[field] = `Use no máximo ${limit} caracteres.`;
+  }
+  if (
+    step === 1 &&
+    values.informedName.trim() &&
+    values.informedName.trim().length < 2
+  )
+    errors.informedName = "Use pelo menos 2 caracteres.";
   if (step === 1 && (values.themeIds.length < 1 || values.themeIds.length > 3))
     errors.themeIds = "Escolha de 1 a 3 temas para continuar.";
   if (
@@ -1182,6 +1484,16 @@ function validateStep(step: number, values: FormValues) {
   )
     errors.referenceUrl = "Informe um link ou referência válida.";
   return errors;
+}
+
+function fieldBelongsToStep(field: TextFieldKey, step: number) {
+  return (
+    (step === 1 && ["informedName", "aliases"].includes(field)) ||
+    (step === 2 && ["description", "objective", "useCases", "sessionProcess"].includes(field)) ||
+    (step === 3 && ["trainingDescription", "practiceDuration"].includes(field)) ||
+    (step === 4 && field === "safetyNotes") ||
+    (step === 5 && ["referenceUrl", "additionalInformation"].includes(field))
+  );
 }
 function toPayload(values: FormValues) {
   return {

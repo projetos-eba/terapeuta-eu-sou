@@ -690,6 +690,7 @@ describe("TherapistProfilePage video block", () => {
     expect(
       within(services).getByRole("heading", { name: "Reiki online" }),
     ).toBeInTheDocument();
+    expect(within(services).getByText("até 50 min")).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Imagem do atendimento Reiki online" }),
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-profile.jpg");

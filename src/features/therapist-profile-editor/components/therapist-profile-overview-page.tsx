@@ -53,7 +53,7 @@ export function TherapistProfileOverviewPage({
       <AppPageHeader
         actions={
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {editor.derived.publicStatus === "published" ? (
+            {editor.publication.isPubliclyVisible ? (
               <TESButton
                 className="min-h-11 rounded-lg"
                 href={editor.publicProfileHref}

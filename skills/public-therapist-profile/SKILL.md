@@ -65,7 +65,7 @@ Consultar antes de alterar:
   regra semanal não é uma fonte válida de disponibilidade.
 - Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min, Tarô 60min e Constelação Familiar 60min não podem compartilhar uma lista fixa de slots.
 - O painel compacto de disponibilidade mostra somente os próximos 3 dias com horários disponíveis; dias corridos sem slot não devem aparecer como linhas vazias.
-- O painel compacto consulta somente a primeira semana. A agenda mensal consulta dias livres por mês e busca os horários somente depois da seleção do dia; o limite de slots detalhados não pode limitar a navegação mensal.
+- O painel compacto procura até 3 dias com horários disponíveis, avançando mês a mês dentro do horizonte autoritativo de 90 dias, e carrega os horários somente para as datas encontradas. A agenda mensal também consulta dias livres por mês e busca os horários somente depois da seleção do dia; o limite de slots detalhados não pode limitar nenhuma dessas navegações.
 - O horizonte canônico é de 90 dias por serviço. O modal usa `horizonEndsAt` retornado pelo banco para desabilitar a navegação apenas após o último mês parcialmente coberto e usa `TESDialog` para foco, `Escape`, overlay e retorno de foco.
 - Falha de disponibilidade deve aparecer como falha acionável, nunca como mês sem horários.
 - As views de perfil público devem usar o status atual do catálogo público: `therapies.status = 'published'` e `therapies.is_public_visible = true`.

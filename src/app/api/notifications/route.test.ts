@@ -36,6 +36,11 @@ describe("notifications route", () => {
       const url = String(input);
       if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
       if (url.includes("kind=eq.booking_confirmed")) return Response.json([]);
+      if (url.includes("/rest/v1/support_tickets")) {
+        return new Response("[]", {
+          headers: { "content-range": "0-0/2" },
+        });
+      }
       if (url.includes("read_at=is.null")) {
         return new Response("[]", {
           headers: { "content-range": "0-0/3" },
@@ -74,11 +79,18 @@ describe("notifications route", () => {
         },
       ],
       toast: null,
+      openSupportTicketsCount: 2,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("profile_id=eq.user-1"),
       expect.objectContaining({
-        headers: expect.objectContaining({ Range: "0-0" }),
+        headers: expect.objectContaining({ Prefer: "count=exact" }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/rest/v1/support_tickets?select=id"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Prefer: "count=exact" }),
       }),
     );
   });

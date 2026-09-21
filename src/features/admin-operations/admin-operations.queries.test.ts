@@ -87,6 +87,105 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("maps global patient metrics including comparison and suspension independently of page rows", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          metrics: {
+            "total-patients": 100,
+            "recent-patients": 20,
+            "previous-patients": 10,
+            "active-patients": 80,
+            "suspended-patients": 5,
+            "active-patients-percentage": 80,
+          },
+          page: { page: 2, pageSize: 12, total: 5, hasNext: false },
+          rows: [],
+        }),
+      ),
+    );
+    const result = await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "patients",
+      searchParams: { status: "suspended" },
+    });
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.metrics).toHaveLength(4);
+      expect(result.data.metrics[1]).toMatchObject({
+        value: 20,
+        comparisonValue: 10,
+      });
+      expect(result.data.metrics[2]).toMatchObject({
+        value: 80,
+        percentage: 80,
+      });
+      expect(result.data.metrics[3]).toMatchObject({
+        value: 5,
+        status: "available",
+      });
+      expect(result.data.filterOptions.status).toContainEqual({
+        label: "Suspensos",
+        value: "suspended",
+      });
+    }
+  });
+
+  it("loads current-attempt private quality through the Admin V2 contract", async () => {
+    const bookingId = "00000000-0000-4000-8000-000000000153";
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith("/rpc/admin_get_operation_detail_v1")) {
+        return jsonResponse({
+          auditEvents: [],
+          generatedAt: "2026-09-18T17:00:00.000Z",
+          module: "sessions",
+          record: { id: bookingId },
+        });
+      }
+      if (url.endsWith("/rpc/admin_get_session_feedback_v2")) {
+        return jsonResponse({
+          attendance: { bothJoined: true, patientJoined: true, therapistJoined: true, sessionClosed: true },
+          confirmation: { patient: null, therapist: null },
+          financial: { serviceStatus: "scheduled", transferStatus: "transferred" },
+          patient: { authorRole: "patient", successful: true, rating: 5, comment: "Bem atendido", createdAt: "2026-09-18T17:05:00.000Z" },
+          therapist: { authorRole: "therapist", successful: true, rating: 5, comment: "Tudo certo", createdAt: "2026-09-18T17:06:00.000Z" },
+          pendingRoles: [],
+          qualityReview: { isOpen: false, overdue: false, allAnswered: false },
+          legacyFeedback: [],
+        });
+      }
+      return jsonResponse({ error: "unexpected rpc" }, { status: 503 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminOperationDetailPage({
+      accessToken: "admin-token",
+      id: bookingId,
+      module: "sessions",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_session_feedback_v2",
+      expect.objectContaining({
+        body: JSON.stringify({ p_booking_id: bookingId }),
+        method: "POST",
+      }),
+    );
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.sessionFeedback).toMatchObject({
+        status: "available",
+        data: {
+          patient: { successful: true, rating: 5 },
+          therapist: { successful: true, rating: 5 },
+          pendingRoles: [],
+        },
+      });
+    }
+  });
+
   it("uses an approved profile decision only as a read-only verification fallback", () => {
     expect(deriveProfileDecisionVerificationSummary("approved")).toEqual({
       reviewedAt: null,
@@ -115,7 +214,10 @@ describe("admin operation queries", () => {
         });
       }
 
-      if (url.includes("public_therapist_profile_content_v")) {
+      if (
+        url ===
+        "https://tes.supabase.test/rest/v1/public_therapist_profile_content_v?slug=eq.ana-oliveira&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1"
+      ) {
         return jsonResponse([
           {
             essence_body: "Escuta responsável.",
@@ -151,13 +253,15 @@ describe("admin operation queries", () => {
     });
 
     expect(result.status).toBe("success");
-    expect(
-      fetchMock.mock.calls.some(([url]) =>
-        String(url).includes(
-          "/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.00000000-0000-4000-8000-000000000001",
-        ),
-      ),
-    ).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/public_therapist_profile_content_v?slug=eq.ana-oliveira&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1",
+      expect.objectContaining({
+        cache: "no-store",
+        headers: expect.objectContaining({
+          Authorization: "Bearer admin-token",
+        }),
+      }),
+    );
     expect(
       fetchMock.mock.calls.some(([url]) =>
         String(url).includes(
@@ -190,6 +294,66 @@ describe("admin operation queries", () => {
       );
     }
   });
+
+  it.each([
+    { slug: undefined, responseStatus: 200, expectedStatus: "unavailable" },
+    { slug: "   ", responseStatus: 200, expectedStatus: "unavailable" },
+    { slug: "ana-oliveira", responseStatus: 200, expectedStatus: "available" },
+    {
+      slug: "ana-oliveira",
+      responseStatus: 400,
+      expectedStatus: "unavailable",
+    },
+  ])(
+    "keeps published content safe for slug=$slug and HTTP $responseStatus",
+    async ({ slug, responseStatus, expectedStatus }) => {
+      const fetchMock = vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("admin_get_operation_detail_v1")) {
+          return jsonResponse({
+            auditEvents: [],
+            generatedAt: "2026-08-14T12:00:00.000Z",
+            module: "professionals",
+            record: {
+              id: "00000000-0000-4000-8000-000000000001",
+              public_name: "Ana Oliveira",
+              slug,
+              status: "approved",
+            },
+          });
+        }
+        if (url.includes("public_therapist_profile_content_v")) {
+          return jsonResponse([], { status: responseStatus });
+        }
+        if (url.includes("therapist_verifications")) return jsonResponse([]);
+        return jsonResponse({ ok: false }, { status: 503 });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const result = await getAdminOperationDetailPage({
+        accessToken: "admin-token",
+        id: "00000000-0000-4000-8000-000000000001",
+        module: "professionals",
+      });
+
+      expect(result.status).toBe("success");
+      if (result.status === "success") {
+        expect(result.data.publicProfile).toEqual({
+          content: null,
+          services: expectedStatus === "available" ? [] : null,
+          status: expectedStatus,
+        });
+      }
+      const publicCalls = fetchMock.mock.calls
+        .map(([input]) => String(input))
+        .filter((url) => url.includes("public_therapist_profile_"));
+      expect(publicCalls).toHaveLength(slug?.trim() ? 1 : 0);
+      expect(publicCalls.join(" ")).not.toContain("therapist_profile_id");
+      expect(
+        fetchMock.mock.calls.map(([input]) => String(input)).join(" "),
+      ).not.toContain("/rest/v1/therapist_profile_content_versions");
+    },
+  );
 });
 
 function jsonResponse(payload: unknown, init: ResponseInit = {}) {

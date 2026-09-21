@@ -4,7 +4,10 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 import { parseStrictBoolean } from "./config.ts";
-import { evaluateVideoSessionAccess } from "./access-policy.ts";
+import {
+  evaluateVideoSessionAccess,
+  getVideoAccessMessage,
+} from "./access-policy.ts";
 import {
   resolveExactLiveSessionId,
   ZoomVideoSdkApiClient,
@@ -40,6 +43,19 @@ Deno.test("legacy absence and orphan jobs are reentrant no-ops", () => {
   assertEquals(isLegacyReentrantControlOperation("end_hard_timeout"), false);
   assertEquals(isLegacyReentrantControlOperation("confirm_end"), false);
 });
+
+Deno.test(
+  "absence access errors do not expose participant classification",
+  () => {
+    const guidance =
+      "Sessão não realizada. Se precisar de ajuda, fale com o suporte.";
+    assertEquals(
+      getVideoAccessMessage("THERAPIST_ARRIVAL_WINDOW_EXPIRED"),
+      guidance,
+    );
+    assertEquals(getVideoAccessMessage("BOTH_NO_SHOW"), guidance);
+  },
+);
 
 Deno.test(
   "parseStrictBoolean fails closed for absent, empty, and invalid values",
@@ -259,6 +275,7 @@ Deno.test(
       financialStatus: "paid",
       now: new Date("2026-07-26T13:00:00.000Z"),
       patientHasJoined: true,
+      therapistHasTimelyJoin: true,
       startsAt: "2026-07-26T12:30:00.000Z",
       therapistPresent: true,
       videoSessionReady: true,
@@ -335,6 +352,7 @@ Deno.test(
       financialStatus: "paid",
       now: new Date("2026-07-26T13:00:00.000Z"),
       patientHasJoined: true,
+      therapistHasTimelyJoin: true,
       startsAt: "2026-07-26T12:30:00.000Z",
       therapistPresent: true,
       videoSessionReady: true,
@@ -354,6 +372,20 @@ Deno.test(
         bookingStatus: "cancelled_by_patient",
       }).reason,
       "BOOKING_CANCELLED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        bookingStatus: "no_show_therapist",
+      }).reason,
+      "THERAPIST_ARRIVAL_WINDOW_EXPIRED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        bookingStatus: "no_show_both",
+      }).reason,
+      "BOTH_NO_SHOW",
     );
     assertEquals(
       evaluateVideoSessionAccess({
@@ -380,7 +412,7 @@ Deno.test(
 );
 
 Deno.test(
-  "T+10 is inclusive for both actors and a patient arrival preserves late therapist entry",
+  "T+10 is inclusive, but each actor needs their own timely arrival for reentry",
   () => {
     const base = {
       actorRole: "patient" as const,
@@ -430,8 +462,28 @@ Deno.test(
         patientHasTimelyArrival: true,
         therapistProfileEligible: true,
         therapistStatus: "approved",
+      }).reason,
+      "ARRIVAL_WINDOW_EXPIRED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "therapist",
+        now: new Date("2026-07-26T13:49:59.999Z"),
+        therapistHasTimelyArrival: true,
+        therapistProfileEligible: true,
+        therapistStatus: "approved",
       }).allowed,
       true,
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T13:10:00.001Z"),
+        patientHasTimelyArrival: true,
+        therapistPresent: false,
+      }).reason,
+      "THERAPIST_ARRIVAL_WINDOW_EXPIRED",
     );
     assertEquals(
       evaluateVideoSessionAccess({
@@ -457,6 +509,7 @@ Deno.test(
       endsAt: "2026-07-26T14:00:00Z",
       now: new Date("2026-07-26T13:15:00Z"),
       patientHasTimelyArrival: true,
+      therapistHasTimelyJoin: true,
       videoSessionReady: true,
       videoSessionStatus: "active",
     };
@@ -466,8 +519,8 @@ Deno.test(
         ...base,
         patientHasJoined: false,
         patientHasTimelyArrival: false,
-      }).reason,
-      "ARRIVAL_WINDOW_EXPIRED",
+      }).allowed,
+      true,
     );
     assertEquals(
       evaluateVideoSessionAccess({ ...base, videoSessionStatus: "ended" })
@@ -529,9 +582,12 @@ Deno.test(
 );
 
 Deno.test(
-  "therapist authorization reads a current patient waiting-room arrival",
+  "authorization separates each actor's timely arrival and excludes stale versions",
   async () => {
     const calls: string[] = [];
+    let includeTimelyTherapist = false;
+    let classification: string | null = null;
+    let omitArrivalEvidence = false;
     const client = {
       get: (path: string) => {
         calls.push(path);
@@ -574,18 +630,68 @@ Deno.test(
           return Promise.resolve([]);
         }
         if (path.startsWith("/rest/v1/booking_events")) {
-          return Promise.resolve([
+          const events = [
             {
+              created_at: "2026-07-26T13:09:00.000Z",
               payload: {
                 bookingVersion: 4,
                 scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+                participantRole: "patient",
               },
             },
-          ]);
+            {
+              created_at: "2026-07-26T13:01:00.000Z",
+              payload: {
+                bookingVersion: 3,
+                scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+                participantRole: "therapist",
+              },
+            },
+            {
+              created_at: "2026-07-26T13:11:00.000Z",
+              payload: {
+                bookingVersion: 4,
+                scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+                participantRole: "therapist",
+              },
+            },
+          ];
+          if (includeTimelyTherapist) {
+            events.push({
+              created_at: "2026-07-26T13:05:00.000Z",
+              payload: {
+                bookingVersion: 4,
+                scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+                participantRole: "therapist",
+              },
+            });
+          }
+          return Promise.resolve(events);
         }
         return Promise.resolve([]);
       },
-      rpc: () => Promise.resolve(true),
+      rpc: (name: string) => {
+        calls.push(`rpc:${name}`);
+        return Promise.resolve(
+          name === "session_attempt_evidence_v1"
+            ? {
+                classification,
+                patientArrivedAt: omitArrivalEvidence
+                  ? undefined
+                  : "2026-07-26T13:09:00.000Z",
+                patientJoined: false,
+                therapistArrivedAt: omitArrivalEvidence
+                  ? undefined
+                  : includeTimelyTherapist
+                    ? "2026-07-26T13:05:00.000Z"
+                    : null,
+                therapistJoinedAt: null,
+                patientPresentAtTolerance: true,
+                therapistPresentAtTolerance: includeTimelyTherapist,
+              }
+            : true,
+        );
+      },
     } as unknown as SupabaseRestClient;
 
     const booking = await getAuthorizedVideoBooking({
@@ -597,8 +703,71 @@ Deno.test(
     });
 
     assertEquals(booking.patientHasTimelyArrival, true);
+    assertEquals(booking.therapistHasTimelyArrival, false);
     assertEquals(
-      calls.some((path) => path.startsWith("/rest/v1/booking_events")),
+      evaluateVideoSessionAccess({
+        actorRole: "therapist",
+        bookingStatus: booking.bookingStatus,
+        endsAt: booking.endsAt,
+        financialStatus: booking.financialStatus,
+        now: new Date("2026-07-26T13:15:00.000Z"),
+        patientHasTimelyArrival: booking.patientHasTimelyArrival,
+        startsAt: booking.startsAt,
+        therapistHasTimelyArrival: booking.therapistHasTimelyArrival,
+        therapistProfileEligible: true,
+        therapistStatus: "approved",
+        videoSessionReady: true,
+        videoSessionStatus: "ready",
+      }).reason,
+      "ARRIVAL_WINDOW_EXPIRED",
+    );
+    includeTimelyTherapist = true;
+    const reentry = await getAuthorizedVideoBooking({
+      bookingId: "94000000-0000-4000-8000-000000000021",
+      client,
+      environment: "development",
+      profileId: "therapist-owner",
+      role: "therapist",
+    });
+    assertEquals(reentry.therapistHasTimelyArrival, true);
+    classification = "no_show_patient";
+    const absentPatient = await getAuthorizedVideoBooking({
+      bookingId: "94000000-0000-4000-8000-000000000021",
+      client,
+      environment: "development",
+      profileId: "therapist-owner",
+      role: "therapist",
+    });
+    assertEquals(absentPatient.bookingStatus, "no_show_patient");
+    assertEquals(
+      evaluateVideoSessionAccess({
+        actorRole: "therapist",
+        bookingStatus: absentPatient.bookingStatus,
+        endsAt: absentPatient.endsAt,
+        startsAt: absentPatient.startsAt,
+        financialStatus: "paid",
+        now: new Date("2026-07-26T13:15:00.000Z"),
+        therapistHasTimelyArrival: true,
+        therapistStatus: "approved",
+        therapistProfileEligible: true,
+        videoSessionReady: true,
+        videoSessionStatus: "active",
+      }).allowed,
+      false,
+    );
+    classification = null;
+    omitArrivalEvidence = true;
+    const missingEvidence = await getAuthorizedVideoBooking({
+      bookingId: "94000000-0000-4000-8000-000000000021",
+      client,
+      environment: "development",
+      profileId: "therapist-owner",
+      role: "therapist",
+    });
+    assertEquals(missingEvidence.patientHasTimelyArrival, false);
+    assertEquals(missingEvidence.therapistHasTimelyArrival, false);
+    assertEquals(
+      calls.some((path) => path === "rpc:session_attempt_evidence_v1"),
       true,
     );
   },

@@ -15,7 +15,9 @@ describe("admin operation mappers", () => {
             id: "therapist-1",
             is_accepting_bookings: true,
             is_public: false,
+            email: "ana.oliveira@example.test",
             plan: "premium_plus",
+            photo_url: "/images/avatar-terapeuta.jpeg",
             public_name: "Ana Oliveira",
             public_status: "draft",
             slug: "ana-oliveira",
@@ -26,7 +28,9 @@ describe("admin operation mappers", () => {
       })[0],
     ).toEqual(
       expect.objectContaining({
+        avatarUrl: "/images/avatar-terapeuta.jpeg",
         detailHref: "/admin/profissionais/therapist-1",
+        email: "ana.oliveira@example.test",
         id: "therapist-1",
         statusLabel: "approved",
         subtitle: "ana-oliveira",
@@ -68,11 +72,29 @@ describe("admin operation mappers", () => {
     });
 
     expect(row?.detailHref).toBe("/admin/profissionais/therapist-1");
+    expect(row?.statusLabel).toBe("Aprovado · falta publicar");
     expect(row?.fields).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ value: "therapist-1" }),
       ]),
     );
+  });
+
+  it("shows publication eligibility as success only after the profile is public", () => {
+    const [row] = mapAdminOperationRows({
+      module: "verifications",
+      rows: [
+        {
+          id: "verification-2",
+          publication_eligibility: { eligible: true },
+          status: "approved",
+          therapist_name: "Beatriz Lima",
+          therapist_profile_id: "therapist-2",
+        },
+      ],
+    });
+
+    expect(row?.statusLabel).toBe("Publicado e elegível");
   });
 
   it("keeps internal professional relationships out of verification detail fields", () => {
@@ -335,12 +357,27 @@ describe("admin operation mappers", () => {
       data: {
         attendance: {
           bothJoined: true,
+          classification: null,
+          classificationSource: null,
+          financialResolution: null,
+          incidentId: null,
+          patientArrivedAt: null,
           patientJoined: true,
+          patientJoinedAt: null,
+          patientPresentAtTolerance: false,
+          processingCostRecoveryAuthorized: false,
+          resolution: null,
+          responsibility: null,
+          retentionAuthorized: false,
+          reviewDueAt: null,
           sessionClosed: true,
           sessionEndedAt: "2026-08-22T22:00:00.000Z",
           sessionEndsAt: "2026-08-22T21:50:00.000Z",
           sessionStartedAt: "2026-08-22T21:00:00.000Z",
+          therapistArrivedAt: null,
           therapistJoined: true,
+          therapistJoinedAt: null,
+          therapistPresentAtTolerance: false,
         },
         confirmation: { patient: null, therapist: null },
         divergent: true,

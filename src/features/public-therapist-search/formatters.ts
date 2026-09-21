@@ -24,7 +24,7 @@ export function formatReviewsLabel(count: number) {
 }
 
 export function formatDurationLabel(minutes: number) {
-  return `${minutes} min`;
+  return `até ${minutes} min`;
 }
 
 export function getAvailabilityBucket(

@@ -387,6 +387,10 @@ function editorFixture(
             documentFixture({ kind: "address_proof" }),
           ]
         : []),
+    publication: {
+      isPubliclyVisible: false,
+      needsReceivingAccount: false,
+    },
     propagationNotice: "",
     publicProfileHref: "/terapeutas/teste",
     publicProfileSlug: "teste",

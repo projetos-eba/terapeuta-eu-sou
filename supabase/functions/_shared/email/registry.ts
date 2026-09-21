@@ -189,6 +189,53 @@ function bookingRescheduleLifecycleEntry(input: {
   };
 }
 
+function therapistRescheduleRequestPatientEntry(): EmailActionRegistryEntry {
+  return {
+    actionKey: "booking_therapist_reschedule_requested_patient",
+    adminConfigurable: true,
+    allowedTokens: bookingTokens,
+    category: "Encontros",
+    currentTemplateVersion: "v1",
+    defaults: {
+      html: defaultEmailHtml({
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu terapeuta pediu que você escolha um novo horário para o encontro.",
+          ),
+          emailDetailList([
+            ["Outra parte", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Horário atual", "{{meeting_date_time}} ({{meeting_timezone}})"],
+          ]),
+          accountParagraph(
+            "O horário atual permanece confirmado até que você escolha outro horário.",
+          ),
+        ].join(""),
+        ctaLabel: "Escolher outro horário",
+        ctaUrlToken: "encounter_url",
+        title: "Escolha um novo horário",
+      }),
+      preheader:
+        "Seu terapeuta pediu que você escolha um novo horário para o encontro.",
+      subject: "Escolha um novo horário para seu encontro",
+      text: "Escolha um novo horário\n\nOlá, {{recipient_name}}.\n\nSeu terapeuta pediu que você escolha um novo horário para o encontro.\n\nOutra parte: {{counterparty_name}}\nTerapia: {{service_title}}\nHorário atual: {{meeting_date_time}} ({{meeting_timezone}})\n\nO horário atual permanece confirmado até que você escolha outro horário.\n\nEquipe TES\n\nEscolher outro horário: {{encounter_url}}",
+    },
+    description:
+      "Pede que a pessoa escolha um novo horário após uma solicitação do terapeuta.",
+    label: "Escolher novo horário — pessoa",
+    previewFixture: {
+      counterparty_name: "Terapeuta de exemplo",
+      encounter_url: "https://example.test/encontros/exemplo",
+      meeting_date_time: "21 de agosto de 2026 às 16:00",
+      meeting_timezone: "America/Sao_Paulo",
+      recipient_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+    },
+    supportsAutomaticDispatch: true,
+  };
+}
+
 export const emailActionRegistry: Record<
   EmailActionKey,
   EmailActionRegistryEntry
@@ -442,6 +489,86 @@ export const emailActionRegistry: Record<
       support_url: "https://example.test/ajuda",
     },
   },
+  therapist_receiving_account_closed: {
+    actionKey: "therapist_receiving_account_closed",
+    category: "Terapeutas",
+    label: "Conta de recebimento encerrada",
+    description:
+      "Informa que a conta de recebimento foi encerrada e que uma nova análise é necessária.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Sua conta de recebimento foi encerrada",
+      preheader:
+        "Conecte uma nova conta para que a equipe TES possa concluir uma nova análise.",
+      text: "Sua conta de recebimento foi encerrada.\n\nOlá, {{recipient_name}}.\n\nIdentificamos que a conta usada para receber seus repasses foi encerrada. Por segurança, seu perfil ficou indisponível para novos agendamentos.\n\nConecte uma nova conta de recebimento no Financeiro. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.\n\nOs encontros já confirmados e os registros financeiros anteriores permanecem preservados.\n\nEquipe TES\n\nAbrir conta de recebimento: {{finance_url}}",
+      html: defaultEmailHtml({
+        title: "Sua conta de recebimento foi encerrada.",
+        ctaLabel: "Abrir conta de recebimento",
+        ctaUrlToken: "finance_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Identificamos que a conta usada para receber seus repasses foi encerrada. Por segurança, seu perfil ficou indisponível para novos agendamentos.",
+          ),
+          accountParagraph(
+            "Conecte uma nova conta de recebimento no Financeiro. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+          ),
+          accountParagraph(
+            "Os encontros já confirmados e os registros financeiros anteriores permanecem preservados.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: [
+      ...accountTokens,
+      { key: "finance_url", label: "Link do Financeiro", kind: "url" },
+    ],
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      finance_url: "https://example.test/terapeuta/financeiro?tab=conta",
+    },
+  },
+  therapist_availability_removed: {
+    actionKey: "therapist_availability_removed",
+    category: "Terapeutas",
+    label: "Agenda sem horários disponíveis",
+    description:
+      "Informa que o perfil ficou indisponível após a remoção da última faixa de disponibilidade.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu perfil ficou sem horários disponíveis",
+      preheader:
+        "Cadastre novos horários para que a equipe TES possa concluir uma nova análise.",
+      text: "Seu perfil ficou sem horários disponíveis.\n\nOlá, {{recipient_name}}.\n\nIdentificamos que sua agenda ficou sem horários disponíveis. Por isso, seu perfil deixou de aparecer para novos agendamentos.\n\nCadastre ao menos um novo horário na Agenda. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.\n\nAs sessões já confirmadas permanecem preservadas.\n\nEquipe TES\n\nConfigurar horários: {{agenda_url}}",
+      html: defaultEmailHtml({
+        title: "Seu perfil ficou sem horários disponíveis.",
+        ctaLabel: "Configurar horários",
+        ctaUrlToken: "agenda_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Identificamos que sua agenda ficou sem horários disponíveis. Por isso, seu perfil deixou de aparecer para novos agendamentos.",
+          ),
+          accountParagraph(
+            "Cadastre ao menos um novo horário na Agenda. Depois disso, a equipe TES fará uma nova análise antes de disponibilizar seu perfil novamente.",
+          ),
+          accountParagraph("As sessões já confirmadas permanecem preservadas."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: [
+      ...accountTokens,
+      { key: "agenda_url", label: "Link da Agenda", kind: "url" },
+    ],
+    previewFixture: {
+      agenda_url: "https://example.test/terapeuta/agenda?aba=horarios",
+      recipient_name: "Terapeuta de exemplo",
+    },
+  },
   therapist_profile_submitted_for_review: {
     actionKey: "therapist_profile_submitted_for_review",
     category: "Terapeutas",
@@ -532,7 +659,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_profile_approved",
     category: "Terapeutas",
     label: "Perfil aprovado",
-    description: "Confirma a aprovação persistida de um perfil profissional.",
+    description: "Confirma a aprovação de um perfil profissional.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -618,8 +745,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_profile_suspended",
     category: "Terapeutas",
     label: "Perfil suspenso",
-    description:
-      "Comunica uma suspensão persistida sem expor o motivo por e-mail.",
+    description: "Comunica uma suspensão sem expor o motivo por e-mail.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -661,7 +787,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_profile_reactivated",
     category: "Terapeutas",
     label: "Perfil reativado",
-    description: "Confirma a reativação persistida de um perfil profissional.",
+    description: "Confirma a reativação de um perfil profissional.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -700,11 +826,103 @@ export const emailActionRegistry: Record<
       dashboard_url: "https://example.test/terapeuta",
     },
   },
+  booking_reserved_patient: {
+    actionKey: "booking_reserved_patient",
+    category: "Encontros",
+    label: "Encontro reservado — pessoa",
+    description:
+      "Confirma que o horário foi reservado e informa quando o pagamento será realizado.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu encontro foi reservado",
+      preheader:
+        "O horário está guardado para você. Confira os próximos passos.",
+      text: "Seu encontro foi reservado.\n\nOlá, {{recipient_name}}.\n\nSeu horário com {{counterparty_name}} está reservado. O pagamento será realizado 24 horas antes do encontro com o cartão informado.\n\nInformações do encontro:\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nQuando o pagamento for aprovado, enviaremos uma nova confirmação. Você pode acompanhar tudo pela sua área no TES.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Seu encontro foi reservado",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu horário com {{counterparty_name}} está reservado. O pagamento será realizado 24 horas antes do encontro com o cartão informado.",
+          ),
+          accountParagraph("<strong>Informações do encontro:</strong>"),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Quando o pagamento for aprovado, enviaremos uma nova confirmação. Você pode acompanhar tudo pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
+  booking_reserved_therapist: {
+    actionKey: "booking_reserved_therapist",
+    category: "Encontros",
+    label: "Sessão reservada — terapeuta",
+    description:
+      "Informa que um horário foi reservado e ainda aguarda a confirmação do pagamento.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Uma nova sessão foi reservada",
+      preheader:
+        "O horário já está reservado na sua agenda. Confira as informações.",
+      text: "Uma nova sessão foi reservada.\n\nOlá, {{recipient_name}}.\n\nO horário abaixo foi reservado para {{counterparty_name}} e já aparece na sua agenda. A confirmação final será enviada quando o pagamento for aprovado.\n\nInformações da sessão:\nPessoa: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nVocê pode acompanhar as informações pela sua área no TES.\n\nEquipe TES\n\nVer sessão: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Uma nova sessão foi reservada",
+        ctaLabel: "Ver sessão",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "O horário abaixo foi reservado para {{counterparty_name}} e já aparece na sua agenda. A confirmação final será enviada quando o pagamento for aprovado.",
+          ),
+          accountParagraph("<strong>Informações da sessão:</strong>"),
+          emailDetailList([
+            ["Pessoa", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Você pode acompanhar as informações pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      counterparty_name: "Pessoa de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
+    },
+  },
   booking_confirmed_patient: {
     actionKey: "booking_confirmed_patient",
     category: "Encontros",
     label: "Encontro confirmado — pessoa",
-    description: "Confirma um encontro após o pagamento e o estado persistido.",
+    description: "Confirma um encontro após a confirmação do pagamento.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -748,7 +966,7 @@ export const emailActionRegistry: Record<
     actionKey: "booking_confirmed_therapist",
     category: "Encontros",
     label: "Sessão confirmada — terapeuta",
-    description: "Confirma uma sessão após o pagamento e o estado persistido.",
+    description: "Confirma uma sessão após a confirmação do pagamento.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -793,7 +1011,7 @@ export const emailActionRegistry: Record<
     category: "Encontros",
     label: "Lembrete de encontro — 24 horas — pessoa",
     description:
-      "Lembra a pessoa sobre um encontro confirmado 24 horas antes do horário persistido.",
+      "Lembra a pessoa sobre um encontro confirmado 24 horas antes do horário agendado.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -837,7 +1055,7 @@ export const emailActionRegistry: Record<
     category: "Encontros",
     label: "Lembrete de encontro — 1 hora — pessoa",
     description:
-      "Lembra a pessoa sobre um encontro confirmado 1 hora antes do horário persistido.",
+      "Lembra a pessoa sobre um encontro confirmado 1 hora antes do horário agendado.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -880,7 +1098,7 @@ export const emailActionRegistry: Record<
     actionKey: "booking_cancelled_patient",
     category: "Encontros",
     label: "Encontro cancelado — pessoa",
-    description: "Confirma um cancelamento já persistido, sem expor motivo.",
+    description: "Confirma um cancelamento já concluído, sem expor motivo.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -923,7 +1141,7 @@ export const emailActionRegistry: Record<
     actionKey: "booking_cancelled_therapist",
     category: "Encontros",
     label: "Sessão cancelada — terapeuta",
-    description: "Confirma um cancelamento já persistido, sem expor motivo.",
+    description: "Confirma um cancelamento já concluído, sem expor motivo.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -966,7 +1184,7 @@ export const emailActionRegistry: Record<
     actionKey: "booking_rescheduled_patient",
     category: "Encontros",
     label: "Encontro reagendado — pessoa",
-    description: "Confirma um reagendamento aplicado de forma persistida.",
+    description: "Confirma um reagendamento já concluído.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1013,7 +1231,7 @@ export const emailActionRegistry: Record<
     actionKey: "booking_rescheduled_therapist",
     category: "Encontros",
     label: "Sessão reagendada — terapeuta",
-    description: "Confirma um reagendamento aplicado de forma persistida.",
+    description: "Confirma um reagendamento já concluído.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1065,6 +1283,8 @@ export const emailActionRegistry: Record<
     subject: "Você recebeu uma proposta de novo horário",
     title: "Nova proposta de reagendamento",
   }),
+  booking_therapist_reschedule_requested_patient:
+    therapistRescheduleRequestPatientEntry(),
   booking_reschedule_requested_therapist: bookingRescheduleLifecycleEntry({
     actionKey: "booking_reschedule_requested_therapist",
     description: "Avisa a terapeuta sobre uma proposta de novo horário.",
@@ -1128,8 +1348,7 @@ export const emailActionRegistry: Record<
     actionKey: "session_payment_approved",
     category: "Financeiro",
     label: "Pagamento aprovado",
-    description:
-      "Confirma um pagamento depois do estado financeiro autoritativo.",
+    description: "Confirma um pagamento após a aprovação financeira.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1170,33 +1389,31 @@ export const emailActionRegistry: Record<
   session_payment_declined: {
     actionKey: "session_payment_declined",
     category: "Financeiro",
-    label: "Pagamento recusado",
+    label: "Pagamento precisa de confirmação",
     description:
-      "Orienta uma nova tentativa após uma recusa financeira persistida.",
+      "Orienta o cliente quando o pagamento não pôde ser concluído automaticamente.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
-      subject: "Não foi possível concluir seu pagamento",
-      preheader: "Sua transação não foi aprovada. Confira como continuar.",
-      text: "Não foi possível processar seu pagamento.\n\nOlá, {{recipient_name}}.\n\nTentamos processar o pagamento relacionado à sua solicitação no TES, mas a transação não foi aprovada.\n\nIsso pode ocorrer por diferentes motivos relacionados ao meio de pagamento utilizado.\n\nCaso ainda deseje concluir a operação, você poderá acessar sua conta e realizar uma nova tentativa utilizando o mesmo meio de pagamento ou outro disponível na plataforma.\n\nEnquanto o pagamento não for confirmado, o serviço correspondente permanecerá pendente, conforme as regras do TES.\n\nSe precisar de ajuda, nossa equipe estará à disposição.\n\nEquipe TES\n\nTentar novamente: {{payment_url}}",
+      subject: "Confirme seu pagamento para manter o encontro",
+      preheader:
+        "Acesse sua conta para confirmar o pagamento ou usar outro cartão.",
+      text: "Seu pagamento precisa de confirmação.\n\nOlá, {{recipient_name}}.\n\nNão foi possível concluir automaticamente o pagamento relacionado ao seu encontro no TES.\n\nAcesse sua conta para confirmar a operação com seu banco ou, se preferir, usar outro cartão.\n\nO acesso ao encontro ficará indisponível até a confirmação do pagamento.\n\nSe precisar de ajuda, nossa equipe estará à disposição.\n\nEquipe TES\n\nConfirmar pagamento: {{payment_url}}",
       html: defaultEmailHtml({
-        title: "Não foi possível concluir seu pagamento",
-        ctaLabel: "Tentar novamente",
+        title: "Seu pagamento precisa de confirmação",
+        ctaLabel: "Confirmar pagamento",
         ctaUrlToken: "payment_url",
         body: [
           accountParagraph("Olá, {{recipient_name}}."),
           accountParagraph(
-            "Tentamos processar o pagamento relacionado à sua solicitação no TES, mas a transação não foi aprovada.",
+            "Não foi possível concluir automaticamente o pagamento relacionado ao seu encontro no TES.",
           ),
           accountParagraph(
-            "Isso pode ocorrer por diferentes motivos relacionados ao meio de pagamento utilizado.",
+            "Acesse sua conta para confirmar a operação com seu banco ou, se preferir, usar outro cartão.",
           ),
           accountParagraph(
-            "Caso ainda deseje concluir a operação, você poderá acessar sua conta e realizar uma nova tentativa utilizando o mesmo meio de pagamento ou outro disponível na plataforma.",
-          ),
-          accountParagraph(
-            "Enquanto o pagamento não for confirmado, o serviço correspondente permanecerá pendente, conforme as regras do TES. Se precisar de ajuda, nossa equipe estará à disposição.",
+            "O acesso ao encontro ficará indisponível até a confirmação do pagamento. Se precisar de ajuda, nossa equipe estará à disposição.",
           ),
         ].join(""),
       }),
@@ -1213,7 +1430,7 @@ export const emailActionRegistry: Record<
     actionKey: "session_payment_pending",
     category: "Financeiro",
     label: "Pagamento pendente",
-    description: "Comunica que o pagamento está em processamento autoritativo.",
+    description: "Comunica que o pagamento ainda está sendo processado.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1260,7 +1477,7 @@ export const emailActionRegistry: Record<
     actionKey: "session_refund_approved",
     category: "Financeiro",
     label: "Reembolso aprovado",
-    description: "Comunica somente um reembolso confirmado pelo provider.",
+    description: "Comunica somente um reembolso já confirmado.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1303,7 +1520,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_payout_completed",
     category: "Financeiro",
     label: "Repasse realizado ao terapeuta",
-    description: "Confirma um repasse bancário após payout.paid autoritativo.",
+    description: "Confirma um repasse após o envio ao banco ser concluído.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1343,7 +1560,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_payout_failed_after_paid",
     category: "Financeiro",
     label: "Falha posterior no repasse",
-    description: "Informa uma falha bancária posterior a payout.paid.",
+    description: "Informa uma falha bancária posterior à confirmação do envio.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1379,14 +1596,14 @@ export const emailActionRegistry: Record<
     category: "Financeiro",
     label: "Alerta operacional de repasse",
     description:
-      "Notifica administradores sem expor payloads ou dados bancários.",
+      "Notifica administradores sem expor detalhes internos ou dados bancários.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
       subject: "Repasse exige revisão administrativa",
       preheader: "Uma ocorrência financeira sanitizada foi registrada.",
-      text: "Olá, {{recipient_name}}.\n\nUma ocorrência de repasse do tipo {{incident_type}} exige revisão. Consulte a área administrativa para verificar o estado persistido e o runbook.\n\nAbrir pagamentos: {{admin_url}}",
+      text: "Olá, {{recipient_name}}.\n\nUma ocorrência de repasse do tipo {{incident_type}} exige revisão. Consulte a área administrativa antes de autorizar uma nova movimentação.\n\nAbrir pagamentos: {{admin_url}}",
       html: defaultEmailHtml({
         title: "Repasse exige revisão administrativa",
         ctaLabel: "Abrir pagamentos",
@@ -1397,7 +1614,7 @@ export const emailActionRegistry: Record<
             "Uma ocorrência de repasse do tipo {{incident_type}} exige revisão.",
           ),
           accountParagraph(
-            "Consulte o estado persistido e siga o runbook de reconciliação antes de autorizar nova movimentação.",
+            "Consulte as informações disponíveis na área administrativa antes de autorizar uma nova movimentação.",
           ),
         ].join(""),
       }),
@@ -1413,7 +1630,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_subscription_created",
     category: "Assinaturas",
     label: "Assinatura criada",
-    description: "Confirma a ativação persistida de uma assinatura.",
+    description: "Confirma a ativação de uma assinatura.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1460,7 +1677,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_subscription_renewed",
     category: "Assinaturas",
     label: "Assinatura renovada",
-    description: "Confirma uma cobrança recorrente já persistida.",
+    description: "Confirma uma cobrança recorrente já concluída.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
@@ -1552,8 +1769,7 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_subscription_plan_changed",
     category: "Assinaturas",
     label: "Alteração de plano",
-    description:
-      "Confirma uma mudança de plano já efetivada no estado autoritativo.",
+    description: "Confirma uma mudança de plano já concluída.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",

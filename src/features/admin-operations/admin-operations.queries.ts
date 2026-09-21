@@ -104,6 +104,20 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
         "patient_profiles",
         "success",
       ),
+      metric(
+        "active-patients",
+        "Contas ativas",
+        "Clientes sem bloqueio de novos agendamentos.",
+        "patient_profiles",
+        "success",
+      ),
+      metric(
+        "suspended-patients",
+        "Clientes suspensos",
+        "Novos agendamentos bloqueados.",
+        "patient_booking_restrictions",
+        "warning",
+      ),
     ],
     safetyNotes: [
       "A lista evita dados sensíveis de jornada, mensagens, intake ou conteúdo clínico.",
@@ -113,6 +127,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     statusOptions: [
       option("", "Todos os status"),
       option("active", "Ativos"),
+      option("suspended", "Suspensos"),
       option("deleted", "Excluídos"),
       option("anonymized", "Anonimizados"),
     ],
@@ -508,7 +523,6 @@ export const getAdminOperationDetailPage = cache(
         fetchAdminProfessionalPublishedProfile({
           accessToken,
           config,
-          profileId,
           slug,
         }),
         fetchAdminProfessionalVerificationSummary({
@@ -561,12 +575,10 @@ export const getAdminOperationDetailPage = cache(
 async function fetchAdminProfessionalPublishedProfile({
   accessToken,
   config,
-  profileId,
   slug,
 }: {
   accessToken: string;
   config: { apiKey: string; url: string };
-  profileId: string;
   slug?: string;
 }): Promise<AdminProfessionalPublishedProfile> {
   const unavailable = {
@@ -575,9 +587,12 @@ async function fetchAdminProfessionalPublishedProfile({
     status: "unavailable" as const,
   };
 
+  const publicSlug = slug?.trim();
+  if (!publicSlug) return unavailable;
+
   try {
     const contentResponse = await fetch(
-      `${config.url}/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=short_intro,essence_body,invitation_body,experience_years,guide_items`,
+      `${config.url}/rest/v1/public_therapist_profile_content_v?slug=eq.${encodeURIComponent(publicSlug)}&select=short_intro,essence_body,invitation_body,experience_years,guide_items&limit=1`,
       {
         cache: "no-store",
         headers: adminReadHeaders({ accessToken, config }),
@@ -595,13 +610,11 @@ async function fetchAdminProfessionalPublishedProfile({
       return { content: null, services: [], status: "available" };
     }
 
-    const services = slug
-      ? await fetchAdminProfessionalPublishedServices({
-          accessToken,
-          config,
-          slug,
-        })
-      : [];
+    const services = await fetchAdminProfessionalPublishedServices({
+      accessToken,
+      config,
+      slug: publicSlug,
+    });
 
     return {
       content: {
@@ -630,7 +643,7 @@ async function fetchAdminSessionFeedback({
 }) {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_session_feedback_v1`,
+      `${config.url}/rest/v1/rpc/admin_get_session_feedback_v2`,
       {
         body: JSON.stringify({ p_booking_id: bookingId }),
         cache: "no-store",
@@ -748,6 +761,8 @@ function mapPrivateIdentity(
         : null,
     neighborhood: asText(value.neighborhood) || null,
     postalCode: asText(value.postalCode) || null,
+    phone: asText(value.phone) || null,
+    phoneCountryCode: asText(value.phoneCountryCode) || null,
     state: asText(value.state) || null,
     street: asText(value.street) || null,
     streetNumber: asText(value.streetNumber) || null,
@@ -776,7 +791,7 @@ async function fetchAdminProfessionalVerificationSummary({
 }): Promise<AdminProfessionalVerificationSummary | null> {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=status,submitted_at,reviewed_at&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
+      `${config.url}/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=status,submitted_at,reviewed_at,review_origin&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
       {
         cache: "no-store",
         headers: adminReadHeaders({ accessToken, config }),
@@ -791,6 +806,13 @@ async function fetchAdminProfessionalVerificationSummary({
     if (!row) return null;
 
     return {
+      reviewOrigin:
+        asString(row.review_origin) === "connect_account_closed" ||
+        asString(row.review_origin) === "availability_removed"
+          ? (asString(row.review_origin) as
+              | "availability_removed"
+              | "connect_account_closed")
+          : "profile_submission",
       reviewedAt: asString(row.reviewed_at) ?? null,
       source: "verification",
       status: normalizeVerificationStatus(asString(row.status)),
@@ -1067,6 +1089,16 @@ function availableMetric(
   const value = metricsPayload[spec.key];
 
   return {
+    ...(spec.key === "recent-patients"
+      ? { comparisonValue: asFiniteNumber(metricsPayload["previous-patients"]) }
+      : {}),
+    ...(spec.key === "active-patients"
+      ? {
+          percentage: asFiniteNumber(
+            metricsPayload["active-patients-percentage"],
+          ),
+        }
+      : {}),
     description: spec.description,
     key: spec.key,
     label: spec.label,

@@ -1,12 +1,19 @@
 import type { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 import type { PatientEncounterPresentationState } from "@/features/bookings";
 import type { PatientEncounterActionPolicy } from "@/features/bookings/patient-encounter-actions";
+import type { SessionDelayNoticeState } from "@/features/session-actions/session-delay-notice.queries";
 
 export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 
 export type BookingDetailStatus = BookingStatus | "live";
 
 export type BookingDetailPageData = {
+  sessionQuality?: import("@/features/session-feedback/session-feedback.types").SessionFeedbackReadPayload;
+  attendanceReview?: {
+    financialResolution: string | null;
+    isOpen: boolean;
+  } | null;
+  delayNotice?: SessionDelayNoticeState;
   booking: {
     canJoin: boolean;
     dateLabel: string;
@@ -16,6 +23,7 @@ export type BookingDetailPageData = {
     minutesUntilStart: number | null;
     operationalVersion: number;
     paymentStatus: SessionFinancialStatus | null;
+    paymentFlowVersion?: string;
     startsAt: string;
     status: BookingDetailStatus;
     statusLabel: string;
@@ -31,7 +39,7 @@ export type BookingDetailPageData = {
   encounterState: PatientEncounterPresentationState;
   intake: {
     focusArea: string;
-    sharedNote: string;
+    sharedNote: string | null;
     therapyGoal: string;
     visibility: "patient_therapist" | "private_patient" | "support";
   };
@@ -47,6 +55,12 @@ export type BookingDetailPageData = {
     provider: "zoom" | "google_meet" | "external";
     securityNote: string;
   };
+  paymentRecovery?: {
+    available: boolean;
+    checkoutAvailable: boolean;
+    dueAt: string | null;
+    status: string | null;
+  };
   patient: {
     avatarUrl: string | null;
     id: string;
@@ -61,8 +75,9 @@ export type BookingDetailPageData = {
   reschedule: {
     expiresAt: string | null;
     id: string;
-    proposedEndsAt: string;
-    proposedStartsAt: string;
+    kind: "legacy" | "therapist_cancellation" | "therapist_reschedule";
+    proposedEndsAt: string | null;
+    proposedStartsAt: string | null;
     proposedTimezone: string;
     reason: string | null;
     requestedByCurrentUser: boolean;
@@ -72,6 +87,8 @@ export type BookingDetailPageData = {
       | "cancelled"
       | "expired"
       | "pending"
+      | "pending_admin_review"
+      | "refunded"
       | "rejected";
   } | null;
   service: {

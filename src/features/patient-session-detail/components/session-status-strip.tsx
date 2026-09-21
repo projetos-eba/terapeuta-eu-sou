@@ -8,16 +8,29 @@ export function SessionStatusStrip({
   data: PatientSessionDetailPageData;
 }) {
   const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
-  const paymentSupporting = data.encounterState.actions.includes(
-    "retry_payment",
-  )
-    ? undefined
-    : data.encounterState.payment.message;
+  const scheduledChargeRecoveryAvailable =
+    data.paymentRecovery?.available === true;
+  const checkoutRetryAvailable =
+    data.paymentRecovery?.checkoutAvailable === true;
+  const paymentSupporting = scheduledChargeRecoveryAvailable
+    ? "Confirme com o banco ou use outro cartão antes do horário do encontro."
+    : checkoutRetryAvailable
+      ? "Continue o pagamento para confirmar este horário."
+      : data.encounterState.actions.includes("retry_payment")
+        ? undefined
+        : data.encounterState.payment.message;
   const roomAvailable = ["entry_available", "therapist_present"].includes(
     data.encounterState.waitingRoom.kind,
   );
+  const encounterRealized =
+    data.sessionQuality?.realizationStatus === "performed" &&
+    !data.attendanceReview?.isOpen;
   const encounterConfirmed =
-    data.booking.status === "confirmed" || data.booking.status === "live";
+    paymentConfirmed &&
+    !data.attendanceReview?.isOpen &&
+    (data.booking.status === "confirmed" || data.booking.status === "live");
+  const encounterReserved =
+    !paymentConfirmed && data.booking.status === "confirmed";
 
   return (
     <section
@@ -28,7 +41,11 @@ export function SessionStatusStrip({
         icon={CreditCard}
         supporting={paymentSupporting}
         tone={paymentConfirmed ? "success" : "warning"}
-        title={data.encounterState.payment.title}
+        title={
+          scheduledChargeRecoveryAvailable || checkoutRetryAvailable
+            ? "Pagamento não concluído"
+            : data.encounterState.payment.title
+        }
       />
       <StatusItem
         icon={roomAvailable ? CheckCircle2 : Clock3}
@@ -39,13 +56,23 @@ export function SessionStatusStrip({
       <StatusItem
         icon={ShieldCheck}
         supporting={
-          encounterConfirmed
-            ? "Seu horário está reservado para você."
-            : data.booking.statusLabel
+          encounterRealized
+            ? "A realização do encontro foi registrada."
+            : encounterConfirmed
+              ? "Seu horário está reservado para você."
+              : encounterReserved
+                ? "Seu horário está reservado e será confirmado após a aprovação do pagamento."
+                : undefined
         }
-        tone={encounterConfirmed ? "success" : "neutral"}
+        tone={encounterRealized || encounterConfirmed ? "success" : "neutral"}
         title={
-          encounterConfirmed ? "Encontro confirmado" : data.booking.statusLabel
+          encounterRealized
+            ? "Encontro realizado"
+            : encounterConfirmed
+              ? "Encontro confirmado"
+              : encounterReserved
+                ? "Encontro reservado"
+                : data.booking.statusLabel
         }
       />
     </section>

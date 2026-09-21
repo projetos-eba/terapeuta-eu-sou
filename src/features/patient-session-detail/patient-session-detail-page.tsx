@@ -6,6 +6,8 @@ import {
 
 import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
+import { PatientSessionQualityFeedback } from "./components/patient-session-quality-feedback";
+import { SessionChargeRecoveryModal } from "./components/session-charge-recovery-modal";
 import { PreparationCard } from "./components/preparation-card";
 import { QuickSupportCard } from "./components/quick-support-card";
 import { ReminderCard } from "./components/reminder-card";
@@ -20,8 +22,12 @@ import type { PatientSessionDetailPageData } from "./patient-session-detail.type
 
 export function PatientSessionDetailPage({
   data,
+  feedbackOpen = false,
+  stripePublishableKey,
 }: {
   data: PatientSessionDetailPageData;
+  feedbackOpen?: boolean;
+  stripePublishableKey: string;
 }) {
   const showContextAside = data.booking.status !== "completed";
 
@@ -30,6 +36,23 @@ export function PatientSessionDetailPage({
       <SessionDetailHeader />
       <SessionOverviewCard data={data} />
       <SessionStatusStrip data={data} />
+      <PatientSessionQualityFeedback
+        feedbackOpen={feedbackOpen}
+        initialPayload={data.sessionQuality}
+        session={{
+          bookingId: data.booking.id,
+          dateLabel: data.booking.dateLabel,
+          serviceLabel: data.service.title,
+          therapist: { id: data.therapist.id, name: data.therapist.name },
+          timeLabel: data.booking.timeRangeLabel,
+        }}
+      />
+      {data.paymentRecovery?.available ? (
+        <SessionChargeRecoveryModal
+          bookingId={data.booking.id}
+          stripePublishableKey={stripePublishableKey}
+        />
+      ) : null}
 
       <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_296px] xl:items-start xl:gap-6">
         {showContextAside ? (
@@ -54,7 +77,10 @@ export function PatientSessionDetailPage({
           }
         >
           <SessionAboutCard data={data} />
-          <SharedIntakeCard intake={data.intake} />
+          <SharedIntakeCard
+            sharedNote={data.intake.sharedNote}
+            visibility={data.intake.visibility}
+          />
           <OnlineSessionCard data={data} />
           <SessionActionCards data={data} />
           {showContextAside ? (
@@ -74,7 +100,10 @@ export function PatientSessionDetailPage({
           }
         >
           <PreparationCard data={data} />
-          <CancellationPolicyCard policy={data.cancellationPolicy} />
+          <CancellationPolicyCard
+            policy={data.cancellationPolicy}
+            paymentFlowVersion={data.booking.paymentFlowVersion}
+          />
         </div>
       </AppPageGrid>
     </AppPageContainer>

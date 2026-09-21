@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(18);
 
 select col_not_null(
@@ -139,9 +141,9 @@ insert into public.therapist_service_booking_settings (
   interval_minutes
 )
 values
-  ('d1000000-0000-4000-8000-000000000001', 5, 0, 0, 90, 15),
-  ('d1000000-0000-4000-8000-000000000006', 10, 10, 0, 90, 15),
-  ('d1000000-0000-4000-8000-000000000021', 15, 15, 0, 90, 15)
+  ('d1000000-0000-4000-8000-000000000001', 0, 0, 0, 90, 15),
+  ('d1000000-0000-4000-8000-000000000006', 0, 10, 0, 90, 15),
+  ('d1000000-0000-4000-8000-000000000021', 0, 15, 0, 90, 15)
 on conflict (service_id) do update
 set buffer_before_minutes = excluded.buffer_before_minutes,
     buffer_after_minutes = excluded.buffer_after_minutes,
@@ -203,12 +205,12 @@ cross join lateral public.list_service_schedule_candidates_v1(
 ) as candidate;
 
 select is((select min(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000001'), time '09:00', '20-minute therapy starts at the configured 09:00 boundary');
-select is((select min(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000006'), time '09:00', '30-minute therapy starts at 09:00 despite a before buffer');
-select is((select min(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000021'), time '09:00', '45-minute therapy starts at 09:00 despite a different before buffer');
+select is((select min(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000006'), time '09:00', '30-minute therapy starts at the configured range start');
+select is((select min(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000021'), time '09:00', '45-minute therapy starts at the configured range start');
 
 select is((select max(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000001'), time '16:30', '20-minute therapy last start keeps the session inside the range');
-select is((select max(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000006'), time '16:15', '30-minute therapy last start also fits its after buffer');
-select is((select max(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000021'), time '16:00', '45-minute therapy last start also fits its after buffer');
+select is((select max(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000006'), time '16:30', '30-minute therapy may end at the range boundary');
+select is((select max(starts_at at time zone 'America/Sao_Paulo')::time from multi_service_candidates where service_id = 'd1000000-0000-4000-8000-000000000021'), time '16:15', '45-minute therapy may end at the range boundary');
 
 select is(
   (

@@ -2,6 +2,7 @@
 
 import {
   CircleHelp,
+  Headphones,
   Loader2,
   Mic,
   MicOff,
@@ -18,9 +19,11 @@ type ZoomVideoControlsProps = {
   audioMuted: boolean;
   canEndForAll: boolean;
   isBusy: boolean;
+  isMobileDevice: boolean;
   isOnline: boolean;
   onJoin: () => void;
   onLeave: () => void;
+  onOpenSupport?: () => void;
   onReviewPermissions: () => void;
   supportHref?: string;
   onToggleAudio: () => void;
@@ -49,9 +52,11 @@ export function ZoomVideoControls({
   audioMuted,
   canEndForAll,
   isBusy,
+  isMobileDevice,
   isOnline,
   onJoin,
   onLeave,
+  onOpenSupport,
   onReviewPermissions,
   supportHref,
   onToggleAudio,
@@ -112,48 +117,70 @@ export function ZoomVideoControls({
   }
 
   return (
-    <div className="flex flex-wrap items-start justify-center gap-3">
-      <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
-        <ControlButton
-          active={!audioMuted}
-          disabled={mediaBusy}
-          label={audioMuted ? "Ativar microfone" : "Silenciar microfone"}
-          onClick={onToggleAudio}
-        >
-          {audioMuted ? (
-            <MicOff aria-hidden="true" size={21} />
-          ) : (
-            <Mic aria-hidden="true" size={21} />
-          )}
-        </ControlButton>
-        <ControlButton
-          active={videoOn}
-          disabled={mediaBusy}
-          label={videoOn ? "Desligar câmera" : "Ativar câmera"}
-          onClick={onToggleVideo}
-        >
-          {videoOn ? (
-            <Video aria-hidden="true" size={21} />
-          ) : (
-            <VideoOff aria-hidden="true" size={21} />
-          )}
-        </ControlButton>
-        {supportHref ? (
-          <a
-            className="inline-flex min-h-12 items-center gap-2 rounded-full border-l border-brand-lavender px-3 text-brand-deep transition hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"
-            href={supportHref}
+    <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+      <div className="grid gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
+          <ControlButton
+            active={!audioMuted}
+            disabled={mediaBusy}
+            label={audioMuted ? "Ativar microfone" : "Silenciar microfone"}
+            onClick={onToggleAudio}
           >
-            <span className="grid size-9 place-items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft text-brand-primary">
-              <CircleHelp aria-hidden="true" size={19} />
+            {audioMuted ? (
+              <MicOff aria-hidden="true" size={21} />
+            ) : (
+              <Mic aria-hidden="true" size={21} />
+            )}
+          </ControlButton>
+          <ControlButton
+            active={videoOn}
+            disabled={mediaBusy}
+            label={videoOn ? "Desligar câmera" : "Ativar câmera"}
+            onClick={onToggleVideo}
+          >
+            {videoOn ? (
+              <Video aria-hidden="true" size={21} />
+            ) : (
+              <VideoOff aria-hidden="true" size={21} />
+            )}
+          </ControlButton>
+          {!isMobileDevice && supportHref ? (
+            <a
+              className="inline-flex min-h-12 items-center gap-2 rounded-full border-l border-brand-lavender px-3 text-brand-deep transition hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"
+              href={supportHref}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <span className="grid size-9 place-items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft text-brand-primary">
+                <CircleHelp aria-hidden="true" size={19} />
+              </span>
+              <span className="hidden text-left text-sm font-extrabold sm:grid">
+                Suporte
+                <span className="text-xs font-semibold text-tesText-secondary">
+                  precisa de ajuda?
+                </span>
+              </span>
+              <span className="sr-only">Falar com o suporte</span>
+            </a>
+          ) : null}
+        </div>
+        {isMobileDevice && supportHref && onOpenSupport ? (
+          <button
+            aria-label="Ajuda e suporte"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-[20px] border border-brand-lavender bg-white px-4 py-2 text-left text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            onClick={onOpenSupport}
+            type="button"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft">
+              <Headphones aria-hidden="true" size={19} />
             </span>
-            <span className="hidden text-left text-sm font-extrabold sm:grid">
-              Suporte
+            <span className="grid">
+              <span className="text-sm font-extrabold">Ajuda e suporte</span>
               <span className="text-xs font-semibold text-tesText-secondary">
-                precisa de ajuda?
+                Problemas com câmera, áudio ou conexão
               </span>
             </span>
-            <span className="sr-only">Falar com o suporte</span>
-          </a>
+          </button>
         ) : null}
       </div>
 

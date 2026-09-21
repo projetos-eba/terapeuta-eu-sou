@@ -19,7 +19,7 @@ const commandMocks = vi.hoisted(() => ({
 
 vi.mock("../patient-account.commands", () => commandMocks);
 
-describe("PatientAccountPage address", () => {
+describe("PatientAccountPage", () => {
   beforeEach(() => {
     commandMocks.lookupPatientAddressByCep.mockReset();
     commandMocks.lookupPatientAddressByCep.mockResolvedValue({
@@ -38,6 +38,30 @@ describe("PatientAccountPage address", () => {
   });
 
   afterEach(() => cleanup());
+
+  it("renders the compact account composition from the approved reference", () => {
+    render(<PatientAccountPage data={accountFixture()} />);
+
+    const heading = screen.getByRole("heading", {
+      level: 1,
+      name: "Seu espaço, suas escolhas, seu caminho.",
+    });
+    const header = heading.closest("header");
+
+    expect(header).not.toBeNull();
+    expect(header).toHaveClass(
+      "bg-[url('/patient/account/patient-account-path-hero.webp')]",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Olá, Carlos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Tudo certo por aqui!" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Salvar alterações" }),
+    ).toBeDisabled();
+  });
 
   it("places CEP before the other address fields and keeps the card content bounded", () => {
     render(<PatientAccountPage data={accountFixture()} />);

@@ -14,6 +14,12 @@ export type SessionModality = "online";
 export type SessionReadModelItem = {
   attendanceSource: AttendanceSource;
   attendanceStatus: AttendanceStatus;
+  attendanceIncidentId?: string | null;
+  attendanceReviewStatus?: string | null;
+  attendanceReviewDueAt?: string | null;
+  attendanceResponsibility?: string | null;
+  attendanceResolution?: string | null;
+  attendanceFinancialResolution?: string | null;
   bookingId: string;
   sessionReference: string;
   bookingStatus: BookingStatus;
@@ -109,6 +115,7 @@ export type TherapistPendingConfirmationsSummary = {
 };
 
 export type TherapistSessionDetailReadModel = SessionReadModelItem & {
+  sharedNote: string | null;
   therapistProfileId: string;
   version: 1;
 };
@@ -225,6 +232,7 @@ export type SessionPresentation = {
     | "in_progress"
     | "payment_pending"
     | "ready"
+    | "reserved"
     | "refunded"
     | "reschedule_requested"
     | "room_preparing"

@@ -8,11 +8,11 @@ select has_function(
   array['uuid'],
   'eligible booking conversation upsert exists'
 );
-select has_trigger(
+select hasnt_trigger(
   'public',
   'bookings',
   'ensure_participant_conversation_after_booking',
-  'booking confirmation maintains the participant conversation'
+  'booking confirmation no longer creates participant conversations'
 );
 select is(
   has_function_privilege(
@@ -55,7 +55,7 @@ select lives_ok(
     set status = 'confirmed'::public.booking_status
     where id = 'f2000000-0000-4000-8000-000000000005'::uuid
   $$,
-  'a booking that becomes confirmed creates the participant conversation'
+  'a booking can become confirmed without opening a messaging channel'
 );
 select is(
   (
@@ -64,8 +64,8 @@ select is(
     where patient_profile_id = 'b1000000-0000-4000-8000-000000000005'::uuid
       and therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'::uuid
   ),
-  1::bigint,
-  'the confirmation trigger creates one conversation for a future session'
+  0::bigint,
+  'confirmation does not create a new participant conversation'
 );
 
 select * from finish();

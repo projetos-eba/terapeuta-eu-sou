@@ -36,7 +36,7 @@ export function OnlineSessionCard({
   if (data.encounterState.waitingRoom.kind === "ended") return null;
 
   const supportHref =
-    `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+    `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
   const showExternalEntry =
     data.onlineSession.provider !== "zoom" &&
     data.booking.canJoin &&
@@ -44,6 +44,11 @@ export function OnlineSessionCard({
   const showPaymentSupport =
     data.encounterState.payment.kind !== "confirmed" &&
     data.encounterState.payment.retryAllowed;
+  const accessEndedWithoutPerformance = [
+    "therapist_no_show",
+    "both_no_show",
+    "not_performed",
+  ].includes(data.encounterState.waitingRoom.kind);
 
   return (
     <section
@@ -60,8 +65,7 @@ export function OnlineSessionCard({
           </h2>
         </div>
         <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-          Entre na sala de videoconferência quando o acesso
-          estiver liberado.
+          Entre na sala de videoconferência quando o acesso estiver liberado.
         </p>
       </div>
 
@@ -100,14 +104,16 @@ export function OnlineSessionCard({
           ) : (
             <div className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
               <LockKeyhole aria-hidden="true" size={18} />
-              Acesso ainda não liberado
+              {accessEndedWithoutPerformance
+                ? "Acesso encerrado"
+                : "Acesso ainda não liberado"}
             </div>
           )}
         </div>
 
         <div className="grid gap-3 border-t border-border pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
           <p className="text-base font-extrabold text-brand-deep sm:text-lg">
-            Preparação técnica
+            Antes de entrar
           </p>
           <ul className="grid gap-2">
             {data.encounterState.preparation.checklist.map((item) => (

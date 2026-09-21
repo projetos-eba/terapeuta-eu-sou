@@ -60,6 +60,33 @@ describe("therapist reviews mappers", () => {
       },
     });
   });
+
+  it("never projects the patient's private answer into the therapist page", () => {
+    const privateFeedback = {
+      bookingId: "33333333-3333-4333-8333-333333333333",
+      comment: "Relato privado",
+      createdAt: "2026-09-17T01:00:00Z",
+      id: "44444444-4444-4444-8444-444444444444",
+      outcome: "completed",
+      patientName: "Beatriz Lima",
+      rating: null,
+      serviceTitle: "Reiki online",
+      startsAt: "2026-09-16T22:00:00Z",
+    };
+    const data = mapTherapistReviewsPageData({
+      ...rawPage(),
+      privateFeedback: [
+        { ...privateFeedback, authorRole: "patient", comment: "Nunca mostrar ao terapeuta" },
+        { ...privateFeedback, authorRole: "therapist", successful: false, qualityReason: "internet_problem" },
+      ],
+    });
+    expect(data.privateFeedback).toHaveLength(1);
+    expect(data.privateFeedback[0]).toMatchObject({
+      authorRole: "therapist",
+      successful: false,
+      qualityReason: "internet_problem",
+    });
+  });
 });
 
 function rawPage() {

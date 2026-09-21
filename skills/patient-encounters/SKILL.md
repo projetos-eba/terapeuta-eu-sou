@@ -73,19 +73,22 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
   patient-facing labels `Próximos encontros` and `Histórico de encontros`.
 - Experience density: `Balanced`, with a `Comfortable` empty state when useful.
 - Information order is: page orientation → next encounter/next action → pending
-  confirmations → other future encounters → history.
+  private evaluations → other future encounters → history.
 - `PendingSessionFeedbackSection` is a local action surface that follows the
   next encounter. It uses one column below `lg` and two columns at `lg` and
   above; it shows four cards before an internal vertical scroll begins. The
   mobile/tablet limit is four stacked cards, while desktop shows two rows of
-  two cards. Keep the confirmation action and dialog behavior unchanged.
+  two cards. Keep the private evaluation action and dialog behavior unchanged.
 - `EncounterHistorySection` keeps its bounded internal vertical scroll and
   paginates the history in groups of ten through the existing `/app/encontros`
   route using `historyPage`; the pagination controls must remain outside the
   scroll region and preserve the history anchor. Completed encounters use the
-  green status badge `Já realizada`. After a private confirmation succeeds,
-  refresh the server composition so the item leaves the pending state and the
-  history reflects the authoritative booking status.
+  green status badge `Sessão Realizada`. An ended, eligible encounter without the
+  client's own response uses `Avaliação pendente`. After the client's private
+  response or its independent seven-day automatic confirmation, the current
+  attempt shows `Sessão Realizada` without requiring a public therapist review or
+  a financial service-status change. Revalidate bilateral presence and closure;
+  a cancelled or absent encounter cannot become realized from stale feedback.
 - The next encounter may use one tokenized accent surface because it groups the
   dominant entity, state and action. Do not nest cards inside it.
 - Other future encounters and history use open `TemporalGroup`/`EntityList`
@@ -108,6 +111,11 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Entry link is active only when the booking is paid, confirmed and inside the
   allowed join window. Do not select or expose `meeting_url` in patient lists;
   Zoom access must be requested from the detail page via authenticated backend.
+- In the encounter detail, a V10 reservation awaiting its scheduled charge can
+  have no `meeting_provider` until the Zoom session is provisioned. Present that
+  state as the future authenticated Zoom room without enabling entry before
+  payment. Preserve an explicitly configured external provider. Do not repeat a
+  status label as the supporting text of the same status item.
 - `bookings.starts_at` e `ends_at` são instantes UTC. Cada registro deve manter
   e usar `bookings.timezone` para formatar data e hora; nunca depender do
   timezone do servidor ou do navegador para a agenda apresentada.
@@ -119,7 +127,7 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Check desktop (about 1440px), tablet (768–1024px) and mobile (375–430px).
 - Check populated, empty, payment attention, pending reschedule, live entry,
   completed, cancelled, loading and honest error states when fixtures allow.
-- With five pending confirmations, confirm the next encounter appears first,
+- With five pending private evaluations, confirm the next encounter appears first,
   the pending region has two columns at 1440px, one column at 900px and 390px,
   and the fifth card is reachable through the internal scroll without clipping.
 - Confirm the page has no horizontal overflow, raw `meeting_url`, raw Zoom URL,

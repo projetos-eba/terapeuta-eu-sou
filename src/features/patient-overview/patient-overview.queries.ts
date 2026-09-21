@@ -3,11 +3,15 @@ import "server-only";
 import { cache } from "react";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
+import {
+  getPatientEncounterStatusPresentation,
+  type RescheduleRecord,
+  type SessionPaymentRecord,
+} from "@/features/patient-encounters/patient-encounters.mappers";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 import { routes } from "@/lib/routes";
 
 import { resolvePatientAvatarUrl } from "./patient-overview.avatar";
-import { isPatientAppointmentLive } from "./patient-overview.live";
 import {
   moodKeys,
   type MoodKey,
@@ -91,10 +95,6 @@ type FavoriteRow = {
   therapist_profile_id: string;
 };
 
-type ConversationRow = {
-  id: string;
-};
-
 type NotificationRow = {
   id: string;
 };
@@ -127,6 +127,8 @@ type FeedbackQueueRow = {
   therapyLabel: string;
   timezone: string;
 };
+
+type AttemptAttendance = { patientPresentAtTolerance: boolean };
 
 export class PatientOverviewDataError extends Error {
   constructor() {
@@ -217,10 +219,10 @@ async function getSupabasePatientOverview(
   const [
     bookings,
     favorites,
-    conversations,
     notifications,
     moods,
     supportTickets,
+    openSupportTicketsCount,
   ] = await Promise.all([
     supabaseRequest<BookingRow[]>(
       config,
@@ -229,10 +231,6 @@ async function getSupabasePatientOverview(
     supabaseRequest<FavoriteRow[]>(
       config,
       `/rest/v1/favorite_therapists?select=therapist_profile_id&patient_profile_id=eq.${patient.id}`,
-    ),
-    supabaseRequest<ConversationRow[]>(
-      config,
-      `/rest/v1/conversations?select=id&patient_profile_id=eq.${patient.id}`,
     ),
     supabaseRequest<NotificationRow[]>(
       config,
@@ -244,22 +242,25 @@ async function getSupabasePatientOverview(
     ),
     supabaseRequest<SupportTicketRow[]>(
       config,
-      `/rest/v1/support_tickets?select=id,subject,description,status,resolution_summary,created_at&requester_profile_id=eq.${encodeURIComponent(profileId)}&status=in.(open,in_review)&order=created_at.desc&limit=3`,
+      `/rest/v1/support_tickets?select=id,subject,description,status,resolution_summary,created_at&requester_profile_id=eq.${encodeURIComponent(profileId)}&status=neq.resolved&order=created_at.desc&limit=3`,
     ),
+    getOpenSupportTicketCount(config, profileId),
   ]);
 
+  const bookingIds = bookings.map((booking) => booking.id);
   const professionalIds = unique([
     ...bookings.map((booking) => booking.therapist_profile_id),
     ...favorites.map((favorite) => favorite.therapist_profile_id),
   ]);
   const serviceIds = unique(bookings.map((booking) => booking.service_id));
-  const conversationIds = conversations.map((conversation) => conversation.id);
   const [
     professionals,
     favoriteProfessionalDetails,
     services,
-    unreadMessages,
     feedbackQueue,
+    sessionPayments,
+    reschedules,
+    attemptAttendance,
   ] = await Promise.all([
     getRowsByIds<ProfessionalRow>(
       config,
@@ -279,17 +280,31 @@ async function getSupabasePatientOverview(
       "id,title,therapy_id",
       serviceIds,
     ),
-    conversationIds.length > 0
-      ? supabaseRequest<{ id: string }[]>(
-          config,
-          `/rest/v1/messages?select=id&conversation_id=in.(${conversationIds.join(",")})&sender_profile_id=neq.${encodeURIComponent(profileId)}&read_at=is.null`,
-        )
-      : Promise.resolve([]),
     supabaseRequest<FeedbackQueueRow[]>(
       config,
       "/rest/v1/rpc/get_patient_session_feedback_queue_v1",
       { body: {}, method: "POST" },
     ),
+    getRowsByIds<SessionPaymentRecord>(
+      config,
+      "session_payments",
+      "booking_id,financial_status,payment_flow_version",
+      bookingIds,
+      "booking_id",
+    ),
+    bookingIds.length > 0
+      ? supabaseRequest<RescheduleRecord[]>(
+          config,
+          `/rest/v1/booking_reschedule_requests?select=booking_id,status&booking_id=in.(${bookingIds.join(",")})&status=eq.pending`,
+        )
+      : Promise.resolve([]),
+    bookingIds.length > 0
+      ? supabaseRequest<Record<string, AttemptAttendance>>(
+          config,
+          "/rest/v1/rpc/get_session_attempt_attendance_batch_v1",
+          { body: { p_booking_ids: bookingIds }, method: "POST" },
+        )
+      : Promise.resolve({} as Record<string, AttemptAttendance>),
   ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
   const therapies = await getRowsByIds<TherapyRow>(
@@ -306,12 +321,17 @@ async function getSupabasePatientOverview(
   );
   const serviceById = new Map(services.map((item) => [item.id, item]));
   const therapyById = new Map(therapies.map((item) => [item.id, item]));
+  const feedbackPendingBookingIds = new Set(
+    feedbackQueue.map((item) => item.bookingId),
+  );
+  const paymentByBookingId = new Map(
+    sessionPayments.map((payment) => [payment.booking_id, payment]),
+  );
+  const rescheduleByBookingId = new Map(
+    reschedules.map((reschedule) => [reschedule.booking_id, reschedule]),
+  );
+  const now = new Date();
   const upcomingAppointments = bookings
-    .filter(
-      (booking) =>
-        booking.status === "confirmed" &&
-        new Date(booking.ends_at) >= new Date(),
-    )
     .flatMap((booking) => {
       const professional = professionalById.get(booking.therapist_profile_id);
       const service = serviceById.get(booking.service_id);
@@ -319,7 +339,32 @@ async function getSupabasePatientOverview(
 
       if (!professional || !service || !therapy) return [];
 
-      return [toAppointment(booking, professional, service, therapy)];
+      const presentation = getPatientEncounterStatusPresentation({
+        booking,
+        feedbackPending: feedbackPendingBookingIds.has(booking.id),
+        patientHasEntryEntitlement:
+          attemptAttendance[booking.id]?.patientPresentAtTolerance === true,
+        payment: paymentByBookingId.get(booking.id) ?? null,
+        reschedule: rescheduleByBookingId.get(booking.id) ?? null,
+      });
+
+      if (
+        new Date(booking.ends_at) < now ||
+        presentation.status === "cancelled" ||
+        presentation.status === "completed"
+      ) {
+        return [];
+      }
+
+      return [
+        toAppointment(
+          booking,
+          professional,
+          service,
+          therapy,
+          presentation,
+        ),
+      ];
     });
   const latestCompleted = bookings
     .filter((booking) => booking.status === "completed" && booking.completed_at)
@@ -337,7 +382,8 @@ async function getSupabasePatientOverview(
             serviceById.get(latestCompleted.service_id)?.therapy_id ?? "",
           )?.name ?? null)
         : null,
-      unreadMessagesCount: unreadMessages.length,
+      openSupportTicketsCount,
+      unreadMessagesCount: 0,
       unreadNotificationsCount: notifications.length,
     },
     favoriteProfessionals: favorites.flatMap((favorite) => {
@@ -383,7 +429,8 @@ async function getSupabasePatientOverview(
     supportTickets: supportTickets
       .map(toSupportTicket)
       .filter((ticket) => ticket.status !== "resolved"),
-    unreadMessagesCount: unreadMessages.length,
+    openSupportTicketsCount,
+    unreadMessagesCount: 0,
     unreadNotificationsCount: notifications.length,
     upcomingAppointments,
   };
@@ -404,13 +451,36 @@ async function getRowsByIds<T>(
   table: string,
   select: string,
   ids: string[],
+  idColumn = "id",
 ): Promise<T[]> {
   if (ids.length === 0) return [];
 
   return supabaseRequest<T[]>(
     config,
-    `/rest/v1/${table}?select=${select}&id=in.(${ids.join(",")})`,
+    `/rest/v1/${table}?select=${select}&${idColumn}=in.(${ids.join(",")})`,
   );
+}
+
+async function getOpenSupportTicketCount(
+  config: SupabaseServerConfig,
+  profileId: string,
+): Promise<number> {
+  const response = await fetch(
+    `${config.url}/rest/v1/support_tickets?select=id&requester_profile_id=eq.${encodeURIComponent(profileId)}&status=neq.resolved&limit=0`,
+    {
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${config.accessToken}`,
+        Prefer: "count=exact",
+      },
+    },
+  );
+  if (!response.ok) throw new PatientOverviewDataError();
+  const count = Number(response.headers.get("Content-Range")?.split("/")[1]);
+  if (!Number.isSafeInteger(count) || count < 0)
+    throw new PatientOverviewDataError();
+  return count;
 }
 
 async function supabaseRequest<T>(
@@ -444,12 +514,8 @@ function toAppointment(
   professional: ProfessionalRow,
   service: ServiceRow,
   therapy: TherapyRow,
+  presentation: ReturnType<typeof getPatientEncounterStatusPresentation>,
 ): PatientAppointment {
-  const isLive = isPatientAppointmentLive({
-    endsAt: booking.ends_at,
-    startsAt: booking.starts_at,
-  });
-
   return {
     endsAt: booking.ends_at,
     id: booking.id,
@@ -463,7 +529,8 @@ function toAppointment(
     },
     serviceLabel: service.title,
     startsAt: booking.starts_at,
-    status: isLive ? "live" : "confirmed",
+    status: presentation.status,
+    statusLabel: presentation.statusLabel,
     therapyLabel: therapy.name,
     timezone: booking.timezone,
   };
@@ -632,6 +699,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         serviceLabel: "Terapia Holística",
         startsAt: todayStart.toISOString(),
         status: "live",
+        statusLabel: "Ao vivo agora",
         therapyLabel: "Reiki",
         timezone: "America/Sao_Paulo",
       },
@@ -647,6 +715,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         serviceLabel: "Leitura simbólica de Tarô",
         startsAt: tomorrowStart.toISOString(),
         status: "confirmed",
+        statusLabel: "Confirmada",
         therapyLabel: "Tarô",
         timezone: "America/Sao_Paulo",
       },
@@ -662,6 +731,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         serviceLabel: "Reiki",
         startsAt: nextTuesday.toISOString(),
         status: "confirmed",
+        statusLabel: "Confirmada",
         therapyLabel: "Reiki",
         timezone: "America/Sao_Paulo",
       },

@@ -3,10 +3,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  isSupportMatrixPublishable,
-  supportMatrix,
-} from "@/domain/legal/legal-registry";
+import { isSupportMatrixPublishable } from "@/domain/legal/legal-registry";
 import { PublicInfoLayout } from "@/features/public-support/public-info-layout";
 import { routes } from "@/lib/routes";
 
@@ -25,117 +22,116 @@ type PublicSupportFaq = {
   details: Array<{ label: string; value: string }>;
 };
 
-const publicSupportFaqs: Record<string, PublicSupportFaq> = {
-  account_access: {
+const publicSupportFaqs: PublicSupportFaq[] = [
+  {
     question: "Não consigo acessar minha conta. E agora?",
     intro:
-      "Entre pela opção correspondente ao seu perfil e conte para a gente o que aconteceu. Se não conseguir entrar, informe isso na sua mensagem.",
+      "Você pode recuperar seu acesso de forma rápida e segura. Se ainda assim não conseguir, fale com nosso suporte que vamos te ajudar.",
     details: [
+      {
+        label: "O que devo fazer?",
+        value:
+          "Use a opção “Esqueci minha senha” na tela de login e siga as instruções enviadas para o seu e-mail.",
+      },
+      {
+        label: "Como falo com o suporte?",
+        value:
+          "Acesse sua conta e abra um chamado pelo chat de ajuda. Nossa equipe responderá assim que possível.",
+      },
+      {
+        label: "Ainda não consegui entrar. E agora?",
+        value:
+          "Verifique sua caixa de spam ou tente novamente. Se o problema continuar, fale com o suporte.",
+      },
       {
         label: "Quando recebo uma resposta?",
         value:
-          "Nossa equipe vai analisar sua mensagem e responder assim que possível.",
+          "Normalmente respondemos em até 24 horas úteis. Você será avisado por e-mail e pelo chat.",
+      },
+    ],
+  },
+  {
+    question: "Tive um problema durante o encontro. O que faço?",
+    intro:
+      "Queremos saber o que aconteceu para que possamos te ajudar da melhor forma. Conte com o apoio do TES.",
+    details: [
+      {
+        label: "O que devo informar?",
+        value:
+          "Conte o que ocorreu com o máximo de detalhes possível: data, horário, nome do terapeuta e descrição do problema.",
+      },
+      {
+        label: "Quando recebo uma resposta?",
+        value:
+          "Nossa equipe vai analisar o caso com atenção e responderá o mais breve possível.",
       },
       {
         label: "Como acompanho o atendimento?",
         value:
-          "Você receberá um número de acompanhamento para consultar sua solicitação.",
+          "Após enviar sua mensagem, você receberá um número de acompanhamento para consultar o andamento do seu chamado.",
       },
       {
         label: "Posso enviar mais informações?",
         value:
-          "Sim. Se necessário, você poderá complementar a mensagem na mesma conversa.",
+          "Sim. Se tiver novas informações ou arquivos que possam ajudar, basta responder ao chamado.",
       },
     ],
   },
-  encounter_urgent: {
-    question: "Tive um problema durante o encontro. O que faço?",
-    intro:
-      "Avise nossa equipe assim que puder e explique o que aconteceu. Vamos olhar sua situação com atenção.",
-    details: [
-      {
-        label: "Quando recebo uma resposta?",
-        value:
-          "Esse tipo de situação recebe atenção prioritária da nossa equipe.",
-      },
-      {
-        label: "O que devo informar?",
-        value:
-          "Conte o que aconteceu, quando ocorreu e se o encontro foi interrompido.",
-      },
-      {
-        label: "Como acompanho o atendimento?",
-        value:
-          "Você receberá um número de acompanhamento para consultar sua solicitação.",
-      },
-    ],
-  },
-  payment_refund: {
+  {
     question: "Preciso de ajuda com pagamento, cancelamento ou reembolso.",
     intro:
-      "Explique sua dúvida com o máximo de detalhes possível para que a equipe consiga ajudar com mais agilidade.",
+      "As opções disponíveis podem variar conforme as condições do seu agendamento. Estamos aqui para orientar você.",
     details: [
       {
         label: "O que devo informar?",
         value:
-          "Se puder, informe a data do atendimento e o que aconteceu com o pagamento.",
+          "Informe a data do atendimento, o que aconteceu e o motivo da solicitação.",
       },
       {
         label: "Quando recebo uma resposta?",
         value:
-          "Nossa equipe vai conferir sua solicitação e responder assim que possível.",
+          "Nossa equipe vai analisar sua solicitação e responder assim que possível.",
       },
       {
         label: "Como acompanho o atendimento?",
         value:
-          "Você receberá um número de acompanhamento para consultar sua solicitação.",
+          "Você receberá um número de acompanhamento para consultar o andamento da sua solicitação.",
+      },
+      {
+        label: "As opções disponíveis podem variar?",
+        value:
+          "Sim. As opções de cancelamento, reagendamento ou reembolso dependem das condições do seu agendamento. Você verá o que está disponível antes de concluir a solicitação.",
       },
     ],
   },
-  privacy_request: {
+  {
     question: "Quero saber mais sobre meus dados e minha privacidade.",
     intro:
-      "Conte para a gente qual informação você precisa consultar, corrigir ou solicitar.",
+      "Levamos a proteção dos seus dados muito a sério. Veja como funciona.",
     details: [
       {
         label: "O que pode ser solicitado?",
         value:
-          "Nossa equipe orientará você sobre o pedido e os próximos passos.",
+          "Você pode solicitar acesso, correção ou exclusão dos seus dados pessoais a qualquer momento.",
       },
       {
         label: "Por que preciso confirmar minha identidade?",
-        value: "Essa confirmação ajuda a proteger suas informações pessoais.",
+        value:
+          "Essa confirmação é necessária para proteger suas informações e garantir que estamos falando com você.",
       },
       {
-        label: "Como acompanho o atendimento?",
+        label: "Como faço uma solicitação?",
         value:
-          "Você receberá um número de acompanhamento para consultar sua solicitação.",
+          "Abra um chamado pelo chat de ajuda informando sua solicitação. Nossa equipe orientará você.",
+      },
+      {
+        label: "Onde encontro mais informações?",
+        value:
+          "Acesse nossa Política de Privacidade para saber todos os detalhes sobre coleta, uso e proteção dos seus dados.",
       },
     ],
   },
-  security_report: {
-    question:
-      "Percebi algo estranho ou quero relatar um problema de segurança.",
-    intro:
-      "Avise nossa equipe o quanto antes e descreva a situação com os detalhes que você tiver.",
-    details: [
-      {
-        label: "O que devo informar?",
-        value:
-          "Conte o que aconteceu, quando percebeu o problema e quais pessoas podem ter sido afetadas.",
-      },
-      {
-        label: "Quando recebo uma resposta?",
-        value: "Situações que envolvem segurança recebem atenção prioritária.",
-      },
-      {
-        label: "Como acompanho o atendimento?",
-        value:
-          "Você receberá um número de acompanhamento para consultar sua solicitação.",
-      },
-    ],
-  },
-};
+];
 
 export default function HelpPage() {
   if (!isSupportMatrixPublishable()) {
@@ -157,36 +153,36 @@ export default function HelpPage() {
 
   return (
     <PublicInfoLayout eyebrow="Ajuda" title="Central de ajuda">
-      <section className="rounded-card border border-brand-lavender bg-white p-6 shadow-card sm:p-8">
-        <div className="grid gap-5 md:grid-cols-[1fr_280px]">
+      <section className="rounded-xl border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_216px] sm:items-center sm:gap-8">
           <div>
-            <h2 className="text-xl font-extrabold text-brand-deep">
+            <h2 className="text-lg font-extrabold text-brand-deep">
               Como podemos ajudar?
             </h2>
-            <p className="mt-3 text-sm font-semibold leading-7 text-tesText-secondary">
-              Entre na sua conta e fale com nossa equipe. Assim conseguimos
-              acompanhar sua mensagem com segurança e manter você informado
-              sobre cada etapa.
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Encontre aqui respostas para as dúvidas mais comuns sobre sua
+              conta, sessões, pagamentos e uso do TES. Se ainda precisar de
+              ajuda, nossa equipe está por perto.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
+          <div className="grid gap-2.5">
             <Link
-              className="rounded-full bg-brand-primary px-5 py-3 text-center text-sm font-extrabold text-white transition hover:bg-brand-deep"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-primary px-5 py-3 text-center text-sm font-extrabold text-white transition hover:bg-brand-deep"
               href={routes.public.clientSignIn as Route}
             >
               Entrar como cliente
             </Link>
             <Link
-              className="rounded-full border border-brand-primary px-5 py-3 text-center text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-primary px-5 py-3 text-center text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
               href={routes.public.therapistSignIn as Route}
             >
               Entrar como terapeuta
             </Link>
           </div>
         </div>
-        <div className="mt-8 grid gap-3">
-          {supportMatrix.map((item) => (
-            <PublicSupportFaqItem key={item.categoryKey} item={item} />
+        <div className="mt-6 grid gap-2.5">
+          {publicSupportFaqs.map((item) => (
+            <PublicSupportFaqItem key={item.question} item={item} />
           ))}
         </div>
       </section>
@@ -194,53 +190,28 @@ export default function HelpPage() {
   );
 }
 
-function PublicSupportFaqItem({
-  item,
-}: {
-  item: { categoryKey: string; label: string };
-}) {
-  const copy =
-    publicSupportFaqs[item.categoryKey] ??
-    ({
-      question: item.label,
-      intro:
-        "Entre na sua conta e conte para a gente como podemos ajudar. Nossa equipe vai analisar sua mensagem com atenção.",
-      details: [
-        {
-          label: "Quando recebo uma resposta?",
-          value: "Nossa equipe responderá assim que possível.",
-        },
-        {
-          label: "Como acompanho o atendimento?",
-          value:
-            "Você receberá um número de acompanhamento para consultar sua solicitação.",
-        },
-      ],
-    } satisfies PublicSupportFaq);
-
+function PublicSupportFaqItem({ item }: { item: PublicSupportFaq }) {
   return (
-    <details className="group rounded-2xl border border-brand-lavender bg-surface-muted px-4 open:bg-white sm:px-5">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-extrabold text-brand-deep [&::-webkit-details-marker]:hidden">
-        {copy.question}
+    <article className="rounded-xl border border-brand-lavender bg-white px-4 py-3.5 sm:px-5 sm:py-4">
+      <div className="flex items-start justify-between gap-4 text-sm font-extrabold text-brand-deep sm:text-base">
+        <h2>{item.question}</h2>
         <span aria-hidden="true" className="text-brand-primary">
           +
         </span>
-      </summary>
-      <div className="border-t border-brand-lavender pb-5 pt-4">
-        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-          {copy.intro}
-        </p>
-        <dl className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary sm:grid-cols-2">
-          {copy.details.map((detail) => (
-            <SupportDetail
-              key={detail.label}
-              label={detail.label}
-              value={detail.value}
-            />
-          ))}
-        </dl>
       </div>
-    </details>
+      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+        {item.intro}
+      </p>
+      <dl className="mt-4 grid gap-x-8 gap-y-4 text-sm font-semibold leading-6 text-tesText-secondary sm:grid-cols-2">
+        {item.details.map((detail) => (
+          <SupportDetail
+            key={detail.label}
+            label={detail.label}
+            value={detail.value}
+          />
+        ))}
+      </dl>
+    </article>
   );
 }
 

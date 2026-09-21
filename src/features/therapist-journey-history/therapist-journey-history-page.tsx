@@ -15,7 +15,6 @@ import {
   Filter,
   HeartHandshake,
   Info,
-  MessageCircle,
   MoreVertical,
   NotebookText,
   Route,
@@ -210,20 +209,13 @@ export function TherapistJourneyDetailPage({
               <CalendarDays aria-hidden="true" size={17} />
               Ver sessões
             </Link>
-            <Link
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={routes.therapist.messages}
-            >
-              <MessageCircle aria-hidden="true" size={17} />
-              Enviar mensagem
-            </Link>
           </div>
         </div>
       </section>
 
       <JourneyDetailMetrics client={client} />
       <JourneyTopics topicCounts={topicCounts} />
-      <JourneyMemory timeline={timeline} />
+      <JourneySessionHistory timeline={timeline} />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <CarePreferencesCard />
@@ -246,13 +238,13 @@ function JourneyDetailMetrics({ client }: { client: JourneyHistoryClient }) {
     },
     {
       description:
-        client.totalSharedMemories === 1
-          ? "memória compartilhada"
-          : "memórias compartilhadas",
+        client.totalEncounters === 1
+          ? "sessão realizada nesta jornada"
+          : "sessões realizadas nesta jornada",
       icon: <UsersRound aria-hidden="true" size={22} />,
-      label: "Sessões compartilhadas",
+      label: "Sessões realizadas",
       tone: "bg-brand-lavenderSoft text-brand-primary",
-      value: String(client.totalSharedMemories),
+      value: String(client.totalEncounters),
     },
     {
       description: client.nextSessionAt
@@ -355,7 +347,8 @@ function JourneyTopics({
         </p>
         {topicCounts.length === 0 ? (
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Os temas podem ser registrados por você após uma sessão realizada.
+            Os temas podem ser registrados nos detalhes de uma sessão realizada
+            que você avaliou como bem-sucedida.
           </p>
         ) : (
           <ul className="mt-4 flex flex-wrap gap-2" aria-label="Temas registrados">
@@ -377,7 +370,7 @@ function JourneyTopics({
   );
 }
 
-function JourneyMemory({
+function JourneySessionHistory({
   timeline,
 }: {
   timeline: JourneyHistoryDetailData["timeline"];
@@ -394,20 +387,20 @@ function JourneyMemory({
             />
             <div>
               <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[36px]">
-                Memória das sessões
+                Histórico das sessões
               </h2>
               <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-                Consulte os principais registros compartilhados em cada sessão e
-                abra a sessão quando precisar de mais contexto.
+                Consulte as sessões realizadas nesta jornada, com ou sem resumo
+                compartilhado, e abra os detalhes quando precisar de contexto.
               </p>
             </div>
           </div>
           <span className="inline-flex min-h-9 w-fit items-center rounded-lg bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
-            {timeline.length} {timeline.length === 1 ? "registro" : "registros"}
+            {timeline.length} {timeline.length === 1 ? "sessão" : "sessões"}
           </span>
         </div>
         <p className="mt-5 rounded-xl border border-brand-lavender/60 bg-brand-lavenderSoft/40 px-4 py-3 text-xs font-semibold leading-5 text-tesText-secondary">
-          Esta memória reúne registros operacionais compartilhados e não
+          Este histórico reúne estados e registros operacionais. Ele não
           substitui o prontuário clínico.
         </p>
       </header>
@@ -417,13 +410,13 @@ function JourneyMemory({
           <div className="hidden lg:block">
             <table className="w-full table-auto text-left">
               <caption className="sr-only">
-                Memórias compartilhadas das sessões realizadas
+                Sessões realizadas, confirmadas ou aguardando confirmação
               </caption>
               <thead>
                 <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
                   <th className="w-[18%] px-5 py-4">Data e hora</th>
                   <th className="w-[20%] px-4 py-4">Terapia</th>
-                  <th className="px-4 py-4">Registro compartilhado</th>
+                  <th className="px-4 py-4">Histórico da sessão</th>
                   <th className="w-[154px] px-5 py-4 text-right">Ação</th>
                 </tr>
               </thead>
@@ -440,6 +433,17 @@ function JourneyMemory({
                       <strong className="block text-sm font-extrabold text-brand-deep">
                         {item.title}
                       </strong>
+                      <span
+                        className={`mt-2 inline-flex min-h-7 items-center rounded-full px-2.5 text-xs font-extrabold ${
+                          item.confirmationStatus === "confirmed"
+                            ? "bg-status-successBg text-status-success"
+                            : "bg-brand-lavenderSoft text-brand-primary"
+                        }`}
+                      >
+                        {item.confirmationStatus === "confirmed"
+                          ? "Sessão realizada — confirmada"
+                          : "Sessão realizada — aguardando confirmação"}
+                      </span>
                       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
                         {item.description}
                       </p>
@@ -480,6 +484,17 @@ function JourneyMemory({
                   <strong className="text-sm font-extrabold text-brand-deep">
                     {item.title}
                   </strong>
+                  <span
+                    className={`mt-2 inline-flex min-h-7 items-center rounded-full px-2.5 text-xs font-extrabold ${
+                      item.confirmationStatus === "confirmed"
+                        ? "bg-status-successBg text-status-success"
+                        : "bg-brand-lavenderSoft text-brand-primary"
+                    }`}
+                  >
+                    {item.confirmationStatus === "confirmed"
+                      ? "Sessão realizada — confirmada"
+                      : "Sessão realizada — aguardando confirmação"}
+                  </span>
                   <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
                     {item.description}
                   </p>
@@ -496,11 +511,11 @@ function JourneyMemory({
             size={28}
           />
           <h3 className="mt-3 text-base font-extrabold text-brand-deep">
-            Nenhuma memória compartilhada ainda
+            Nenhuma sessão realizada ainda
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
-            As memórias aparecerão aqui quando uma sessão realizada tiver um
-            resumo compartilhado.
+            As sessões aparecerão aqui depois que a presença dos dois
+            participantes for registrada e a sessão for encerrada.
           </p>
         </div>
       )}
@@ -539,17 +554,9 @@ function CarePreferencesCard() {
           Nenhuma preferência compartilhada nesta área
         </p>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Use os canais apropriados para convidar a pessoa a compartilhar o que
-          for relevante para a comunicação.
+          Aqui aparecem apenas informações compartilhadas nos encontros.
         </p>
       </div>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-        href={routes.therapist.messages}
-      >
-        <MessageCircle aria-hidden="true" size={17} />
-        Usar template de comunicação
-      </Link>
     </section>
   );
 }

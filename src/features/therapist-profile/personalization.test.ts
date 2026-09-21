@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -26,6 +26,27 @@ describe("public profile theme catalog", () => {
           true,
         );
       }
+    }
+  });
+
+  it("keeps every paid theme source wide enough for the public profile banner", () => {
+    const paidThemes = publicProfileThemes.filter(
+      (theme) => theme.tier !== "free",
+    );
+
+    for (const theme of paidThemes) {
+      expect(theme.backgroundAsset).toContain("-hero-v2.png");
+
+      const asset = readFileSync(
+        resolve(
+          process.cwd(),
+          "public",
+          theme.backgroundAsset!.slice(1),
+        ),
+      );
+
+      expect(asset.readUInt32BE(16)).toBeGreaterThanOrEqual(1920);
+      expect(asset.readUInt32BE(20)).toBeGreaterThanOrEqual(640);
     }
   });
 

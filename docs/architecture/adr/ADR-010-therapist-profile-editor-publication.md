@@ -1,6 +1,6 @@
 # ADR-010 — Meu Perfil: rascunho privado e publicação pelo terapeuta
 
-Status: aceito em 2026-07-28; ampliado em 2026-08-18 e 2026-09-02.
+Status: aceito em 2026-07-28; ampliado em 2026-08-18, 2026-09-02, 2026-09-15 e 2026-09-17.
 
 ## Contexto
 
@@ -19,6 +19,37 @@ público existente já derivava de `therapist_profiles` e de
   publicada de conteúdo e invalida apenas superfícies públicas afetadas.
 - Administração continua responsável por verificação, suspensão, documentos,
   plano e bloqueios.
+- A publicação administrativa exige uma conta de recebimento corrente, não
+  encerrada e plenamente pronta para o fluxo financeiro V10: cadastro enviado
+  e pronto, nenhuma exigência atual, operação pronta, Transfers ativos e Payout
+  habilitado no intervalo diário. A verificação falha fechada.
+- Aprovação e publicação administrativas também exigem os seis itens da
+  completude canônica em 100%: foto, apresentação, essência, especialidades,
+  ao menos uma terapia ativa e ao menos uma regra recorrente de disponibilidade
+  ativa. `get_therapist_publication_eligibility_v1` é a autoridade comum para
+  Admin, catálogo, perfil público, Match, slots e reserva.
+- Exigências temporárias de uma conta Connect preservam o estado editorial e
+  apenas bloqueiam novos agendamentos até a prontidão voltar. Já o encerramento
+  confirmado da conta (`v2.core.account.closed`, ou sincronização autoritativa
+  equivalente) é uma mudança de confiança: para um perfil aprovado e público,
+  a mesma transação o despublica, interrompe novos agendamentos e cria uma nova
+  `therapist_verifications` com origem `connect_account_closed`. A aprovação
+  anterior e a conta histórica permanecem imutáveis para auditoria.
+- Depois de uma nova conta pronta e da aprovação administrativa dessa revisão,
+  o TES restaura automaticamente a publicação anterior somente se todos os
+  demais critérios atuais ainda forem atendidos. Reservas existentes, Transfers
+  já criados e Payouts históricos não são cancelados, redirecionados ou
+  reclassificados por esse fluxo.
+- Remover ou desativar a última regra recorrente ativa de um perfil aprovado e
+  público também é uma mudança de elegibilidade. A gravação da agenda
+  despublica o perfil, interrompe novos agendamentos e cria uma verificação com
+  origem `availability_removed` na mesma transação. A interface confirma essa
+  consequência antes do salvamento.
+- Restaurar horários elimina o bloqueio de completude, mas nunca republica o
+  perfil automaticamente. A publicação anterior só pode ser restaurada por
+  nova aprovação administrativa e após recalcular todos os gates correntes.
+  Bloqueios temporários, férias e exceções não são disponibilidade recorrente e
+  não disparam esse ciclo. Reservas já confirmadas permanecem intactas.
 - A primeira publicação de um perfil ainda não aprovado entra na análise
   administrativa. Depois de `therapist_profiles.status = approved`, publicar
   uma nova versão editorial não reabre `therapist_verifications`, não remove a
@@ -44,6 +75,13 @@ público existente já derivava de `therapist_profiles` e de
 ## Consequências
 
 - A UI comunica que a propagação pública pode levar até 2 a 3 horas.
+- Publicação armazenada, visibilidade pública e prontidão financeira são
+  estados distintos. A área privada da agenda preserva seu gate operacional
+  próprio durante o processamento da conta.
+- Completude editorial, disponibilidade recorrente, aprovação administrativa e
+  visibilidade pública também permanecem estados distintos. Nenhum perfil pode
+  ser aprovado ou exposto enquanto a completude canônica estiver abaixo de
+  100%.
 - Dados derivados como avaliações, preço inicial, disponibilidade e plano são
   somente leitura no editor.
 - Documentos privados usam tabela e bucket separados e não entram em DTOs

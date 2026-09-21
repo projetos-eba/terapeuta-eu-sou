@@ -38,16 +38,21 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
     );
 
   return {
+    avatarUrl: asText(row.photo_url) || undefined,
     detailHref: pendingVerification
       ? routes.admin.verificationDetail(verificationId)
       : getAdminOperationDetailHref("professionals", id),
+    email: asText(row.email) || undefined,
     fields: compactFields([
       field("Plano", asText(row.plan)),
       field("Perfil público", asText(row.public_status)),
       field("Publicado", asBooleanLabel(row.is_public)),
       field("Reservas", asBooleanLabel(row.is_accepting_bookings)),
       field("Publicação", publicationLabel(row.publication_eligibility)),
-      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
+      field(
+        "Pendências de publicação",
+        publicationBlockers(row.publication_blockers),
+      ),
       field("Verificação", asText(row.verification_status)),
       field("Serviços", formatCount(row.service_count)),
       field("Conta de recebimento", asText(row.connect_status)),
@@ -66,6 +71,7 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `verification-${index}`;
   const professionalId = asText(row.therapist_profile_id);
   const status = asText(row.status);
+  const publication = publicationLabel(row.publication_eligibility);
 
   return {
     detailHref:
@@ -75,12 +81,15 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
     fields: compactFields([
       field("Enviado", formatDate(row.submitted_at)),
       field("Revisado", formatDate(row.reviewed_at)),
-      field("Publicação", publicationLabel(row.publication_eligibility)),
-      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
+      field("Publicação", publication),
+      field(
+        "Pendências de publicação",
+        publicationBlockers(row.publication_blockers),
+      ),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
     id,
-    statusLabel: asText(row.status),
+    statusLabel: verificationStatusLabel(status, publication),
     subtitle: "Documentos privados não são exibidos nesta lista.",
     title: therapistName || `Verificação ${shortId(asText(row.id))}`,
   } satisfies AdminOperationRow;
@@ -101,6 +110,7 @@ function mapPatientRow(row: UnknownRecord, index: number) {
     ]),
     id,
     subtitle: asText(row.user_id),
+    statusLabel: asText(row.account_status),
     title: asText(row.display_name) || "Paciente sem nome",
   } satisfies AdminOperationRow;
 }
@@ -184,9 +194,13 @@ export function mapAdminOperationDetail({
   const row = mapAdminOperationRows({ module, rows: [record] })[0];
 
   const relatedProfessionalId =
-    module === "verifications" ? asText(record.therapist_profile_id) || null : null;
+    module === "verifications"
+      ? asText(record.therapist_profile_id) || null
+      : null;
   const relatedVerificationId =
-    module === "professionals" ? asText(record.latest_verification_id) || null : null;
+    module === "professionals"
+      ? asText(record.latest_verification_id) || null
+      : null;
 
   return {
     auditEvents: auditEvents.filter(isRecord).map(mapAuditEvent),
@@ -194,8 +208,15 @@ export function mapAdminOperationDetail({
     generatedAt,
     id,
     module,
+    patientContact:
+      module === "patients"
+        ? mapPatientContact(record.private_contact)
+        : undefined,
     relatedProfessionalId,
+    canManagePatientBookings:
+      module === "patients" ? record.booking_management_available === true : undefined,
     relatedVerificationId,
+    canApprove: canApproveVerification(record),
     canPublish: canPublishAdministratively(record),
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
@@ -206,6 +227,22 @@ export function mapAdminOperationDetail({
     statusLabel: row?.statusLabel,
     subtitle: row?.subtitle,
     title: row?.title ?? getFallbackDetailTitle(module, id),
+  };
+}
+
+function mapPatientContact(value: unknown) {
+  if (!isRecord(value)) return null;
+  return {
+    email: asText(value.email) || null,
+    phone: asText(value.phone) || null,
+    phoneCountryCode: asText(value.phoneCountryCode) || null,
+    postalCode: asText(value.postalCode) || null,
+    street: asText(value.street) || null,
+    streetNumber: asText(value.streetNumber) || null,
+    complement: asText(value.complement) || null,
+    neighborhood: asText(value.neighborhood) || null,
+    city: asText(value.city) || null,
+    state: asText(value.state) || null,
   };
 }
 
@@ -241,6 +278,19 @@ function mapAdminSessionFeedback(value: unknown) {
     data: {
       attendance,
       confirmation,
+      ...(isRecord(value.qualityReview) ? { qualityReview: {
+        isOpen: value.qualityReview.isOpen === true,
+        overdue: value.qualityReview.overdue === true,
+        allAnswered: value.qualityReview.allAnswered === true,
+      } } : {}),
+      ...(Array.isArray(value.qualityReports) ? { qualityReports: value.qualityReports.filter(isRecord).map((report) => ({
+        id: asText(report.id), authorRole: report.authorRole === "therapist" ? "therapist" as const : "patient" as const,
+        ticketId: asText(report.ticketId), dueAt: asText(report.dueAt), answeredAt: asText(report.answeredAt) || null,
+        overdue: report.overdue === true,
+      })) } : {}),
+      ...(Array.isArray(value.legacyFeedback) ? { legacyFeedback: value.legacyFeedback.map((feedback) =>
+        mapAdminSessionFeedbackItem(feedback, isRecord(feedback) && feedback.authorRole === "therapist" ? "therapist" : "patient"))
+        .filter((feedback): feedback is NonNullable<typeof feedback> => feedback !== null) } : {}),
       divergent: value.divergent === true,
       financial,
       patient,
@@ -255,12 +305,28 @@ function mapAdminSessionAttendance(value: unknown) {
   const record = isRecord(value) ? value : {};
   return {
     bothJoined: record.bothJoined === true,
+    classification: asText(record.classification) || null,
+    classificationSource: asText(record.classificationSource) || null,
+    financialResolution: asText(record.financialResolution) || null,
+    incidentId: asText(record.incidentId) || null,
+    patientArrivedAt: asText(record.patientArrivedAt) || null,
     patientJoined: record.patientJoined === true,
+    patientJoinedAt: asText(record.patientJoinedAt) || null,
+    patientPresentAtTolerance: record.patientPresentAtTolerance === true,
+    processingCostRecoveryAuthorized:
+      record.processingCostRecoveryAuthorized === true,
+    resolution: asText(record.resolution) || null,
+    responsibility: asText(record.responsibility) || null,
+    retentionAuthorized: record.retentionAuthorized === true,
+    reviewDueAt: asText(record.reviewDueAt) || null,
     sessionClosed: record.sessionClosed === true,
     sessionEndedAt: asText(record.sessionEndedAt) || null,
     sessionEndsAt: asText(record.sessionEndsAt) || null,
     sessionStartedAt: asText(record.sessionStartedAt) || null,
     therapistJoined: record.therapistJoined === true,
+    therapistArrivedAt: asText(record.therapistArrivedAt) || null,
+    therapistJoinedAt: asText(record.therapistJoinedAt) || null,
+    therapistPresentAtTolerance: record.therapistPresentAtTolerance === true,
   } satisfies import("./admin-operations.types").AdminSessionAttendance;
 }
 
@@ -298,16 +364,17 @@ function mapAdminSessionFeedbackItem(
   authorRole: "patient" | "therapist",
 ) {
   if (!isRecord(value)) return null;
-  const outcome = asText(value.outcome);
+  const outcome = typeof value.successful === "boolean" ? "completed" : asText(value.outcome);
   if (outcome !== "completed" && outcome !== "not_performed") return null;
 
   const rating = typeof value.rating === "number" ? value.rating : null;
 
   return {
     authorRole,
+    ...(typeof value.successful === "boolean" ? { successful: value.successful } : {}),
     comment: asText(value.comment),
     createdAt: asText(value.createdAt),
-    notPerformedReason: asText(value.notPerformedReason) || null,
+    notPerformedReason: asText(value.qualityReason ?? value.notPerformedReason) || null,
     outcome,
     rating,
   } satisfies import("./admin-operations.types").AdminSessionFeedbackItem;
@@ -334,8 +401,18 @@ function getDetailSections(
           "Atendimento online",
           asBooleanLabel(record.accepts_online_sessions),
         ),
-        field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
-        field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
+        field(
+          "Elegibilidade pública",
+          publicationLabel(record.publication_eligibility),
+        ),
+        field(
+          "Bloqueadores reais",
+          publicationBlockers(record.publication_blockers),
+        ),
+        field(
+          "Itens incompletos",
+          incompleteProfileItems(record.publication_eligibility),
+        ),
         field("Última verificação", asText(record.verification_status)),
       ]),
       section("Operação", [
@@ -343,7 +420,7 @@ function getDetailSections(
         field("Serviços ativos", formatCount(record.active_service_count)),
         field("Sessões totais", formatCount(record.total_booking_count)),
         field("Sessões futuras", formatCount(record.future_booking_count)),
-      field("Conta de recebimento", asText(record.connect_status)),
+        field("Conta de recebimento", asText(record.connect_status)),
         field("Próxima sessão", formatDate(record.next_session_at)),
       ]),
       timestampSection(record),
@@ -362,7 +439,7 @@ function getDetailSections(
       section("Atividade", [
         field("Reservas totais", formatCount(record.booking_count)),
         field("Reservas futuras", formatCount(record.future_booking_count)),
-      field("Chamados", formatCount(record.ticket_count)),
+        field("Chamados", formatCount(record.ticket_count)),
         field("Última atividade", formatDate(record.last_activity_at)),
       ]),
       timestampSection(record),
@@ -466,8 +543,18 @@ function getDetailSections(
       field("Enviado em", formatDate(record.submitted_at)),
       field("Revisado em", formatDate(record.reviewed_at)),
       field("Estado administrativo do perfil", asText(record.profile_status)),
-      field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
-      field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
+      field(
+        "Elegibilidade pública",
+        publicationLabel(record.publication_eligibility),
+      ),
+      field(
+        "Bloqueadores reais",
+        publicationBlockers(record.publication_blockers),
+      ),
+      field(
+        "Itens incompletos",
+        incompleteProfileItems(record.publication_eligibility),
+      ),
     ]),
     timestampSection(record),
   ];
@@ -503,7 +590,9 @@ function field(label: string, value: string) {
 function canPublishAdministratively(record: UnknownRecord) {
   const eligibility = asRecordOrNull(record.publication_eligibility);
   const blockers = Array.isArray(eligibility?.blockers)
-    ? eligibility.blockers.filter((blocker): blocker is string => typeof blocker === "string")
+    ? eligibility.blockers.filter(
+        (blocker): blocker is string => typeof blocker === "string",
+      )
     : [];
   const publicationSwitchBlockers = new Set([
     "not_accepting_bookings",
@@ -515,6 +604,23 @@ function canPublishAdministratively(record: UnknownRecord) {
     eligibility?.eligible === false &&
     blockers.length > 0 &&
     blockers.every((blocker) => publicationSwitchBlockers.has(blocker))
+  );
+}
+
+function canApproveVerification(record: UnknownRecord) {
+  const eligibility = asRecordOrNull(record.publication_eligibility);
+  if (!eligibility) return true;
+
+  const blockers = Array.isArray(eligibility.blockers)
+    ? eligibility.blockers.filter(
+        (blocker): blocker is string => typeof blocker === "string",
+      )
+    : [];
+
+  return !blockers.some(
+    (blocker) =>
+      blocker === "profile_incomplete" ||
+      blocker === "no_active_availability",
   );
 }
 
@@ -551,23 +657,45 @@ function publicationLabel(value: unknown) {
   if (!isRecord(value)) return "";
   return value.eligible === true
     ? "Publicado e elegível"
-    : "Aprovado · publicação pendente";
+    : "Aprovado · falta publicar";
+}
+
+function verificationStatusLabel(status: string, publication: string) {
+  if (status !== "approved") return status;
+  if (publication === "Publicado e elegível") return publication;
+
+  return "Aprovado · falta publicar";
 }
 
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
   const labels: Record<string, string> = {
+    no_active_availability: "nenhum horário disponível",
     no_active_bookable_online_service: "nenhum serviço publicável",
     not_accepting_bookings: "não aceita novos agendamentos",
     online_sessions_disabled: "atendimento online desativado",
+    profile_incomplete: "perfil ainda não está 100% completo",
     profile_not_approved: "cadastro ainda não aprovado",
     profile_not_public: "perfil público desativado",
+    receiving_account_not_ready: "conta de recebimento ainda não está pronta",
     therapy_category_inactive: "categoria da terapia inativa",
     therapy_not_public: "terapia não publicada ou não visível",
+    therapy_without_active_theme: "terapia sem tema ativo",
   };
   return value
     .filter((item): item is string => typeof item === "string")
     .map((item) => labels[item] ?? item)
+    .join(" · ");
+}
+
+function incompleteProfileItems(value: unknown) {
+  const eligibility = asRecordOrNull(value);
+  if (!Array.isArray(eligibility?.incompleteItems)) return "";
+
+  return eligibility.incompleteItems
+    .filter(isRecord)
+    .map((item) => asText(item.label))
+    .filter(Boolean)
     .join(" · ");
 }
 

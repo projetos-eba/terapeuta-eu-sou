@@ -89,6 +89,43 @@ describe("SessionOperationActions", () => {
     expect(firstPayload.requestId).toBe("a1000000-0000-4000-8000-000000000001");
   });
 
+  it("keeps the modal open when the server detects payment after it was opened", async () => {
+    const paymentChangedMessage =
+      "O pagamento desta sessão foi atualizado. Recarregue a página e, se ainda precisar cancelar, fale com nossa equipe de suporte.";
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      return Promise.resolve(
+        url.includes("/availability?")
+          ? jsonResponse({ ok: true, data: availability })
+          : jsonResponse(
+              { ok: false, error: { message: paymentChangedMessage } },
+              409,
+            ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderActions();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar encontro" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Continuar com o cancelamento",
+      }),
+    );
+    fireEvent.change(screen.getByLabelText(/Motivo\s+do cancelamento/), {
+      target: { value: "Minha rotina mudou." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar cancelamento" }),
+    );
+
+    expect(await screen.findByText(paymentChangedMessage)).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Cancelar encontro" }),
+    ).toBeVisible();
+    expect(navigationMocks.refresh).not.toHaveBeenCalled();
+  });
+
   it("keeps a completed cancellation unavailable and explains why", () => {
     render(
       <SessionOperationActions
@@ -105,7 +142,7 @@ describe("SessionOperationActions", () => {
     );
 
     const cancelButton = screen.getByRole("button", {
-      name: "Cancelar sessão",
+      name: "Solicitar cancelamento",
     });
     expect(cancelButton).toBeDisabled();
     expect(cancelButton).toHaveAttribute(
@@ -117,6 +154,41 @@ describe("SessionOperationActions", () => {
         /Cancelamento indisponível: O pagamento já foi reembolsado/,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("requires a pending proposal to be resolved before cancellation", () => {
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000003"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule={false}
+        cancelDisabledReason={null}
+        cancellationImpactLabel="A sessão não pode ser alterada simultaneamente."
+        reschedule={{
+          expiresAt: "2026-09-20T12:00:00.000Z",
+          id: "a1000000-0000-4000-8000-000000000003",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: "Preciso reorganizar minha agenda.",
+          requestedByCurrentUser: true,
+          status: "pending",
+        }}
+        rescheduleDisabledReason="Já existe uma proposta em aberto."
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Solicitar cancelamento" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        /Conclua ou retire a solicitação de reagendamento antes de cancelar/,
+      ),
+    ).toBeVisible();
   });
 
   it("keeps the booking service fixed and reuses the direct patient command id", async () => {
@@ -158,7 +230,7 @@ describe("SessionOperationActions", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Reagendar encontro" }));
-    expect(await screen.findByText("Reiki")).toBeInTheDocument();
+    expect(await screen.findByText(/Terapia contratada/)).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "10:00" }));
     expect(
@@ -246,7 +318,7 @@ describe("SessionOperationActions", () => {
     ).toBeEnabled();
   });
 
-  it("keeps therapist-initiated rescheduling as a proposal", async () => {
+  it("opens a therapist change without proposing a slot", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(() =>
@@ -274,16 +346,107 @@ describe("SessionOperationActions", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Solicitar reagendamento" }),
+      screen.getByRole("button", { name: "Solicitar alteração" }),
     );
-    fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
 
     expect(
-      screen.getByRole("heading", { name: "Confirmar proposta" }),
+      screen.getByRole("heading", { name: "Solicitar alteração" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Enviar proposta" }),
+      screen.getByRole("button", { name: "Enviar solicitação" }),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "10:00" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
+
+    await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
+    const [requestUrl, request] = vi.mocked(fetch).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(requestUrl).toBe("/api/session/reschedule");
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      actorRole: "therapist",
+      command: {
+        action: "therapist_change",
+        kind: "reschedule",
+      },
+    });
+  });
+
+  it("labels the pre-charge therapist proposal outcome as a cancellation", () => {
+    render(
+      <SessionOperationActions
+        actorRole="patient"
+        bookingId="b1000000-0000-4000-8000-000000000001"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule
+        cancelDisabledReason={null}
+        cancellationImpactLabel="Política aplicável."
+        reschedule={{
+          expiresAt: "2026-09-14T13:00:00.000Z",
+          id: "b1000000-0000-4000-8000-000000000009",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: null,
+          requestedByCurrentUser: false,
+          status: "pending",
+        }}
+        rescheduleDisabledReason={null}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("button", { name: "Cancelar encontro" })
+        .some((button) => !button.hasAttribute("disabled")),
+    ).toBe(true);
+    expect(
+      screen.queryByRole("button", { name: "Solicitar reembolso integral" }),
+    ).toBeNull();
+  });
+
+  it("uses therapist-owned language for the therapist's pending request", () => {
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000001"
+        bookingVersion={1}
+        canCancel
+        canRequestReschedule
+        cancelDisabledReason={null}
+        cancellationImpactLabel="Política aplicável."
+        reschedule={{
+          expiresAt: "2026-09-20T12:00:00.000Z",
+          id: "b1000000-0000-4000-8000-000000000009",
+          kind: "therapist_reschedule",
+          proposedEndsAt: null,
+          proposedStartsAt: null,
+          proposedTimezone: "America/Sao_Paulo",
+          reason: null,
+          requestedByCurrentUser: true,
+          status: "pending",
+        }}
+        rescheduleDisabledReason={null}
+      />,
+    );
+
+    expect(
+      screen.getByText("Solicitação de reagendamento enviada"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "A pessoa atendida pode escolher outro horário ou cancelar a sessão.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Seu terapeuta pediu que você escolha outro horário."),
+    ).toBeNull();
   });
 });
 

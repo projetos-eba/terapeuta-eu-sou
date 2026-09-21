@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -582,13 +583,31 @@ function ProfessionalEntity({ row }: { row: AdminOperationRow }) {
 function ProfessionalIdentity({ row }: { row: AdminOperationRow }) {
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
-        {getInitials(row.title)}
-      </span>
+      {row.avatarUrl ? (
+        <Image
+          alt=""
+          className="size-11 shrink-0 rounded-full border border-brand-lavender object-cover"
+          height={88}
+          src={row.avatarUrl}
+          width={88}
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary"
+        >
+          {getInitials(row.title)}
+        </span>
+      )}
       <div className="min-w-0">
         <p className="break-words text-sm font-extrabold leading-5 text-brand-deep sm:text-base">
           {row.title}
         </p>
+        {row.email ? (
+          <p className="mt-0.5 break-all text-[11px] font-semibold leading-4 text-tesText-secondary sm:text-xs">
+            {row.email}
+          </p>
+        ) : null}
         <p className="mt-1 break-all text-[11px] font-semibold leading-4 text-tesText-muted sm:text-xs">
           {row.subtitle || `Identificação ${shortId(row.id)}`}
         </p>

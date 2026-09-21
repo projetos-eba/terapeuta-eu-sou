@@ -225,6 +225,9 @@ select public.ensure_video_session_for_paid_booking_v1(
 
 update public.video_sessions
 set provider_session_id = 'provider-session-order-pgtap',
+    metadata = '{}',
+    scheduled_starts_at = now() - interval '30 minutes',
+    scheduled_ends_at = now() + interval '30 minutes',
     status = 'ready',
     actual_started_at = null,
     actual_ended_at = null,
@@ -240,6 +243,14 @@ set provider_session_id = 'provider-session-order-pgtap',
     termination_requested_at = null,
     termination_confirmed_at = null
 where booking_id = 'f2000000-0000-4000-8000-000000000004';
+
+-- Establish the provider epoch before either out-of-order attendance event.
+-- A join older than an uninitialized epoch is correctly ignored by V2 fencing.
+select public.apply_zoom_video_session_event_v1(
+  null::text, 'provider-session-order-pgtap', 'session.started',
+  now() - interval '20 minutes', 'development', null::text, null::text,
+  null, 45, 30
+);
 
 select public.apply_zoom_video_session_event_v1(
   null::text,

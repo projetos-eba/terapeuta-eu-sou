@@ -1,6 +1,9 @@
 begin;
 
-select plan(31);
+select plan(41);
+
+delete from public.therapist_metric_daily_aggregates
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
 
 select ok(
   has_function_privilege(
@@ -73,6 +76,48 @@ select is(
   public.get_therapist_session_metrics_v1(30) ->> 'contractVersion',
   '1',
   'MTR-4 exposes a versioned contract'
+);
+
+select is(
+  public.get_therapist_session_metrics_v1(30) ->> 'metricDefinitionVersion',
+  '2',
+  'MTR-4 uses the private session-timing definition'
+);
+
+select is(
+  public.get_therapist_session_metrics_v1(30) #>> '{heatmap,status}',
+  case when (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{heatmap,observedSample}'
+  )::integer = 0 then 'empty' else 'ready' end,
+  'the timing heatmap is available as soon as one completed session exists'
+);
+
+select is(
+  (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{heatmap,observedSample}'
+  )::bigint,
+  (
+    public.get_therapist_session_metrics_v1(30)
+      #>> '{summary,sessionsCompleted,value}'
+  )::bigint,
+  'the private timing sample matches the completed session count'
+);
+
+select ok(
+  not (
+    public.get_therapist_session_metrics_v1(30) -> 'heatmap'
+      ? 'minimumSample'
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_therapist_session_metrics_v1(30) -> 'heatmap' -> 'items'
+    ) as item
+    where (item ->> 'dayOfWeek')::integer not between 0 and 6
+  ),
+  'the timing heatmap has no ten-session gate and uses Sunday-zero weekdays'
 );
 
 select is(
@@ -253,6 +298,85 @@ select ok(
     in public.get_therapist_interest_metrics_v1(30)::text
   ) = 0,
   'MTR-5 exposes no patient identifier'
+);
+
+select is(
+  public.get_therapist_interest_metrics_v1(30)
+    #>> '{summary,profileFavorites,activity,status}',
+  'empty',
+  'favorite activity is empty when no completed local day contains a favorite'
+);
+
+select is(
+  (
+    public.get_therapist_interest_metrics_v1(30)
+      #>> '{summary,profileFavorites,activity,value}'
+  )::integer,
+  0,
+  'empty favorite activity reports an honest zero'
+);
+
+reset role;
+
+insert into public.therapist_metric_daily_aggregates (
+  therapist_profile_id,
+  metric_date,
+  definition_version,
+  favorites_added,
+  fresh_through
+)
+values (
+  'c1000000-0000-4000-8000-000000000001',
+  ((now() at time zone 'America/Sao_Paulo')::date - 1),
+  1,
+  3,
+  now()
+)
+on conflict (therapist_profile_id, metric_date, definition_version)
+do update set favorites_added = excluded.favorites_added,
+  fresh_through = excluded.fresh_through;
+set local role authenticated;
+
+select is(
+  (
+    public.get_therapist_interest_metrics_v1(30)
+      #>> '{summary,profileFavorites,activity,value}'
+  )::integer,
+  3,
+  'favorite activity exposes a completed-period count below ten'
+);
+
+select is(
+  public.get_therapist_interest_metrics_v1(30)
+    #>> '{summary,profileFavorites,comparison,status}',
+  'insufficient_sample',
+  'favorite comparison remains protected below ten'
+);
+
+reset role;
+
+update public.therapist_metric_daily_aggregates
+set favorites_added = 10,
+  fresh_through = now()
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and metric_date = ((now() at time zone 'America/Sao_Paulo')::date - 1)
+  and definition_version = 1;
+set local role authenticated;
+
+select is(
+  (
+    public.get_therapist_interest_metrics_v1(30)
+      #>> '{summary,profileFavorites,activity,value}'
+  )::integer,
+  10,
+  'favorite activity preserves the complete-period count at ten'
+);
+
+select is(
+  public.get_therapist_interest_metrics_v1(30)
+    #>> '{summary,profileFavorites,comparison,status}',
+  'ready',
+  'favorite comparison becomes available at ten'
 );
 
 select throws_ok(

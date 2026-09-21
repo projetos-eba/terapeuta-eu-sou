@@ -8,7 +8,7 @@ import {
   ChevronRight,
   Clock3,
   CreditCard,
-  Star,
+  CheckCircle2,
   Video,
 } from "lucide-react";
 
@@ -40,7 +40,13 @@ export function SessionOverviewCard({
   const ratingLabel = getRatingLabel(data);
   const guidance = getGuidanceMessage(data);
   const primaryAction = getPrimaryAction(data);
-  const statusTone = getStatusTone(data.booking.status, data.booking.canJoin);
+  const paymentConfirmed = data.encounterState.payment.kind === "confirmed";
+  const statusTone = getStatusTone(
+    data.booking.status,
+    data.booking.canJoin,
+    paymentConfirmed,
+    data.attendanceReview?.isOpen === true,
+  );
 
   return (
     <>
@@ -101,7 +107,9 @@ export function SessionOverviewCard({
 
           <div
             className={`grid gap-4 border-t border-border pt-5 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0 ${
-              data.booking.status === BookingStatus.Confirmed
+              data.booking.status === BookingStatus.Confirmed &&
+              paymentConfirmed &&
+              !data.attendanceReview?.isOpen
                 ? "rounded-2xl border-status-success/25 bg-status-successBg/45 p-4 xl:ml-3 xl:border xl:pl-4"
                 : ""
             }`}
@@ -129,7 +137,7 @@ export function SessionOverviewCard({
       </section>
 
       <div className="grid gap-3 xl:hidden">
-        <HeroAction action={primaryAction} data={data} showFeedback={false} />
+        <HeroAction action={primaryAction} data={data} showFeedback />
       </div>
     </>
   );
@@ -288,14 +296,16 @@ function HeroAction({
         {data.onlineSession.joinRecommendation}
       </p>
 
-      {showFeedback && canReviewFeedback(data.booking.status) ? (
+      {showFeedback &&
+      data.sessionQuality?.status === "eligible" &&
+      !data.sessionQuality.feedback ? (
         <Link
           className="inline-flex min-h-11 items-center justify-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={
-            `${routes.patient.encounterVideo(data.booking.id)}?feedback=1` as Route<string>
+            `${routes.patient.encounterDetail(data.booking.id)}?feedback=1` as Route<string>
           }
         >
-          <Star aria-hidden="true" size={17} />
+          <CheckCircle2 aria-hidden="true" size={17} />
           Avaliar encontro
         </Link>
       ) : null}
@@ -310,6 +320,20 @@ function getRoomLabel(data: PatientSessionDetailPageData) {
 }
 
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
+  if (data.attendanceReview?.isOpen) {
+    return data.attendanceReview.financialResolution === "refund_pending"
+      ? "Seu reembolso está em processamento. Se precisar de ajuda, acompanhe com o Suporte."
+      : "Sessão não realizada. Se precisar de ajuda, fale com o suporte.";
+  }
+
+  if (data.paymentRecovery?.available) {
+    return "O pagamento não foi concluído. Confirme com o banco ou use outro cartão antes do horário do encontro.";
+  }
+
+  if (data.paymentRecovery?.checkoutAvailable) {
+    return "O pagamento não foi concluído. Continue para tentar novamente e confirmar o horário.";
+  }
+
   const isRetryableInterruptedPayment =
     data.booking.status === BookingStatus.CancelledByPayment &&
     data.encounterState.payment.retryAllowed &&
@@ -329,7 +353,28 @@ function getGuidanceMessage(data: PatientSessionDetailPageData) {
 
 function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   const supportHref =
-    `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
+    `${routes.patient.support}?context=suporte&booking=${data.booking.id}` as Route<string>;
+  const paymentRetryHref =
+    `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>;
+
+  if (data.attendanceReview?.isOpen) {
+    return {
+      href: supportHref,
+      kind: "support",
+      label: "Falar com o suporte",
+      variant: "secondary",
+    };
+  }
+
+  if (data.paymentRecovery?.checkoutAvailable) {
+    return {
+      href: paymentRetryHref,
+      kind: "retry_payment",
+      label: "Continuar pagamento",
+      variant: "primary",
+    };
+  }
+
   const isPaymentRecovery =
     data.booking.status === BookingStatus.CancelledByPayment &&
     (data.encounterState.payment.kind === "failed" ||
@@ -337,7 +382,7 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
 
   if (isPaymentRecovery && data.encounterState.payment.retryAllowed) {
     return {
-      href: `${routes.public.reservation}?booking=${encodeURIComponent(data.booking.id)}&etapa=pagamento` as Route<string>,
+      href: paymentRetryHref,
       kind: "retry_payment",
       label: "Tentar pagamento novamente",
       variant: "primary",
@@ -431,21 +476,18 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   };
 }
 
-function canReviewFeedback(
-  status: PatientSessionDetailPageData["booking"]["status"],
-) {
-  return (
-    status === BookingStatus.Completed ||
-    status === BookingStatus.NoShowPatient ||
-    status === BookingStatus.NoShowTherapist
-  );
-}
-
 function getStatusTone(
   status: PatientSessionDetailPageData["booking"]["status"],
   canJoin: boolean,
+  paymentConfirmed: boolean,
+  attendanceReviewOpen: boolean,
 ) {
-  if (canJoin || status === BookingStatus.Confirmed || status === "live") {
+  if (attendanceReviewOpen) return "danger";
+  if (
+    canJoin ||
+    status === "live" ||
+    (status === BookingStatus.Confirmed && paymentConfirmed)
+  ) {
     return "success";
   }
   if (status === "pending_payment") return "warning";
@@ -454,6 +496,7 @@ function getStatusTone(
     status === "cancelled_by_therapist" ||
     status === "no_show_patient" ||
     status === "no_show_therapist" ||
+    status === "no_show_both" ||
     status === "refunded"
   ) {
     return "danger";

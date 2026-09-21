@@ -35,6 +35,66 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 
 ## Contrato de dados
 
+### Regra vigente das ADRs 023 e 024 (substitui o contrato legado descrito abaixo)
+
+- `booking_session_attempts` identifica a tentativa atual e só avança em
+  reagendamento efetivo. `session_feedback` permanece histórico; novas respostas
+  privadas são `session_quality_feedback`, sempre vinculadas à tentativa.
+- `GET /api/session-feedback` usa `get_session_quality_feedback_v1` e separa
+  realização, resposta de qualidade, confirmação individual e financeiro.
+  Transfer `transferred` jamais significa confirmação. Fila de avaliações
+  inclui somente encontros encerrados com joins confiáveis de ambos, sem
+  classificação de ausência ou revisão técnica pendente.
+- `POST /api/session-feedback` exige `contractVersion: 2`, `bookingId`,
+  `sessionAttemptId`, `successful`, `qualityReason`, `rating`, `comment` e
+  `requestId`. “Sim” exige nota 1–5 sem motivo. “Não” exige motivo
+  `internet_problem`, `audio_video_problem` ou `other`, sem estrelas. Máximo de
+  500 caracteres. O servidor verifica identidade e tentativa; contrato antigo
+  e tentativa vencida falham fechados.
+- “Não” significa sessão realizada não bem-sucedida, não `not_performed`.
+  Cria ticket privado e revisão com cinco dias corridos; só resposta pública do
+  TES naquele ticket conta. Um ou dois relatos ficam separados. Sem joins
+  bilaterais não há formulário, nota nem pendência de avaliação: usar suporte
+  ou incidente de presença fora do feedback.
+- Pela ADR-024, o envio grava somente a resposta privada do próprio autor.
+  Não cria confirmação individual nem modifica presença ou financeiro.
+  O detalhe usa a qualidade da tentativa atual e do perfil autenticado:
+  `submitted` ou uma resposta já persistida removem a ação de avaliar,
+  independentemente da resposta ou confirmação da outra pessoa.
+- Na sala do paciente, uma resposta privada positiva oferece a etapa separada
+  “Avaliar terapeuta (opcional)”, inclusive ao reabrir uma resposta já enviada.
+  Reutilizar `PatientPublicReviewForm`; nunca copiar a nota privada para `reviews`
+  nem publicar sem ação explícita. O perfil do terapeuta vem do detalhe autorizado.
+- Falha de envio preserva os campos e permite retry com o mesmo request ID.
+  Falha da leitura posterior não transforma um envio confirmado em falha nem
+  mantém a avaliação pendente na superfície que recebeu a resposta salva.
+- Qualidade, confirmação e presença não chamam nem bloqueiam Transfer, Refund
+  ou Reversal. Confirmação automática de cliente/terapeuta vence após 7/30 dias
+  do término previsto, revalida a tentativa e nunca ocorre em “Não realizada”.
+  Um relato privado não pausa a confirmação automática; o prazo de atendimento
+  de cinco dias permanece independente, mantendo a análise aberta e alertando Admin.
+  Resposta do TES não fabrica confirmação individual nem modifica registros.
+- Reserva reembolsada após atendimento bilateral continua com badge de
+  reembolso; o cron de 7/30 dias pode confirmar cada participante sem alterar
+  o financeiro. Sem entrada confiável de ambos, ou com classificação de falta,
+  não há avaliação nem confirmação automática.
+- Confirmação manual `completed` da tentativa atual feita no fluxo anterior
+  fecha o prompt duplicado para seu autor, sem reclassificar o histórico legado
+  como avaliação de qualidade V2.
+- Nas listas do cliente e terapeuta, a resposta privada da própria tentativa
+  remove a pendência visual e apresenta a sessão comprovadamente realizada.
+  A confirmação automática individual de 7/30 dias também a apresenta como
+  realizada e encerra o prompt de avaliação não respondido, sem fabricar nota
+  ou avaliação pública. O job horário existente continua executando mesmo
+  quando uma resposta privada foi enviada.
+- Admin lê relatos da tentativa atual e legados históricos separadamente,
+  sem resposta privada cruzada para cliente ou terapeuta. QA: resposta
+  positiva/negativa, idempotência, tentativa desatualizada, dois tickets,
+  privacidade RLS, SLA exato, confirmação 7/30 dias, ausência e snapshots
+  financeiros imutáveis, desktop/mobile dos três perfis.
+
+### Histórico anterior (não normativo para o contrato V2)
+
 - `public.session_feedback` guarda uma resposta privada e imutável por
   participante e booking, com `completed` ou `not_performed`, nota, motivo,
   comentário limitado a 500 caracteres, timestamps e campos internos de
@@ -44,13 +104,24 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
   retries; nunca envia `actorRole`.
 - `get_session_feedback_v2` devolve a resposta do participante atual, as duas
   confirmações, origens, vencimentos, estado bilateral e bloqueios. O fim
-  programado/definitivo libera o formulário; joins do Zoom
-  são evidência e sinal de risco, não uma trava para resposta ou automação.
+  programado/definitivo libera o formulário. `eligible` e confirmação
+  `completed` exigem entradas confiáveis de ambos, sem incidente de presença
+  aberto. `incident_only` permite exclusivamente relato `not_performed`, sem
+  nota, mesmo quando a revisão administrativa bloqueia o pagamento. Ausência
+  de evidência bilateral não pode oferecer `Confirmar sessão`.
+- No V10, os dois read models de confirmação usam as respostas dos
+  participantes para o estado bilateral: o envio do repasse não conclui a
+  confirmação e não há data de lote semanal no feedback. A reavaliação de
+  elegibilidade semanal é exclusiva do V9 e não pode reclassificar um pagamento
+  V10. Ocorrências negativas abrem análise e a decisão de suporte preserva o
+  estado autoritativo do repasse V10; esse contrato deve permanecer coberto por
+  pgTAP e validação autenticada antes do rollout.
 - `session_participant_confirmations` guarda uma confirmação independente por
   papel e snapshot da política. Paciente vence em +7 dias e terapeuta em +30;
   o automático grava o vencimento em `confirmed_at`. A segunda resposta
-  `completed` define `service_confirmed_at` e inicia a verificação da liquidação
-  Stripe, sem espera fixa adicional.
+  `completed` define `service_confirmed_at`. Somente no V9 ela inicia a
+  verificação da liquidação Stripe, sem espera fixa adicional; no V10 não
+  reprograma o repasse criado após o pagamento.
 - `session-feedback-command` valida o payload e chama o RPC service-role
   idempotente. O feedback realizado registra a confirmação do ator e pode
   finalizar o estado bilateral; `not_performed` bloqueia o pagamento e abre
@@ -58,7 +129,10 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - `reviews` permanece separado, usa outro comando e nunca altera confirmação,
   pagamento ou lote.
 - Depois de um feedback `completed` do terapeuta, Premium Plus pode abrir a
-  seção opcional “Temas da jornada”. Ela é um comando separado em
+  seção opcional “Quais foram os temas da sua sessão?” tanto no sucesso do
+  feedback quanto no detalhe `/terapeuta/sessoes/:bookingId`. A orientação é
+  “Registre até três temas para acompanhar essa jornada no seu histórico com o
+  cliente.” Ela é um comando separado em
   `booking_journey_theme_selections`: aceita de um a três chaves da taxonomia
   fechada `journey_topics_v1`, exige declaração explícita, não tem texto livre
   e é imutável por booking. Falha, ausência ou retry desses temas nunca bloqueia
@@ -116,6 +190,23 @@ estados e responsividade. Nodes internos consultados: `12272:2`, `5999:10563`,
 - Executar Vitest focado, Deno, typecheck, lint, build, migrações progressivas,
   `npx supabase db lint --local` e `npx supabase test db --local`. Nunca resetar
   dados locais sem autorização explícita.
+- Antes do gate SQL, confirmar o projeto linkado e revisar o dry-run; alinhar
+  somente migrations existentes no banco local, preservando volume e versão
+  PostgreSQL. A ADR-024 deve estar aplicada para testar qualidade independente.
+- Fixtures históricas devem manter booking, tentativa e evidências nas mesmas
+  datas, sem disputar a agenda atual do seed. Cenários vivos de T+10 podem usar
+  `supabase/tests/fixtures/isolated-booking-window-local.inc` dentro de
+  `BEGIN`/`ROLLBACK`, antes de assumir o papel autenticado. Nunca desativar
+  guards de sobreposição ou ampliar grants para preparar fixtures.
+- Distinguir erros das funções da aplicação de diagnósticos de funções
+  pertencentes ao pgTAP no lint SQL, comprovando ownership em `pg_depend`.
+  Registrar o resultado bruto; não remover a extensão para obter lint limpo.
+- Deploy HML de `session-feedback-command` exige autorização, projeto explícito,
+  preservação da configuração de autenticação e comparação semântica da fonte
+  remota com a local. V2 chama `submit_session_quality_feedback_v1`; não usar
+  fallback legado. Revalidar resposta própria nos dois perfis e ausência de
+  efeitos em confirmação/financeiro. Evidência:
+  `docs/zoom/session-feedback-v2-deployment-sql-gate-2026-09-18.md`.
 - QA visual: `1440x900`, `1024x768`, `390x844` e, se necessário, `360x800`,
   cobrindo sala de espera, chamada ativa, saída, feedback realizado, não
   realização e erro.

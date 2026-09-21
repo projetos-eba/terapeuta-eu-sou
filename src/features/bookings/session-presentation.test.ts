@@ -13,6 +13,7 @@ import {
 
 import type { SessionReadModelItem } from "./session-read-model.types";
 import {
+  getZoomAccessLabel,
   getSessionOperationDisabledReason,
   isSessionUpcoming,
   mapSessionPresentation,
@@ -21,7 +22,96 @@ import {
 const now = new Date("2026-07-26T13:00:00.000Z");
 
 describe("mapSessionPresentation", () => {
-  it("uses canonical payment state even when the booking is confirmed", () => {
+  it.each([
+    BookingStatus.NoShowPatient,
+    BookingStatus.NoShowTherapist,
+    BookingStatus.NoShowBoth,
+  ])(
+    "labels the closed room as not performed for attendance status %s",
+    (bookingStatus) => {
+      expect(
+        getZoomAccessLabel(
+          {
+            allowed: false,
+            availableFrom: null,
+            availableUntil: null,
+            reason: ZoomAccessReason.BookingCancelled,
+            videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+          },
+          bookingStatus,
+        ),
+      ).toBe("Sessão não realizada");
+    },
+  );
+
+  it("preserves the cancelled room label for a cancelled booking", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: false,
+          availableFrom: null,
+          availableUntil: null,
+          reason: ZoomAccessReason.BookingCancelled,
+          videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+        },
+        BookingStatus.CancelledByPatient,
+      ),
+    ).toBe("Sessão cancelada");
+  });
+
+  it.each([
+    BookingStatus.CancelledByPatient,
+    BookingStatus.CancelledByTherapist,
+    BookingStatus.CancelledByPayment,
+  ])(
+    "does not describe a cancelled session as awaiting payment for %s",
+    (bookingStatus) => {
+      expect(
+        getZoomAccessLabel(
+          {
+            allowed: false,
+            availableFrom: null,
+            availableUntil: null,
+            reason: ZoomAccessReason.PaymentNotConfirmed,
+            videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+          },
+          bookingStatus,
+        ),
+      ).toBe("Sessão cancelada");
+    },
+  );
+
+  it("keeps the room awaiting payment for an active unpaid session", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: false,
+          availableFrom: null,
+          availableUntil: null,
+          reason: ZoomAccessReason.PaymentNotConfirmed,
+          videoSessionStatus: ZoomVideoSessionStatus.Canceled,
+        },
+        BookingStatus.Confirmed,
+      ),
+    ).toBe("Aguardando pagamento");
+  });
+
+  it("does not offer entry when a stale access snapshot accompanies a cancelled booking", () => {
+    expect(
+      getZoomAccessLabel(
+        {
+          allowed: true,
+          availableFrom: null,
+          availableUntil: null,
+          reason: null,
+          videoSessionStatus: ZoomVideoSessionStatus.Ready,
+        },
+        BookingStatus.CancelledByPayment,
+      ),
+    ).toBe("Sessão cancelada");
+  });
+
+  it("presents a confirmed slot awaiting payment as reserved", () => {
     const result = mapSessionPresentation(
       sessionFixture({
         bookingStatus: BookingStatus.Confirmed,
@@ -30,7 +120,8 @@ describe("mapSessionPresentation", () => {
       now,
     );
 
-    expect(result.state).toBe("payment_pending");
+    expect(result.state).toBe("reserved");
+    expect(result.label).toBe("Reservada");
     expect(result.actions.canAccessZoom).toBe(false);
   });
 
@@ -146,9 +237,69 @@ describe("mapSessionPresentation", () => {
 
     expect(result.actions.canCancel).toBe(false);
     expect(result.actions.canReschedule).toBe(false);
+    expect(result.label).toBe("Sessão não realizada");
+    expect(result.tone).toBe("danger");
     expect(getSessionOperationDisabledReason(session, "cancel")).toContain(
       "já foi encerrada",
     );
+  });
+
+  it.each([
+    [AttendanceStatus.PatientNoShow, "Sessão não realizada"],
+    [AttendanceStatus.TherapistNoShow, "Sessão não realizada"],
+    [AttendanceStatus.BothNoShow, "Sessão não realizada"],
+    [AttendanceStatus.RequiresReview, "Sessão não realizada"],
+  ])(
+    "presents the authoritative attendance outcome %s",
+    (attendanceStatus, label) => {
+      const result = mapSessionPresentation(
+        sessionFixture({ attendanceStatus }),
+        now,
+      );
+
+      expect(result.label).toBe(label);
+      expect(result.actions.canAccessZoom).toBe(false);
+    },
+  );
+
+  it("keeps a double no-show out of the therapist attention state", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({ attendanceStatus: AttendanceStatus.BothNoShow }),
+      now,
+    );
+
+    expect(result.state).toBe("cancelled");
+    expect(result.description).toBe(
+      "Se precisar de ajuda, fale com o suporte.",
+    );
+    expect(result.description).not.toContain("repasse");
+  });
+
+  it("keeps attendance guidance free of operational financial language", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({ attendanceStatus: AttendanceStatus.TherapistNoShow }),
+      now,
+    );
+
+    expect(result.description).toBe(
+      "Se precisar de ajuda, fale com o suporte.",
+    );
+    expect(result.description).not.toMatch(/Admin|reembolso|repasse/i);
+  });
+
+  it("prioritizes the persisted double no-show over stale review metadata", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        attendanceStatus: AttendanceStatus.RequiresReview,
+        bookingStatus: BookingStatus.NoShowBoth,
+      }),
+      now,
+    );
+
+    expect(result).toMatchObject({
+      label: "Sessão não realizada",
+      state: "cancelled",
+    });
   });
 
   it("identifies a paid session whose video session is still being prepared", () => {
@@ -168,6 +319,37 @@ describe("mapSessionPresentation", () => {
 
     expect(result.state).toBe("room_preparing");
     expect(result.actions.primary.action).toBe("view_detail");
+  });
+
+  it("shows an occurred session as realized while individual feedback remains separate", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        attendanceStatus: AttendanceStatus.Attended,
+        endsAt: "2026-07-26T12:00:00.000Z",
+        fulfillmentStatus: FulfillmentStatus.OccurredPendingConfirmation,
+        startsAt: "2026-07-26T11:00:00.000Z",
+      }),
+      now,
+    );
+
+    expect(result).toMatchObject({
+      label: "Realizada",
+      state: "completed",
+      tone: "success",
+    });
+  });
+
+  it("does not infer attendance solely from a financial fulfillment state", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        endsAt: "2026-07-26T12:00:00.000Z",
+        fulfillmentStatus: FulfillmentStatus.OccurredPendingConfirmation,
+        startsAt: "2026-07-26T11:00:00.000Z",
+      }),
+      now,
+    );
+
+    expect(result.state).not.toBe("completed");
   });
 
   it("maps fulfillment completion independently from booking payment", () => {
@@ -198,6 +380,7 @@ describe("mapSessionPresentation", () => {
 
     expect(result.state).toBe("completed");
     expect(result.label).toBe("Realizada");
+    expect(result.tone).toBe("success");
     expect(result.actions.canComplete).toBe(false);
   });
 });

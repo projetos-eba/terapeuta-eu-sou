@@ -154,6 +154,17 @@ export type TherapistMetricProtectedCollection<TItem> = {
   status: "empty" | "insufficient_sample" | "ready";
 };
 
+/**
+ * Frequência agregada do próprio terapeuta. Diferente das leituras
+ * comparativas, ela não expõe pessoas ou percentuais e pode ser mostrada
+ * desde a primeira sessão concluída.
+ */
+export type TherapistMetricOwnHistoryCollection<TItem> = {
+  items: TItem[];
+  observedSample: number;
+  status: "empty" | "ready";
+};
+
 export type TherapistSessionEvolutionPoint = {
   date: string;
   noShows: number;
@@ -166,8 +177,10 @@ export type TherapistSessionOutcomeKey =
   | "cancelled_by_patient"
   | "cancelled_by_therapist"
   | "completed"
+  | "not_performed"
   | "no_show_patient"
-  | "no_show_therapist";
+  | "no_show_therapist"
+  | "no_show_both";
 
 export type TherapistSessionMetrics = {
   cancellationReasons: {
@@ -179,13 +192,13 @@ export type TherapistSessionMetrics = {
     points: TherapistSessionEvolutionPoint[];
     status: "empty" | "ready";
   };
-  heatmap: TherapistMetricProtectedCollection<{
+  heatmap: TherapistMetricOwnHistoryCollection<{
     dayOfWeek: number;
     hourBucketStart: number;
     sessions: number;
   }>;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 1;
+  metricDefinitionVersion: 1 | 2;
   outcomeDistribution: TherapistMetricProtectedCollection<{
     key: TherapistSessionOutcomeKey;
     label: string;
@@ -305,7 +318,14 @@ export type TherapistInterestMetrics =
       };
       summary: {
         peopleReturned: TherapistMetricSampledValue<"people">;
-        profileFavorites: TherapistMetricSampledValue<"favorites">;
+        profileFavorites: {
+          activity: {
+            status: "empty" | "ready";
+            unit: "favorites";
+            value: number;
+          };
+          comparison: TherapistMetricSampledValue<"favorites">;
+        };
         returnRate: TherapistMetricSampledValue<"percent">;
         sessionsPerPerson: TherapistMetricSampledValue<"ratio">;
       };
@@ -322,6 +342,28 @@ export type TherapistInterestMetricsReady = Extract<
   TherapistInterestMetrics,
   { access: { status: "ready" } }
 >;
+
+export type TherapistMetricsTodayActivity = {
+  contractVersion: 1;
+  meta: {
+    computedAt: string;
+    freshThrough: string | null;
+    localDate: string;
+    timezone: string;
+  };
+  metricDefinitionVersion: 1;
+  profileFavoritesAdded: {
+    status: "empty" | "ready";
+    unit: "favorites";
+    value: number;
+  };
+  status: "ready";
+  therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistMetricsTodayActivityState =
+  | TherapistMetricsTodayActivity
+  | { status: "unavailable" };
 
 export type TherapistOccupancyPoint = {
   date: string;

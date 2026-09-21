@@ -100,7 +100,8 @@ export function PatientPublicReviewForm({
   if (!eligible) {
     return (
       <p className="rounded-xl bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        A avaliação pública será liberada após a confirmação de um encontro realizado com este terapeuta.
+        A avaliação pública será liberada após o registro privado de um
+        encontro realizado com este terapeuta.
       </p>
     );
   }
@@ -112,7 +113,8 @@ export function PatientPublicReviewForm({
           Avaliar {therapistName} publicamente
         </h3>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Esta etapa é opcional, editável e não interfere na confirmação nem no pagamento do encontro.
+          Esta etapa é opcional, editável e separada da avaliação privada do
+          encontro.
         </p>
       </div>
 

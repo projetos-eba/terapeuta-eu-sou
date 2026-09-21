@@ -84,7 +84,7 @@ export type BookingDetailReviewRow = {
 
 export type BookingDetailIntakeRow = {
   focus_area: string;
-  shared_note: string;
+  shared_note: string | null;
   therapy_goal: string;
   visibility: "patient_therapist" | "private_patient" | "support" | string;
 };
@@ -100,6 +100,7 @@ export type BookingDetailSessionPaymentRow = {
   id: string;
   refund_pending: boolean | null;
   financial_status: SessionFinancialStatusValue;
+  payment_flow_version?: string;
 };
 
 export type BookingDetailVideoParticipationRow = {
@@ -127,10 +128,11 @@ export type BookingDetailSessionSummaryRow = {
 };
 
 export type BookingDetailRescheduleRow = {
+  change_kind: string;
   expires_at: string | null;
   id: string;
-  proposed_ends_at: string;
-  proposed_starts_at: string;
+  proposed_ends_at: string | null;
+  proposed_starts_at: string | null;
   proposed_timezone: string;
   reason: string | null;
   requested_by_profile_id: string;
@@ -167,7 +169,16 @@ export function mapBookingDetail(
     startsAt: input.booking.starts_at,
     status: input.booking.status,
   });
-  const provider = getMeetingProvider(input.booking.meeting_provider);
+  const isReservedAwaitingPayment =
+    input.sessionPayment?.payment_flow_version === "v10" &&
+    input.booking.status === "confirmed" &&
+    (input.sessionPayment.financial_status === SessionFinancialStatus.Pending ||
+      input.sessionPayment.financial_status ===
+        SessionFinancialStatus.Processing);
+  const provider = getMeetingProvider(
+    input.booking.meeting_provider ??
+      (isReservedAwaitingPayment ? "zoom_video_sdk" : null),
+  );
   const canJoin =
     status === "live" &&
     input.sessionPayment?.financial_status === SessionFinancialStatus.Paid &&
@@ -215,6 +226,7 @@ export function mapBookingDetail(
       cancellationPolicy,
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       startsAt: input.booking.starts_at,
     }),
     booking: {
@@ -232,9 +244,12 @@ export function mapBookingDetail(
       minutesUntilStart: getMinutesUntilStart(input.booking.starts_at),
       operationalVersion: input.booking.version,
       paymentStatus: input.sessionPayment?.financial_status ?? null,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       startsAt: input.booking.starts_at,
       status,
-      statusLabel: getBookingDetailStatusLabel(status),
+      statusLabel: isReservedAwaitingPayment
+        ? "Reservado"
+        : getBookingDetailStatusLabel(status),
       timeRangeLabel: formatSessionTimeRange(
         input.booking.starts_at,
         input.booking.ends_at,
@@ -248,14 +263,13 @@ export function mapBookingDetail(
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
       patientHasJoined: input.patientHasJoined,
+      paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
       provider,
       startsAt: input.booking.starts_at,
     }),
     intake: {
       focusArea: input.intake?.focus_area ?? "Seu momento atual",
-      sharedNote:
-        input.intake?.shared_note ??
-        "Você poderá complementar suas informações antes do encontro, se desejar.",
+      sharedNote: normalizeSharedNote(input.intake?.shared_note),
       therapyGoal:
         input.intake?.therapy_goal ??
         input.service.description ??
@@ -324,6 +338,15 @@ export function mapBookingDetail(
   };
 }
 
+const LEGACY_EMPTY_SHARED_NOTE =
+  "Você poderá complementar suas informações antes do encontro, se desejar.";
+
+function normalizeSharedNote(value: string | null | undefined) {
+  const note = value?.trim() ?? "";
+
+  return note && note !== LEGACY_EMPTY_SHARED_NOTE ? note : null;
+}
+
 function mapReschedule(
   row: BookingDetailRescheduleRow | null,
   currentProfileId: string,
@@ -331,6 +354,9 @@ function mapReschedule(
   if (!row || !isRescheduleStatus(row.status)) return null;
 
   return {
+    kind: isTherapistChangeKind(row.change_kind)
+      ? row.change_kind
+      : "legacy",
     expiresAt: row.expires_at,
     id: row.id,
     proposedEndsAt: row.proposed_ends_at,
@@ -350,9 +376,17 @@ function isRescheduleStatus(
     value === "applied" ||
     value === "cancelled" ||
     value === "expired" ||
+    value === "pending_admin_review" ||
     value === "pending" ||
-    value === "rejected"
+    value === "rejected" ||
+    value === "refunded"
   );
+}
+
+function isTherapistChangeKind(
+  value: string,
+): value is "therapist_cancellation" | "therapist_reschedule" {
+  return value === "therapist_cancellation" || value === "therapist_reschedule";
 }
 
 function getMeetingProvider(

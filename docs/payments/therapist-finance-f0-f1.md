@@ -1,6 +1,6 @@
 # Financeiro do terapeuta — F0/F1
 
-Data: 2026-07-28
+Data: 2026-09-17
 
 ## Escopo aprovado
 
@@ -65,25 +65,25 @@ não autoriza saldo, pagamento, repasse ou acesso financeiro.
 
 ## Glossário financeiro
 
-| Termo                   | Definição                                                        | Fonte/cálculo                                                         |
-| ----------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Valor bruto             | Total pago pelo cliente por sessões dentro do período.           | Soma de `session_payments.gross_amount_cents`.                        |
-| Comissão TES            | Parcela da plataforma registrada no snapshot financeiro.         | Soma de `session_payments.platform_gross_commission_cents`.           |
-| Reembolso               | Valor devolvido ao cliente.                                      | Soma de `session_refunds.amount_cents` com status `succeeded`.        |
-| Valor líquido           | Valor bruto menos Comissão TES e reembolsos do cliente.          | Read model privado em centavos.                                       |
-| Aguardando confirmação  | Sessão paga ainda sem confirmação operacional para repasse.      | `session_payments.transfer_status = waiting_confirmation`.            |
-| Estado legado de segurança | Compatibilidade; apresentado e recalculado como liquidação.  | `waiting_safety_period` não é mais produzido.                         |
-| Em liquidação           | Charge ainda não disponível no saldo Stripe.                     | `session_payments.transfer_status = waiting_settlement`.              |
-| Disponível para repasse | Valor elegível e liquidado para entrar em lote.                  | `transfer_status = eligible` + Balance Transaction `available`.       |
-| Em processamento        | Todo valor ativo ainda não pago ao banco.                         | Estados ativos de `A receber` até `A caminho do banco`.               |
-| A caminho do banco      | Transfer concluído e ainda sem Payout bancário conciliado.       | `stripe_transfers.status = transferred`.                              |
-| Pago                    | Payout pago com reconciliação e alocação integral do Transfer.   | Payout `paid/completed` + alocação igual ao valor do Transfer.        |
-| Bloqueado               | Valor bloqueado por disputa, revisão, conta ou regra financeira. | `session_payments.transfer_status = blocked`.                         |
-| Disputado               | Pagamento com disputa aberta ou registrada.                      | `session_payments.financial_status = disputed` ou `session_disputes`. |
+| Termo                      | Definição                                                        | Fonte/cálculo                                                         |
+| -------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Valor bruto                | Total pago pelo cliente por sessões dentro do período.           | Soma de `session_payments.gross_amount_cents`.                        |
+| Comissão TES               | Parcela da plataforma registrada no snapshot financeiro.         | Soma de `session_payments.platform_gross_commission_cents`.           |
+| Reembolso                  | Valor devolvido ao cliente.                                      | Soma de `session_refunds.amount_cents` com status `succeeded`.        |
+| Valor líquido              | Valor bruto menos Comissão TES e reembolsos do cliente.          | Read model privado em centavos.                                       |
+| Aguardando confirmação     | Sessão paga ainda sem confirmação operacional para repasse.      | `session_payments.transfer_status = waiting_confirmation`.            |
+| Estado legado de segurança | Compatibilidade; apresentado e recalculado como liquidação.      | `waiting_safety_period` não é mais produzido.                         |
+| Em liquidação              | Charge ainda não disponível no saldo Stripe.                     | `session_payments.transfer_status = waiting_settlement`.              |
+| Disponível para repasse    | Valor elegível e liquidado para entrar em lote.                  | `transfer_status = eligible` + Balance Transaction `available`.       |
+| Em processamento           | Todo valor ativo ainda não pago ao banco.                        | Estados ativos de `A receber` até `A caminho do banco`.               |
+| A caminho do banco         | Transfer concluído e ainda sem Payout bancário conciliado.       | `stripe_transfers.status = transferred`.                              |
+| Pago                       | Payout pago com reconciliação e alocação integral do Transfer.   | Payout `paid/completed` + alocação igual ao valor do Transfer.        |
+| Bloqueado                  | Valor bloqueado por disputa, revisão, conta ou regra financeira. | `session_payments.transfer_status = blocked`.                         |
+| Disputado                  | Pagamento com disputa aberta ou registrada.                      | `session_payments.financial_status = disputed` ou `session_disputes`. |
 
-Na interface, `Custos da plataforma` é o nome amigável da Comissão TES no
-painel de composição. O valor continua sendo o snapshot financeiro imutável e
-entra no cálculo do repasse; não inclui uma dedução dinâmica da Stripe.
+Na interface, o termo canônico é `Comissão TES`. O valor continua sendo o
+snapshot financeiro imutável e não inclui uma dedução dinâmica das tarifas do
+provedor sobre a parcela contratual do terapeuta.
 
 ## Contratos privados
 
@@ -122,6 +122,37 @@ derivado do terapeuta. Cards, tendência mensal e distribuição são calculados
 no servidor sobre todo o filtro, sem depender da página carregada. Valores
 ativos usam a data da sessão; recebidos usam a data do Payout pago e
 integralmente conciliado.
+
+### Projeções de produto v3 — Recebimentos e Repasses
+
+`get_private_therapist_receipts_v3` e
+`get_private_therapist_payouts_v4` são projeções aditivas, privadas e somente
+leitura. Os contratos v2 permanecem instalados para compatibilidade; nenhum
+worker, job, comando de pagamento, ledger ou regra de transição foi alterado.
+
+Em `Recebimentos`, a projeção v3 é orientada à cobrança da sessão e reduz os
+estados visíveis para `scheduled`, `processing`, `approved`, `failed`,
+`refunded`, `under_review` e `canceled`. A interface apresenta, por sessão,
+valor bruto, Comissão TES, valor do terapeuta, situação e próxima etapa. Um
+pagamento aprovado não é apresentado como dinheiro recebido no banco.
+O resumo visual exibe pagamentos aprovados, cobranças agendadas e reembolsos.
+`processing` permanece disponível no filtro e nas linhas para uma cobrança
+realmente iniciada, mas não possui card agregado próprio. Estados pendentes sem
+evidência atual de processamento ficam em análise; uma tentativa terminal sem
+autoridade financeira é cancelada ou apresentada como falha conforme sua
+evidência, nunca somada como valor em processamento.
+
+Em `Repasses`, a projeção v3 traduz a chegada bancária em três conceitos de
+produto: `predicted` (Previsto), `in_transit` (A caminho da sua conta) e
+`received` (Recebido). A Agenda usa somente `stripe_payouts.arrival_at` quando
+há alocação integral do valor e mostra apenas o futuro. Valores recebidos saem
+da Agenda e permanecem no resumo e no histórico. `received` continua exigindo
+Payout pago, reconciliação concluída e cobertura integral da movimentação.
+
+A Agenda oferece 7, 15 e 30 dias, com padrão de 15 dias, agrupa valores pela
+data de chegada e permite expandir apenas a composição por sessão. A origem V9
+por lote e a origem V10 direta continuam preservadas nos bastidores, sem
+vocabulário técnico na experiência do terapeuta.
 
 ### `get_private_therapist_connect_account_v1`
 
@@ -204,34 +235,31 @@ política real.
 
 ## Matriz Figma → dado real
 
-| Elemento implementado     | Definição                                                                        | Fonte                                                                                                 | Estado sem dados                              | Capability             |
-| ------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------- |
-| Total líquido no período  | Resultado operacional do período.                                                | `get_private_therapist_financial_overview_v1`                                                         | R$ 0,00 com data de atualização.              | `operation_essentials` |
-| A receber                 | Confirmação, liquidação e processamento.                                         | `session_payments.transfer_status` agregado                                                           | R$ 0,00.                                      | `operation_essentials` |
-| Disponível para repasse   | Valor elegível para lote.                                                        | `session_payments.transfer_status = eligible`                                                         | R$ 0,00.                                      | `operation_essentials` |
-| Em processamento          | Valor em lote ou transferência pendente.                                         | `batched`/`transfer_pending`                                                                          | R$ 0,00.                                      | `operation_essentials` |
-| Transferido no período    | Transfers concluídos.                                                            | `stripe_transfers`                                                                                    | R$ 0,00.                                      | `operation_essentials` |
-| Bloqueado                 | Valores bloqueados.                                                              | `session_payments.transfer_status = blocked`                                                          | Oculto quando zero.                           | `operation_essentials` |
-| Reembolsado               | Valores devolvidos ao cliente.                                                   | `session_refunds.status = succeeded`                                                                  | Oculto quando zero.                           | `operation_essentials` |
-| Disputado                 | Pagamentos em disputa.                                                           | `session_disputes` e `session_payments`                                                               | Oculto quando zero.                           | `operation_essentials` |
-| Tabela de recebimentos    | Pagamentos por sessão.                                                           | `get_private_therapist_receipts_v1`                                                                   | Estado vazio honesto.                         | `operation_essentials` |
-| Tabela de repasses        | Lotes e transfers.                                                               | `get_private_therapist_payouts_v1`                                                                    | Estado vazio honesto.                         | `operation_essentials` |
-| Conciliação de repasse    | Transfer Connect conciliado com a Charge de origem.                              | `stripe_transfers.stripe_transfer_id` + `stripe_transfers.stripe_source_charge_id`                    | Aguardando conciliação.                       | `operation_essentials` |
-| Conta de recebimento      | Estado Connect hospedado.                                                        | `get_private_therapist_connect_account_v1` + Edge Functions Connect                                   | CTA para conectar.                            | `operation_essentials` |
-| Receita líquida           | Valor líquido do terapeuta no período.                                           | `get_private_therapist_financial_metrics_v1`                                                          | R$ 0,00 ou estado insuficiente.               | `advanced_metrics`     |
-| Ticket médio              | Ticket médio líquido principal.                                                  | `get_private_therapist_financial_metrics_v1`                                                          | “Sem base”.                                   | `advanced_metrics`     |
-| Sessões realizadas        | Sessões concluídas/confirmadas.                                                  | `bookings` + `session_payments.service_status`                                                        | 0.                                            | `advanced_metrics`     |
-| Taxa de retorno           | Retorno simples em janela de 90 dias.                                            | `get_private_therapist_financial_metrics_v1`                                                          | “Sem base”/dados insuficientes.               | `advanced_metrics`     |
-| Cancelamentos             | Cancelamentos sobre agendamentos elegíveis.                                      | `bookings`                                                                                            | 0 ou taxa indisponível.                       | `advanced_metrics`     |
-| Reagendamentos            | Reagendamentos aplicados no período.                                             | `booking_reschedule_requests.status = applied`                                                        | 0 ou taxa indisponível.                       | `advanced_metrics`     |
-| Terapias que mais faturam | Faturamento agrupado por terapia.                                                | `session_payments` + `therapist_services` + `therapies`                                               | Estado vazio honesto.                         | `advanced_metrics`     |
-| Evolução financeira       | Realizado versus período anterior.                                               | `session_payments`                                                                                    | Série vazia honesta.                          | `advanced_metrics`     |
-| Receita no mês            | Realizado líquido + sessões futuras já pagas e válidas.                           | `get_private_therapist_advanced_financial_dashboard_v1`                                               | R$ 0,00. Independe da disponibilidade para estimativa. | `advanced_financials`  |
-| Potencial da agenda       | Estimativa por disponibilidade real, bloqueios, reservas pagas, duração e preço. | `availability_rules`, `availability_exceptions`, `bookings`, `therapist_services`, `session_payments` | Estado insuficiente/indisponível.             | `advanced_financials`  |
-| Oportunidade do mês       | Ação determinística com evidências e confiança.                                  | `get_private_therapist_financial_opportunities_v1`                                                    | Item explícito de sem oportunidade confiável. | `advanced_financials`  |
-| Insight TES financeiro    | Explicação rule-based vinculada a evidências.                                    | Oportunidades F3                                                                                      | Estado sem insight suficiente.                | `advanced_financials`  |
-| Retenção avançada         | Coortes com janela incompleta censurada e retorno pago em até 90 dias.           | `bookings`, `session_payments`                                                                        | `insufficient_data`.                          | `advanced_financials`  |
-| Evolução com projeção     | Realizado, contratado, estimado e período anterior em séries separadas.          | `session_payments` + potencial F3                                                                     | Série vazia honesta.                          | `advanced_financials`  |
+| Elemento implementado     | Definição                                                                                                                                    | Fonte                                                                                                 | Estado sem dados                                       | Capability             |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------- |
+| Total líquido no período  | Resultado operacional do período.                                                                                                            | `get_private_therapist_financial_overview_v1`                                                         | R$ 0,00 com data de atualização.                       | `operation_essentials` |
+| A receber                 | Valores previstos na janela de 7, 15 ou 30 dias, mais repasses sem data bancária.                                                            | `get_private_therapist_payouts_v4.summary.expectedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
+| A caminho da sua conta    | Valores que já iniciaram o processo efetivo de depósito.                                                                                     | `get_private_therapist_payouts_v4.summary.inTransitCents`                                             | R$ 0,00.                                               | `operation_essentials` |
+| Recebido                  | Chegada bancária confirmada no período histórico.                                                                                            | `get_private_therapist_payouts_v4.summary.receivedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
+| Indicadores de cobrança   | Aprovados, processando, agendados e reembolsos.                                                                                              | `get_private_therapist_receipts_v3.summary`                                                           | R$ 0,00.                                               | `operation_essentials` |
+| Movimentações por sessão  | Cobrança, valor da sessão, Comissão TES, valor do terapeuta e próxima etapa.                                                                 | `get_private_therapist_receipts_v3`                                                                   | Estado vazio honesto.                                  | `operation_essentials` |
+| Agenda de repasses        | Depósito em andamento, chegada prevista, disponibilidade do saldo e valores sem data bancária; nunca confundir disponibilidade com depósito. | `get_private_therapist_payouts_v4.agenda`                                                             | Nenhum repasse previsto.                               | `operation_essentials` |
+| Histórico de repasses     | Valores recebidos e exceções discretas em análise.                                                                                           | `get_private_therapist_payouts_v4.historyItems`                                                       | Nenhum valor recebido no período.                      | `operation_essentials` |
+| Conta de recebimento      | Estado Connect hospedado.                                                                                                                    | `get_private_therapist_connect_account_v1` + Edge Functions Connect                                   | CTA para conectar.                                     | `operation_essentials` |
+| Receita líquida           | Valor líquido do terapeuta no período.                                                                                                       | `get_private_therapist_financial_metrics_v1`                                                          | R$ 0,00 ou estado insuficiente.                        | `advanced_metrics`     |
+| Ticket médio              | Ticket médio líquido principal.                                                                                                              | `get_private_therapist_financial_metrics_v1`                                                          | “Sem base”.                                            | `advanced_metrics`     |
+| Sessões realizadas        | Sessões concluídas/confirmadas.                                                                                                              | `bookings` + `session_payments.service_status`                                                        | 0.                                                     | `advanced_metrics`     |
+| Taxa de retorno           | Retorno simples em janela de 90 dias.                                                                                                        | `get_private_therapist_financial_metrics_v1`                                                          | “Sem base”/dados insuficientes.                        | `advanced_metrics`     |
+| Cancelamentos             | Cancelamentos sobre agendamentos elegíveis.                                                                                                  | `bookings`                                                                                            | 0 ou taxa indisponível.                                | `advanced_metrics`     |
+| Reagendamentos            | Reagendamentos aplicados no período.                                                                                                         | `booking_reschedule_requests.status = applied`                                                        | 0 ou taxa indisponível.                                | `advanced_metrics`     |
+| Terapias que mais faturam | Faturamento agrupado por terapia.                                                                                                            | `session_payments` + `therapist_services` + `therapies`                                               | Estado vazio honesto.                                  | `advanced_metrics`     |
+| Evolução financeira       | Realizado versus período anterior.                                                                                                           | `session_payments`                                                                                    | Série vazia honesta.                                   | `advanced_metrics`     |
+| Receita no mês            | Realizado líquido + sessões futuras já pagas e válidas.                                                                                      | `get_private_therapist_advanced_financial_dashboard_v1`                                               | R$ 0,00. Independe da disponibilidade para estimativa. | `advanced_financials`  |
+| Potencial da agenda       | Estimativa por disponibilidade real, bloqueios, reservas pagas, duração e preço.                                                             | `availability_rules`, `availability_exceptions`, `bookings`, `therapist_services`, `session_payments` | Estado insuficiente/indisponível.                      | `advanced_financials`  |
+| Oportunidade do mês       | Ação determinística com evidências e confiança.                                                                                              | `get_private_therapist_financial_opportunities_v1`                                                    | Item explícito de sem oportunidade confiável.          | `advanced_financials`  |
+| Insight TES financeiro    | Explicação rule-based vinculada a evidências.                                                                                                | Oportunidades F3                                                                                      | Estado sem insight suficiente.                         | `advanced_financials`  |
+| Retenção avançada         | Coortes com janela incompleta censurada e retorno pago em até 90 dias.                                                                       | `bookings`, `session_payments`                                                                        | `insufficient_data`.                                   | `advanced_financials`  |
+| Evolução com projeção     | Realizado, contratado, estimado e período anterior em séries separadas.                                                                      | `session_payments` + potencial F3                                                                     | Série vazia honesta.                                   | `advanced_financials`  |
 
 ## Divergências conscientes do Figma
 

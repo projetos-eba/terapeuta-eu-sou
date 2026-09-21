@@ -131,6 +131,14 @@ async function seed() {
     serviceStatus: "scheduled",
     transferStatus: "not_eligible",
   });
+  await createV10PrechargeScenario({
+    key: "v10_future_before_charge",
+    patient: patients.client_one,
+    patientProfileId: authUsers.get("client_one").id,
+    patientEmail: users.find((user) => user.key === "client_one").email,
+    service: services.therapist_connect_ready,
+    therapist: therapists.therapist_connect_ready,
+  });
   await createScenario({
     key: "paid_waiting_confirmation",
     patient: patients.client_one,
@@ -200,7 +208,7 @@ async function seed() {
         ok: true,
         runId,
         users: users.map(({ email, key, role }) => ({ email, key, role })),
-        scenarios: 6,
+        scenarios: 7,
       },
       null,
       2,
@@ -250,6 +258,11 @@ async function cleanup() {
     "session_payment_id",
     sessionPaymentIds,
   );
+  await deleteIn(
+    "session_transfer_jobs",
+    "session_payment_id",
+    sessionPaymentIds,
+  );
   await deleteIn("stripe_transfer_reversals", "metadata->>e2e_run_id", [runId]);
   await deleteIn("stripe_transfers", "session_payment_id", sessionPaymentIds);
   await deleteIn("payout_batch_items", "payout_batch_id", batchIds);
@@ -272,7 +285,19 @@ async function cleanup() {
     "session_payment_id",
     sessionPaymentIds,
   );
+  await deleteIn(
+    "session_payment_schedules",
+    "session_payment_id",
+    sessionPaymentIds,
+  );
+  await deleteIn(
+    "session_payment_setups",
+    "session_payment_id",
+    sessionPaymentIds,
+  );
+  await deleteBookingRescheduleRequests(bookingIds);
   await deleteIn("session_payments", "id", sessionPaymentIds);
+  await deleteIn("stripe_customers", "patient_profile_id", patientIds);
   await deleteLegacyPayments(bookingIds);
   await deleteIn("reviews", "booking_id", bookingIds);
   await deleteBookings(bookingIds);
@@ -441,20 +466,28 @@ async function createAvailability(therapistId, serviceId) {
 }
 
 async function createConnectAccount(therapistId, input) {
+  const isOperationallyReady =
+    input.onboarding_status === "ready" &&
+    input.operational_status === "ready" &&
+    input.stripe_transfers_status === "active";
   const rows = await supabaseJson(
     "/rest/v1/therapist_connect_accounts?select=id",
     {
       body: JSON.stringify({
+        charges_enabled: isOperationallyReady,
         dashboard_type: "express",
+        details_submitted: isOperationallyReady,
         fees_collector: "application",
         losses_collector: "application",
         metadata,
         onboarding_status: input.onboarding_status,
         operational_status: input.operational_status,
-        pending_requirements:
-          input.stripe_transfers_status === "active"
-            ? []
-            : { currentlyDue: ["external_account"], eventuallyDue: [] },
+        pending_requirements: isOperationallyReady
+          ? []
+          : { currentlyDue: ["external_account"], eventuallyDue: [] },
+        payout_schedule_interval: isOperationallyReady ? "daily" : null,
+        payout_status: isOperationallyReady ? "enabled" : "disabled",
+        payouts_enabled: isOperationallyReady,
         stripe_account_id: input.stripe_account_id,
         stripe_transfers_status: input.stripe_transfers_status,
         therapist_profile_id: therapistId,
@@ -589,6 +622,106 @@ async function createScenario(input) {
   return payment;
 }
 
+async function createV10PrechargeScenario(input) {
+  const startsAt = addDays(4);
+  const endsAt = new Date(
+    new Date(startsAt).getTime() + 50 * 60000,
+  ).toISOString();
+  const [booking] = await supabaseJson("/rest/v1/bookings?select=id", {
+    body: JSON.stringify({
+      ends_at: endsAt,
+      legal_acceptance_recorded_at: new Date().toISOString(),
+      patient_profile_id: input.patient.id,
+      payment_status: "not_started",
+      service_id: input.service.id,
+      starts_at: startsAt,
+      status: "draft",
+      therapist_profile_id: input.therapist.id,
+      timezone: "America/Sao_Paulo",
+    }),
+    method: "POST",
+    prefer: "return=representation",
+  });
+  const [customer] = await supabaseJson("/rest/v1/stripe_customers?select=id", {
+    body: JSON.stringify({
+      email: input.patientEmail,
+      environment: "test",
+      livemode: false,
+      patient_profile_id: input.patient.id,
+      profile_id: input.patientProfileId,
+      role: "patient",
+      stripe_customer_id: `cus_e2e_${shortRunId()}_${input.key}`,
+    }),
+    method: "POST",
+    prefer: "return=representation",
+  });
+  const prepared = await supabaseJson(
+    "/rest/v1/rpc/prepare_session_payment_v10",
+    {
+      body: JSON.stringify({
+        p_booking_id: booking.id,
+        p_stripe_customer_id: customer.id,
+      }),
+      method: "POST",
+    },
+  );
+  const checkoutSessionId = `cs_e2e_${shortRunId()}_${input.key}`;
+  await supabaseJson("/rest/v1/rpc/swap_session_payment_checkout_v10", {
+    body: JSON.stringify({
+      p_booking_version: prepared.bookingVersion,
+      p_checkout_timing: "scheduled",
+      p_discount_amount_cents: 0,
+      p_expected_checkout_session_id: null,
+      p_new_checkout_session_id: checkoutSessionId,
+      p_original_amount_cents: input.service.price_cents,
+      p_session_payment_id: prepared.sessionPaymentId,
+      p_stripe_environment: "test",
+      p_total_amount_cents: input.service.price_cents,
+    }),
+    method: "POST",
+  });
+  await supabaseJson("/rest/v1/session_payment_attempts", {
+    body: JSON.stringify({
+      attempt_kind: "initial_hold",
+      idempotency_key: `tes:e2e:${runId}:setup:${booking.id}`,
+      session_payment_id: prepared.sessionPaymentId,
+      status: "checkout_created",
+      stripe_checkout_session_id: checkoutSessionId,
+    }),
+    method: "POST",
+    prefer: "return=minimal",
+  });
+  await supabaseJson("/rest/v1/rpc/complete_session_payment_setup_v10", {
+    body: JSON.stringify({
+      p_booking_version: prepared.bookingVersion,
+      p_consent_version: "tes-session-off-session-consent-v1",
+      p_session_payment_id: prepared.sessionPaymentId,
+      p_stripe_checkout_session_id: checkoutSessionId,
+      p_stripe_customer_id: `cus_e2e_${shortRunId()}_${input.key}`,
+      p_stripe_environment: "test",
+      p_stripe_event_created_at: new Date().toISOString(),
+      p_stripe_event_id: `evt_e2e_${shortRunId()}_${input.key}`,
+      p_stripe_payment_method_id: `pm_e2e_${shortRunId()}_${input.key}`,
+      p_stripe_setup_intent_id: `seti_e2e_${shortRunId()}_${input.key}`,
+    }),
+    method: "POST",
+  });
+  const [payment] = await supabaseJson(
+    `/rest/v1/session_payments?select=id,metadata&id=eq.${prepared.sessionPaymentId}&limit=1`,
+  );
+  await supabaseJson(
+    `/rest/v1/session_payments?id=eq.${prepared.sessionPaymentId}`,
+    {
+      body: JSON.stringify({
+        metadata: { ...payment.metadata, ...metadata, scenario: input.key },
+      }),
+      method: "PATCH",
+      prefer: "return=minimal",
+    },
+  );
+  return { booking, payment };
+}
+
 async function createTransferredBatch(payment, connectAccountId) {
   const [batch] = await supabaseJson("/rest/v1/payout_batches?select=id", {
     body: JSON.stringify({
@@ -707,6 +840,64 @@ async function deleteLegacyPayments(bookingIds) {
   if (tryDeleteLegacyPaymentsWithLocalDocker(bookingIds)) return;
 
   await deleteInOptional("payments", "booking_id", bookingIds);
+}
+
+async function deleteBookingRescheduleRequests(bookingIds) {
+  if (tryDeleteBookingRescheduleRequestsWithLocalDocker(bookingIds)) return;
+
+  await deleteIn("booking_reschedule_requests", "booking_id", bookingIds);
+}
+
+function tryDeleteBookingRescheduleRequestsWithLocalDocker(bookingIds) {
+  const ids = bookingIds.filter(Boolean);
+  if (!ids.length) return true;
+
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(supabaseUrl)) {
+    return false;
+  }
+
+  try {
+    const containers = execFileSync(
+      "docker",
+      ["ps", "--format", "{{.Names}}"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    )
+      .split("\n")
+      .map((name) => name.trim())
+      .filter(Boolean);
+    const dbContainer = containers.find((name) =>
+      name.startsWith("supabase_db_"),
+    );
+
+    if (!dbContainer) return false;
+
+    const uuidList = ids
+      .map((id) => `'${String(id).replace(/'/g, "''")}'::uuid`)
+      .join(",");
+    execFileSync(
+      "docker",
+      [
+        "exec",
+        "-i",
+        dbContainer,
+        "psql",
+        "-U",
+        "postgres",
+        "-d",
+        "postgres",
+        "-c",
+        `delete from public.booking_reschedule_requests where booking_id = any(array[${uuidList}]);`,
+      ],
+      { stdio: "ignore" },
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function tryDeleteLegacyPaymentsWithLocalDocker(bookingIds) {

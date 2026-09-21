@@ -99,7 +99,7 @@ select is(
 );
 
 select ok(
-  (select idempotency_key like 'tes:test:transfer:%:v1' from public.stripe_transfers
+  (select idempotency_key like 'tes:test:transfer:%:cycle:0:attempt:1:v2' from public.stripe_transfers
     where session_payment_id = 'fa100000-0000-4000-8000-000000000001'),
   'Transfer has a stable scoped idempotency key'
 );

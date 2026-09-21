@@ -1,6 +1,8 @@
 begin;
 
-select plan(13);
+\ir fixtures/publication-ready-local.inc
+
+select plan(23);
 
 select ok(
   has_function_privilege(
@@ -161,6 +163,44 @@ select is(
 );
 
 select is(
+  (select status::text from public.therapist_profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'),
+  'submitted',
+  'a public approved therapist returns to administrative review after account closure'
+);
+
+select is(
+  (select public_status::text from public.therapist_profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'),
+  'unpublished',
+  'account closure removes the profile from public publication atomically'
+);
+
+select ok(
+  not (select is_public from public.therapist_profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'),
+  'account closure turns off public visibility'
+);
+
+select is(
+  (select review_origin from public.therapist_verifications
+    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+    order by submitted_at desc, created_at desc limit 1),
+  'connect_account_closed',
+  'a fresh verification records that the review was caused by account closure'
+);
+
+select ok(
+  exists (
+    select 1 from public.notifications
+    where profile_id = (select user_id from public.therapist_profiles
+      where id = 'c1000000-0000-4000-8000-000000000001')
+      and event_key = 'receiving-account-closed:f8400000-0000-4000-8000-000000000001'
+  ),
+  'therapist receives an idempotent account-closure notification'
+);
+
+select is(
   (select transfer_status::text from public.session_payments
     where id = 'f8420000-0000-4000-8000-000000000001'),
   'eligible',
@@ -204,6 +244,14 @@ select is(
   'duplicate closure is idempotent'
 );
 
+select is(
+  (select count(*)::integer from public.therapist_verifications
+    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+      and review_origin = 'connect_account_closed'),
+  1,
+  'duplicate closure does not create another reapproval request'
+);
+
 insert into public.therapist_connect_accounts (
   id, therapist_profile_id, stripe_account_id, account_generation,
   onboarding_status, details_submitted, charges_enabled, payouts_enabled,
@@ -230,6 +278,55 @@ select is(
     where id = 'f8400000-0000-4000-8000-000000000002'),
   1001,
   'new current account has a distinct generation'
+);
+
+create temporary table closure_verification_fixture as
+select id from public.therapist_verifications
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and review_origin = 'connect_account_closed';
+grant select on closure_verification_fixture to authenticated;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"authenticated"}',
+  true
+);
+
+select lives_ok(
+  $$ select public.admin_execute_operation_command_v2(
+    'verification.reopen_review',
+    (select id from closure_verification_fixture limit 1),
+    'Nova conta de recebimento revisada pela equipe',
+    'connect-closure-review-090'
+  ) $$,
+  'admin can begin the reapproval after a new ready account exists'
+);
+
+select lives_ok(
+  $$ select public.admin_execute_operation_command_v2(
+    'verification.approve',
+    (select id from closure_verification_fixture limit 1),
+    'Nova conta e perfil revisados e aprovados',
+    'connect-closure-approve-090'
+  ) $$,
+  'admin approval completes the closure-origin review'
+);
+
+reset role;
+
+select is(
+  (select status::text from public.therapist_profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'),
+  'approved',
+  'approval restores the professional lifecycle after the new account is ready'
+);
+
+select ok(
+  (public.get_therapist_publication_eligibility_v1(
+    'c1000000-0000-4000-8000-000000000001'
+  ) ->> 'eligible')::boolean,
+  'approval restores the prior public availability only after every gate is ready'
 );
 
 select ok(

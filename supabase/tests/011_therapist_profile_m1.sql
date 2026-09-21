@@ -1,6 +1,52 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(20);
+
+-- Public cross-therapist reads are gated by publication state. Establish the
+-- approved public fixtures instead of depending on mutable local UI state.
+update public.therapist_profiles
+set status = 'approved',
+    public_status = 'published',
+    is_public = true,
+    is_accepting_bookings = true,
+    accepts_online_sessions = true
+where id in (
+  'c1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000002'
+);
+
+insert into public.therapist_connect_accounts (
+  id, therapist_profile_id, stripe_account_id, onboarding_status,
+  details_submitted, payouts_enabled, stripe_transfers_status,
+  operational_status, payout_status, payout_schedule_interval,
+  pending_requirements, is_current, closed_at
+)
+values
+  (
+    'a1100000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001', 'acct_test_profile_1',
+    'ready', true, true, 'active', 'ready', 'enabled', 'daily',
+    '[]'::jsonb, true, null
+  ),
+  (
+    'a1100000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000002', 'acct_test_profile_2',
+    'ready', true, true, 'active', 'ready', 'enabled', 'daily',
+    '[]'::jsonb, true, null
+  )
+on conflict (therapist_profile_id) where is_current
+do update set
+  onboarding_status = excluded.onboarding_status,
+  details_submitted = excluded.details_submitted,
+  payouts_enabled = excluded.payouts_enabled,
+  stripe_transfers_status = excluded.stripe_transfers_status,
+  operational_status = excluded.operational_status,
+  payout_status = excluded.payout_status,
+  payout_schedule_interval = excluded.payout_schedule_interval,
+  pending_requirements = excluded.pending_requirements,
+  closed_at = null;
 
 select has_column(
   'public',
@@ -187,6 +233,7 @@ select ok(
         'shortIntro', 'Perfil salvo como rascunho sem alterar a area publica.',
         'essenceBody', 'Cuidado online com presenca e responsabilidade.',
         'bio', 'Atendimento online com linguagem clara e sem promessa de resultado.',
+        'photoUrl', '/images/avatar-terapeuta.jpeg',
         'guideItems', jsonb_build_array(jsonb_build_object('icon', 'sparkles', 'label', 'Escuta acolhedora')),
         'reflections', '[]'::jsonb
       )
@@ -214,15 +261,16 @@ select ok(
 
 select is(
   (select count(*)::integer from public.public_therapist_profiles_v where slug = 'ana-oliveira'),
-  0,
-  'published profile remains hidden until administrative moderation'
+  1,
+  'an already approved therapist keeps the public profile available after an editorial publication'
 );
 
 select is(
   (select status::text from public.therapist_verifications where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001' order by submitted_at desc nulls last, created_at desc limit 1),
-  'submitted',
-  'publishing creates a submitted moderation review'
+  'approved',
+  'an editorial publication preserves the existing administrative approval'
 );
+
 
 select throws_ok(
   $$

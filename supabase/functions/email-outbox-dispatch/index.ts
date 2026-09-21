@@ -224,7 +224,9 @@ async function resolveDelivery(
     const baseUrl = getSiteUrl(runtime);
     return {
       templateData: {
+        agenda_url: `${baseUrl}/terapeuta/agenda?aba=horarios`,
         dashboard_url: `${baseUrl}/terapeuta`,
+        finance_url: `${baseUrl}/terapeuta/financeiro?tab=conta`,
         profile_edit_url: `${baseUrl}/terapeuta/perfil/editar`,
         profile_url: `${baseUrl}/terapeuta/perfil`,
         recipient_name: recipient.display_name ?? "Terapeuta",
@@ -458,6 +460,8 @@ async function resolveDelivery(
 
 function isTherapistLifecycleAction(actionKey: EmailActionKey) {
   return [
+    "therapist_availability_removed",
+    "therapist_receiving_account_closed",
     "therapist_profile_submitted_for_review",
     "therapist_documents_requested",
     "therapist_profile_approved",
@@ -469,6 +473,8 @@ function isTherapistLifecycleAction(actionKey: EmailActionKey) {
 
 function isBookingAction(actionKey: EmailActionKey) {
   return [
+    "booking_reserved_patient",
+    "booking_reserved_therapist",
     "booking_confirmed_patient",
     "booking_confirmed_therapist",
     "booking_reminder_24h_patient",
@@ -479,6 +485,7 @@ function isBookingAction(actionKey: EmailActionKey) {
     "booking_rescheduled_therapist",
     "booking_reschedule_requested_patient",
     "booking_reschedule_requested_therapist",
+    "booking_therapist_reschedule_requested_patient",
     "booking_reschedule_rejected_patient",
     "booking_reschedule_rejected_therapist",
     "booking_reschedule_withdrawn_patient",
@@ -601,8 +608,8 @@ async function loadRescheduleTiming(
   }
   const [request] = await client.get<
     Array<{
-      proposed_starts_at: string;
-      proposed_timezone: string;
+      proposed_starts_at: string | null;
+      proposed_timezone: string | null;
     }>
   >(
     `/rest/v1/booking_reschedule_requests?select=proposed_starts_at,proposed_timezone&id=eq.${encodeURIComponent(requestId)}&limit=1`,

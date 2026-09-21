@@ -76,10 +76,13 @@ export type TherapistPrivateSessionFeedback = {
   comment: string;
   createdAt: string;
   id: string;
+  historical: boolean;
   notPerformedReason: string | null;
   outcome: "completed" | "not_performed";
   patientName: string;
   rating: number | null;
+  successful: boolean | null;
+  qualityReason: string | null;
   serviceTitle: string | null;
   startsAt: string;
 };

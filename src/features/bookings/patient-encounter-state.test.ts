@@ -42,6 +42,8 @@ describe("getPatientEncounterPresentationState", () => {
     [ZoomAccessReason.TooLate, "schedule_ended"],
     [ZoomAccessReason.SessionEnded, "ended"],
     [ZoomAccessReason.ArrivalWindowExpired, "arrival_expired"],
+    [ZoomAccessReason.TherapistArrivalWindowExpired, "therapist_no_show"],
+    [ZoomAccessReason.BothNoShow, "both_no_show"],
     [ZoomAccessReason.TechnicalUnavailable, "operational_unavailable"],
   ] as const)(
     "maps %s without disguising it as an arrival timeout",
@@ -62,8 +64,60 @@ describe("getPatientEncounterPresentationState", () => {
       });
       expect(result.waitingRoom.kind).toBe(kind);
       expect(result.actions).not.toContain("join_zoom");
+      if (reason === ZoomAccessReason.TherapistArrivalWindowExpired) {
+        expect(result.waitingRoom.message).toContain(
+          "O terapeuta não compareceu até o fim da tolerância",
+        );
+      }
     },
   );
+  it("records a therapist no-show without claiming the encounter occurred", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.NoShowTherapist,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T15:01:00.000Z"),
+      zoomAccess: {
+        allowed: false,
+        reason: ZoomAccessReason.TherapistArrivalWindowExpired,
+        videoSessionStatus: ZoomVideoSessionStatus.Ready,
+        availableFrom: baseInput.startsAt,
+        availableUntil: baseInput.endsAt,
+      },
+    });
+
+    expect(state.waitingRoom.kind).toBe("not_performed");
+    expect(state.payment.title).toBe("Pagamento confirmado");
+    expect(state.payment.message).not.toContain("bloqueado");
+    expect(state.payment.message).not.toContain("reagendamento");
+    expect(state.payment.message).not.toMatch(/Admin|reembolso|repasse/i);
+    expect(state.waitingRoom.message).toBe(
+      "Se precisar de ajuda, fale com o suporte.",
+    );
+    expect(state.actions).not.toContain("join_zoom");
+    expect(state.actions).toContain("contact_support");
+  });
+
+  it("uses neutral guidance for a double no-show", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      bookingStatus: BookingStatus.NoShowBoth,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T15:01:00.000Z"),
+    });
+
+    expect(state.waitingRoom).toMatchObject({
+      kind: "both_no_show",
+      title: "Sessão não realizada",
+    });
+    expect(state.waitingRoom.message).toBe(
+      "Se precisar de ajuda, fale com o suporte.",
+    );
+    expect(state.payment.message).toBe(
+      "Sessão não realizada. Se precisar de ajuda, fale com o suporte.",
+    );
+    expect(state.actions).toEqual(["contact_support"]);
+  });
   it("derives honest copy when the detail has not fetched Zoom access yet", () => {
     const before = getPatientEncounterPresentationState({
       ...baseInput,
@@ -154,6 +208,28 @@ describe("getPatientEncounterPresentationState", () => {
     expect(waitingWebhook.payment.slotState).toBe("review");
     expect(expired.payment.kind).toBe("expired");
     expect(expired.payment.slotState).toBe("released");
+  });
+
+  it("presents a future V10 charge as scheduled instead of processing", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Pending,
+      now: new Date("2026-07-30T13:00:00.000Z"),
+      paymentFlowVersion: "v10",
+    });
+
+    expect(state.payment).toEqual({
+      kind: "scheduled",
+      message:
+        "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro.",
+      retryAllowed: false,
+      slotState: "confirmed",
+      title: "Cobrança programada",
+    });
+    expect(state.preparation.title).toBe("Prepare seu encontro");
+    expect(state.waitingRoom.message).toBe(
+      "A sala será liberada quando o pagamento for confirmado.",
+    );
   });
 
   it("blocks Zoom access for failed payments and exposes retry only before start", () => {

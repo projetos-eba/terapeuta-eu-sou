@@ -7,9 +7,11 @@ const baseProps = {
   audioMuted: true,
   canEndForAll: true,
   isBusy: false,
+  isMobileDevice: false,
   isOnline: true,
   onJoin: vi.fn(),
   onLeave: vi.fn(),
+  onOpenSupport: vi.fn(),
   onReviewPermissions: vi.fn(),
   onTherapistEnd: vi.fn(),
   onToggleAudio: vi.fn(),
@@ -25,11 +27,7 @@ describe("ZoomVideoControls", () => {
 
   it("shows distinct exit and therapist-end actions", () => {
     render(
-      <ZoomVideoControls
-        {...baseProps}
-        actorRole="therapist"
-        roleType={1}
-      />,
+      <ZoomVideoControls {...baseProps} actorRole="therapist" roleType={1} />,
     );
 
     expect(
@@ -38,13 +36,15 @@ describe("ZoomVideoControls", () => {
     expect(
       screen.getByRole("button", { name: "Encerrar para todos" }),
     ).toHaveClass("bg-status-danger");
-    expect(
-      screen.getByRole("button", { name: "Sair da sessão" }),
-    ).toHaveClass("min-h-12");
+    expect(screen.getByRole("button", { name: "Sair da sessão" })).toHaveClass(
+      "min-h-12",
+    );
   });
 
   it("keeps the patient dock to a single exit action", () => {
-    render(<ZoomVideoControls {...baseProps} actorRole="patient" roleType={0} />);
+    render(
+      <ZoomVideoControls {...baseProps} actorRole="patient" roleType={0} />,
+    );
 
     expect(
       screen.getByRole("button", { name: "Sair do encontro" }),
@@ -68,7 +68,6 @@ describe("ZoomVideoControls", () => {
       screen.getByRole("button", { name: "Sair do encontro" }),
     ).toBeEnabled();
   });
-
 
   it("keeps final end disabled before the last five minutes", () => {
     render(
@@ -98,10 +97,14 @@ describe("ZoomVideoControls", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "Ativar microfone" }).querySelector(".lucide-mic-off"),
+      screen
+        .getByRole("button", { name: "Ativar microfone" })
+        .querySelector(".lucide-mic-off"),
     ).not.toBeNull();
     expect(
-      screen.getByRole("button", { name: "Ativar câmera" }).querySelector(".lucide-video-off"),
+      screen
+        .getByRole("button", { name: "Ativar câmera" })
+        .querySelector(".lucide-video-off"),
     ).not.toBeNull();
 
     rerender(
@@ -114,10 +117,14 @@ describe("ZoomVideoControls", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "Silenciar microfone" }).querySelector(".lucide-mic"),
+      screen
+        .getByRole("button", { name: "Silenciar microfone" })
+        .querySelector(".lucide-mic"),
     ).not.toBeNull();
     expect(
-      screen.getByRole("button", { name: "Desligar câmera" }).querySelector(".lucide-video"),
+      screen
+        .getByRole("button", { name: "Desligar câmera" })
+        .querySelector(".lucide-video"),
     ).not.toBeNull();
   });
 
@@ -130,5 +137,32 @@ describe("ZoomVideoControls", () => {
       screen.queryByRole("button", { name: "Ativar minha câmera" }),
     ).toBeNull();
     expect(screen.getByRole("button", { name: "Ativar câmera" })).toBeVisible();
+  });
+
+  it("separates mobile support from media controls before opening WhatsApp", () => {
+    const onOpenSupport = vi.fn();
+
+    render(
+      <ZoomVideoControls
+        {...baseProps}
+        actorRole="patient"
+        isMobileDevice
+        onOpenSupport={onOpenSupport}
+        roleType={0}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Ajuda e suporte" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Problemas com câmera, áudio ou conexão"),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: /falar com o suporte/i }),
+    ).toBeNull();
+
+    screen.getByRole("button", { name: "Ajuda e suporte" }).click();
+    expect(onOpenSupport).toHaveBeenCalledOnce();
   });
 });

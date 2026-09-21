@@ -21,8 +21,16 @@ export function SessionActionCards({
         actorRole="patient"
         bookingId={data.booking.id}
         bookingVersion={data.booking.operationalVersion}
-        canCancel={cancellation.allowed}
-        canRequestReschedule={reschedule.allowed}
+        bookingConfirmed={
+          !data.attendanceReview?.isOpen &&
+          (data.booking.status === "confirmed" || data.booking.status === "live")
+        }
+        delayNotice={data.delayNotice}
+        scheduledStartsAt={data.booking.startsAt}
+        canCancel={!data.attendanceReview?.isOpen && cancellation.allowed}
+        canRequestReschedule={
+          !data.attendanceReview?.isOpen && reschedule.allowed
+        }
         cancellationImpactLabel={cancellation.impactLabel}
         cancelDisabledReason={cancellation.disabledReason}
         rescheduleDisabledReason={reschedule.disabledReason}

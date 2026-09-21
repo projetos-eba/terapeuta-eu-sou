@@ -1,6 +1,30 @@
 begin;
 
-select plan(18);
+select plan(21);
+
+insert into public.booking_intake_responses (
+  booking_id,
+  patient_profile_id,
+  therapist_profile_id,
+  focus_area,
+  shared_note,
+  therapy_goal,
+  visibility
+)
+select
+  booking.id,
+  booking.patient_profile_id,
+  booking.therapist_profile_id,
+  'Seu momento atual',
+  'Quero chegar com mais calma.',
+  'Acompanhar a jornada.',
+  'patient_therapist'
+from public.bookings as booking
+where booking.id = 'f2000000-0000-4000-8000-000000000004'
+on conflict (booking_id) do update
+set
+  shared_note = excluded.shared_note,
+  visibility = excluded.visibility;
 
 -- Deliberately diverge the compatibility projection from the financial authority.
 update public.bookings
@@ -44,6 +68,36 @@ select isnt(
   ),
   null,
   'Ana reads an owned session detail'
+);
+
+select is(
+  public.get_therapist_session_detail_v1(
+    'f2000000-0000-4000-8000-000000000004'
+  ) ->> 'sharedNote',
+  'Quero chegar com mais calma.',
+  'therapist detail includes the patient-authorized booking note'
+);
+
+select ok(
+  not public.get_therapist_session_detail_v1(
+    'f2000000-0000-4000-8000-000000000004'
+  ) ? 'focusArea',
+  'therapist detail does not expose other booking intake fields'
+);
+
+-- Only fixture setup may change the patient's sharing choice.
+reset role;
+update public.booking_intake_responses
+set visibility = 'private_patient'
+where booking_id = 'f2000000-0000-4000-8000-000000000004';
+set local role authenticated;
+
+select is(
+  public.get_therapist_session_detail_v1(
+    'f2000000-0000-4000-8000-000000000004'
+  ) ->> 'sharedNote',
+  null,
+  'therapist detail omits a note that was not authorized for sharing'
 );
 
 select is(

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
 
-import type { SessionFeedbackRecord } from "../session-feedback.types";
+import type { SessionFeedbackReadPayload, SessionFeedbackRecord } from "../session-feedback.types";
 import { PatientPublicReviewForm } from "./patient-public-review-form";
 import { SessionFeedbackForm } from "./session-feedback-form";
 
@@ -24,19 +24,31 @@ export function PatientSessionFeedbackDialog({
   onSessionSubmitted,
   session,
 }: {
-  onClose: () => void;
-  onSessionSubmitted?: () => void;
+  onClose?: () => void;
+  onSessionSubmitted?: (payload: SessionFeedbackReadPayload | null) => void;
   session: PatientFeedbackSession;
 }) {
   const [step, setStep] = useState<"session" | "public-review">("session");
   const [completedFeedback, setCompletedFeedback] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  if (!open) return null;
+
+  function closeDialog() {
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    setOpen(false);
+  }
 
   return (
     <TESDialog
       className="max-w-[820px]"
       description={`${session.therapist.name} · ${session.dateLabel}, ${session.timeLabel}`}
-      onClose={onClose}
-      title={step === "session" ? "Confirme seu encontro" : "Avaliação pública opcional"}
+      onClose={closeDialog}
+      title={step === "session" ? "Avalie seu encontro" : "Avaliação pública opcional"}
     >
       {step === "session" ? (
         <div className="grid gap-4">
@@ -44,21 +56,23 @@ export function PatientSessionFeedbackDialog({
             actorRole="patient"
             bookingId={session.bookingId}
             introductoryMessage={`${session.serviceLabel} com ${session.therapist.name}`}
-            onSubmitted={(feedback: SessionFeedbackRecord) => {
-              setCompletedFeedback(feedback.outcome === "completed");
-              onSessionSubmitted?.();
+            onSubmitted={(feedback: SessionFeedbackRecord, payload) => {
+              setCompletedFeedback(feedback.successful === true || (feedback.successful === undefined && feedback.outcome === "completed"));
+              onSessionSubmitted?.(payload);
             }}
             sessionLabel={`${session.dateLabel} · ${session.timeLabel}`}
           />
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             {completedFeedback ? (
-              <TESButton onClick={onClose} type="button" variant="secondary">
+              <TESButton onClick={closeDialog} type="button" variant="secondary">
                 Concluir agora
               </TESButton>
             ) : null}
-            <TESButton onClick={() => setStep("public-review")} type="button" variant="secondary">
-              Avaliar terapeuta (opcional)
-            </TESButton>
+            {completedFeedback ? (
+              <TESButton onClick={() => setStep("public-review")} type="button" variant="secondary">
+                Avaliar terapeuta (opcional)
+              </TESButton>
+            ) : null}
           </div>
         </div>
       ) : (

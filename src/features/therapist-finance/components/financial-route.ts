@@ -52,7 +52,9 @@ export function buildFinanceHref({
   }
   if (page && page > 1) params.set("page", String(page));
   if (filters?.status) params.set("status", filters.status);
-  if (filters?.payoutStatus) params.set("payoutStatus", filters.payoutStatus);
+  if (filters?.agendaDays && filters.agendaDays !== 15) {
+    params.set("agendaDays", String(filters.agendaDays));
+  }
   if (filters?.therapyId) params.set("therapyId", filters.therapyId);
   if (filters?.search) params.set("q", filters.search);
 

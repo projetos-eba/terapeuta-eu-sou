@@ -1,4 +1,11 @@
 export function mapCheckoutError(error: { code?: string; status: number }) {
+  if (error.status === 403 && error.code === "patient_booking_suspended") {
+    return {
+      code: "PATIENT_BOOKING_SUSPENDED",
+      message:
+        "Novos agendamentos estão suspensos para sua conta. Entre em contato com o suporte. Seus encontros já contratados permanecem disponíveis.",
+    };
+  }
   if (error.status === 409 && error.code === "patient_schedule_conflict") {
     return {
       code: "PATIENT_SCHEDULE_CONFLICT",
@@ -16,6 +23,29 @@ export function mapCheckoutError(error: { code?: string; status: number }) {
     return {
       code: "FORBIDDEN",
       message: "Use o acesso correspondente ao seu perfil.",
+    };
+  }
+  if (
+    error.status === 409 &&
+    [
+      "booking_not_payable",
+      "checkout_already_confirming",
+      "checkout_replacement_conflict",
+      "checkout_replacement_forbidden",
+      "checkout_replacement_required",
+    ].includes(error.code ?? "")
+  ) {
+    return {
+      code: "PAYMENT_UPDATED",
+      message:
+        "O pagamento foi atualizado. Confira a situação antes de tentar novamente.",
+    };
+  }
+  if (error.status === 409 && error.code === "reservation_expired") {
+    return {
+      code: "RESERVATION_EXPIRED",
+      message:
+        "O prazo desta reserva terminou. Verifique a situação para continuar.",
     };
   }
   if (error.status === 409) {

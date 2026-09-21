@@ -29,6 +29,9 @@ type MockExecutedFailure = {
 const destroyClient = vi.fn(() => {
   calls.push("destroy");
 });
+const { routerRefresh } = vi.hoisted(() => ({
+  routerRefresh: vi.fn(),
+}));
 const remoteElement = document.createElement("video");
 let localElement: HTMLElement = document.createElement("video");
 const mockClient = {
@@ -131,6 +134,11 @@ vi.mock("@zoom/videosdk", () => ({
   },
 }));
 
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh: routerRefresh }),
+}));
+
 const allowedAccess = {
   allowed: true,
   availableFrom: "2026-07-26T12:45:00.000Z",
@@ -202,6 +210,119 @@ describe("ZoomVideoSessionAdapter", () => {
     mockStream.unmuteAudio.mockResolvedValue("" as const);
     vi.unstubAllGlobals();
   });
+
+  it("renders feedback directly without initializing or entering the video room", async () => {
+    const fetchMock = vi.fn((url?: string) => {
+      if (String(url).startsWith("/api/session-feedback?")) {
+        return Promise.resolve({
+          json: async () => ({
+            data: {
+              attendance: { sessionClosed: false },
+              feedback: null,
+              status: "before_session",
+            },
+            ok: true,
+          }),
+          ok: true,
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${String(url)}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+        initialFeedback
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Como foi sua sessão?" }),
+    ).toBeInTheDocument();
+    expect(createClient).not.toHaveBeenCalled();
+    expect(calls).not.toContain("init");
+    expect(calls).not.toContain("join");
+    expect(countAccessRequests(fetchMock, "join")).toBe(0);
+    expect(countAccessRequests(fetchMock, "preview")).toBe(0);
+  });
+
+  it.each(["patient", "therapist"] as const)(
+    "refreshes the %s return state only after its feedback persists",
+    async (actorRole) => {
+      const bookingId = "96000000-0000-4000-8000-000000000001";
+      const feedback = {
+        authorRole: actorRole,
+        comment: "",
+        createdAt: "2026-09-17T22:00:00.000Z",
+        id: "96000000-0000-4000-8000-000000000099",
+        qualityReason: null,
+        rating: 5,
+        successful: true,
+      };
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              contractVersion: 2,
+              feedback: null,
+              sessionAttemptId: bookingId,
+              status: "eligible",
+            },
+            ok: true,
+          }),
+          ok: true,
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({ data: { feedback }, ok: true }),
+          ok: true,
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              actorConfirmation: null,
+              contractVersion: 2,
+              feedback,
+              sessionAttemptId: bookingId,
+              status: "submitted",
+            },
+            ok: true,
+          }),
+          ok: true,
+        });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(
+        <ZoomVideoSessionAdapter
+          access={allowedAccess}
+          actorRole={actorRole}
+          backHref={`/terapeuta/sessoes/${bookingId}`}
+          bookingId={bookingId}
+          initialFeedback
+        />,
+      );
+
+      await screen.findByRole("heading", {
+        name:
+          actorRole === "patient"
+            ? "Como foi seu encontro?"
+            : "Como foi sua sessão?",
+      });
+      fireEvent.click(await screen.findByRole("button", { name: "Sim" }));
+      fireEvent.click(screen.getByRole("button", { name: "5 estrelas" }));
+      fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
+
+      await screen.findByText("Sua avaliação foi registrada");
+      await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+      expect(
+        screen.getByRole("link", { name: "Voltar aos detalhes" }),
+      ).toHaveAttribute("href", `/terapeuta/sessoes/${bookingId}`);
+    },
+  );
 
   it("keeps entry unavailable outside the join window", () => {
     render(
@@ -290,6 +411,125 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(screen.getByTestId("zoom-local-video")).toContainElement(
       localElement,
     );
+  });
+
+  it("offers only a page update for a recoverable mobile camera failure", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockStream.startVideo.mockResolvedValueOnce({
+      errorCode: 104,
+      reason: "video_device_needs_restart",
+      type: "VIDEO_ERROR",
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ativar câmera" }),
+    );
+
+    expect(
+      await screen.findByText("A câmera não respondeu no celular"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Atualize esta página para reiniciar somente o vídeo. Seu encontro e horário continuam preservados.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Atualizar página" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /tentar novamente/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /copiar referência/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /ajuda e suporte/i }),
+    ).toBeNull();
+    expect(mockClient.leave).not.toHaveBeenCalled();
+  });
+
+  it("keeps mobile camera permissions separate from the page-update recovery", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockStream.startVideo.mockResolvedValueOnce({
+      errorCode: 103,
+      reason: "camera_denied",
+      type: "VIDEO_ERROR",
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ativar câmera" }),
+    );
+
+    expect(
+      await screen.findByText(/permissão da câmera está bloqueada/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Atualizar página" }),
+    ).toBeNull();
+    expect(screen.queryByText("A câmera não respondeu no celular")).toBeNull();
+  });
+
+  it("requires confirmation before sending mobile users to WhatsApp support", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ajuda e suporte" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Falar com o suporte" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/seu encontro continua aberto aqui/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir WhatsApp" }),
+    ).toHaveAttribute("target", "_blank");
   });
 
   it("keeps the therapist in the room when initial audio setup resolves with a transient failure", async () => {
@@ -1202,9 +1442,7 @@ describe("ZoomVideoSessionAdapter", () => {
       vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
       mockStream.startVideo.mockImplementation(async () => {
         expect(
-          screen
-            .getByTestId("zoom-local-video")
-            .querySelector("video-player"),
+          screen.getByTestId("zoom-local-video").querySelector("video-player"),
         ).toBeInTheDocument();
         return undefined;
       });
@@ -2320,9 +2558,7 @@ describe("ZoomVideoSessionAdapter", () => {
       within(dialog).getByRole("button", { name: /encerrar para todos/i }),
     );
 
-    expect(
-      await screen.findByText(/você já pode compartilhar seu feedback/i),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(destroyClient).toHaveBeenCalled());
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/zoom/video-session-access",
       expect.objectContaining({
@@ -3010,6 +3246,49 @@ describe("ZoomVideoSessionAdapter", () => {
       }),
     );
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
+  });
+
+  it("keeps the therapist absence notice when the waiting room preview reaches T+10", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          data: {
+            access: {
+              ...allowedAccess,
+              allowed: false,
+              reason: ZoomAccessReason.TherapistArrivalWindowExpired,
+            },
+          },
+          ok: true,
+        }),
+        ok: true,
+      }),
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={{
+          ...allowedAccess,
+          allowed: false,
+          reason: ZoomAccessReason.TherapistNotInSession,
+        }}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        /O terapeuta não compareceu até o fim da tolerância/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sessão não realizada" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /Entrar na sala/i }),
+    ).toBeNull();
   });
 
   it("recovers a stalled preview and transitions automatically when the therapist joins", async () => {

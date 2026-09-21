@@ -8,15 +8,17 @@ const UUID =
 const noStoreHeaders = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request) {
-  const bookingId = new URL(request.url).searchParams.get("bookingId");
-  if (!isUuid(bookingId)) return failure("Sessão inválida.", 422);
+  const params = new URL(request.url).searchParams;
+  const bookingId = params.get("bookingId");
+  const actorRole = params.get("actorRole");
+  if (!isUuid(bookingId) || !isActorRole(actorRole)) return failure("Sessão inválida.", 422);
 
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessToken(actorRole);
   const config = getSupabasePublicConfig();
   if (!config || !accessToken) return failure("Entre na sua conta para continuar.", 401);
 
   try {
-    const response = await fetch(`${config.url}/rest/v1/rpc/get_session_feedback_v2`, {
+    const response = await fetch(`${config.url}/rest/v1/rpc/get_session_quality_feedback_v1`, {
       body: JSON.stringify({ p_booking_id: bookingId }),
       cache: "no-store",
       headers: {
@@ -46,11 +48,13 @@ export async function POST(request: Request) {
     return failure("Envie os dados em formato válido.", 400);
   }
 
-  if (!isRecord(body) || !isUuid(body.bookingId)) {
+  if (!isRecord(body) || !isUuid(body.bookingId) || !isActorRole(body.actorRole) || body.contractVersion !== 2 ||
+    !isUuid(body.sessionAttemptId) || typeof body.successful !== "boolean" ||
+    body.outcome !== undefined || body.notPerformedReason !== undefined) {
     return failure("Revise os dados do feedback.", 422);
   }
 
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessToken(body.actorRole);
   const config = getSupabasePublicConfig();
   if (!config || !accessToken) return failure("Entre na sua conta para continuar.", 401);
 
@@ -58,9 +62,11 @@ export async function POST(request: Request) {
     const response = await fetch(`${config.url}/functions/v1/session-feedback-command`, {
       body: JSON.stringify({
         bookingId: body.bookingId,
+        contractVersion: body.contractVersion,
+        sessionAttemptId: body.sessionAttemptId,
+        successful: body.successful,
+        qualityReason: body.qualityReason,
         comment: body.comment,
-        notPerformedReason: body.notPerformedReason,
-        outcome: body.outcome,
         rating: body.rating,
         requestId: body.requestId,
       }),
@@ -82,13 +88,11 @@ export async function POST(request: Request) {
   }
 }
 
-async function getAccessToken() {
+async function getAccessToken(actorRole: "patient" | "therapist") {
   const cookieStore = await cookies();
-  return (
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_patient_access_token")?.value ??
-    null
-  );
+  return cookieStore.get(actorRole === "therapist"
+    ? "tes_therapist_access_token"
+    : "tes_patient_access_token")?.value ?? null;
 }
 
 function failure(message: string, status: number) {
@@ -104,4 +108,8 @@ function isUuid(value: unknown): value is string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isActorRole(value: unknown): value is "patient" | "therapist" {
+  return value === "patient" || value === "therapist";
 }

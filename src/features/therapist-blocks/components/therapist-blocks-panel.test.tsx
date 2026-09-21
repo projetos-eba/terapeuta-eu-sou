@@ -141,7 +141,7 @@ describe("TherapistBlocksPanel", () => {
     expect(screen.getByText("Reiki online")).toBeInTheDocument();
   });
 
-  it("cancels a series with optimistic schedule version", async () => {
+  it("presents the approved release dialog and releases a recurring block", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -158,9 +158,32 @@ describe("TherapistBlocksPanel", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: /Remover bloqueio/ }));
-    fireEvent.click(screen.getByLabelText("Toda a série recorrente"));
-    fireEvent.click(screen.getByRole("button", { name: "Remover bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Quer liberar este horário?" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Ao liberar, seus clientes poderão agendar sessões neste horário novamente. As sessões que já estão agendadas não serão alteradas.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("O que você deseja liberar?")).toBeVisible();
+    expect(screen.getByLabelText("Apenas este horário")).toBeChecked();
+    expect(
+      screen.getByText("Libera somente este bloqueio."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Todos os horários deste bloqueio"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Libera este bloqueio em todas as datas em que ele se repete.",
+      ),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByLabelText("Todos os horários deste bloqueio"));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -169,6 +192,110 @@ describe("TherapistBlocksPanel", () => {
       expectedScheduleVersion: 2,
       scope: "series",
     });
+  });
+
+  it("uses the schedule version returned by the previous command", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            idempotentReplay: false,
+            impactedBookingCount: 0,
+            occurrenceCount: 1,
+            scheduleVersion: 3,
+          },
+          ok: true,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            cancelledCount: 1,
+            idempotentReplay: false,
+            scheduleVersion: 4,
+          },
+          ok: true,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Novo bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar bloqueio" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    const [, request] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      action: "cancel",
+      expectedScheduleVersion: 3,
+    });
+  });
+
+  it("refreshes stale agenda data after a schedule version conflict", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: "schedule_version_conflict",
+            message: "internal",
+          },
+          ok: false,
+        },
+        409,
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: /Liberar horário de/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Liberar horário" }));
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "",
+      }),
+    ).toHaveTextContent(
+      "Sua agenda mudou enquanto esta tela estava aberta. Atualizamos os horários; revise o bloqueio e tente novamente.",
+    );
+    expect(navigationMocks.refresh).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("schedule_version_conflict"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ignores a duplicate command while the first request is still pending", async () => {
+    let resolveRequest!: (value: Response) => void;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveRequest = resolve;
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    const keepBooking = screen.getByRole("button", { name: "Manter sessão" });
+    fireEvent.click(keepBooking);
+    fireEvent.click(keepBooking);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    resolveRequest(
+      jsonResponse({
+        data: {
+          idempotentReplay: false,
+          resolution: "keep_booking",
+          status: "resolved",
+        },
+        ok: true,
+      }),
+    );
+    await waitFor(() => expect(navigationMocks.refresh).toHaveBeenCalledOnce());
   });
 
   it("keeps an impacted booking without changing the booking itself", async () => {
@@ -207,6 +334,13 @@ function oneWeekFromToday() {
   const date = new Date();
   date.setDate(date.getDate() + 7);
   return date.toISOString().slice(0, 10);
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    headers: { "Content-Type": "application/json" },
+    status,
+  });
 }
 
 function renderPanel() {

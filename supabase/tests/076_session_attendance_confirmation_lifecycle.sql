@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/attended-attempt-local.inc
 
 select plan(35);
 
@@ -204,42 +205,26 @@ set onboarding_status = excluded.onboarding_status,
     payout_status = excluded.payout_status,
     payout_schedule_interval = excluded.payout_schedule_interval;
 
-insert into public.video_sessions (
-  id,
-  booking_id,
-  environment,
-  session_name,
-  status,
-  scheduled_starts_at,
-  scheduled_ends_at,
-  actual_started_at,
-  actual_ended_at
-)
-values
-  ('97900000-0000-4000-8000-000000000011', '96000000-0000-4000-8000-000000000001', 'development', 'tes-attendance-session-one', 'ended', now() - interval '2 hours', now() - interval '1 hour', now() - interval '2 hours', now() - interval '1 hour'),
-  ('97900000-0000-4000-8000-000000000012', '96000000-0000-4000-8000-000000000002', 'development', 'tes-attendance-session-two', 'ended', now() - interval '9 days', now() - interval '8 days', now() - interval '9 days', now() - interval '8 days'),
-  ('97900000-0000-4000-8000-000000000013', '96000000-0000-4000-8000-000000000003', 'development', 'tes-attendance-session-three', 'ended', now() - interval '2 hours', now() - interval '1 hour', now() - interval '2 hours', now() - interval '1 hour'),
-  ('97900000-0000-4000-8000-000000000014', '96000000-0000-4000-8000-000000000005', 'development', 'tes-attendance-session-legacy', 'ended', now() - interval '31 days 1 hour', now() - interval '31 days', now() - interval '31 days 1 hour', now() - interval '31 days');
-
-insert into public.video_session_participations (
-  id,
-  video_session_id,
-  booking_id,
-  participant_correlation_key,
-  participant_role,
-  event_type,
-  joined_at,
-  metadata
-)
-values
-  ('97900000-0000-4000-8000-000000000111', '97900000-0000-4000-8000-000000000011', '96000000-0000-4000-8000-000000000001', 'attendance-one-patient', 'patient', 'session.user_joined', now() - interval '2 hours', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000112', '97900000-0000-4000-8000-000000000011', '96000000-0000-4000-8000-000000000001', 'attendance-one-therapist', 'therapist', 'session.user_joined', now() - interval '2 hours', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000121', '97900000-0000-4000-8000-000000000012', '96000000-0000-4000-8000-000000000002', 'attendance-two-patient', 'patient', 'session.user_joined', now() - interval '9 days', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000122', '97900000-0000-4000-8000-000000000012', '96000000-0000-4000-8000-000000000002', 'attendance-two-therapist', 'therapist', 'session.user_joined', now() - interval '9 days', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000131', '97900000-0000-4000-8000-000000000013', '96000000-0000-4000-8000-000000000003', 'attendance-three-patient', 'patient', 'session.user_joined', now() - interval '2 hours', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000132', '97900000-0000-4000-8000-000000000013', '96000000-0000-4000-8000-000000000003', 'attendance-three-therapist', 'therapist', 'session.user_joined', now() - interval '2 hours', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000141', '97900000-0000-4000-8000-000000000014', '96000000-0000-4000-8000-000000000005', 'attendance-legacy-patient', 'patient', 'session.user_joined', now() - interval '31 days', '{}'::jsonb),
-  ('97900000-0000-4000-8000-000000000142', '97900000-0000-4000-8000-000000000014', '96000000-0000-4000-8000-000000000005', 'attendance-legacy-therapist', 'therapist', 'session.user_joined', now() - interval '31 days', '{}'::jsonb);
+-- Historical trusted joins must match the current attempt and its effective dates.
+-- Keep the intervals away from the current-day bookings in the local seed.
+update public.bookings set
+  starts_at = case when id = '96000000-0000-4000-8000-000000000002'
+    then now() - interval '408 days 1 hour'
+    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '400 days 4 hours'
+    else now() - interval '400 days 2 hours' end,
+  ends_at = case when id = '96000000-0000-4000-8000-000000000002'
+    then now() - interval '408 days'
+    when id = '96000000-0000-4000-8000-000000000003' then now() - interval '400 days 3 hours'
+    else now() - interval '400 days 1 hour' end
+where id in ('96000000-0000-4000-8000-000000000001',
+  '96000000-0000-4000-8000-000000000002','96000000-0000-4000-8000-000000000003');
+do $$ declare v_id uuid; begin
+  for v_id in select id from public.bookings
+    where id in ('96000000-0000-4000-8000-000000000001',
+      '96000000-0000-4000-8000-000000000002',
+      '96000000-0000-4000-8000-000000000003')
+  loop perform pg_temp.prepare_attended_attempt(v_id); end loop;
+end $$;
 
 select is(
   public.session_attendance_state_v1('96000000-0000-4000-8000-000000000001')->>'bothJoined',
@@ -255,7 +240,7 @@ select set_config(
 );
 
 select is(
-  public.get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->>'status',
+  public.get_session_quality_feedback_v1('96000000-0000-4000-8000-000000000001')->>'status',
   'eligible',
   'quality feedback becomes eligible only after both participants entered and the room closed'
 );
@@ -314,14 +299,14 @@ select is(
 
 select is(
   (select service_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'confirmed_bilateral',
-  'finalization uses the canonical bilateral service status'
+  'scheduled',
+  'participant finalization does not write the financial service projection'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'waiting_settlement',
-  'finalization moves directly to Stripe settlement verification'
+  'not_eligible',
+  'participant finalization preserves the original legacy transfer state'
 );
 
 select is(
@@ -330,8 +315,8 @@ select is(
     from public.session_payments
     where booking_id = '96000000-0000-4000-8000-000000000001'
   ),
-  interval '0 days',
-  'financial eligibility clock starts at final confirmation'
+  null::interval,
+  'participant confirmation does not create a financial eligibility clock'
 );
 
 select set_config(
@@ -341,30 +326,31 @@ select set_config(
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'attendance'->>'bothJoined',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'attendance'->>'bothJoined',
   'true',
   'admin audit exposes safe bilateral attendance state'
 );
 
 select ok(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'confirmation'->'patient' is not null
-    and public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')->'confirmation'->'therapist' is not null,
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'confirmation'->'patient' is not null
+    and public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')->'confirmation'->'therapist' is not null,
   'admin audit exposes both confirmation states'
 );
 
 select ok(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text not like '%requestId%'
-    and public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')::text not like '%payloadHash%',
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text not like '%requestId%'
+    and public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')::text not like '%payloadHash%',
   'admin audit omits replay and hashing internals'
 );
 
 reset role;
 set local role service_role;
 
+select public.auto_confirm_sessions((select ends_at + interval '8 days' from public.bookings where id = '96000000-0000-4000-8000-000000000002'));
 select is(
-  public.auto_confirm_sessions((select ends_at + interval '8 days' from public.bookings where id = '96000000-0000-4000-8000-000000000002')),
-  2,
-  'automatic confirmation creates one confirmation per unanswered participant after seven days'
+  (select count(*)::integer from public.session_participant_confirmations
+   where booking_id='96000000-0000-4000-8000-000000000002'),
+  1, 'day eight confirms only the patient; therapist deadline is thirty days'
 );
 
 select is(
@@ -375,62 +361,65 @@ select is(
 
 select is(
   (select source from public.session_participant_confirmations where booking_id = '96000000-0000-4000-8000-000000000002' and participant_role = 'therapist'),
-  'automatic',
-  'therapist automatic confirmation is marked automatic'
+  null::text,
+  'therapist is not automatically confirmed before day thirty'
 );
 
 select is(
   (select service_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000002'),
-  'confirmed_bilateral',
-  'automatic bilateral confirmation uses the canonical bilateral service status'
+  'scheduled',
+  'automatic participant confirmation does not classify financial service state'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000002'),
-  'waiting_settlement',
-  'automatic confirmation moves the payment directly to settlement verification'
+  'not_eligible',
+  'automatic participant confirmation preserves the original transfer state'
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000003',
-    'completed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000003'),
+    true,
     5::smallint,
     null,
     'O encontro aconteceu.',
     '97700000-0000-4000-8000-000000000031'
-  )->'feedback'->>'outcome',
-  'completed',
-  'completed feedback stores the patient response privately'
+  )->'feedback'->>'successful',
+  'true',
+  'successful quality stores the patient response privately'
 );
 
 select is(
-  public.submit_session_feedback_for_actor_v1(
+  public.submit_session_quality_feedback_v1(
     '90000000-0000-4000-8000-000000000011',
     '96000000-0000-4000-8000-000000000003',
-    'not_performed',
+    public.current_session_attempt_id_v1('96000000-0000-4000-8000-000000000003'),
+    false,
     null,
     'internet_problem',
     'A conexão caiu durante o atendimento.',
     '97700000-0000-4000-8000-000000000032'
-  )->'feedback'->>'outcome',
-  'not_performed',
-  'participant incident response remains independent from the quality feedback'
+  )->'feedback'->>'successful',
+  'false',
+  'negative quality remains separate from non-performance and confirmation'
 );
 
 select is(
-  public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000003')->>'divergent',
-  'true',
-  'admin audit marks divergent bilateral reports explicitly'
+  public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000003')->>'divergent',
+  'false',
+  'different quality opinions do not create divergent attendance reports'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000003'),
-  'blocked',
-  'divergent not-performed report blocks transfer eligibility'
+  'not_eligible',
+  'negative quality preserves the original transfer state'
 );
 
+select pg_temp.prepare_attended_attempt('96000000-0000-4000-8000-000000000005');
 select is(
   public.record_session_participant_confirmation_v1(
     '90000000-0000-4000-8000-000000000001',
@@ -450,8 +439,8 @@ select is(
     from public.session_participant_confirmations
     where booking_id = '96000000-0000-4000-8000-000000000005'
   )::text,
-  '30 days',
-  'existing payment snapshot keeps the legacy thirty-day confirmation deadline'
+  '7 days',
+  'patient operational deadline is seven days independently of the legacy financial policy'
 );
 
 select ok(
@@ -462,19 +451,19 @@ select ok(
 select is(
   (
     select policy.version
-    from public.session_service_confirmations confirmation
+    from public.session_participant_confirmations confirmation
     join public.financial_policy_versions policy on policy.id = confirmation.policy_version_id
     where confirmation.booking_id = '96000000-0000-4000-8000-000000000005'
-      and confirmation.source = 'bilateral'
+      and confirmation.participant_role = 'patient'
   ),
   'tes-payments-v1',
-  'service confirmation preserves the payment policy snapshot'
+  'participant audit preserves the financial policy identifier'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000005'),
-  'waiting_settlement',
-  'legacy policy snapshot no longer imposes an operational safety delay'
+  'not_eligible',
+  'legacy financial snapshot is untouched by operational confirmation'
 );
 
 reset role;
@@ -486,9 +475,9 @@ select set_config(
 );
 
 select throws_ok(
-  $$select public.admin_get_session_feedback_v1('96000000-0000-4000-8000-000000000001')$$,
+  $$select public.admin_get_session_feedback_v2('96000000-0000-4000-8000-000000000001')$$,
   '42501',
-  'FEEDBACK_ADMIN_REQUIRED',
+  'SESSION_ATTENDANCE_ADMIN_REQUIRED',
   'participant cannot use the admin audit boundary'
 );
 

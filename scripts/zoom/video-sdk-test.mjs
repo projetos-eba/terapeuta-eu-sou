@@ -9,6 +9,7 @@ const commands = [
       "supabase/functions/deno.json",
       "--allow-env",
       "supabase/functions/_shared/zoom-video-sdk",
+      "supabase/functions/zoom-video-session-maintenance",
     ],
   ],
   [

@@ -376,10 +376,10 @@ select is(
   'a rearmed definitive rejection is claimable exactly once'
 );
 
-select like(
-  (select idempotency_key from public.stripe_transfers
+select ok(
+  (select idempotency_key like '%:cycle:1:attempt:1:v2'
+    from public.stripe_transfers
     where payout_batch_item_id = 'f8550000-0000-4000-8000-000000000001'),
-  '%:cycle:1:attempt:1:v2',
   'a rearmed Transfer uses a fresh deterministic provider idempotency namespace'
 );
 

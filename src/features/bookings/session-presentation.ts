@@ -21,6 +21,7 @@ const closedBookingStatuses: ReadonlySet<BookingStatus> = new Set([
   BookingStatus.CancelledByTherapist,
   BookingStatus.NoShowPatient,
   BookingStatus.NoShowTherapist,
+  BookingStatus.NoShowBoth,
   BookingStatus.CancelledByPayment,
   BookingStatus.Refunded,
 ]);
@@ -126,11 +127,11 @@ export function mapSessionPresentation(
 
   if (session.financialStatus === SessionFinancialStatus.PartiallyRefunded) {
     return presentation(
-      "refunded",
-      "Reembolso parcial",
-      "Há um reembolso parcial registrado para esta sessão.",
+      "requires_attention",
+      "Em análise",
+      "O pagamento desta sessão está em análise. Nossa equipe entrará em contato.",
       "medium",
-      "neutral",
+      "warning",
       actions,
     );
   }
@@ -147,13 +148,66 @@ export function mapSessionPresentation(
   }
 
   if (
+    session.attendanceStatus === AttendanceStatus.BothNoShow ||
+    session.bookingStatus === BookingStatus.NoShowBoth
+  ) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
+      "critical",
+      "danger",
+      actions,
+    );
+  }
+
+  if (session.attendanceStatus === AttendanceStatus.RequiresReview) {
+    return presentation(
+      "requires_attention",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
+      "critical",
+      "warning",
+      actions,
+    );
+  }
+
+  if (
+    session.attendanceStatus === AttendanceStatus.TherapistNoShow ||
+    session.bookingStatus === BookingStatus.NoShowTherapist
+  ) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
+      "critical",
+      "danger",
+      actions,
+    );
+  }
+
+  if (
+    session.attendanceStatus === AttendanceStatus.PatientNoShow ||
+    session.bookingStatus === BookingStatus.NoShowPatient
+  ) {
+    return presentation(
+      "cancelled",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
+      "medium",
+      "danger",
+      actions,
+    );
+  }
+
+  if (
     session.fulfillmentStatus === FulfillmentStatus.Cancelled ||
     session.fulfillmentStatus === FulfillmentStatus.NotPerformed
   ) {
     return presentation(
       "cancelled",
-      "Não realizada",
-      "Esta sessão já foi encerrada e não pode ser cancelada novamente.",
+      "Sessão não realizada",
+      "Se precisar de ajuda, fale com o suporte.",
       "medium",
       "danger",
       actions,
@@ -178,6 +232,21 @@ export function mapSessionPresentation(
       "Existe uma proposta de novo horário aguardando análise.",
       "high",
       "warning",
+      actions,
+    );
+  }
+
+  if (
+    session.bookingStatus === BookingStatus.Confirmed &&
+    (session.financialStatus === SessionFinancialStatus.Pending ||
+      session.financialStatus === SessionFinancialStatus.Processing)
+  ) {
+    return presentation(
+      "reserved",
+      "Reservada",
+      "O horário está reservado e aguarda a confirmação do pagamento.",
+      "low",
+      "info",
       actions,
     );
   }
@@ -209,6 +278,20 @@ export function mapSessionPresentation(
       "Há uma ocorrência operacional ou financeira para revisar.",
       "critical",
       "danger",
+      actions,
+    );
+  }
+
+  if (
+    session.attendanceStatus === AttendanceStatus.Attended &&
+    session.fulfillmentStatus === FulfillmentStatus.OccurredPendingConfirmation
+  ) {
+    return presentation(
+      "completed",
+      "Realizada",
+      "A realização da sessão foi registrada.",
+      "low",
+      "success",
       actions,
     );
   }
@@ -296,7 +379,26 @@ export function isSessionUpcoming(
   return state !== "cancelled" && state !== "completed" && state !== "refunded";
 }
 
-export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
+export function getZoomAccessLabel(
+  access: SessionReadModelItem["zoomAccess"],
+  bookingStatus?: SessionReadModelItem["bookingStatus"],
+) {
+  if (
+    bookingStatus === BookingStatus.NoShowPatient ||
+    bookingStatus === BookingStatus.NoShowTherapist ||
+    bookingStatus === BookingStatus.NoShowBoth
+  ) {
+    return "Sessão não realizada";
+  }
+
+  if (
+    bookingStatus === BookingStatus.CancelledByPatient ||
+    bookingStatus === BookingStatus.CancelledByTherapist ||
+    bookingStatus === BookingStatus.CancelledByPayment
+  ) {
+    return "Sessão cancelada";
+  }
+
   if (access.allowed) return "Entrar na sessão";
 
   const labels = {
@@ -311,6 +413,8 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
     [ZoomAccessReason.TooLate]: "Janela de acesso encerrada",
     [ZoomAccessReason.SessionEnded]: "Sessão encerrada",
     [ZoomAccessReason.ArrivalWindowExpired]: "Prazo de chegada encerrado",
+    [ZoomAccessReason.TherapistArrivalWindowExpired]: "Sessão não realizada",
+    [ZoomAccessReason.BothNoShow]: "Sessão não realizada",
     [ZoomAccessReason.TechnicalUnavailable]: "Vídeo indisponível no momento",
     [ZoomAccessReason.Unknown]: "Acesso indisponível",
   };

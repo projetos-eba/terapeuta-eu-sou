@@ -12,9 +12,7 @@ import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
   TherapistFinancePageData,
-  TherapistReceiptStatus,
 } from "../therapist-finance.types";
-import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
 
 vi.mock("next/navigation", () => ({
@@ -94,10 +92,10 @@ describe("TherapistFinancePage", () => {
       ],
       [
         "A receber",
-        "Reúne valores que continuam em confirmação, liquidação ou processamento antes do próximo repasse.",
+        "Mostra os valores previstos para os próximos repasses e os que ainda não têm uma data bancária confirmada.",
       ],
       [
-        "Sessões realizadas",
+        "Sessões concluídas",
         "Conta as sessões concluídas ou confirmadas no período selecionado.",
       ],
     ] as const;
@@ -110,7 +108,7 @@ describe("TherapistFinancePage", () => {
     }
   });
 
-  it("keeps the average ticket in the five-card quick summary", () => {
+  it("keeps four compact, decision-oriented indicators in the quick summary", () => {
     renderPage();
 
     const quickSummary = screen.getByRole("region", {
@@ -120,17 +118,30 @@ describe("TherapistFinancePage", () => {
     expect(
       within(quickSummary).getByRole("heading", { name: "Resumo rápido" }),
     ).toBeInTheDocument();
+    expect(within(quickSummary).getAllByRole("article")).toHaveLength(4);
     expect(
       within(quickSummary).getByRole("heading", { name: "Ticket médio" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: "Ticket médio" })).toHaveLength(
-      1,
-    );
     expect(
-      within(quickSummary).getByRole("img", {
-        name: "Tendência de Ticket médio: ainda sem dados",
+      within(quickSummary).getByRole("heading", {
+        name: "Sessões concluídas",
       }),
     ).toBeInTheDocument();
+    expect(
+      within(quickSummary).queryByRole("heading", { name: "Receita no mês" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses the canonical payout forecast for the receivable indicator", () => {
+    renderPage();
+
+    const receivableCard = screen
+      .getByRole("heading", { name: "A receber" })
+      .closest("article");
+
+    expect(receivableCard).not.toBeNull();
+    expect(receivableCard).toHaveTextContent(/R\$\s*70,00/);
+    expect(receivableCard).not.toHaveTextContent(/R\$\s*80,00/);
   });
 
   it("renders Premium financial metrics and locks the Premium Plus dashboard", () => {
@@ -140,14 +151,14 @@ describe("TherapistFinancePage", () => {
       screen.getAllByRole("heading", { name: "Ticket médio" }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("Terapias que mais faturam").length,
+      screen.getAllByText("Terapias com maior receita").length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Evolução financeira").length).toBeGreaterThan(
       0,
     );
     fireEvent.click(
       screen.getByRole("button", {
-        name: /Saúde financeira.*Premium Plus/i,
+        name: /Agenda e potencial.*Premium Plus/i,
       }),
     );
     expect(
@@ -181,13 +192,21 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Saúde financeira" }),
+      screen.getByRole("heading", { name: "Agenda e potencial" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Crescimento" }),
+      screen.getByRole("heading", { name: "Terapias com maior receita" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Realizado líquido").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Potencial estimado").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Receita contratada do mês").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Potencial estimado da agenda").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Realizado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Contratado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Período anterior").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Estimado")).not.toBeInTheDocument();
     expect(
       screen.getAllByText(/não representa receita garantida/i).length,
     ).toBeGreaterThan(0);
@@ -227,21 +246,16 @@ describe("TherapistFinancePage", () => {
       overview: { ...fixture().overview, plan: "premium_plus" },
     });
 
-    const quickSummary = screen.getByRole("region", {
-      name: "Panorama financeiro",
-    });
     expect(
-      within(quickSummary).getByRole("heading", { name: "Receita no mês" }),
+      screen.getByRole("heading", { name: "Evolução financeira" }),
     ).toBeInTheDocument();
-    const monthlyRevenueCard = within(quickSummary)
-      .getByRole("heading", { name: "Receita no mês" })
-      .closest("article");
-    expect(monthlyRevenueCard).not.toBeNull();
-    expect(monthlyRevenueCard).toHaveTextContent(/R\$/);
+    expect(screen.getByText("Receita contratada do mês")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Sem horários configurados para o restante do mês"),
-    ).not.toHaveLength(0);
-    expect(screen.queryByText("Aguardando base suficiente")).not.toBeInTheDocument();
+      screen.getByRole("heading", { name: "Agenda e potencial" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Aguardando base suficiente"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the financial reading panels free of agenda and sessions shortcuts", () => {
@@ -264,7 +278,7 @@ describe("TherapistFinancePage", () => {
     });
 
     const financialReading = screen.getByRole("region", {
-      name: "Leituras financeiras",
+      name: "Agenda e receitas",
     });
 
     expect(
@@ -280,28 +294,30 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("stacks details beside the evolution with the strategic ranking", () => {
+  it("prioritizes financial evolution and keeps the methodology discreet", () => {
     renderPage();
 
-    const strategicView = screen.getByRole("region", {
-      name: "Visão estratégica",
+    const financialView = screen.getByRole("region", {
+      name: "Visão financeira",
     });
 
     expect(
-      within(strategicView).getByRole("heading", { name: "Estratégico" }),
-    ).toBeInTheDocument();
-    expect(
-      within(strategicView).getByRole("heading", {
-        name: "Detalhes e metodologia",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(strategicView).getByRole("heading", {
+      within(financialView).getByRole("heading", {
         name: "Evolução financeira",
       }),
     ).toBeInTheDocument();
     expect(
-      within(strategicView).queryByRole("link", {
+      screen.getByRole("heading", {
+        name: "Como calculamos estes indicadores",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Terapias com maior receita",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(financialView).queryByRole("link", {
         name: "Ver relatório completo",
       }),
     ).not.toBeInTheDocument();
@@ -331,140 +347,136 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByText("Seu dinheiro")).not.toBeInTheDocument();
   });
 
-  it("keeps payment method and payment origin separated in receipts", () => {
+  it("keeps Recebimentos focused on session charges", () => {
     renderPage("receipts");
 
     expect(
-      screen.getByRole("heading", { name: "Recebimentos do período" }),
+      screen.getByRole("heading", { name: "Cobranças das suas sessões" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Lucas").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Recebimento por mês")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Distribuição por status"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Custos da plataforma")).not.toBeInTheDocument();
+    const chargeSummary = screen.getByLabelText("Resumo das cobranças");
+    expect(within(chargeSummary).getAllByRole("link")).toHaveLength(3);
+    expect(
+      within(chargeSummary).queryByRole("link", { name: /Processando/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Processando" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the generic receipts copy when no charge status is selected", () => {
+    renderPage("receipts");
+
+    expect(
+      screen.getByRole("heading", { name: "Movimentações por sessão" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Veja cada recebimento, sua sessão e a forma de pagamento.",
+        "Confira o valor da sessão, a Comissão TES, seu valor e a próxima etapa da cobrança.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
-    expect(screen.getByText("Reembolsos")).toBeInTheDocument();
-    expect(screen.getByText("Recebimento por mês")).toBeInTheDocument();
     expect(
-      screen.queryByText(/Linha roxa: valores ativos/i),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
+      screen.getByLabelText("Movimentações das cobranças por sessão"),
+    ).toBeInTheDocument();
   });
 
-  it("does not render zero-value statuses in the distribution", () => {
-    const baseReceipts = fixture().receipts;
+  it.each([
+    [
+      "approved",
+      "Sessões com pagamento aprovado",
+      "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
+      "Não há sessões com pagamento aprovado neste período.",
+    ],
+    [
+      "processing",
+      "Sessões com cobrança em processamento",
+      "Confira as sessões cuja cobrança foi iniciada e ainda aguarda conclusão.",
+      "Não há sessões com cobrança em processamento neste período.",
+    ],
+    [
+      "scheduled",
+      "Sessões com cobrança agendada",
+      "Confira as sessões com cobrança prevista antes do atendimento.",
+      "Não há sessões com cobrança agendada neste período.",
+    ],
+    [
+      "refunded",
+      "Sessões reembolsadas",
+      "Confira as sessões cujo valor foi devolvido ao paciente.",
+      "Não há sessões reembolsadas neste período.",
+    ],
+    [
+      "canceled",
+      "Sessões canceladas",
+      "Confira as sessões canceladas. Nenhuma cobrança será feita.",
+      "Não há sessões canceladas neste período.",
+    ],
+    [
+      "failed",
+      "Sessões com cobrança não concluída",
+      "Confira as sessões cuja cobrança não foi concluída.",
+      "Não há sessões com cobrança não concluída neste período.",
+    ],
+    [
+      "under_review",
+      "Sessões com cobrança em análise",
+      "Confira as sessões cuja cobrança está sendo analisada.",
+      "Não há sessões com cobrança em análise neste período.",
+    ],
+  ] as const)(
+    "uses contextual receipts copy for the %s charge filter",
+    (status, title, subtitle, emptyTitle) => {
+      renderPage("receipts", {}, { status });
 
-    renderPage("receipts", {
-      receipts: {
-        ...baseReceipts,
-        statusDistribution: [
-          { amountCents: 7000, itemCount: 1, status: "refunded" },
-          { amountCents: 0, itemCount: 0, status: "canceled" },
-        ],
-      },
-    });
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+      expect(screen.getByText(subtitle)).toBeInTheDocument();
+      expect(screen.getByLabelText(title)).toBeInTheDocument();
 
-    const distribution = screen
-      .getByRole("heading", { name: "Distribuição por status" })
-      .closest("section");
-
-    expect(distribution).not.toBeNull();
-    expect(distribution).not.toHaveTextContent("Cancelado");
-  });
-
-  it("uses a distinct semantic color for every rendered receipt status", () => {
-    const baseReceipts = fixture().receipts;
-
-    renderPage("receipts", {
-      receipts: {
-        ...baseReceipts,
-        statusDistribution: [
-          { amountCents: 100, itemCount: 1, status: "blocked" },
-          { amountCents: 200, itemCount: 1, status: "canceled" },
-          { amountCents: 300, itemCount: 1, status: "eligible" },
-          { amountCents: 400, itemCount: 1, status: "failed" },
-          { amountCents: 500, itemCount: 1, status: "waiting_confirmation" },
-          { amountCents: 600, itemCount: 1, status: "waiting_settlement" },
-        ],
-      },
-    });
-
-    const distribution = screen
-      .getByRole("heading", { name: "Distribuição por status" })
-      .closest("section");
-    const legendItems = Array.from(
-      distribution!.querySelectorAll<HTMLElement>("[data-receipt-status]"),
-    );
-    const markerStyles = legendItems.map((item) =>
-      item
-        .querySelector<HTMLElement>("[aria-hidden='true']")
-        ?.getAttribute("style"),
-    );
-
-    expect(legendItems).toHaveLength(6);
-    expect(new Set(markerStyles).size).toBe(markerStyles.length);
-  });
-
-  it.each(Object.entries(financialReceiptCopyByStatus))(
-    "renders dynamic receipts copy for %s",
-    (status, copy) => {
+      cleanup();
       const baseReceipts = fixture().receipts;
-
       renderPage(
         "receipts",
         {
           receipts: {
             ...baseReceipts,
             items: [],
-            pagination: {
-              ...baseReceipts.pagination,
-              totalCount: 0,
-              totalPages: 1,
-            },
           },
         },
-        { status: status as TherapistReceiptStatus },
+        { status },
       );
 
-      expect(
-        screen.getByRole("heading", { name: copy.title }),
-      ).toBeInTheDocument();
-      expect(screen.getByText(copy.description)).toBeInTheDocument();
-      expect(
-        screen.getByRole("heading", { name: copy.emptyTitle }),
-      ).toBeInTheDocument();
-      expect(screen.getByText(copy.emptyDescription)).toBeInTheDocument();
+      expect(screen.getByText(emptyTitle)).toBeInTheDocument();
+      expect(screen.getByText("Limpar filtros")).toBeInTheDocument();
     },
   );
 
-  it("keeps the selected status copy while rendering matching receipts", () => {
+  it("does not offer a receipt for a charge that failed", () => {
     const baseReceipts = fixture().receipts;
-    const copy = financialReceiptCopyByStatus.canceled;
-
-    renderPage(
-      "receipts",
-      {
-        receipts: {
-          ...baseReceipts,
-          items: [
-            {
-              ...baseReceipts.items[0],
-              financialStatus: "canceled",
-              receiptStatus: "canceled",
-            },
-          ],
-        },
+    renderPage("receipts", {
+      receipts: {
+        ...baseReceipts,
+        items: [
+          {
+            ...baseReceipts.items[0],
+            chargeStatus: "failed",
+            financialStatus: "failed",
+          },
+        ],
       },
-      { status: "canceled" },
-    );
+    });
 
+    expect(screen.getAllByText("Falhou").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("heading", { name: copy.title }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(copy.description)).toBeInTheDocument();
-    expect(screen.getAllByText("Lucas").length).toBeGreaterThan(0);
-    expect(screen.queryByText(copy.emptyTitle)).not.toBeInTheDocument();
+      screen.queryByText("Comprovante de pagamento"),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("Ver detalhes").length).toBeGreaterThan(0);
   });
 
   it("preserves receipt filters in pagination and clear-filter links", () => {
@@ -525,6 +537,7 @@ describe("TherapistFinancePage", () => {
       },
     };
     const filters: TherapistFinanceFilters = {
+      agendaDays: 15,
       page: 1,
       payoutStatus: null,
       search: null,
@@ -625,116 +638,54 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByText("acct_...cdef")).not.toBeInTheDocument();
   });
 
-  it("shows the next payout card with the scheduled batch date instead of duplicating the eligible amount", () => {
-    renderPage("payouts", {
-      payouts: {
-        ...fixture().payouts,
-        filters: {
-          ...fixture().payouts.filters,
-          timezone: "America/Sao_Paulo",
-        },
-        summary: {
-          ...fixture().payouts.summary,
-          eligibleForPayoutCents: 8000,
-          nextBatchAt: "2026-07-31T13:00:00.000Z",
-        },
-      },
-    });
-
-    expect(screen.getAllByText("31/07/2026").length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(
-        "Próximo lote de transferência previsto para 31/07/2026.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("does not promise a batch when the therapist has no eligible value", () => {
+  it("shows only the three product states in the payout summary", () => {
     renderPage("payouts");
 
-    expect(
-      screen.getByText("Sem valores elegíveis para o próximo lote."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Sem valores elegíveis para o próximo lote").length,
-    ).toBeGreaterThan(0);
-  });
-
-  it("shows only statuses that can occur in the payout history", () => {
-    renderPage("payouts");
-
-    const select = screen.getByLabelText("Etapa do repasse");
-    expect(select).toHaveTextContent("Incluído no próximo repasse");
-    expect(select).toHaveTextContent("A caminho do banco");
-    expect(select).toHaveTextContent("Pago");
-    expect(select).not.toHaveTextContent("Aguardando confirmação");
-    expect(select).not.toHaveTextContent("Em liquidação");
-    expect(select).not.toHaveTextContent("Disponível");
-  });
-
-  it("shows the three approved payout phases in order", () => {
-    renderPage("payouts");
-
-    const timeline = screen
-      .getByRole("heading", { name: "Próximos repasses" })
-      .closest("section");
-    const labels = [
-      "Processando",
-      "Disponível para o próximo lote",
-      "Próximo lote de transferência",
-    ];
-
-    expect(timeline).not.toBeNull();
-    expect(
-      labels.every(
-        (label, index) =>
-          index === 0 ||
-          timeline!.textContent!.indexOf(labels[index - 1]) <
-            timeline!.textContent!.indexOf(label),
-      ),
-    ).toBe(true);
-    expect(
-      screen.queryByText("Transferência e crédito bancário"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/O TES organiza Transfers/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("puts processing first and explains its operational position", () => {
-    renderPage("payouts", {
-      payouts: {
-        ...fixture().payouts,
-        summary: {
-          ...fixture().payouts.summary,
-          payoutProcessingCents: 9600,
-        },
-      },
-    });
-
-    const summary = screen.getByRole("region", { name: "Resumo de repasses" });
+    const summary = screen.getByRole("region", { name: "Resumo dos repasses" });
     expect(
       within(summary)
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual([
-      "Em processamento",
-      "Disponível para repasse",
-      "Próximo lote de transferência",
-    ]);
-    expect(
-      screen.getByText(
-        "Pagamentos a receber, aguardando confirmação ou em liquidação",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        "Posição atual: inclui sessões futuras já pagas, independentemente do período do histórico.",
-      ),
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
-      0,
+    ).toEqual(["A receber", "A caminho da sua conta", "Recebido no período"]);
+  });
+
+  it("orders upcoming payouts with in-transit values before predictions", () => {
+    renderPage("payouts");
+
+    const agenda = screen
+      .getByRole("heading", { name: "Próximos repasses" })
+      .closest("section");
+    expect(agenda).not.toBeNull();
+    expect(agenda!.textContent!.indexOf("A caminho da sua conta")).toBeLessThan(
+      agenda!.textContent!.indexOf("Próximos previstos"),
     );
+    expect(within(agenda!).queryByText("Recebido em")).not.toBeInTheDocument();
+    expect(
+      within(agenda!).getByText("As datas previstas podem mudar."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps received values in history and technical terms out of the page", () => {
+    const { container } = renderPage("payouts");
+
+    expect(
+      screen.getByRole("heading", { name: "Histórico de repasses" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Recebido").length).toBeGreaterThan(0);
+    expect(container.textContent).not.toMatch(
+      /próximo lote|transfer|payout|balance transaction|concilia|Stripe/i,
+    );
+  });
+
+  it("offers 7, 15 and 30 days and keeps 15 days selected by default", () => {
+    renderPage("payouts");
+
+    expect(screen.getByRole("link", { name: "7 dias" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "15 dias" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "30 dias" })).toBeInTheDocument();
   });
 
   it("offers a typed custom date range in the summary", () => {
@@ -800,6 +751,7 @@ function renderPage(
       data={data}
       dateRange={dateRange}
       filters={{
+        agendaDays: 15,
         page: 1,
         payoutStatus: null,
         search: null,
@@ -952,33 +904,76 @@ function fixture(): TherapistFinancePageData {
       waitingSettlementCents: 0,
     },
     payouts: {
-      contractVersion: 2,
+      agenda: {
+        awaitingBankDate: [],
+        balanceAvailable: [],
+        days: 15,
+        inTransit: [
+          {
+            amountCents: 8000,
+            composition: [
+              {
+                amountCents: 8000,
+                bookingId: "booking-1",
+                patientDisplayName: "Lucas",
+                sessionDate: "2026-07-28T13:00:00.000Z",
+                sessionPaymentId: "payment-1",
+                therapyNameSnapshot: "Reiki",
+              },
+            ],
+            date: "2026-07-30",
+            id: "in-transit:2026-07-30",
+            sessionCount: 1,
+            status: "in_transit",
+          },
+        ],
+        periodEnd: "2026-08-11",
+        periodStart: "2026-07-28",
+        predicted: [
+          {
+            amountCents: 7000,
+            composition: [
+              {
+                amountCents: 7000,
+                bookingId: "booking-2",
+                patientDisplayName: "Marina",
+                sessionDate: "2026-07-29T13:00:00.000Z",
+                sessionPaymentId: "payment-2",
+                therapyNameSnapshot: "Reiki",
+              },
+            ],
+            date: "2026-08-01",
+            id: "predicted:2026-08-01",
+            sessionCount: 1,
+            status: "predicted",
+          },
+        ],
+      },
+      contractVersion: 4,
       filters: {
+        agendaDays: 15,
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
-        status: null,
         timezone: "America/Sao_Paulo",
       },
       generatedAt: "2026-07-28T12:00:00.000Z",
-      items: [
+      historyItems: [
         {
-          blockedReason: null,
-          expectedTransferAt: "2026-07-30T12:00:00.000Z",
-          failedReason: null,
-          grossAmountCents: 10000,
-          payoutBatchId: "batch-1",
-          periodEnd: "2026-07-07",
-          periodStart: "2026-07-01",
-          reconciliationStatus: "matched",
-          reconciliationUpdatedAt: "2026-07-30T13:00:00.000Z",
-          refundedAmountCents: 0,
+          amountCents: 8000,
+          composition: [
+            {
+              amountCents: 8000,
+              bookingId: "booking-1",
+              patientDisplayName: "Lucas",
+              sessionDate: "2026-07-28T13:00:00.000Z",
+              sessionPaymentId: "payment-1",
+              therapyNameSnapshot: "Reiki",
+            },
+          ],
+          date: "2026-07-27",
+          id: "received:2026-07-27",
           sessionCount: 1,
-          stripeSourceChargeId: "ch_test",
-          stripeTransferId: "tr_test",
-          tesCommissionCents: 2000,
-          therapistNetAmountCents: 8000,
-          transferredAt: "2026-07-30T13:00:00.000Z",
-          transferStatus: "transferred",
+          status: "received",
         },
       ],
       pagination: {
@@ -989,19 +984,14 @@ function fixture(): TherapistFinancePageData {
         totalPages: 1,
       },
       summary: {
-        blockedReasonCodes: [],
-        blockedCents: 0,
-        eligibleForPayoutCents: 8000,
-        nextBatchAt: null,
-        payoutProcessingCents: 0,
-        waitingConfirmationCents: 0,
-        waitingSafetyPeriodCents: 0,
-        waitingSettlementCents: 0,
+        expectedCents: 7000,
+        inTransitCents: 8000,
+        receivedCents: 8000,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 2,
+      contractVersion: 3,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -1014,17 +1004,14 @@ function fixture(): TherapistFinancePageData {
       items: [
         {
           bookingId: "booking-1",
+          chargeStatus: "approved",
           createdAt: "2026-07-28T12:00:00.000Z",
-          disputeStatus: null,
-          financialStatus: "partially_refunded",
+          financialStatus: "paid",
           grossAmountCents: 10000,
           patientDisplayName: "Lucas",
-          paymentMethodType: "card",
-          paymentOrigin: "stripe_checkout",
           receiptUrl: "https://stripe.test/receipt",
-          receiptStatus: "refunded",
-          receivedAt: null,
-          refundedAmountCents: 1000,
+          refundedAmountCents: 0,
+          scheduledChargeAt: null,
           sessionDate: "2026-07-28T13:00:00.000Z",
           sessionPaymentId: "payment-1",
           tesCommissionCents: 2000,
@@ -1039,21 +1026,11 @@ function fixture(): TherapistFinancePageData {
         totalCount: 1,
         totalPages: 1,
       },
-      monthlyTrend: [
-        {
-          month: "2026-07",
-          processingCents: 7000,
-          receivedCents: 0,
-        },
-      ],
-      statusDistribution: [
-        { amountCents: 7000, itemCount: 1, status: "refunded" },
-      ],
       summary: {
-        disputedCents: 0,
+        approvedCents: 7000,
         processingCents: 0,
-        receivedCents: 0,
-        refundedCents: 1000,
+        refundedCents: 0,
+        scheduledCents: 0,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],

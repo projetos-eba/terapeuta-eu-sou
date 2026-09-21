@@ -61,18 +61,19 @@ describe("AdminEmailManagementList", () => {
 
     render(<AdminEmailManagementList />);
 
-    expect(await screen.findByText("Eventos de e-mail")).toBeInTheDocument();
+    expect(await screen.findByText("Mensagens de e-mail")).toBeInTheDocument();
     expect(screen.getByText("Acesso e segurança")).toBeInTheDocument();
     expect(screen.getAllByText("Verificação de e-mail")).toHaveLength(2);
     expect(
       screen.getByText("pe***@example.test", { exact: false }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Configurar evento/i }),
+      screen.getByRole("link", { name: /Configurar mensagem/i }),
     ).toHaveAttribute(
       "href",
       "/admin/configuracoes/emails/eventos/email_verification",
     );
+    expect(document.body.textContent).not.toMatch(/provider|tokens|outbox/i);
   });
 
   it("renders both booking reminder events in the Encontros category", async () => {
@@ -139,7 +140,7 @@ describe("AdminEmailManagementList", () => {
       screen.getByText("Lembrete de encontro — 1 hora — pessoa"),
     ).toBeInTheDocument();
 
-    const links = screen.getAllByRole("link", { name: /Configurar evento/i });
+    const links = screen.getAllByRole("link", { name: /Configurar mensagem/i });
     expect(links.map((link) => link.getAttribute("href"))).toEqual(
       expect.arrayContaining([
         "/admin/configuracoes/emails/eventos/booking_reminder_24h_patient",

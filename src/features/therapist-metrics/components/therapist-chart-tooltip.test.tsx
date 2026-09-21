@@ -68,4 +68,18 @@ describe("TherapistChartTooltip", () => {
     );
     expect(screen.getByText("4")).toHaveClass("justify-self-end");
   });
+
+  it("formats percentage values without changing their meaning", () => {
+    render(
+      <TherapistChartTooltip
+        active
+        label="Terapia cognitiva"
+        payload={[{ name: "Taxa de retorno", value: 62.5 }]}
+        valueFormatter={(value) => `${String(value).replace(".", ",")}%`}
+      />,
+    );
+
+    expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
+    expect(screen.getByText("62,5%")).toBeInTheDocument();
+  });
 });

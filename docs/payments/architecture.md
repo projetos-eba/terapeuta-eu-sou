@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-26.
+Atualizado em 2026-09-14.
 
 ## Visao geral
 
@@ -10,6 +10,12 @@ O TES separa dois fluxos Stripe:
   `premium_plus`, com Checkout incorporado como fluxo principal e Checkout
   hospedado como contingencia.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
+
+O encerramento confirmado de uma conta Connect de recebimento despublica um
+perfil aprovado que estava público, bloqueia novos agendamentos e abre uma nova
+análise administrativa. A retirada não altera reservas já confirmadas nem
+redireciona Transfers ou Payouts históricos; a publicação só pode voltar após
+nova conta pronta e nova aprovação TES.
 
 O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho.
 O estado local muda por webhooks assinados, reservados atomicamente e
@@ -51,6 +57,154 @@ nem apresentar erro tecnico ao terapeuta. A ativacao precisa ser concluida no
 Stripe antes de novos cadastros de recebimento.
 
 Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 85% devidos ao terapeuta em novos pagamentos sob a política vigente.
+
+## Contratos versionados V9 e V10
+
+- `tes-payments-v9-settlement-only` preserva reservas, pagamentos, lotes e
+  snapshots historicos. Em HML, a politica e o scheduler V9 estao inativos para
+  novas aquisicoes, mas as obrigacoes existentes continuam sob reconciliacao e
+  drenagem controlada. Producao nao foi alterada.
+- `tes-payments-v10-setup-t24-immediate-transfer` tem as Fases 1 a 6
+  homologadas localmente e o canario da Fase 7 ativo em HML para novas
+  reservas. Os workers de cobranca e repasse estao ativos e uma reserva futura
+  comprovou SetupIntent por reserva, webhook assinado e agenda T-24 sem cobranca
+  antecipada. No vencimento, a cobranca T-24 e o Transfer vinculado foram
+  executados uma unica vez; uma segunda reserva comprovou a cobranca imediata.
+  As correcoes de retomada de Checkout expirado e de precedencia do evento
+  assinado foram publicadas e revalidadas. A estabilizacao permanece aberta
+  enquanto o Payout bancario do canario e a drenagem V9 nao forem concluidos.
+  O script de ativacao esta em
+  `supabase/schedules/session-financial-flow-v10.sql`.
+- A conciliacao V10 de eventos Stripe de Refund e Transfer Reversal existe
+  somente no ambiente local. Os webhooks verificam os objetos no provedor e
+  registram cada operacao por identificador Stripe em RPCs transacionais
+  `service_role`, incluindo eventos repetidos e valores parciais. Isso nao
+  autoriza um Refund ou Reversal, nem substitui o comando administrativo, o
+  controle de divida residual ou a ativacao da politica V10.
+- O cancelamento V10 anterior a cobranca e transacional somente para um
+  schedule intacto, com zero tentativas e sem PaymentIntent, Charge ou Transfer;
+  nesse caso nao existe Refund. A confirmacao relê e bloqueia pagamento,
+  reserva e schedule no servidor: se a cobranca tiver sido reivindicada,
+  iniciada ou concluida enquanto o modal estava aberto, a operacao falha
+  fechada, preserva o encontro e orienta a pessoa a atualizar a pagina ou
+  procurar o suporte. O reagendamento V10 do paciente segue o mesmo
+  limite de integridade: exige a sessao original a mais de 24 horas, preserva o
+  SetupIntent e o PaymentMethod vinculados a reserva, marca o schedule anterior
+  como substituido e cria exatamente um schedule ativo em T-24 do novo horario,
+  associado a versao atual da reserva. Se o novo horario estiver dentro de 24
+  horas, o schedule nasce imediatamente reivindicavel pelo worker. Estados ja
+  reivindicados, ambiguos ou pagos continuam recusados apos validar o ator e
+  encaminham a pessoa ao suporte. Uma divida que consome integralmente a parte
+  do terapeuta ainda precisa de uma representacao financeira propria: nao ha
+  Transfer nem deposito bancario nesse caso.
+- V10 separa a preparacao do cartao (`SetupIntent`, `usage=off_session`) da
+  cobranca T-24 e registra atomicamente um job de Transfer direto assim que o
+  pagamento e confirmado. Confirmacao e avaliacao da sessao nao sao gates
+  financeiros desse contrato. A projeção local de feedback V10 deriva o estado
+  bilateral das respostas dos participantes, e a rotina semanal de
+  elegibilidade V9 não reclassifica pagamentos V10. Relatos negativos abrem
+  análise sem reescrever o ciclo do repasse. O histórico local pagina lotes V9
+  e movimentações diretas V10 sem duplicidade, não envia IDs Stripe ao
+  navegador, não trata compensação total como depósito e só marca “Pago” após
+  conciliação bancária integral. Para movimentações V10, o resumo “Em
+  processamento” usa o valor líquido realmente encaminhado depois da
+  compensação; o cálculo V9 permanece inalterado.
+- A projeção administrativa local unifica V9 e V10: valores contratuais,
+  compensação e valor encaminhado são exibidos separadamente; “Pago” exige
+  confirmação bancária, conciliação concluída e alocação integral. O catálogo
+  e os e-mails financeiros usam linguagem de produto e não expõem nomes de
+  objetos, rotinas ou estados internos.
+- Em reservas V10 acima de 24 horas, `bookings.status=confirmed` continua sendo
+  o estado operacional que ocupa o horário. Esse valor interno não autoriza a
+  interface nem as comunicações a dizer que o encontro está confirmado: até
+  `session_payments.financial_status=paid`, paciente e terapeuta veem
+  “Reservado”. No detalhe da terapeuta, a superfície financeira apresenta
+  `Pagamento` / `Agendado` e informa que a cobrança ocorrerá 24 horas antes da
+  sessão; ela não apresenta esse estado como uma pendência. O
+  salvamento do cartão gera uma comunicação de reserva para cada participante.
+  Quando a cobrança agendada é aprovada, o paciente recebe a
+  confirmação do pagamento e ambos recebem a confirmação do encontro. Uma
+  cobrança não aprovada envia ao paciente uma orientação para revisar o
+  pagamento no detalhe do encontro. Todas essas entregas usam outbox
+  idempotente e linguagem de produto.
+- `payment_flow_version` e imutavel. Seletores semanais aceitam somente V9;
+  Transfer V10 usa `transfer_origin=session_direct`, Charge original em
+  `source_transaction` e nunca possui `payout_batch_item_id`.
+- As tabelas de setup, agendamento, promocao, outbox de Transfer e divida sao
+  privadas, sem acesso de navegador, e suas rotinas de escrita sao exclusivas
+  de `service_role`.
+- O worker local `process-session-charges` cria e confirma um PaymentIntent
+  off-session com chave idempotente por reserva/versao. `succeeded` confirma o
+  pagamento e grava uma unica obrigacao de Transfer; `requires_action` e
+  `requires_payment_method` interrompem retry automatico e liberam recuperacao
+  autenticada do mesmo PaymentIntent.
+- A recuperacao valida na Stripe ambiente, Customer, reserva, versao, schedule,
+  valor e moeda antes de entregar o client secret ao paciente. Uma troca de
+  cartao e aceita somente depois desse preflight e nunca cria uma segunda
+  cobranca logica.
+- No inicio da sessao, fechamento de pagamento incompleto consulta primeiro o
+  PaymentIntent na Stripe. Sucesso tardio e conciliado; estado ainda em
+  processamento abre incidente e continua bloqueando a sala; somente ausencia
+  comprovada de cobranca ou PaymentIntent cancelado libera o horario. O
+  fechamento e idempotente e notifica paciente e terapeuta sem termos internos.
+- O worker local `process-session-transfers` congela a conta Connect da reserva,
+  compensa dividas abertas antes da chamada e cria um unico Transfer com a
+  Charge original em `source_transaction`. Resposta ambigua exige conciliacao;
+  falha definitiva usa backoff, circuito e retomada manual autorizada.
+- O contrato de `claim_session_transfer_jobs_v10` precisa entregar ao worker
+  reserva, terapeuta, PaymentIntent, valor bruto e conta Stripe, além da Charge
+  de origem e dos dados do job. A migration
+  `20260917180000_restore_v10_transfer_claim_contract.sql` restaura esses
+  campos sem retirar os bloqueios por reembolso ou disputa real da cobrança.
+  Ocorrências, presença, confirmação e avaliação permanecem auditáveis, mas
+  não interrompem o Transfer V10. A migration
+  `20260917193000_decouple_v10_attendance_from_transfer.sql` aplica essa
+  separação também aos registros antigos sem reembolso ou disputa. Jobs que já
+  falharam com
+  `session_transfer_claim_validation_failed` não são retomados automaticamente
+  pela migration: após verificar individualmente que não houve preparo,
+  Transfer, reembolso ou bloqueio, a operação pode usar a RPC restrita
+  `resume_session_transfer_job_v10` com o contador esperado. Só essa falha
+  comprovadamente anterior ao provedor volta a contar como primeira tentativa;
+  resultados ambíguos continuam em conciliação manual. A retomada pode efetuar
+  o repasse no próximo worker e deve ser autorizada depois da publicação em
+  HML, com observação do saldo e do Payout da plataforma.
+- A criacao do Transfer grava o debito financeiro uma unica vez, mas o estado
+  bancario continua pendente. O repasse direto so conclui depois de
+  `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
+- Quando a divida consome integralmente os 85%, o job termina como
+  `offset_only`, nenhum Transfer Stripe e criado e a interface apresenta
+  “Compensado” com valor bancario zero. Esse item nao integra os totais em
+  processamento nem o grafico de distribuicao.
+
+O plano completo e os gates de ativacao estao em
+`docs/payments/session-financial-flow-v10-implementation-plan.md`.
+
+## Responsabilização por ausência
+
+A ADR-022 separa classificação operacional de decisão financeira. Depois de
+T+10, a presença é derivada de chegada autenticada ou join Zoom confiável da
+versão da reserva. Falta do terapeuta, falta de ambos e evidência inconclusiva
+bloqueiam novos efeitos financeiros e abrem revisão administrativa; essa
+classificação não executa Refund nem Transfer Reversal.
+
+No reembolso V10 autorizado, o comando integral tenta recuperar primeiro a
+parcela transferida e depois reembolsa o valor bruto ao paciente. A falha do
+Reversal não reduz o reembolso: o saldo não recuperado vira dívida independente
+para compensação futura. O custo Stripe somente poderá formar outra dívida se
+for efetivamente reconciliado e se a reserva tiver snapshot de uma política
+futura aprovada. A V10 vigente continua atribuindo esse custo ao TES.
+
+Se a evidência confirmar falta exclusiva do paciente, a presença do terapeuta
+é registrada como confirmação por evidência para o gate semanal V9; o estado da
+reserva continua `no_show_patient`. Quando a responsabilidade for do TES, o
+reembolso V10 mantém o Transfer do terapeuta e não cria dívida de recuperação.
+
+`tes-payments-v11-attendance-accountability` existe inativa como gate técnico.
+Retenção por ausência dupla e ressarcimento de taxa não podem ser habilitados
+sem revisão jurídica, publicação, aceite imutável e homologação externa. A
+retenção possui também um gate operacional próprio, que permanece pendente até
+a recuperação sem Refund estar homologada. Não há aplicação retroativa.
 
 ## Modelo financeiro inicial
 
@@ -174,6 +328,15 @@ ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
 retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
 atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
+leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
+em uma única transação ainda com a reserva liberada, e somente o
+`checkout.session.completed` assinado reivindica o intervalo antes de vincular
+o SetupIntent e criar a agenda T-24. Falha entre provedor e persistência expira
+a nova Checkout e não reabre a reserva. Recarregar uma retomada já aberta
+recupera e reutiliza a mesma Checkout Session persistida, sem criar uma tentativa
+irmã nem substituir sua autoridade. Repetição usa a mesma chave
+idempotente. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
@@ -187,6 +350,10 @@ o `canceled` financeiro herdado da tentativa anterior: `checkout_created` e
 `waiting_payment` permanecem aguardando, e somente um estado terminal da nova
 tentativa pode apresentar falha. Isso evita uma falsa falha enquanto o webhook
 de autorização ainda está em trânsito.
+Um pagamento `pending` sem tentativa atual ativa, agenda ou autoridade de
+cobrança não é apresentado como valor em processamento. Órfãos históricos já
+vencidos só são encerrados quando não existe SetupIntent confirmado,
+PaymentIntent, Charge, agenda ativa, Transfer, reembolso, disputa ou sala.
 O aceite e o identificador idempotente da jornada ficam limitados à aba por
 `history.state` e `sessionStorage`, pois o Next pode substituir o primeiro no
 reload. Texto de preparação, client secret e dados do formulário Stripe nunca
@@ -389,12 +556,26 @@ retorna apenas o `clientSecret` necessário para montar o componente oficial da
 Stripe. O retorno visual da Stripe não confirma pagamento; somente webhook
 assinado atualiza `session_payments` e o booking.
 
+Na etapa de pagamento, a ação “Fale conosco” abre em nova aba uma conversa no
+WhatsApp com o suporte TES pelo número `+55 18 98105-8337` e uma mensagem de
+ajuda pré-preenchida. Essa saída preserva o Checkout aberto na aba original e
+não altera a tentativa, o booking nem qualquer estado financeiro.
+
 ## Shell financeiro do terapeuta
 
 F0/F1 implementa `/terapeuta/financeiro` com quatro abas: Resumo,
 Recebimentos, Repasses e Conta de recebimento. A tela é operacional e
 disponível para Free, Premium e Premium Plus quando houver movimentação
 financeira.
+
+Desde 2026-09-17, Recebimentos e Repasses consomem projeções privadas v3
+aditivas. Recebimentos comunica a cobrança de cada sessão; Repasses comunica a
+chegada bancária como `Previsto → A caminho da sua conta → Recebido`. A Agenda
+de Repasses contém apenas datas futuras sustentadas por `arrival_at`, agrupadas
+por data, e nunca inclui valores já recebidos. A confirmação de `Recebido`
+permanece condicionada ao Payout pago, à reconciliação concluída e à alocação
+integral. Os contratos v2, os caminhos V9/V10, workers, jobs, ledger e comandos
+financeiros não foram modificados por essa camada de apresentação.
 
 F2 adiciona métricas intermediárias na aba Resumo para Premium e Premium Plus
 via `advanced_metrics`: receita líquida comparada ao período anterior, ticket
@@ -437,6 +618,9 @@ Stripe pede sincronização e nunca marca onboarding como concluído.
 
 Documentos de contrato:
 
+- `docs/payments/session-financial-flow-v10-implementation-plan.md`: plano
+  aprovado; Fases 1 a 6 homologadas localmente e canario da Fase 7 ativo em
+  HML, com estabilizacao ainda aberta. Producao nao foi alterada;
 - `docs/payments/therapist-finance-f0-f1.md`;
 - `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
 - `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;

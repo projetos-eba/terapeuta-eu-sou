@@ -9,7 +9,7 @@ with payload as (
     'bbbbbbbb-0000-4000-8000-000000000001',
     'next',
     null,
-    20
+    500
   ) as value
 )
 select
@@ -19,6 +19,7 @@ select
 from payload
 cross join lateral jsonb_to_recordset(payload.value -> 'slots')
   as slot("startsAt" timestamptz, "endsAt" timestamptz)
+where slot."startsAt" >= now() + interval '48 hours'
 limit 4;
 
 update public.bookings

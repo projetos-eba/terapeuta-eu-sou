@@ -22,8 +22,8 @@ select is(
     from public.financial_policy_versions
     where is_active
   ),
-  'tes-payments-v8-commission-15-percent',
-  'V8 is the active financial policy'
+  'tes-payments-v9-settlement-only',
+  'V9 is the active financial policy while retaining the 15 percent commission'
 );
 
 select is(

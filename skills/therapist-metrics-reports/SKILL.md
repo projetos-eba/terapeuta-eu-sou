@@ -67,6 +67,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Eventos de navegador: impressão de busca, abertura do perfil e início do
   agendamento, preservando a superfície real de origem.
 - Evento autoritativo: favorito adicionado ao perfil.
+- Projeção complementar: `get_therapist_metrics_today_v1()`, exclusiva do
+  Premium Plus, mostra somente a quantidade agregada de favoritos do dia local.
+  Ela não entra na comparação histórica até o encerramento do dia.
 - O contrato `v1` preserva ocupação como `unavailable`; o dashboard `v2`
   expõe `forming`, `empty` ou `ready` conforme a cobertura histórica real.
 
@@ -116,6 +119,12 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Favorito nunca pertence a serviço, terapia ou técnica.
 - DTOs e cards de serviço não expõem `favoriteCount`.
 - O KPI de favoritos do perfil exige trava de 10.
+- A inserção em `favorite_therapists` deve gerar exatamente um evento
+  `favorite_therapist_added` e incrementar o agregado do dia local pelo trigger
+  autoritativo existente.
+- O card da aba Interesse mantém a comparação em dias completos e apresenta a
+  atividade do dia separadamente como `+N favorito(s) hoje`; não expõe pessoa,
+  serviço ou terapia e não antecipa esse valor no comparativo.
 
 ## UI
 
@@ -141,6 +150,11 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
   Financeiro ou Aura.
 - Recharts é a biblioteca canônica deste dashboard para sparklines, séries,
   barras e roscas. Mapas de calor usam tabela semântica e tokens TES.
+- O nome acessível, tooltip e legenda devem usar a unidade real da série.
+  Largura relativa de barra não pode ser rotulada como taxa de conversão.
+- Rankings em barras crescem em altura conforme a quantidade de itens; mapas
+  de calor usam uma única parada de teclado e mantêm cada célula disponível na
+  leitura da tabela.
 - Todo gráfico deriva apenas do DTO autenticado, usa `ResponsiveContainer`,
   tooltip visual com data/label, séries e valores, foco por teclado, nome
   acessível e resumo textual. Pontos ativos usam detalhe legível em hover e
@@ -168,7 +182,8 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
   de que não representam contagem real; somente um zero vindo do DTO pode ser
   exibido como dado.
 - A aba Interesse mostra capability lock para Premium e dados protegidos para
-  Premium Plus; nunca preencher com mock.
+  Premium Plus; nunca preencher com mock. Os seis cards usam os denominadores
+  próprios: favoritos, pessoas do período ou base atual, conforme a métrica.
 
 ## Fallback E Segurança
 

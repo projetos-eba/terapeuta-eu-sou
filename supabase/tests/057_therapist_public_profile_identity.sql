@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/publication-ready-local.inc
+
 select plan(39);
 
 select has_column('public', 'therapist_profiles', 'public_profile_theme', 'published theme column exists');
@@ -223,7 +225,7 @@ select lives_ok(
       'aaaaaaaa-0000-4000-8000-000000000001',
       '57000000-0000-4000-8000-000000000004',
       %s,
-      '{"publicName":"Ana Oliveira","shortIntro":"Escuta integrativa.","essenceBody":"Cuidado com presença.","publicProfileTheme":"warm","bioIllustrationId":"warm_layers"}'::jsonb
+      '{"publicName":"Ana Oliveira","shortIntro":"Escuta integrativa.","essenceBody":"Cuidado com presença.","photoUrl":"/images/avatar-terapeuta.jpeg","guideItems":[{"icon":"heart","label":"Escuta acolhedora"}],"publicProfileTheme":"warm","bioIllustrationId":"warm_layers"}'::jsonb
     )$$,
     (select profile_version from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001')
   ),
@@ -260,8 +262,8 @@ select results_eq(
        from public.therapist_profiles
        where id = 'c1000000-0000-4000-8000-000000000001'
      ) $$,
-  $$ values (0) $$,
-  'the public projection remains hidden until profile moderation approves the submission'
+  $$ values (1) $$,
+  'an approved profile keeps its public projection after publishing the identity update'
 );
 
 select * from finish();

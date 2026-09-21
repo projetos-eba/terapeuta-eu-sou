@@ -40,6 +40,7 @@ export type BookingRecord = {
 export type SessionPaymentRecord = {
   booking_id: string;
   financial_status: string;
+  payment_flow_version?: string | null;
 };
 
 export type RescheduleRecord = {
@@ -79,6 +80,7 @@ type MapPatientEncountersInput = {
   bookings: BookingRecord[];
   favoriteTherapistsCount: number;
   patient: PatientEncountersPatient;
+  actorRealizedBookingIds?: Set<string>;
   patientEntryEntitlementByBookingId?: Map<string, boolean>;
   pendingFeedbackBookingIds?: Set<string>;
   historyPage?: number;
@@ -100,24 +102,16 @@ export function mapPatientEncountersPage(
   const summaryBookingIds = new Set(
     input.summaries.map((summary) => summary.booking_id),
   );
-  const reviewedBookingIds = new Set(
-    input.reviews.map((review) => review.booking_id),
-  );
   const mapped = input.bookings
-    .map((booking) =>
-      mapPatientEncounter(
-        booking,
-        input,
-        summaryBookingIds,
-        reviewedBookingIds,
-      ),
-    )
+    .map((booking) => mapPatientEncounter(booking, input, summaryBookingIds))
     .filter((item): item is PatientEncounter => Boolean(item));
 
   const activeEncounters = mapped
     .filter(
       (encounter) =>
         encounter.status !== "completed" &&
+        encounter.status !== "not_performed" &&
+        encounter.status !== "refunded" &&
         encounter.status !== "cancelled" &&
         new Date(encounter.endsAt) >= now,
     )
@@ -130,8 +124,10 @@ export function mapPatientEncountersPage(
     .filter(
       (encounter) =>
         encounter.status === "completed" ||
+        encounter.status === "not_performed" ||
+        encounter.status === "refunded" ||
         encounter.status === "cancelled" ||
-        encounter.status === "awaiting_confirmation",
+        encounter.status === "awaiting_feedback",
     )
     .sort((left, right) => sortByStartsAt(right, left))
     .slice(0, MAX_HISTORY_ENCOUNTERS);
@@ -185,7 +181,6 @@ function mapPatientEncounter(
   booking: BookingRecord,
   input: MapPatientEncountersInput,
   summaryBookingIds: Set<string>,
-  reviewedBookingIds: Set<string>,
 ): PatientEncounter | null {
   const therapist = input.therapistById.get(booking.therapist_profile_id);
   const service = input.serviceById.get(booking.service_id);
@@ -195,19 +190,22 @@ function mapPatientEncounter(
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
-  const status = getEncounterStatus(
-    booking,
-    payment,
-    reschedule,
-    input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
-    input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
-  );
+  const { paymentScheduled, status, statusLabel } =
+    getPatientEncounterStatusPresentation({
+      booking,
+      feedbackPending:
+        input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
+      actorRealized: input.actorRealizedBookingIds?.has(booking.id) ?? false,
+      patientHasEntryEntitlement:
+        input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
+      payment,
+      reschedule,
+    });
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
-  const hasReview = reviewedBookingIds.has(booking.id);
-
   return {
-    actionHint:
-      payment?.financial_status === "paid" && status === "confirmed"
+    actionHint: paymentScheduled
+      ? "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro."
+      : payment?.financial_status === "paid" && status === "confirmed"
         ? `Acesso à sala liberado ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} minutos antes.`
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
@@ -216,7 +214,8 @@ function mapPatientEncounter(
     id: booking.id,
     meetingUrl: null,
     paymentStatus: payment?.financial_status ?? null,
-    primaryAction: getPrimaryAction(booking, status, summaryId, hasReview),
+    paymentScheduled,
+    primaryAction: getPrimaryAction(booking, status, paymentScheduled),
     rescheduleStatus: reschedule?.status ?? null,
     scheduleLabel:
       status === "completed"
@@ -225,7 +224,7 @@ function mapPatientEncounter(
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
-    statusLabel: getStatusLabel(status),
+    statusLabel,
     summaryId,
     therapist: {
       avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
@@ -239,15 +238,59 @@ function mapPatientEncounter(
   };
 }
 
+export function getPatientEncounterStatusPresentation(input: {
+  actorRealized?: boolean;
+  booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">;
+  feedbackPending?: boolean;
+  patientHasEntryEntitlement?: boolean;
+  payment: SessionPaymentRecord | null;
+  reschedule: RescheduleRecord | null;
+}) {
+  const paymentScheduled = isFutureV10ChargeScheduled(
+    input.booking,
+    input.payment,
+  );
+  const status = getEncounterStatus(
+    input.booking,
+    input.payment,
+    input.reschedule,
+    input.patientHasEntryEntitlement ?? false,
+    input.feedbackPending ?? false,
+    input.actorRealized ?? false,
+  );
+
+  return {
+    paymentScheduled,
+    status,
+    statusLabel: paymentScheduled
+      ? "Reservado"
+      : getStatusLabel(status),
+  };
+}
+
 function getEncounterStatus(
-  booking: BookingRecord,
+  booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">,
   payment: SessionPaymentRecord | null,
   reschedule: RescheduleRecord | null,
   patientHasEntryEntitlement: boolean,
   feedbackPending: boolean,
+  actorRealized: boolean,
 ): PatientEncounterStatus {
-  if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
-    return "awaiting_confirmation";
+  if (payment?.financial_status === "refunded" || booking.status === "refunded") {
+    return "refunded";
+  }
+  if (
+    booking.status === "no_show_patient" ||
+    booking.status === "no_show_therapist" ||
+    booking.status === "no_show_both"
+  ) {
+    return "not_performed";
+  }
+  if (!isCancelledBookingStatus(booking.status)) {
+    if (actorRealized) return "completed";
+    if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
+      return "awaiting_feedback";
+    }
   }
   if (isCompletedBookingStatus(booking.status)) return "completed";
   if (
@@ -286,8 +329,7 @@ function getEncounterStatus(
 function getPrimaryAction(
   booking: BookingRecord,
   status: PatientEncounterStatus,
-  summaryId: string | null,
-  hasReview: boolean,
+  paymentScheduled = false,
 ): PatientEncounter["primaryAction"] {
   if (status === "live") {
     return {
@@ -298,8 +340,16 @@ function getPrimaryAction(
   }
 
   if (status === "pending_payment") {
+    if (paymentScheduled) {
+      return {
+        href: routes.patient.encounterDetail(booking.id),
+        kind: "link",
+        label: "Ver detalhes",
+      };
+    }
+
     return {
-      href: `/reserva/sucesso?booking=${encodeURIComponent(booking.id)}`,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
       label: "Acompanhar pagamento",
     };
@@ -322,34 +372,18 @@ function getPrimaryAction(
   }
 
   if (status === "completed") {
-    if (summaryId) {
-      return {
-        href: `${routes.patient.encounterDetail(booking.id)}?resumo=1`,
-        kind: "link",
-        label: "Ver resumo",
-      };
-    }
-
-    if (!hasReview) {
-      return {
-        href: buildEncounterHistoryActionHref("avaliar", booking.id),
-        kind: "link",
-        label: "Avaliar encontro",
-      };
-    }
-
     return {
-      href: `${routes.patient.messages}?context=suporte&booking=${booking.id}`,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Solicitar suporte",
+      label: "Ver detalhes do encontro",
     };
   }
 
-  if (status === "awaiting_confirmation") {
+  if (status === "awaiting_feedback") {
     return {
-      href: buildEncounterHistoryActionHref("feedback", booking.id),
+      href: `${routes.patient.encounterDetail(booking.id)}?feedback=1`,
       kind: "link",
-      label: "Confirmar encontro",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -357,7 +391,23 @@ function getPrimaryAction(
     return {
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Ver reembolso",
+      label: "Ver detalhes do encontro",
+    };
+  }
+
+  if (status === "not_performed") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver detalhes do encontro",
+    };
+  }
+
+  if (status === "refunded") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -368,20 +418,27 @@ function getPrimaryAction(
   };
 }
 
-function buildEncounterHistoryActionHref(
-  action: "avaliar" | "feedback",
-  bookingId: string,
+function isFutureV10ChargeScheduled(
+  booking: Pick<BookingRecord, "starts_at" | "status">,
+  payment: SessionPaymentRecord | null,
 ) {
-  const [pathname, fragment] = routes.patient.encounterHistory.split("#", 2);
-  const hash = fragment ? `#${fragment}` : "";
-  return `${pathname}?${action}=${encodeURIComponent(bookingId)}${hash}`;
+  return (
+    booking.status === "confirmed" &&
+    payment?.payment_flow_version === "v10" &&
+    payment.financial_status === "pending" &&
+    new Date(booking.starts_at).getTime() - Date.now() > 24 * 60 * 60_000
+  );
 }
 
 function getStatusLabel(status: PatientEncounterStatus) {
+  if (status === "refunded") return "Reembolsado";
+
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
-    awaiting_confirmation: "Confirmação pendente",
-    completed: "Já realizada",
+    awaiting_feedback: "Avaliação pendente",
+    completed: "Sessão Realizada",
+    not_performed: "Sessão não realizada",
+    refunded: "Reembolsado",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
     payment_incomplete: "Pagamento não concluído",

@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import { CalendarDays, Clock3 } from "lucide-react";
-import { useEffect, useState } from "react";
 
+import { EncounterStatusBadge } from "@/features/patient-encounters/components/encounter-status-badge";
 import { routes } from "@/lib/routes";
 
 import { EncounterActionsMenu } from "../patient-encounters/components/encounter-actions-menu";
@@ -13,7 +13,6 @@ import {
   formatAppointmentDate,
   formatTimeRange,
 } from "./patient-overview.formatters";
-import { isPatientAppointmentLive } from "./patient-overview.live";
 import type { PatientAppointment } from "./patient-overview.types";
 
 export function PatientAppointmentCard({
@@ -21,21 +20,10 @@ export function PatientAppointmentCard({
 }: {
   appointment: PatientAppointment;
 }) {
-  const [isLive, setIsLive] = useState(appointment.status === "live");
-
-  useEffect(() => {
-    const updateLiveState = () => {
-      setIsLive(isPatientAppointmentLive(appointment));
-    };
-
-    updateLiveState();
-    const intervalId = window.setInterval(updateLiveState, 30_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [appointment]);
+  const isLive = appointment.status === "live";
 
   return (
-    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 pr-14 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center sm:pr-14">
+    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center">
       <span className="relative inline-flex size-[52px] overflow-hidden rounded-full bg-brand-lavenderSoft">
         {appointment.professional.avatarUrl ? (
           <Image
@@ -59,14 +47,12 @@ export function PatientAppointmentCard({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:justify-self-start">
-        <span className="inline-flex min-h-7 items-center rounded-full bg-status-successBg px-3 text-[11px] font-medium whitespace-nowrap text-status-success">
-          Confirmada
-        </span>
-        {isLive ? (
-          <span className="inline-flex min-h-7 items-center rounded-full bg-status-dangerBg px-3 text-[11px] font-medium whitespace-nowrap text-status-danger">
-            Ao vivo
-          </span>
-        ) : null}
+        <EncounterStatusBadge
+          className="min-h-7 text-[11px] font-medium whitespace-nowrap"
+          status={appointment.status}
+        >
+          {appointment.statusLabel}
+        </EncounterStatusBadge>
       </div>
       <dl className="grid gap-2 text-xs text-[var(--tes-color-text-secondary-app)] sm:block">
         <div className="flex items-center gap-2">
@@ -88,24 +74,16 @@ export function PatientAppointmentCard({
           </dd>
         </div>
       </dl>
-      <div className="flex flex-col gap-2 sm:items-end">
+      <div className="flex items-center justify-center gap-2 sm:justify-self-end">
         {isLive ? (
-          <>
-            <Link
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={
-                routes.patient.encounterDetail(appointment.id) as Route<string>
-              }
-            >
-              Entrar no encontro
-            </Link>
-            <Link
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={routes.patient.messages as Route<string>}
-            >
-              Enviar mensagem
-            </Link>
-          </>
+          <Link
+            className="inline-flex min-h-10 w-[145px] items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20"
+            href={
+              routes.patient.encounterDetail(appointment.id) as Route<string>
+            }
+          >
+            Entrar no encontro
+          </Link>
         ) : (
           <Link
             className="inline-flex min-h-9 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-[var(--tes-color-primary-dark)] outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
@@ -116,11 +94,11 @@ export function PatientAppointmentCard({
             Ver detalhes
           </Link>
         )}
+        <EncounterActionsMenu
+          bookingId={appointment.id}
+          className="relative shrink-0"
+        />
       </div>
-      <EncounterActionsMenu
-        bookingId={appointment.id}
-        className="absolute right-3 top-3"
-      />
     </article>
   );
 }

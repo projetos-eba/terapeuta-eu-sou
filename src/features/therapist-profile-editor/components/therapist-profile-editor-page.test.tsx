@@ -101,6 +101,10 @@ function makeEditor(
       status: "published",
       updatedAt: "2026-07-27T12:00:00.000Z",
     },
+    publication: {
+      isPubliclyVisible: true,
+      needsReceivingAccount: false,
+    },
     therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     updatedAt: "2026-07-28T12:00:00.000Z",
     verificationSummary: null,
@@ -200,6 +204,9 @@ describe("TherapistProfileEditorPage", () => {
     expect(
       screen.queryByRole("button", { name: "Adicionar conteúdo" }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Importante" }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the library and keeps theme selection in the draft state", () => {
@@ -275,6 +282,29 @@ describe("TherapistProfileEditorPage", () => {
     expect(
       screen.getByText(/identificador numérico continua estável/i),
     ).toBeInTheDocument();
+  });
+
+  it("explains how the therapist name is represented in the public profile link", () => {
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    const informationButton = screen.getByRole("button", {
+      name: "Entenda como o nome aparece no link do perfil",
+    });
+    const tooltip = screen.getByText("Como seu nome aparece no link")
+      .parentElement as HTMLElement;
+    expect(tooltip).toHaveClass("hidden");
+
+    fireEvent.click(informationButton);
+
+    expect(informationButton).toHaveAttribute("aria-expanded", "true");
+    expect(tooltip).not.toHaveClass("hidden");
+    expect(tooltip).toHaveTextContent("/terapeutas/ana-oliveira");
+    expect(tooltip).toHaveTextContent(
+      "letras minúsculas e hífens no lugar de espaços ou acentos",
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(tooltip).toHaveClass("hidden");
   });
 
   it("hides the managed reviews area for Free without changing other managed links", () => {
@@ -410,59 +440,15 @@ describe("TherapistProfileEditorPage", () => {
       .forEach((button) => expect(button).toBeDisabled());
   });
 
-  it("saves local edits as a private draft without publishing them", async () => {
-    const draftEditor = makeEditor({
-      draft: {
-        baseProfileVersion: 4,
-        contentVersionId: "draft-version",
-        fields: {
-          ...makeEditor().published.fields,
-          publicName: "Ana Rascunho",
-          shortIntro: "Texto salvo apenas como rascunho.",
-        },
-        publishedAt: null,
-        status: "draft",
-        updatedAt: "2026-07-28T13:00:00.000Z",
-      },
-      version: 5,
-    });
-    commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
-      data: { editor: draftEditor, idempotentReplay: false },
-      status: "success",
-    });
-
+  it("uses publication as the explicit action after profile setup", () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
-    fireEvent.change(screen.getByLabelText("Nome do perfil"), {
-      target: { value: "Ana Rascunho" },
-    });
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
-    );
-
-    await waitFor(() => {
-      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "save_draft",
-          expectedVersion: 4,
-          payload: expect.objectContaining({
-            publicName: "Ana Rascunho",
-          }),
-          requestId: "11111111-1111-4111-8111-111111111111",
-        }),
-      );
-    });
-    expect(screen.getByText("Rascunho salvo.")).toBeInTheDocument();
     expect(
-      await screen.findByRole("dialog", {
-        name: "Alterações salvas como rascunho",
-      }),
-    ).toHaveTextContent(
-      "Para que pacientes vejam o novo tema e as demais mudanças",
-    );
+      screen.queryByRole("button", { name: "Salvar rascunho" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText("Existe um rascunho salvo aguardando publicação."),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: "Publicar alterações" }),
+    ).toHaveLength(2);
   });
 
   it("automatically saves the editable profile fields as a private draft", async () => {
@@ -546,19 +532,13 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getAllByText("Rascunho salvo automaticamente.")).toHaveLength(
       2,
     );
-    expect(
-      screen.queryByRole("dialog", { name: "Alterações salvas como rascunho" }),
-    ).not.toBeInTheDocument();
   });
 
-  it("uses publication as the primary action during first profile setup", () => {
+  it("uses publication as the explicit action during first profile setup", () => {
     render(
       <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
     );
 
-    expect(
-      screen.queryByRole("button", { name: "Salvar rascunho" }),
-    ).not.toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: "Publicar alterações" }).length,
     ).toBeGreaterThan(0);
@@ -568,6 +548,7 @@ describe("TherapistProfileEditorPage", () => {
   });
 
   it("explains missing required fields before the first profile publication", async () => {
+    vi.useFakeTimers();
     render(
       <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
     );
@@ -586,9 +567,10 @@ describe("TherapistProfileEditorPage", () => {
       "Preencha sua essência antes de publicar.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
-    await waitFor(() =>
-      expect(screen.getByLabelText("Minha essência")).toHaveFocus(),
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByLabelText("Minha essência")).toHaveFocus();
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 
@@ -908,6 +890,7 @@ describe("TherapistProfileEditorPage", () => {
   });
 
   it("shows a readable version conflict and restores controls on mutation error", async () => {
+    vi.useFakeTimers();
     commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
       error: {
         code: "VERSION_CONFLICT",
@@ -923,19 +906,22 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Ana em conflito" },
     });
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_200);
+    });
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Seu perfil foi alterado em outra aba. Recarregue antes de continuar.",
-    );
     expect(
-      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
+      screen.getAllByText(
+        "Seu perfil foi alterado em outra aba. Recarregue antes de continuar.",
+      ),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
     ).not.toBeDisabled();
   });
 
   it("shows the actionable reason returned for an invalid profile field", async () => {
+    vi.useFakeTimers();
     commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
       error: {
         code: "VALIDATION_ERROR",
@@ -951,13 +937,15 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Ana com vídeo inválido" },
     });
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_200);
+    });
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Use um link https:// do YouTube ou Vimeo, ou envie um vídeo válido.",
-    );
+    expect(
+      screen.getAllByText(
+        "Use um link https:// do YouTube ou Vimeo, ou envie um vídeo válido.",
+      ),
+    ).toHaveLength(2);
   });
 
   it("focuses the first invalid field after the feedback dialog closes", async () => {
@@ -967,11 +955,11 @@ describe("TherapistProfileEditorPage", () => {
       target: { value: "" },
     });
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Informe o nome do perfil antes de salvar.",
+      "Informe o nome do perfil antes de publicar.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
     await waitFor(() =>

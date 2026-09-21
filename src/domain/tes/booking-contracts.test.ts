@@ -35,6 +35,21 @@ describe("booking contracts", () => {
     expect(RescheduleStatus.Expired).toBe("expired");
   });
 
+  it("supports a versioned double no-show followed by an approved reschedule", () => {
+    expect(
+      canTransitionBookingStatus(
+        BookingStatus.Confirmed,
+        BookingStatus.NoShowBoth,
+      ),
+    ).toBe(true);
+    expect(
+      canTransitionBookingStatus(
+        BookingStatus.NoShowBoth,
+        BookingStatus.Confirmed,
+      ),
+    ).toBe(true);
+  });
+
   it("keeps internal and safe error messages separate", () => {
     const error = new TesDomainError(
       DomainErrorCode.BookingConflict,

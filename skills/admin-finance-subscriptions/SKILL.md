@@ -115,6 +115,13 @@ Do not send generic `select *` payloads to React.
 - Admin does not edit `therapist_profiles.plan` directly.
 - Refund, dispute and payout actions require a command with RBAC, reason,
   idempotency and audit before becoming writable.
+- The local V10 payment-detail action is exclusively for a full-session
+  refund. It records the support reason and a stable request identity before
+  contacting Stripe, blocks room access, and offers a follow-up path for
+  uncertain outcomes. Never expose provider or development terminology in
+  the page. Partial provider events require manual review and cannot be
+  initiated from the TES interface. This action is not approved for HML or
+  production until the local Stripe Test, webhook and browser gates close.
 - RLS/grant failures must render as unavailable/degraded, not as an empty
   success state.
 

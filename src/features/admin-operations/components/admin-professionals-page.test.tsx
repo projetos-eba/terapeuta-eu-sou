@@ -61,7 +61,9 @@ const baseData: AdminOperationPageData = {
   query: { page: 1, pageSize: 12, search: "", sort: "recent", status: "" },
   rows: [
     {
+      avatarUrl: "/images/avatar-terapeuta.jpeg",
       detailHref: "/admin/profissionais/professional-1",
+      email: "ana.oliveira@example.test",
       fields: [
         { label: "Plano", value: "premium_plus" },
         { label: "Perfil público", value: "published" },
@@ -89,6 +91,8 @@ describe("AdminProfessionalsPage", () => {
 
     expect(html).toContain("Lista de profissionais");
     expect(html).toContain("Ana Oliveira");
+    expect(html).toContain("ana.oliveira@example.test");
+    expect(html).toContain("avatar-terapeuta.jpeg");
     expect(html).toContain("Aguardando análise");
     expect(html).toContain("Revisão pendente");
     expect(html).toContain("Ver profissional");

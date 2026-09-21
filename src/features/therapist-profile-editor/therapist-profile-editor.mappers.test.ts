@@ -49,6 +49,10 @@ const contract = {
     city: "Campinas",
     state: "SP",
   },
+  publication: {
+    isPubliclyVisible: true,
+    needsReceivingAccount: false,
+  },
   propagationNotice: "Propaga em ate 2 a 3 horas.",
   publicProfileHref: "/terapeutas/ana-oliveira",
   published: {
@@ -104,6 +108,36 @@ describe("therapist profile editor mappers", () => {
 
     expect(editor.verificationSummary?.changesRequested).toBe(
       "Atualize a apresentação do seu perfil.",
+    );
+  });
+
+  it("preserves the account-closure origin for the private recovery journey", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      verificationSummary: {
+        ...contract.verificationSummary,
+        reviewOrigin: "connect_account_closed",
+        status: "submitted",
+      },
+    });
+
+    expect(editor.verificationSummary?.reviewOrigin).toBe(
+      "connect_account_closed",
+    );
+  });
+
+  it("preserves the availability-removal origin for schedule reapproval", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      verificationSummary: {
+        ...contract.verificationSummary,
+        reviewOrigin: "availability_removed",
+        status: "submitted",
+      },
+    });
+
+    expect(editor.verificationSummary?.reviewOrigin).toBe(
+      "availability_removed",
     );
   });
 

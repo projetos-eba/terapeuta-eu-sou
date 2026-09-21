@@ -84,6 +84,59 @@ describe("TherapistMetricsPage", () => {
     ).toHaveLength(1);
   });
 
+  it("shows the initial private session reading and derives idle hours from offered capacity", () => {
+    const data = dashboardFixture();
+    data.sessions.heatmap = {
+      items: [{ dayOfWeek: 0, hourBucketStart: 10, sessions: 7 }],
+      observedSample: 7,
+      status: "ready",
+    };
+    data.occupancy = {
+      coverageDays: 30,
+      coverageStart: "2026-06-28",
+      current: {
+        occupiedMinutes: 0,
+        offeredMinutes: 360,
+        percentage: 0,
+      },
+      heatmap: [
+        {
+          dayOfWeek: 0,
+          hourBucketStart: 8,
+          occupiedMinutes: 0,
+          offeredMinutes: 120,
+          percentage: 0,
+        },
+        {
+          dayOfWeek: 1,
+          hourBucketStart: 10,
+          occupiedMinutes: 0,
+          offeredMinutes: 240,
+          percentage: 0,
+        },
+      ],
+      previous: {
+        occupiedMinutes: 0,
+        offeredMinutes: 360,
+        percentage: 0,
+      },
+      requiredCoverageDays: 30,
+      series: [],
+      status: "ready",
+    };
+
+    render(<TherapistMetricsPage data={data} />);
+
+    expect(
+      screen.getByText(
+        "Leitura inicial — o padrão fica mais claro conforme novas sessões forem concluídas.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Horários ociosos").parentElement).toHaveTextContent(
+      "10h – 12h",
+    );
+  });
+
   it("uses the dedicated initial state without demo metrics", () => {
     const data = dashboardFixture();
     data.overview.activity = {
@@ -155,7 +208,7 @@ describe("TherapistMetricsPage", () => {
     expect(screen.queryByText("Valor")).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", {
-        name: "Total de pessoas acompanhadas no período",
+        name: /Total de pessoas acompanhadas no período: Pessoas acompanhadas, 8/,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Total único no período")).toBeInTheDocument();
@@ -298,9 +351,9 @@ function dashboardFixture(): TherapistMetricsDashboard {
       },
       contractVersion: 1,
       evolution: { points: [], status: "empty" },
-      heatmap: collection([]),
+      heatmap: ownHistory([]),
       meta,
-      metricDefinitionVersion: 1,
+      metricDefinitionVersion: 2,
       outcomeDistribution: collection([]),
       presenceByDay: collection([]),
       presenceByHour: collection([]),
@@ -366,6 +419,14 @@ function collection<T>(items: T[]) {
   return {
     items,
     minimumSample: 10 as const,
+    observedSample: 0,
+    status: "empty" as const,
+  };
+}
+
+function ownHistory<T>(items: T[]) {
+  return {
+    items,
     observedSample: 0,
     status: "empty" as const,
   };

@@ -1,4 +1,4 @@
-import { getPublicServiceAvailability } from "@/features/availability/queries/public-service-availability";
+import { getPublicServiceCompactAvailability } from "@/features/availability/queries/public-service-availability";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import {
   isPublicDemoDataEnabled,
@@ -158,7 +158,7 @@ export async function getPublicTherapistProfileResult(
     const content = mapContentRow(contents[0] ?? null);
     const availabilityResults = await Promise.all(
       serviceRows.map((service) =>
-        getPublicServiceAvailability(service.service_id),
+        getPublicServiceCompactAvailability(service.service_id),
       ),
     );
     if (availabilityResults.some((result) => result.status === "error")) {

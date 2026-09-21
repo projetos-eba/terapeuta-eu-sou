@@ -22,6 +22,8 @@ tsconfig.tsbuildinfo
 !.codex/agents/
 .codex/agents/*
 !.codex/agents/*.toml
+# temporary Codex diagnostics and downloaded remote bundles
+.codex-*
 .tmp/
 .playwright-mcp/
 playwright-report/

@@ -240,6 +240,150 @@ describe("admin operation detail pages", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps submitted profile content and private contact details inside their tabs", () => {
+    render(
+      <AdminProfessionalDetailPage
+        data={detailData({
+          backHref: "/admin/profissionais",
+          module: "professionals",
+          profileReview: {
+            contentVersionId: "content-version-id",
+            fields: {
+              bio: null,
+              city: "Campinas",
+              country: "BR",
+              essenceBody: "Uma escuta cuidadosa e responsável.",
+              experienceYears: 6,
+              guideItems: [{ label: "Autoconhecimento" }],
+              headline: null,
+              invitationBody: "Vamos construir este caminho com calma.",
+              photoUrl: null,
+              publicName: "Ana Oliveira",
+              shortIntro: "Presença para o seu momento.",
+              state: "SP",
+              videoProvider: null,
+              videoThumbnailUrl: null,
+              videoTitle: null,
+              videoUrl: null,
+            },
+            privateIdentity: {
+              city: "Campinas",
+              complement: "Sala 12",
+              country: "BR",
+              documentNumber: "52998224725",
+              documentType: "cpf",
+              neighborhood: "Cambuí",
+              phone: "11999999999",
+              phoneCountryCode: "55",
+              postalCode: "13060240",
+              state: "SP",
+              street: "Avenida Ibirapuera",
+              streetNumber: "537",
+            },
+            profileStatus: "submitted",
+            publicStatus: "unpublished",
+            publishedAt: null,
+            services: [
+              {
+                currency: "BRL",
+                description: "Atendimento online individual.",
+                durationMinutes: 50,
+                priceCents: 18000,
+                status: "active",
+                therapyName: "Tarô",
+                title: "Tarô terapêutico",
+              },
+            ],
+            verificationStatus: "submitted",
+          },
+          sections: [
+            { fields: [], title: "Identidade operacional" },
+            { fields: [], title: "Estado do perfil" },
+            { fields: [], title: "Operação" },
+            {
+              fields: [{ label: "Criado em", value: "06/08/2026, 17:10" }],
+              title: "Rastreabilidade",
+            },
+          ],
+          title: "Ana Oliveira",
+        })}
+      />,
+    );
+
+    expect(screen.queryByText("Dados e contato")).not.toBeInTheDocument();
+    expect(screen.getByText("Na plataforma desde")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Perfil" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Meu perfil" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Dados e contato" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("529.982.247-25")).toBeInTheDocument();
+    expect(screen.getByText("+55 (11) 99999-9999")).toBeInTheDocument();
+    expect(screen.getByText("13060-240")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Serviços e terapias" }));
+
+    expect(screen.getByText("Tarô terapêutico")).toBeInTheDocument();
+    expect(
+      screen.getByText("Atendimento online individual."),
+    ).toBeInTheDocument();
+  });
+
+  it("formats the professional history as an operational timeline table", () => {
+    render(
+      <AdminProfessionalDetailPage
+        data={detailData({
+          auditEvents: [
+            {
+              action: "verification.approve",
+              actorRole: "admin",
+              createdAt: "2026-08-14T12:18:00.000Z",
+              id: "audit-1",
+              permission: "admin.professionals.verify",
+              reason: "Documentos e perfil conferidos.",
+              source: "admin",
+            },
+            {
+              action: "professional.suspend",
+              actorRole: "service_role",
+              createdAt: "2026-08-13T19:45:00.000Z",
+              id: "audit-2",
+              permission: null,
+              reason: null,
+              source: "admin",
+            },
+          ],
+          backHref: "/admin/profissionais",
+          module: "professionals",
+          sections: [
+            { fields: [], title: "Identidade operacional" },
+            { fields: [], title: "Estado do perfil" },
+            { fields: [], title: "Operação" },
+            { fields: [], title: "Rastreabilidade" },
+          ],
+          title: "Ana Oliveira",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Histórico do profissional" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Data e hora")).toBeInTheDocument();
+    expect(screen.getAllByText("Responsável").length).toBeGreaterThan(0);
+    expect(screen.getByText("Verificação aprovada")).toBeInTheDocument();
+    expect(screen.getByText("Documentos e perfil conferidos.")).toBeInTheDocument();
+    expect(screen.getByText("Administrador")).toBeInTheDocument();
+    expect(screen.getByText("Sistema TES")).toBeInTheDocument();
+    expect(screen.getByText("Sem observações adicionais.")).toBeInTheDocument();
+  });
+
   it("shows the completed administrative path for an approved legacy profile", () => {
     const html = renderToStaticMarkup(
       <AdminProfessionalDetailPage
@@ -433,6 +577,66 @@ describe("admin operation detail pages", () => {
     expect(html).not.toContain("JWT");
   });
 
+  it("does not call an unclosed therapist no-show room ready for entry", () => {
+    const html = renderToStaticMarkup(
+      <AdminSessionDetailPage
+        data={detailData({
+          statusLabel: "no_show_therapist",
+          sections: [
+            { title: "Sessão", fields: [{ label: "Pagamento", value: "paid" }] },
+            { title: "Sala online", fields: [{ label: "Situação da sala", value: "Pronta para iniciar" }] },
+          ],
+          sessionFeedback: {
+            status: "available",
+            data: {
+              qualityReview: { isOpen: false, overdue: false, allAnswered: false },
+              attendance: {
+                bothJoined: false,
+                classification: "no_show_therapist",
+                classificationSource: "authenticated_waiting_room",
+                financialResolution: "pending",
+                incidentId: null,
+                patientArrivedAt: "2026-09-16T21:00:00Z",
+                patientJoined: false,
+                patientJoinedAt: null,
+                patientPresentAtTolerance: true,
+                processingCostRecoveryAuthorized: false,
+                resolution: null,
+                responsibility: "unassigned",
+                retentionAuthorized: false,
+                reviewDueAt: null,
+                sessionClosed: true,
+                sessionEndedAt: null,
+                sessionEndsAt: "2026-09-16T21:20:00Z",
+                sessionStartedAt: "2026-09-16T21:00:00Z",
+                therapistJoined: false,
+                therapistArrivedAt: null,
+                therapistJoinedAt: null,
+                therapistPresentAtTolerance: false,
+              },
+              confirmation: { patient: null, therapist: null },
+              divergent: false,
+              financial: null,
+              patient: null,
+              pendingRoles: ["patient", "therapist"],
+              therapist: null,
+            },
+          },
+        })}
+      />,
+    );
+
+    expect(html).toContain("Acesso bloqueado — encerramento pendente");
+    expect(html).toContain("Sessão não realizada — terapeuta não compareceu");
+    expect(html).toContain("Financeiro — independente da confirmação");
+    expect(html).toContain(">Pago</");
+    expect(html).toContain("avaliação de qualidade indisponível");
+    expect(html).toContain("Não se aplica — sessão não realizada.");
+    expect(html).not.toContain("Pendente: o cliente e o terapeuta");
+    expect(html).not.toContain("Análise de qualidade: somente auditoria");
+    expect(html).not.toContain("Pronta para iniciar");
+  });
+
   it("renders an honest session detail when the online room has no safe payload yet", () => {
     const html = renderToStaticMarkup(
       <AdminSessionDetailPage
@@ -538,5 +742,72 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Iniciar análise");
     expect(html).toContain("Ver cadastro do profissional");
     expect(html).not.toContain("Aprovar verificação");
+  });
+
+  it("shows formatted private contact data in the professional verification", () => {
+    const html = renderToStaticMarkup(
+      <AdminVerificationDetailPage
+        data={detailData({
+          backHref: "/admin/profissionais/verificacoes",
+          module: "verifications",
+          profileReview: {
+            contentVersionId: "content-version-id",
+            fields: {
+              bio: null,
+              city: "Campinas",
+              country: "BR",
+              essenceBody: "Uma escuta cuidadosa e responsável.",
+              experienceYears: null,
+              guideItems: [],
+              headline: null,
+              invitationBody: null,
+              photoUrl: null,
+              publicName: "Ana Oliveira",
+              shortIntro: "Presença para o seu momento.",
+              state: "SP",
+              videoProvider: null,
+              videoThumbnailUrl: null,
+              videoTitle: null,
+              videoUrl: null,
+            },
+            privateIdentity: {
+              city: "Campinas",
+              complement: null,
+              country: "BR",
+              documentNumber: "52998224725",
+              documentType: "cpf",
+              neighborhood: "Cambuí",
+              phone: "11999999999",
+              phoneCountryCode: "55",
+              postalCode: "13060240",
+              state: "SP",
+              street: "Avenida Ibirapuera",
+              streetNumber: "537",
+            },
+            profileStatus: "submitted",
+            publicStatus: "unpublished",
+            publishedAt: null,
+            services: [],
+            verificationStatus: "submitted",
+          },
+          sections: [
+            {
+              fields: [
+                { label: "Status", value: "submitted" },
+                { label: "Terapeuta", value: "Ana Oliveira" },
+              ],
+              title: "Verificação",
+            },
+          ],
+          title: "Ana Oliveira",
+        })}
+      />,
+    );
+
+    expect(html).toContain("Dados e contato");
+    expect(html).toContain("529.982.247-25");
+    expect(html).toContain("+55 (11) 99999-9999");
+    expect(html).toContain("13060-240");
+    expect(html).toContain("Avenida Ibirapuera, 537");
   });
 });

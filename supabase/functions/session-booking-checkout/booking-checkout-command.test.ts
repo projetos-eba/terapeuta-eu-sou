@@ -7,6 +7,8 @@ import {
 import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 import {
+  assertServiceTherapistMatch,
+  BOOKING_SNAPSHOT_SELECT,
   mapBookingCheckoutDatabaseError,
   resolveExistingCheckoutHold,
   selectAvailableSlot,
@@ -18,6 +20,30 @@ const requestId = "a6000000-0000-4000-8000-000000000001";
 const serviceId = "d1000000-0000-4000-8000-000000000001";
 const startsAt = "2026-07-28T12:00:00.000Z";
 const endsAt = "2026-07-28T12:50:00.000Z";
+const therapistSlug = "ana-oliveira";
+
+Deno.test(
+  "booking-only suspension maps to an actionable error without changing other authorization errors",
+  () => {
+    const mapped = mapBookingCheckoutDatabaseError(
+      new SupabaseHttpError(400, "PATIENT_BOOKING_SUSPENDED"),
+    );
+    assertEquals(mapped instanceof DomainError, true);
+    assertEquals((mapped as DomainError).code, "patient_booking_suspended");
+    assertEquals((mapped as DomainError).status, 403);
+    assertEquals(
+      (mapped as DomainError).message.includes(
+        "encontros já contratados permanecem disponíveis",
+      ),
+      true,
+    );
+  },
+);
+
+Deno.test("booking checkout reads the immutable currency snapshot", () => {
+  assertEquals(BOOKING_SNAPSHOT_SELECT.includes("currency_snapshot"), true);
+  assertEquals(BOOKING_SNAPSHOT_SELECT.split(",").includes("currency"), false);
+});
 
 Deno.test(
   "booking checkout command accepts a minimal idempotent payload",
@@ -26,6 +52,7 @@ Deno.test(
       requestId,
       serviceId,
       startsAt,
+      therapistSlug,
       termsAccepted: true,
     });
 
@@ -45,12 +72,25 @@ Deno.test(
       serviceId,
       sharedNote: "  Quero chegar com calma.  ",
       startsAt,
+      therapistSlug,
       termsAccepted: true,
     });
 
     assertEquals(command.sharedNote, "Quero chegar com calma.");
   },
 );
+
+Deno.test("booking checkout command requires the service owner slug", () => {
+  assertServiceTherapistMatch("ana-oliveira", "ana-oliveira");
+
+  const error = assertThrows(
+    () => assertServiceTherapistMatch("celia-martins", "ana-oliveira"),
+    DomainError,
+  );
+
+  assertEquals(error.code, "service_therapist_mismatch");
+  assertEquals(error.status, 422);
+});
 
 Deno.test("booking checkout command bounds the shared preparation note", () => {
   const error = assertThrows(
@@ -60,6 +100,7 @@ Deno.test("booking checkout command bounds the shared preparation note", () => {
         serviceId,
         sharedNote: "x".repeat(601),
         startsAt,
+        therapistSlug,
         termsAccepted: true,
       }),
     DomainError,
@@ -79,6 +120,7 @@ Deno.test(
             requestId: "same-click",
             serviceId,
             startsAt,
+            therapistSlug,
             termsAccepted: true,
           }),
         DomainError,
@@ -93,6 +135,7 @@ Deno.test(
             requestId,
             serviceId,
             startsAt,
+            therapistSlug,
             termsAccepted: true,
           }),
         DomainError,
@@ -109,6 +152,7 @@ Deno.test("booking checkout command requires terms acceptance", () => {
         requestId,
         serviceId,
         startsAt,
+        therapistSlug,
       }),
     DomainError,
   );
@@ -175,6 +219,7 @@ Deno.test(
       requestId,
       serviceId,
       startsAt,
+      therapistSlug,
       termsAccepted: true,
     });
     const result = resolveExistingCheckoutHold(
@@ -205,6 +250,7 @@ Deno.test(
       requestId,
       serviceId,
       startsAt,
+      therapistSlug,
       termsAccepted: true,
     });
     const error = assertThrows(

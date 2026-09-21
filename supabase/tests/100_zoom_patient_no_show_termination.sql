@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/isolated-booking-window-local.inc
 
 select plan(13);
 
@@ -34,6 +35,9 @@ where id = 'f2000000-0000-4000-8000-000000000001';
 create temporary view target_session as
 select * from public.video_sessions
 where booking_id = (select id from target_booking);
+
+select pg_temp.isolate_booking_window((select id from target_booking),
+  now() - interval '10 minutes 1 millisecond', now() + interval '40 minutes');
 
 delete from public.video_session_control_jobs
 where video_session_id = (select id from target_session);
@@ -168,6 +172,16 @@ where video_session_id = (select id from target_session);
 delete from public.booking_events
 where booking_id = (select id from target_booking)
   and event_type = 'zoom_waiting_room_entered';
+
+-- Create the effective attempt before inserting its evidence: moving the
+-- booking afterwards would correctly leave the join on a historical attempt.
+update public.bookings
+set starts_at = now() - interval '10 minutes 1 millisecond',
+    ends_at = now() + interval '40 minutes', version = 73
+where id = (select id from target_booking);
+update public.booking_session_attempts
+set created_at = now() - interval '1 day'
+where id = public.current_session_attempt_id_v1((select id from target_booking));
 
 insert into public.video_session_participations (
   video_session_id, booking_id, participant_correlation_key,

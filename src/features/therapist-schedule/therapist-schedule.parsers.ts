@@ -8,6 +8,7 @@ import type {
 } from "@/domain/tes";
 
 import { TherapistScheduleContractError } from "./therapist-schedule.errors";
+import { BRASILIA_TIMEZONE } from "./therapist-schedule.constants";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,10 +20,12 @@ export function parseTherapistScheduleReadModel(
   const row = requiredRecord(value);
   const summary = requiredRecord(row.summary);
 
-  if (row.contractVersion !== 1) fail();
+  if (row.contractVersion !== 2) fail();
 
   return {
-    contractVersion: 1,
+    activeRuleCount: nonNegativeInteger(row.activeRuleCount),
+    contractVersion: 2,
+    isPubliclyVisible: requiredBoolean(row.isPubliclyVisible),
     rules: requiredArray(row.rules).map(parseRule),
     scheduleVersion: positiveInteger(row.scheduleVersion),
     services: requiredArray(row.services).map(parseService),
@@ -33,7 +36,7 @@ export function parseTherapistScheduleReadModel(
       ),
     },
     therapistProfileId: requiredUuid(row.therapistProfileId),
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
     updatedAt: requiredIsoDateTime(row.updatedAt),
   };
 }
@@ -86,7 +89,7 @@ export function parseSaveTherapistScheduleInput(
     requestId: requiredUuid(row.requestId),
     rules: parsedRules,
     serviceSettings: parsedSettings,
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
   };
 }
 
@@ -96,10 +99,19 @@ export function parseSaveTherapistScheduleResult(
   const row = requiredRecord(value);
 
   return {
+    activeRuleCount: nonNegativeInteger(row.activeRuleCount),
     idempotentReplay: requiredBoolean(row.idempotentReplay),
+    publicationImpact: requiredPublicationImpact(row.publicationImpact),
     scheduleVersion: positiveInteger(row.scheduleVersion),
-    timezone: requiredString(row.timezone),
+    timezone: requiredBrasiliaTimezone(row.timezone),
   };
+}
+
+function requiredPublicationImpact(
+  value: unknown,
+): SaveTherapistScheduleResult["publicationImpact"] {
+  if (value !== "none" && value !== "reapproval_required") fail();
+  return value;
 }
 
 function parseRule(value: unknown): TherapistScheduleRule {
@@ -160,6 +172,12 @@ function requiredArray(value: unknown): unknown[] {
 function requiredString(value: unknown): string {
   if (typeof value !== "string" || value.length === 0) fail();
   return value;
+}
+
+function requiredBrasiliaTimezone(value: unknown): string {
+  const timezone = requiredString(value);
+  if (timezone !== BRASILIA_TIMEZONE) fail();
+  return timezone;
 }
 
 function requiredBoolean(value: unknown): boolean {

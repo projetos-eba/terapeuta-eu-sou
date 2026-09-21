@@ -45,6 +45,14 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Reutilizar `ZoomVideoCallPage` para a estrutura imersiva.
 - Reutilizar `ZoomVideoSessionAdapter` para preflight, espera, entrada,
   controles, reconexão e encerramento.
+- A sala dedicada do terapeuta observa a evidência de presença pelo endpoint
+  autenticado de feedback, sem escrever avaliações. Somente a classificação
+  `no_show_patient` do mesmo horário, com terapeuta pontual e cliente ausente,
+  desmonta a chamada e mostra a ausência do paciente na sala. Uma chegada
+  pontual do paciente na espera ou no vídeo interrompe essa observação e
+  preserva a reentrada. Erros de consulta não interrompem a mídia. O adapter
+  permanece responsável pela limpeza existente ao desmontar; não há mudança
+  no join host-first nem no formulário ao concluir uma sessão bilateral.
 - O cabeçalho da sala e o cartão da sala de espera exibem o ID completo da
   reserva logo abaixo do participante. A referência é o `bookingId` já
   autorizado pela rota e não é um identificador do provedor Zoom. No cartão
@@ -136,9 +144,19 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   só toca após gesto explícito do usuário.
 - O feedback bilateral usa `skills/session-feedback`, é privado, independente
   de `reviews` públicos e também aparece somente como leitura no detalhe Admin.
+- Pela ADR-024, resposta privada não confirma presença. Após persistir, atualizar
+  os detalhes de ambos os perfis. Falha de envio mantém o formulário preenchido;
+  sucesso do POST permanece salvo mesmo se a leitura seguinte falhar.
+- Na sala do paciente, resposta positiva oferece avaliação pública opcional do
+  terapeuta por `PatientPublicReviewForm`, com publicação explícita e nota própria.
 - Paciente e terapeuta devem consultar os read models já existentes antes de
   renderizar a sala.
 - A autorização definitiva continua em `/api/zoom/video-session-access`.
+- A preparação/espera mostra sempre “Não conseguiu entrar? Falar com o
+  Suporte”. Na sala ativa, “Suporte” usa o mesmo WhatsApp TES
+  (`src/lib/support-whatsapp.ts`) em nova aba segura, sem nomes, credenciais
+  ou horário na mensagem pré-preenchida. Tickets autenticados seguem na
+  Central de Suporte.
 - Não criar fallback demonstrativo nem dados locais para preencher a sala.
 
 ## Segurança e copy

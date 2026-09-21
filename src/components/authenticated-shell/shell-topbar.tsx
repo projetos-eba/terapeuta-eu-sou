@@ -11,6 +11,7 @@ export function ShellTopbar({
   notificationHref,
   notificationCount,
   onOpenNavigation,
+  onOpenSupportTicketsCountChange,
   planLabel,
   user,
   variant,
@@ -21,6 +22,7 @@ export function ShellTopbar({
   notificationHref: string;
   notificationCount: number;
   onOpenNavigation: () => void;
+  onOpenSupportTicketsCountChange?: (count: number) => void;
   planLabel?: string;
   user: ShellUser;
   variant: "admin" | "patient" | "therapist";
@@ -38,6 +40,7 @@ export function ShellTopbar({
         <ShellNotificationButton
           count={notificationCount}
           href={notificationHref}
+          onOpenSupportTicketsCountChange={onOpenSupportTicketsCountChange}
           role={variant}
         />
         <ShellUserMenu

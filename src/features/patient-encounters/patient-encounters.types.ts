@@ -67,6 +67,7 @@ export type PatientEncounter = {
   id: string;
   meetingUrl: string | null;
   paymentStatus: string | null;
+  paymentScheduled?: boolean;
   primaryAction: BookingPrimaryAction;
   rescheduleStatus: string | null;
   scheduleLabel: string;
@@ -89,9 +90,11 @@ export type PatientEncounterStatus =
   | "confirmed"
   | "pending_payment"
   | "payment_incomplete"
-  | "awaiting_confirmation"
+  | "awaiting_feedback"
   | "reschedule_requested"
   | "completed"
+  | "not_performed"
+  | "refunded"
   | "cancelled";
 
 export type PatientEncountersQueryResult =

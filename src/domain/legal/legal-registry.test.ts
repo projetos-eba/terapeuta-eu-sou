@@ -29,6 +29,19 @@ describe("legal registry", () => {
     ).toBe(true);
   });
 
+  it("tracks the supplied legal document versions and dates", () => {
+    expect(getLegalDocument("terms-of-use")).toMatchObject({
+      effectiveDate: "2026-09-18",
+      version: "3",
+    });
+    expect(
+      getLegalDocument("cancellation-reschedule-refund-policy"),
+    ).toMatchObject({
+      effectiveDate: "2026-09-18",
+      version: "2",
+    });
+  });
+
   it("treats the reconciled support matrix as publishable", () => {
     expect(isSupportMatrixPublishable()).toBe(true);
   });

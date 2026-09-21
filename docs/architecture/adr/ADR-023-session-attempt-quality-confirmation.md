@@ -1,0 +1,97 @@
+# ADR-023 — Tentativa da sessão, qualidade e confirmação independente
+
+Data: 2026-09-17  
+Status: parcialmente substituída pela ADR-024 em 2026-09-18; tentativa,
+presença e confirmação independente permanecem válidas.
+
+## Decisão
+
+Cada reserva possui um identificador de tentativa. Mudanças de status não o
+trocam; reagendamento efetivo troca e preserva o histórico anterior. Chegada
+autenticada ou join próprio até T+10 exato contam como presença pontual. Após
+T+10, a primeira execução do finalizador classifica ausência de cliente,
+terapeuta ou ambos, sem aguardar o encerramento físico da sala. Ambos chegarem
+sem joins bilaterais até o fim exige análise técnica, não avaliação.
+Se os dois joins confiáveis forem registrados posteriormente, o Admin pode
+encerrar essa análise técnica com justificativa; isso não confirma em nome das
+pessoas nem altera pagamento ou Transfer.
+
+Realização deriva exclusivamente da presença confiável bilateral na tentativa
+atual e do encerramento; Transfer e declaração de formulário não são prova.
+O formulário privado pergunta “Essa sessão foi bem-sucedida?”: “Sim” exige
+1–5 estrelas; “Não” exige somente problema de internet, problema técnico de
+áudio/vídeo ou outro. Observações são opcionais até 500 caracteres. Resposta
+negativa mantém a sessão realizada, cria relato e ticket privados do autor,
+com prazo de cinco dias corridos a partir do envio. Só resposta pública do TES
+no ticket correto conclui o relato; nota interna e mudança de status não contam.
+Relatos dos dois participantes têm tickets e prazos independentes.
+A lista privada do terapeuta exibe apenas suas próprias respostas, inclusive
+as históricas; não projeta o comentário privado do cliente.
+
+O relato privado não pausa nem altera confirmações automáticas. A análise e o
+alerta Admin podem permanecer abertos após o prazo, sem mudar a apresentação
+de realização para paciente ou terapeuta. Vencimentos de confirmação continuam
+os originais: sete dias do fim previsto para cliente, trinta para terapeuta.
+A automação revalida a presença atual, nunca confirma “Não realizada”, registra
+autoria do sistema e não cria nota ou opinião em nome das pessoas. Confirmações
+prévias não são reescritas.
+
+Qualidade, classificação e confirmação não criam nem alteram pagamento,
+Transfer, Reversal ou Refund. O leitor V10 jamais infere confirmação do Transfer
+nem reintroduz lote semanal ou período de segurança. Reembolso por ausência do
+terapeuta, sozinho ou junto do cliente, é exclusivamente integral, autorizado
+pelo Admin no comando financeiro próprio com justificativa; não há reagendamento.
+A análise de qualidade não oferece decisão financeira.
+
+O contrato `/api/session-feedback` versão 2 exige perfil solicitante, tentativa,
+sucesso, motivo, nota, comentário e request ID. O perfil escolhe exclusivamente
+seu próprio cookie, mesmo quando há duas sessões no navegador; a identidade,
+vínculo, presença e versão são
+validados no servidor. Contrato antigo ou tentativa desatualizada não alteram
+a atual. Relatos legados ficam em seção histórica, sem conversão silenciosa.
+
+### Nota histórica — envio único de avaliação e confirmação individual
+
+Esta decisão foi substituída pela ADR-024. A avaliação privada não confirma
+participação, não altera presença e não participa de qualquer fluxo financeiro.
+Confirmação individual permanece uma evidência operacional independente do TES.
+Registros criados durante a vigência desta regra histórica são preservados,
+sem migração destrutiva ou reclassificação retroativa.
+
+Para o Histórico da Jornada do Premium Plus, a mesma evidência operacional
+inclui a sessão passada realizada mesmo quando não houver resumo compartilhado.
+O histórico mostra a confirmação como pendente ou confirmada sem usar estado
+financeiro como substituto de presença. A seleção privada de até três temas
+fechados fica disponível ao terapeuta após sua avaliação positiva da tentativa
+atual, presença bilateral confiável e encerramento; a confirmação independente
+continua sem ser requisito para os temas.
+
+## Operação e liberação
+
+Gate registrado em 2026-09-17: a evolução do read model privado da jornada e
+da RPC de temas foi aprovada antes da migration. A mudança não cria tabelas,
+não altera RLS existente e não muda pagamentos, repasses, Aura, métricas ou
+exportações.
+
+O finalizador filtra candidatos antes do limite. A manutenção da sala exclui
+jobs existentes antes do limite, respeita `next_run_at`, registra dead letters
+para intervenção e encerra apenas por ID persistido ou correspondência exata
+única. Testes usam banco local isolado com rollback e preservam snapshots
+financeiros. Nenhuma migração deste ADR deve ser aplicada a HML/produção sem
+etapa separada de inspeção de divergências, implantação supervisionada e
+revisão da sessão HML original.
+
+Resolver a ocorrência de ausência ou autorizar seu reembolso não invalida o
+encerramento físico pendente da sala. O trabalho permanece limitado à tentativa
+atual e ao horário correspondente; o reagendamento concorrente invalida esse
+encerramento. Alterar apenas o fuso de apresentação não cria nova tentativa.
+
+### Reentrada técnica com identificador reutilizado
+
+O identificador remoto do Zoom não substitui a tentativa da reserva nem pode
+ser tratado como identidade permanente de uma sala. Uma reentrada posterior ao
+fechamento técnico abre uma época operacional sanitizada dentro da mesma
+tentativa, inclusive quando o provider reutiliza o identificador. A presença
+atual é derivada apenas da época aberta mais recente; eventos anteriores não
+podem retirar presença, reabrir encerramento terminal ou alterar a classificação
+operacional, qualidade, confirmação ou financeiro.

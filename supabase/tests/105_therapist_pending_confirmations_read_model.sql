@@ -1,5 +1,7 @@
 begin;
 
+\ir fixtures/attended-attempt-local.inc
+
 select plan(25);
 
 select ok(
@@ -230,8 +232,8 @@ from public.bookings
 where id = 'a9900000-0000-4000-8000-000000000002';
 
 update public.bookings
-set starts_at = starts_at - interval '14 days',
-    ends_at = ends_at - interval '14 days'
+set starts_at = starts_at - interval '30 days',
+    ends_at = ends_at - interval '30 days'
 where id = 'a9900000-0000-4000-8000-000000000002';
 
 select is(
@@ -246,6 +248,16 @@ select is(
   ),
   'rescheduling keeps the original session reference'
 );
+
+do $$
+declare v_booking_id uuid;
+begin
+  for v_booking_id in select id from public.bookings
+    where id::text like 'a9900000-%' and status <> 'cancelled_by_patient'
+  loop
+    perform pg_temp.prepare_attended_attempt(v_booking_id);
+  end loop;
+end $$;
 
 set local role authenticated;
 select set_config(
@@ -399,6 +411,7 @@ select ok(
 );
 
 insert into public.session_participant_confirmations (
+  session_attempt_id,
   booking_id,
   participant_role,
   outcome,
@@ -410,6 +423,7 @@ insert into public.session_participant_confirmations (
   policy_version_id
 )
 select
+  public.current_session_attempt_id_v1('a9900000-0000-4000-8000-000000000001'),
   'a9900000-0000-4000-8000-000000000001',
   'therapist',
   'completed',
@@ -474,8 +488,8 @@ select is(
       'a9900000-0000-4000-8000-000000000005'
     )
   ),
-  3,
-  'therapist feedback removes the session from the pending set'
+  4,
+  'historical quality feedback does not impersonate an attempt confirmation'
 );
 
 update public.session_payments
@@ -497,8 +511,8 @@ select is(
       'a9900000-0000-4000-8000-000000000005'
     )
   ),
-  2,
-  'a manually confirmed service is no longer pending'
+  4,
+  'financial service confirmation does not impersonate participant confirmation'
 );
 
 update public.session_payments
@@ -519,7 +533,7 @@ select is(
       'a9900000-0000-4000-8000-000000000005'
     )
   ),
-  1,
+  3,
   'a refunded service is no longer pending'
 );
 
@@ -541,8 +555,8 @@ select is(
       'a9900000-0000-4000-8000-000000000005'
     )
   ),
-  0,
-  'a blocked refund removes the service from the pending set'
+  3,
+  'a pending financial refund does not remove an attendance confirmation'
 );
 
 select * from finish();

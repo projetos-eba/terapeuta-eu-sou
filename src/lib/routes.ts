@@ -31,9 +31,9 @@ export const routes = {
     encounterHistory: "/app/encontros#patient-history-encounters-title",
     encounterDetail: (bookingId: string) => `/app/encontros/${bookingId}`,
     encounterVideo: (bookingId: string) => `/app/encontros/${bookingId}/video`,
-    messages: "/app/mensagens",
+    support: "/app/suporte",
     supportTicketDetail: (ticketId: string) =>
-      `/app/mensagens/suporte/${ticketId}`,
+      `/app/suporte/${ticketId}`,
     favorites: "/app/favoritos",
     favoriteTherapists: "/app/favoritos/terapeutas",
     favoriteTherapies: "/app/favoritos/terapias",
@@ -45,7 +45,7 @@ export const routes = {
     notificationSettings: "/app/configuracoes/notificacoes",
     privacySettings: "/app/configuracoes/privacidade",
     securitySettings: "/app/configuracoes/seguranca",
-    help: "/app/mensagens",
+    help: "/app/suporte",
   },
   legacyPatient: {
     sessions: "/app/sessoes",
@@ -62,10 +62,10 @@ export const routes = {
     sessionDetail: (bookingId: string) => `/terapeuta/sessoes/${bookingId}`,
     sessionVideo: (bookingId: string) =>
       `/terapeuta/sessoes/${bookingId}/video`,
-    messages: "/terapeuta/mensagens",
+    support: "/terapeuta/suporte",
     supportTicketDetail: (ticketId: string) =>
-      `/terapeuta/mensagens/suporte/${ticketId}`,
-    therapyCatalogRequest: "/terapeuta/mensagens/solicitar-terapia",
+      `/terapeuta/suporte/${ticketId}`,
+    therapyCatalogRequest: "/terapeuta/servicos/solicitar-terapia",
     services: "/terapeuta/servicos",
     ownServices: "/terapeuta/servicos/meus",
     finance: "/terapeuta/financeiro",

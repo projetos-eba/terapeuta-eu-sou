@@ -69,6 +69,10 @@ function makeEditor(
         validationState: "not_scanned",
       },
     ],
+    publication: {
+      isPubliclyVisible: true,
+      needsReceivingAccount: false,
+    },
     propagationNotice:
       "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
@@ -247,26 +251,32 @@ describe("TherapistProfileOverviewPage", () => {
     expect(screen.queryByText(/documento/i)).not.toBeInTheDocument();
   });
 
-  it("switches to the registration flow while documents are still missing", () => {
+  it("does not offer the public profile link while the receiving account gate is pending", () => {
+    renderOverview(
+      makeEditor({
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: true,
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.queryByRole("link", { name: "Ver perfil público" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Perfil aguardando conta de recebimento"),
+    ).toBeInTheDocument();
+  });
+
+  it("marks the submission as 100% complete while documents are under review", () => {
     renderOverview(
       makeEditor({
         derived: {
           ...makeEditor().derived,
           verificationStatus: "submitted",
         },
-        privateDocuments: [
-          {
-            createdAt: "2026-07-28T11:00:00.000Z",
-            fileName: "rg.pdf",
-            fileSizeBytes: 1200,
-            id: "doc-identity",
-            kind: "identity_document",
-            mimeType: "application/pdf",
-            status: "uploaded",
-            updatedAt: "2026-07-28T11:00:00.000Z",
-            validationState: "not_scanned",
-          },
-        ],
         verificationSummary: {
           id: "verification-2",
           rejectionReason: null,
@@ -282,9 +292,170 @@ describe("TherapistProfileOverviewPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
     expect(screen.getAllByText("Dados e documentos").length).toBeGreaterThan(0);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    const documentsStep = screen
+      .getAllByText("Dados e documentos")[0]
+      .closest("li");
+    expect(documentsStep).not.toBeNull();
+    expect(within(documentsStep!).getByText("Concluído")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Seu cadastro já entrou em análise. A equipe TES vai avisar você sobre o próximo passo.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Prévia do perfil publicado" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("explains the reconnection and reapproval path after a receiving account closes", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: true,
+        },
+        verificationSummary: {
+          id: "verification-account-closed",
+          rejectionReason: null,
+          reviewOrigin: "connect_account_closed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Conecte uma nova conta de recebimento",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Conta de recebimento encerrada")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Conectar conta de recebimento" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=conta");
+    expect(
+      screen.getAllByText(/nova análise antes de liberar novos agendamentos/i),
+    ).not.toHaveLength(0);
+  });
+
+  it("guides the therapist to restore an empty schedule before reapproval", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          availabilityRuleCount: 0,
+          hasAvailability: false,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
+        },
+        verificationSummary: {
+          id: "verification-availability-removed",
+          rejectionReason: null,
+          reviewOrigin: "availability_removed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Cadastre novos horários" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Agenda sem horários disponíveis")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Configurar horários" }),
+    ).toHaveAttribute("href", "/terapeuta/agenda?aba=horarios");
+  });
+
+  it("keeps the restored schedule private while the new review is pending", () => {
+    renderOverview(
+      makeEditor({
+        derived: {
+          ...makeEditor().derived,
+          publicStatus: "unpublished",
+          verificationStatus: "submitted",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
+        },
+        verificationSummary: {
+          id: "verification-availability-restored",
+          rejectionReason: null,
+          reviewOrigin: "availability_removed",
+          reviewedAt: null,
+          status: "submitted",
+          submittedAt: "2026-09-17T12:00:00.000Z",
+        },
+      }),
+      { status: "not_published" },
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Horários em nova análise" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Horários enviados para análise")).toBeInTheDocument();
+  });
+
+  it("returns documents to in-progress when the TES team requests resubmission", () => {
+    const editor = makeEditor({
+      derived: {
+        ...makeEditor().derived,
+        verificationStatus: "in_review",
+      },
+      privateDocuments: makeEditor().privateDocuments.map((document) =>
+        document.kind === "address_proof"
+          ? {
+              ...document,
+              status: "rejected" as const,
+              validationState: "failed" as const,
+            }
+          : document,
+      ),
+      verificationSummary: {
+        id: "verification-4",
+        rejectionReason: null,
+        reviewedAt: null,
+        status: "in_review",
+        submittedAt: "2026-07-28T11:10:00.000Z",
+      },
+    });
+
+    renderOverview(editor);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Reenvie seus documentos",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A equipe TES solicitou o reenvio dos documentos. Envie-os novamente para retomarmos a análise.",
+      ),
+    ).toBeInTheDocument();
+    const documentsStep = screen
+      .getAllByText("Dados e documentos")[0]
+      .closest("li");
+    expect(documentsStep).not.toBeNull();
+    expect(
+      within(documentsStep!).getByText("Em andamento"),
+    ).toBeInTheDocument();
   });
 
   it("shows the administrative correction reason in the registration flow", () => {
@@ -331,6 +502,10 @@ describe("TherapistProfileOverviewPage", () => {
         derived: {
           ...makeEditor().derived,
           publicStatus: "unpublished",
+        },
+        publication: {
+          isPubliclyVisible: false,
+          needsReceivingAccount: false,
         },
       }),
       { status: "not_published" },

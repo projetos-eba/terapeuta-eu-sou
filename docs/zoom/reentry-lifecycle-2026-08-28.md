@@ -18,9 +18,9 @@ retornava corretamente `SESSION_ENDED`, apesar de ainda haver tempo agendado.
 ## Invariantes corrigidos
 
 - A janela geral é T-15 até `scheduled_ends_at` exclusivo.
-- O terapeuta elegível pode entrar e reentrar durante toda a janela.
+- O terapeuta que chegou ou entrou até T+10 pode reentrar durante toda a janela.
 - O paciente que chegou até T+10 inclusive, ou que já possui
-  `session.user_joined` confiável, preserva o direito até o fim agendado.
+  `session.user_joined` confiável até T+10, preserva o direito até o fim agendado.
 - Cada entrada do paciente continua host-first. Sem presença atual do
   terapeuta, o estado é `THERAPIST_NOT_IN_SESSION`; um novo join confiável do
   host libera o acesso.
@@ -36,15 +36,21 @@ retornava corretamente `SESSION_ENDED`, apesar de ainda haver tempo agendado.
 Após T+10 estrito, uma sessão ativa somente recebe o término
 `patient_no_show` quando não existe, para a versão e horário atuais da reserva,
 nem chegada autenticada na sala de espera nem `session.user_joined` confiável
-do paciente. A mesma evidência libera ambos até o fim agendado: se o paciente
-chegou no prazo e o terapeuta entra em T+15, a sala continua host-first e o
-paciente pode entrar assim que a presença atual do terapeuta for confirmada.
+do paciente. Cada participante preserva seu próprio direito de reentrada até
+o fim agendado. A chegada do cliente não autoriza uma primeira chegada tardia
+do terapeuta. Se ambos chegaram até T+10, o terapeuta pode reentrar em T+15
+e o cliente entra assim que a presença atual do terapeuta for confirmada.
 
 O job `end_patient_no_show` revalida a evidência sob o lock consultado pela
 chegada da espera. Ele não reutiliza `end_therapist_absent` ou
-`reconcile_orphan`; atraso, saída e reconexão do terapeuta seguem reentrantes.
+`reconcile_orphan`; saída e reconexão do terapeuta pontual seguem reentrantes.
 O backend bloqueia a emissão de novos acessos imediatamente e a maintenance
 encerra a instância remota no ciclo seguinte.
+
+Uma decisão pendente de alteração solicitada pela terapeuta bloqueia a reserva
+de `end_patient_no_show`, inclusive para job que foi criado antes do pedido.
+Essa proteção é separada da presença: impede que a ausência automática decida
+um encontro que ainda aguarda escolha de reagendamento ou reembolso.
 
 ## Implementação local
 
@@ -78,6 +84,27 @@ A transformação one-shot também foi exercitada no Supabase local a partir da
 migration imediatamente anterior: um job `processing` e um job `queued`
 viraram `done/superseded`, a fence legada ativa foi limpa e uma sessão com
 término já confirmado permaneceu inalterada.
+
+## Complemento — reuso de identificador do provider (2026-09-17)
+
+O `provider_session_id` não é uma fronteira suficiente de instância: depois de
+uma sala vazia ser tecnicamente encerrada, o Zoom pode reutilizar esse mesmo
+identificador quando o terapeuta retorna. A presença atual passa a usar uma
+época interna aberta por `session.started` ou `session.user_joined` confiável,
+posterior ao fechamento anterior. A época é registrada somente em metadata
+operacional sanitizada da `video_sessions` e das participações; não cria uma
+nova tentativa de reserva nem altera chegada, no-show, qualidade ou financeiro.
+
+Eventos anteriores ao início da época atual são descartados, inclusive um
+`session.ended` atrasado com o mesmo identificador do provider. O primeiro join
+confiável do terapeuta na nova época restaura `therapist_present=true`, para que
+o paciente já legitimado volte a receber acesso host-first. Encerramento manual,
+fim agendado, hard timeout e status terminal continuam sem reabertura.
+
+A regressão `137_zoom_same_provider_reentry_epoch.sql` cobre: entrada de ambos,
+fechamento técnico, reentrada do terapeuta com o mesmo identificador, bloqueio
+de evento antigo, nova entrada do paciente e manutenção da ACL exclusiva de
+`service_role`.
 
 Nenhuma alteração deste trabalho deve ser aplicada diretamente em HML ou
 produção. HML serve somente como fonte read-only de evidência.

@@ -330,7 +330,7 @@ function getFieldValue(row: AdminOperationRow, label: string) {
 function statusTone(status?: string) {
   const label = formatStatusLabel(status);
 
-  if (label === "Aprovado") return "success" as const;
+  if (label === "Publicado e elegível") return "success" as const;
   if (label === "Não aprovado") return "danger" as const;
   if (label === "Em análise" || label === "Ajustes solicitados") {
     return "warning" as const;

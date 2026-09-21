@@ -4,12 +4,15 @@ import type {
 } from "./patient-encounters.types";
 
 const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
-  awaiting_confirmation:
-    "Confirme se este encontro aconteceu. A resposta é privada e separada da avaliação pública.",
+  awaiting_feedback:
+    "Conte como foi este encontro. Sua avaliação é privada e separada da avaliação pública do terapeuta.",
   cancelled:
-    "Este encontro foi cancelado. Consulte os detalhes para acompanhar o reembolso, quando aplicável.",
+    "Este encontro foi cancelado. Consulte os detalhes da sessão.",
   completed:
-    "Este encontro foi realizado. O resumo, a avaliação ou o suporte aparecem conforme o encontro.",
+    "Este encontro foi realizado. Consulte os detalhes do encontro.",
+  not_performed: "Caso precise de ajuda, entre em contato com o suporte.",
+  refunded:
+    "O pagamento deste encontro foi reembolsado. Consulte os detalhes para acompanhar o registro.",
   confirmed:
     "Seu horário está confirmado. Os detalhes ficam disponíveis quando você precisar.",
   live: "A entrada está disponível agora.",
@@ -29,6 +32,7 @@ export function getEncounterGuidance(encounter: PatientEncounter) {
 export function getSpotlightEyebrow(encounter: PatientEncounter | null) {
   if (!encounter) return "Próximo passo";
   if (encounter.status === "live") return "Entrada disponível";
+  if (encounter.paymentScheduled) return "Próximo encontro";
   if (
     encounter.status === "pending_payment" ||
     encounter.status === "payment_incomplete"

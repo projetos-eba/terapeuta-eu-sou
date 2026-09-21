@@ -34,7 +34,7 @@ describe("parseTherapistCalendarReadModel", () => {
     );
   });
 
-  it("rejects non-reschedule items from the operational attention rail", () => {
+  it("rejects unsupported items from the operational attention rail", () => {
     const payload = calendarPayload();
     payload.attentionItems[0].kind = "pending_payment";
 
@@ -42,10 +42,46 @@ describe("parseTherapistCalendarReadModel", () => {
       SessionReadModelContractError,
     );
   });
+
+  it("adds an open attendance incident to the agenda attention rail", () => {
+    const payload = calendarPayload();
+    Object.assign(payload.bookings[0], {
+      attendanceIncidentId: "a5000000-0000-4000-8000-000000000099",
+      attendanceReviewStatus: "open",
+      attendanceStatus: "therapist_no_show",
+    });
+
+    const result = parseTherapistCalendarReadModel(payload);
+
+    expect(result.attentionItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          bookingId: "f2000000-0000-4000-8000-000000000001",
+          kind: "attendance_review",
+        }),
+      ]),
+    );
+    expect(result.summary.pendingAttention).toBe(2);
+  });
+
+  it("keeps a double no-show out of the agenda attention rail", () => {
+    const payload = calendarPayload();
+    Object.assign(payload.bookings[0], {
+      attendanceIncidentId: "a5000000-0000-4000-8000-000000000099",
+      attendanceReviewStatus: "open",
+      attendanceStatus: "requires_review",
+      bookingStatus: "no_show_both",
+    });
+
+    const result = parseTherapistCalendarReadModel(payload);
+
+    expect(result.attentionItems).toHaveLength(1);
+    expect(result.summary.pendingAttention).toBe(1);
+  });
 });
 
 function calendarPayload() {
-  return {
+  const payload = {
     anchorDate: "2026-07-27",
     attentionItems: [
       {
@@ -129,4 +165,6 @@ function calendarPayload() {
     timezone: "America/Sao_Paulo",
     view: "week",
   };
+
+  return { ...payload, todayBookings: payload.bookings };
 }

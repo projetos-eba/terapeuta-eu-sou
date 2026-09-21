@@ -8,11 +8,13 @@ import {
   requireUser,
   success,
 } from "../_shared/payments/http.ts";
+import { assertLegacySessionFinancialCommand } from "../_shared/payments/session-flow-compatibility.ts";
 import {
   mapRescheduleDatabaseError,
-  resolveParticipantActorRole,
-  validateRescheduleCommand,
   type RescheduleCommandBody,
+  resolveParticipantActorRole,
+  resolvePatientRescheduleRpc,
+  validateRescheduleCommand,
 } from "./reschedule-command.ts";
 
 type BookingRow = {
@@ -28,6 +30,7 @@ type ProfileOwnerRow = { user_id: string };
 
 type RescheduleRequestRow = {
   booking_id: string;
+  change_kind: "legacy" | "therapist_cancellation" | "therapist_reschedule";
   id: string;
   requested_by_profile_id: string;
 };
@@ -86,6 +89,10 @@ runtime.serve(async (request) => {
           command.bookingId,
           user.id,
         );
+        const paymentFlowVersion = await getSessionPaymentFlowVersion(
+          client,
+          booking.id,
+        );
 
         const proposedStartsAt = new Date(command.proposedStartsAt);
         const proposedEndsAt = new Date(
@@ -94,12 +101,14 @@ runtime.serve(async (request) => {
         ).toISOString();
 
         if (booking.actorRole === "patient") {
-          operation = "apply_patient_booking_reschedule_v1";
+          operation = resolvePatientRescheduleRpc(paymentFlowVersion);
           const result = await client.rpc<Record<string, unknown>>(operation, {
-            p_actor_profile_id: user.id,
             p_booking_id: booking.id,
             p_expected_booking_version:
               command.expectedBookingVersion ?? booking.booking_version,
+            ...(paymentFlowVersion === "v10"
+              ? { p_patient_user_id: user.id }
+              : { p_actor_profile_id: user.id }),
             p_proposed_ends_at: proposedEndsAt,
             p_proposed_starts_at: proposedStartsAt.toISOString(),
             p_proposed_timezone: booking.timezone,
@@ -109,6 +118,8 @@ runtime.serve(async (request) => {
 
           return success(result);
         }
+
+        assertLegacySessionFinancialCommand(paymentFlowVersion);
 
         operation = "request_booking_reschedule_v1";
         const reschedule = await client.rpc<RescheduleRequestRow>(operation, {
@@ -132,11 +143,121 @@ runtime.serve(async (request) => {
         });
       }
 
+      if (command.action === "therapist_change") {
+        const booking = await getAuthorizedBooking(
+          client,
+          command.bookingId,
+          user.id,
+        );
+        if (booking.actorRole !== "therapist") {
+          throw new DomainError(
+            "reschedule_forbidden",
+            403,
+            "Você não pode solicitar esta alteração.",
+          );
+        }
+
+        const paymentFlowVersion = await getSessionPaymentFlowVersion(
+          client,
+          booking.id,
+        );
+        if (paymentFlowVersion === "v10" && command.kind === "cancellation") {
+          operation = "cancel_therapist_uncharged_session_v10";
+          const result = await client.rpc<Record<string, unknown>>(operation, {
+            p_booking_id: booking.id,
+            p_reason: command.reason ?? "",
+            p_request_id: command.requestId,
+            p_therapist_user_id: user.id,
+          });
+          return success(result);
+        }
+
+        operation =
+          paymentFlowVersion === "v10"
+            ? "open_therapist_booking_reschedule_v10"
+            : "open_therapist_booking_change_v1";
+        const result = await client.rpc<Record<string, unknown>>(operation, {
+          p_booking_id: booking.id,
+          p_expected_booking_version:
+            command.expectedBookingVersion ?? booking.booking_version,
+          p_reason: command.reason,
+          p_request_id: command.requestId,
+          p_therapist_user_id: user.id,
+          ...(paymentFlowVersion === "v10" ? {} : { p_kind: command.kind }),
+        });
+        return success(result);
+      }
+
+      if (command.action === "resolve_therapist_change") {
+        const reschedule = await getAuthorizedReschedule(
+          client,
+          command.rescheduleRequestId,
+          user.id,
+        );
+        const booking = await getAuthorizedBooking(
+          client,
+          reschedule.booking_id,
+          user.id,
+        );
+        if (booking.actorRole !== "patient") {
+          throw new DomainError(
+            "reschedule_forbidden",
+            403,
+            "Você não pode decidir esta alteração.",
+          );
+        }
+
+        const paymentFlowVersion = await getSessionPaymentFlowVersion(
+          client,
+          booking.id,
+        );
+        operation =
+          paymentFlowVersion === "v10"
+            ? "resolve_therapist_booking_reschedule_v10"
+            : "resolve_therapist_booking_change_v1";
+        const result = await client.rpc<Record<string, unknown>>(operation, {
+          p_expected_booking_version:
+            command.expectedBookingVersion ?? booking.booking_version,
+          p_patient_user_id: user.id,
+          p_proposed_ends_at: command.proposedStartsAt
+            ? new Date(
+                new Date(command.proposedStartsAt).getTime() +
+                  booking.service_duration_minutes_snapshot * 60_000,
+              ).toISOString()
+            : null,
+          p_proposed_starts_at: command.proposedStartsAt,
+          p_proposed_timezone: booking.timezone,
+          p_request_id: command.requestId,
+          p_reschedule_request_id: reschedule.id,
+          p_resolution: command.resolution,
+        });
+        return success(result);
+      }
+
       const reschedule = await getAuthorizedReschedule(
         client,
         command.rescheduleRequestId,
         user.id,
       );
+      const paymentFlowVersion = await getSessionPaymentFlowVersion(
+        client,
+        reschedule.booking_id,
+      );
+      if (
+        paymentFlowVersion === "v10" &&
+        reschedule.change_kind === "therapist_reschedule" &&
+        command.resolution === "cancelled"
+      ) {
+        operation = "withdraw_therapist_booking_reschedule_v10";
+        const result = await client.rpc<Record<string, unknown>>(operation, {
+          p_expected_booking_version: command.expectedBookingVersion,
+          p_request_id: command.requestId,
+          p_reschedule_request_id: reschedule.id,
+          p_therapist_user_id: user.id,
+        });
+        return success(result);
+      }
+      assertLegacySessionFinancialCommand(paymentFlowVersion);
 
       operation = "resolve_booking_reschedule_v1";
       let result: Record<string, unknown>;
@@ -183,6 +304,18 @@ runtime.serve(async (request) => {
     return failure(error, correlationId);
   }
 });
+
+async function getSessionPaymentFlowVersion(
+  client: SupabaseRestClient,
+  bookingId: string,
+): Promise<string | null> {
+  const [payment] = await client.get<Array<{ payment_flow_version: string }>>(
+    `/rest/v1/session_payments?select=payment_flow_version&booking_id=eq.${encodeURIComponent(
+      bookingId,
+    )}&limit=1`,
+  );
+  return payment?.payment_flow_version ?? null;
+}
 
 async function getAuthorizedBooking(
   client: SupabaseRestClient,
@@ -249,7 +382,7 @@ async function getAuthorizedReschedule(
   userId: string,
 ) {
   const [request] = await client.get<RescheduleRequestRow[]>(
-    `/rest/v1/booking_reschedule_requests?select=id,booking_id,requested_by_profile_id&id=eq.${encodeURIComponent(
+    `/rest/v1/booking_reschedule_requests?select=id,booking_id,requested_by_profile_id,change_kind&id=eq.${encodeURIComponent(
       rescheduleRequestId,
     )}&limit=1`,
   );

@@ -183,6 +183,12 @@ reagendamento após job enfileirado, ID remoto presente, e descoberta por nome
 exato quando o webhook ainda não persistiu o ID. Nunca encerrar uma sessão
 remota ambígua.
 
+Uma alteração pendente iniciada pela terapeuta é uma exceção explícita a esse
+cenário: a reserva do job de não comparecimento deve ser recusada, inclusive
+quando o job já estava enfileirado antes da decisão. A sala fica bloqueada até
+o desfecho; não se registra falta nem se inicia conclusão financeira enquanto
+o paciente decide.
+
 Se o harness falhar antes de capturar `provider_session_id`, ele tenta descobrir
 uma sessao ativa unica no cleanup. A rotina operacional
 `zoom:video-sdk:emergency-end -- --active-singleton` existe somente para esse
@@ -253,5 +259,20 @@ defensivos. Ela também reproduz a corrida em que o timestamp de
 A regressão `099_zoom_reentry_terminal_fences.sql` prova que jobs legados já
 enfileirados não são reservados e que fim agendado, hard timeout e fim manual
 previamente autorizado continuam terminais.
+
+A regressão `137_zoom_same_provider_reentry_epoch.sql` cobre uma saída bilateral
+seguida de `session.ended` técnico e retorno do terapeuta com o mesmo
+`provider_session_id`. Ela exige nova época operacional, restauração de presença
+do terapeuta, nova entrada do paciente e descarte de um encerramento atrasado da
+época anterior. Esse cenário deve ser repetido na homologação com paciente em
+desktop e terapeuta em mobile, tanto por refresh quanto por retorno pela página
+inicial.
 O teste de dois dispositivos usa duas montagens isoladas da espera e respostas
 controladas de access; não representa dois dispositivos físicos nem Zoom real.
+
+A regressão `126_session_attendance_accountability.sql` cobre a chegada
+autenticada, idempotência por participante e versão, classificação em T+10,
+ausência do terapeuta, ausência dupla, bloqueio financeiro e a garantia de que
+o classificador não cria Refund, Reversal ou dívida de taxa. A homologação real
+deve repetir os quatro quadrantes de presença e também o caso em que ambos
+chegam, mas um join não se concretiza até o fim.

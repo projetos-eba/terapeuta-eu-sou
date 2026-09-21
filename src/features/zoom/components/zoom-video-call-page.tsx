@@ -1,13 +1,12 @@
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import type { Route } from "next";
 
 import type { ZoomAccessState } from "@/domain/tes";
 import type { TherapistPlan } from "@/domain/tes";
 import { BookingReference } from "@/features/bookings";
 
 import { ZoomVideoSessionAdapter } from "../zoom-video-session-adapter";
+import { ZoomAttendanceClosureBoundary } from "./zoom-attendance-closure-boundary";
 
 export function ZoomVideoCallPage({
   access,
@@ -22,6 +21,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt,
   sessionTitle,
   showFeedback = false,
+  publicReviewTherapist,
   therapistPlan,
 }: {
   access: ZoomAccessState | null;
@@ -36,6 +36,7 @@ export function ZoomVideoCallPage({
   scheduledStartsAt: string;
   sessionTitle: string;
   showFeedback?: boolean;
+  publicReviewTherapist?: { id: string; name: string };
   therapistPlan?: TherapistPlan;
 }) {
   const audienceLabel = actorRole === "patient" ? "SEU ENCONTRO" : "SUA SESSÃO";
@@ -45,13 +46,13 @@ export function ZoomVideoCallPage({
       <header className="sticky top-0 z-sticky border-b border-brand-lavender/65 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 w-full max-w-[1664px] items-center justify-between gap-3 px-4 py-2 sm:min-h-20 sm:px-6 lg:min-h-[102px] lg:px-8">
           <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-            <Link
+            <a
               aria-label="Voltar aos detalhes"
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-deep transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={backHref as Route<string>}
+              href={backHref}
             >
               <ArrowLeft aria-hidden="true" size={21} />
-            </Link>
+            </a>
             <Image
               alt="Terapeuta Eu Sou"
               className="h-auto w-[132px] shrink-0 sm:w-[150px] lg:w-[174px]"
@@ -93,21 +94,31 @@ export function ZoomVideoCallPage({
           </h1>
         </div>
 
-        <ZoomVideoSessionAdapter
-          access={access}
+        <ZoomAttendanceClosureBoundary
           actorRole={actorRole}
-          ambientAudioSrc={ambientAudioSrc}
-          backHref={backHref}
           bookingId={bookingId}
-          displayMode="dedicated"
-          initialFeedback={showFeedback}
           participantLabel={participantLabel}
           scheduleLabel={scheduleLabel}
-          scheduledEndsAt={scheduledEndsAt}
           scheduledStartsAt={scheduledStartsAt}
-          sessionTitle={sessionTitle}
-          showJourneyThemes={therapistPlan === "premium_plus"}
-        />
+          showFeedback={showFeedback}
+        >
+          <ZoomVideoSessionAdapter
+            access={access}
+            actorRole={actorRole}
+            ambientAudioSrc={ambientAudioSrc}
+            backHref={backHref}
+            bookingId={bookingId}
+            displayMode="dedicated"
+            initialFeedback={showFeedback}
+            publicReviewTherapist={publicReviewTherapist}
+            participantLabel={participantLabel}
+            scheduleLabel={scheduleLabel}
+            scheduledEndsAt={scheduledEndsAt}
+            scheduledStartsAt={scheduledStartsAt}
+            sessionTitle={sessionTitle}
+            showJourneyThemes={therapistPlan === "premium_plus"}
+          />
+        </ZoomAttendanceClosureBoundary>
       </main>
     </div>
   );

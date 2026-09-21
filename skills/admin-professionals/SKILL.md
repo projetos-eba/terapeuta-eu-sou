@@ -28,11 +28,17 @@ agendamento`, separando claramente aprovação administrativa, publicação e
   `therapist_verifications` usam a decisão autoritativa já presente no cadastro
   somente para leitura dos marcos. A interface não cria, reabre nem altera uma
   verificação retroativamente.
-- A aba `Perfil` substitui qualquer referência a formulário. Ela mostra apenas
-  a projeção publicada de Meu perfil (`public_therapist_profile_content_v`) e
-  os serviços elegíveis (`public_therapist_profile_services_v`). Rascunhos,
+- A primeira dobra não repete conteúdo editorial, serviços ou dados privados:
+  ela mantém identidade, estado, fluxo e ações autorizadas. A aba `Perfil`
+  concentra a versão enviada de Meu perfil e, em `Dados e contato`, a
+  identidade e o contato privados estritamente necessários para validação.
+  CPF, telefone e CEP são formatados apenas na interface; a origem continua
+  sendo a projeção administrativa autorizada. Rascunhos fora dessa projeção,
   documentos privados, seus metadados, IDs internos e dados de conta não são
   exibidos.
+- A aba `Serviços e terapias` concentra a oferta informada na versão em
+  revisão. Quando essa leitura não estiver disponível, ela pode mostrar a
+  projeção pública elegível com estado honesto de indisponibilidade.
 - A aba `Documentos` existe apenas para revisão privada/autorizada, usando o
   fluxo canônico `therapist-private-documents`; a primeira dobra não deve
   transformar anexos em conteúdo editorial.
@@ -44,6 +50,9 @@ agendamento`, separando claramente aprovação administrativa, publicação e
   path interno ou anexos via read model público.
 - Quando não houver versão pública elegível, informar a indisponibilidade de
   modo honesto; não inferir ou revelar conteúdo em rascunho.
+- A leitura de `public_therapist_profile_content_v` usa o `slug` canônico do
+  cadastro administrativo; essa view não expõe `therapist_profile_id`. Sem
+  slug, não consultar a projeção pública nem recorrer a tabelas internas.
 - `Perfil público` só pode ser aberto quando a projeção segura estiver
   disponível. A aprovação administrativa continua distinta da publicação.
 - Usar `StatusCluster` inline, hairlines e seções abertas antes de cards. A
@@ -60,7 +69,10 @@ agendamento`, separando claramente aprovação administrativa, publicação e
 
 ## Regra de publicação
 
-`get_therapist_publication_eligibility_v1` é a única regra: perfil aprovado, público, aceitando reservas online e com serviço ativo/reservável/online cuja terapia seja publicada, visível e de categoria ativa.
+`get_therapist_publication_eligibility_v1` é a única regra: perfil aprovado,
+100% completo, com disponibilidade recorrente ativa, público, aceitando
+reservas online, conta de recebimento pronta e serviço ativo/reservável/online
+cuja terapia seja publicada, visível e de categoria ativa.
 
 Verificação aprovada não altera switches públicos por si só. O admin com
 `admin.professionals.verify` pode executar `professional.publish`, sempre com
@@ -69,6 +81,12 @@ três switches que o próprio comando ativa (`public_status`, `is_public` e
 `is_accepting_bookings`). O comando então publica o perfil e libera reservas
 na mesma transação. Qualquer outro blocker mantém “Aprovado · publicação
 pendente” e impede a ação.
+
+O Admin não aprova verificação abaixo de 100%. A remoção da última
+disponibilidade de um perfil público cria revisão `availability_removed`,
+exibida como “Agenda sem horários”. Adicionar horários remove o bloqueio de
+completude, mas a publicação só volta após nova aprovação autoritativa; reservas
+existentes permanecem intactas.
 
 ## Navegação correlacionada
 

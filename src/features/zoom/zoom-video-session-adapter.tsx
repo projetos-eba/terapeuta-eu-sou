@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Copy, Loader2, Mic, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { TESDialog } from "@/components/tes";
 import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
 import { getZoomWaitingRoomStatusFromAccess } from "@/features/bookings";
 import { SessionFeedbackForm } from "@/features/session-feedback/components/session-feedback-form";
+import { getSupportWhatsAppHref } from "@/lib/support-whatsapp";
 import { routes } from "@/lib/routes";
 
 import { ZoomVideoControls } from "./components/zoom-video-controls";
@@ -246,6 +248,7 @@ export function ZoomVideoSessionAdapter({
   bookingId,
   displayMode = "embedded",
   initialFeedback = false,
+  publicReviewTherapist,
   participantLabel = "Com outra pessoa",
   scheduleLabel,
   scheduledEndsAt,
@@ -260,6 +263,7 @@ export function ZoomVideoSessionAdapter({
   bookingId: string;
   displayMode?: "dedicated" | "embedded";
   initialFeedback?: boolean;
+  publicReviewTherapist?: { id: string; name: string };
   participantLabel?: string;
   scheduleLabel?: string;
   scheduledEndsAt?: string;
@@ -267,7 +271,10 @@ export function ZoomVideoSessionAdapter({
   sessionTitle?: string;
   showJourneyThemes?: boolean;
 }) {
-  const [state, setSessionState] = useState<SessionState>("idle");
+  const router = useRouter();
+  const [state, setSessionState] = useState<SessionState>(() =>
+    initialFeedback ? "ended" : "idle",
+  );
   const stateRef = useRef(state);
   const liveSessionStateRef = useRef<"joined" | "media_degraded">("joined");
   const setState = useCallback((nextState: SessionState) => {
@@ -306,6 +313,7 @@ export function ZoomVideoSessionAdapter({
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const currentAccessRef = useRef(access);
   const isOnlineRef = useRef(isOnline);
   const clientRef = useRef<ZoomVideoClient | null>(null);
@@ -414,43 +422,6 @@ export function ZoomVideoSessionAdapter({
   useEffect(() => {
     updateCurrentAccess(access);
   }, [access, updateCurrentAccess]);
-
-  useEffect(() => {
-    if (!initialFeedback) return;
-
-    let cancelled = false;
-
-    async function resolveFeedbackIntent() {
-      try {
-        const response = await fetch(
-          `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
-          { cache: "no-store" },
-        );
-        const payload = (await response.json().catch(() => null)) as {
-          data?: { status?: string };
-          ok?: boolean;
-        } | null;
-        const feedbackStatus = payload?.data?.status;
-
-        if (
-          !cancelled &&
-          payload?.ok &&
-          (feedbackStatus === "eligible" ||
-            feedbackStatus === "incident_only" ||
-            feedbackStatus === "submitted")
-        ) {
-          setState("ended");
-        }
-      } catch {
-        // The waiting room remains visible when the intent check is unavailable.
-      }
-    }
-
-    void resolveFeedbackIntent();
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId, initialFeedback, setState]);
 
   useEffect(() => {
     isOnlineRef.current = isOnline;
@@ -582,6 +553,14 @@ export function ZoomVideoSessionAdapter({
             ) {
               setMessage(
                 "Sua chegada foi registrada. A entrada será liberada quando o terapeuta estiver na sala.",
+              );
+            } else if (
+              actorRole === "patient" &&
+              refreshedAccess.reason ===
+                ZoomAccessReason.TherapistArrivalWindowExpired
+            ) {
+              setMessage(
+                "O terapeuta não compareceu até o fim da tolerância. Se precisar de ajuda, fale com o suporte.",
               );
             } else if (
               actorRole === "patient" &&
@@ -1497,6 +1476,18 @@ export function ZoomVideoSessionAdapter({
       scheduleRemoteVideoResync();
     } catch (error) {
       if (!mounted.current || leavingRef.current) return;
+      const failure = normalizeZoomFailure(error, "video");
+      if (
+        isMobileBrowser() &&
+        !videoStartedRef.current &&
+        failure.shouldReload
+      ) {
+        setLastFailure(failure);
+        setRecoveryAttempt(0);
+        setState("reload_required");
+        setMessage(null);
+        return;
+      }
       setMessage(
         videoStartedRef.current
           ? "Não conseguimos desligar a câmera. Tente novamente ou saia do encontro."
@@ -1533,65 +1524,71 @@ export function ZoomVideoSessionAdapter({
     stream: ZoomMediaStream,
     options?: { userGesture?: boolean },
   ) {
-    return runLocalVideoOperation(async (generation) => {
-      const captureEpoch = localCaptureEpochRef.current + 1;
-      localCaptureEpochRef.current = captureEpoch;
-      localCaptureStateRef.current = "starting";
-      localPreviewStateRef.current = "waiting_provider";
-      localPreviewAttemptsRef.current = 0;
-      localPreviewFallbackAttemptedRef.current = false;
-      try {
-        if (!stream.startVideo) throw new Error("video_start_unavailable");
-        // Calling startVideo before the first await preserves the transient
-        // user activation required by Safari/iOS camera permissions.
+    return runLocalVideoOperation(
+      async (generation) => {
+        const captureEpoch = localCaptureEpochRef.current + 1;
+        localCaptureEpochRef.current = captureEpoch;
+        localCaptureStateRef.current = "starting";
+        localPreviewStateRef.current = "waiting_provider";
+        localPreviewAttemptsRef.current = 0;
+        localPreviewFallbackAttemptedRef.current = false;
+        try {
+          if (!stream.startVideo) throw new Error("video_start_unavailable");
+          // Calling startVideo before the first await preserves the transient
+          // user activation required by Safari/iOS camera permissions.
+          console.info(
+            JSON.stringify({
+              code: "VIDEO_CAPTURE_START_REQUEST",
+              operation: "video.start",
+              trigger: options?.userGesture ? "user_gesture" : "lifecycle",
+            }),
+          );
+          const startVideoPromise = stream.startVideo();
+          assertZoomVideoStartResult(await startVideoPromise);
+        } catch (error) {
+          if (localCaptureEpochRef.current === captureEpoch) {
+            localCaptureStateRef.current = "failed";
+          }
+          logClientFailure(
+            {
+              ...normalizeZoomFailure(error, "video"),
+              operation: "video.start",
+            },
+            0,
+          );
+          throw error;
+        }
+        videoStartedRef.current = true;
         console.info(
           JSON.stringify({
-            code: "VIDEO_CAPTURE_START_REQUEST",
+            code: "VIDEO_CAPTURE_STARTED",
             operation: "video.start",
             trigger: options?.userGesture ? "user_gesture" : "lifecycle",
           }),
         );
-        const startVideoPromise = stream.startVideo();
-        assertZoomVideoStartResult(await startVideoPromise);
-      } catch (error) {
-        if (localCaptureEpochRef.current === captureEpoch) {
-          localCaptureStateRef.current = "failed";
+        ensureCurrentAttempt(generation);
+        setVideoOn(true);
+        mediaPreferencesRef.current.cameraEnabled = true;
+        if (
+          localCaptureEpochRef.current === captureEpoch &&
+          localCaptureStateRef.current === "starting"
+        ) {
+          // startVideo confirms publication, while the SDK's local renderer may
+          // become ready slightly later on a cold/reconnected mobile pipeline.
+          localCaptureStateRef.current = "published";
         }
-        logClientFailure(
-          { ...normalizeZoomFailure(error, "video"), operation: "video.start" },
-          0,
-        );
-        throw error;
-      }
-      videoStartedRef.current = true;
-      console.info(
-        JSON.stringify({
-          code: "VIDEO_CAPTURE_STARTED",
-          operation: "video.start",
-          trigger: options?.userGesture ? "user_gesture" : "lifecycle",
-        }),
-      );
-      ensureCurrentAttempt(generation);
-      setVideoOn(true);
-      mediaPreferencesRef.current.cameraEnabled = true;
-      if (
-        localCaptureEpochRef.current === captureEpoch &&
-        localCaptureStateRef.current === "starting"
-      ) {
-        // startVideo confirms publication, while the SDK's local renderer may
-        // become ready slightly later on a cold/reconnected mobile pipeline.
-        localCaptureStateRef.current = "published";
-      }
 
-      // Publishing and displaying our own preview are separate outcomes.
-      // Never stop a working camera or report permission denial for attach failure.
-      await ensureLocalPreviewAttached(generation, {
-        captureEpoch,
-        trigger: "video_start",
-      });
-    }, {
-      invokeImmediately: options?.userGesture === true,
-    });
+        // Publishing and displaying our own preview are separate outcomes.
+        // Never stop a working camera or report permission denial for attach failure.
+        await ensureLocalPreviewAttached(generation, {
+          captureEpoch,
+          trigger: "video_start",
+        });
+      },
+      {
+        invokeImmediately: options?.userGesture === true,
+      },
+    );
   }
 
   function ensureLocalPreviewAttached(
@@ -1919,7 +1916,11 @@ export function ZoomVideoSessionAdapter({
         () => finish(false),
         LOCAL_RENDERER_READY_TIMEOUT_MS,
       );
-      localRendererReadyWaitRef.current = { generation, resolve: finish, timer };
+      localRendererReadyWaitRef.current = {
+        generation,
+        resolve: finish,
+        timer,
+      };
       if (hasLocalVideoRenderer()) finish(true);
     });
   }
@@ -1984,7 +1985,11 @@ export function ZoomVideoSessionAdapter({
       );
       const elements = normalizeVideoElements(attached);
       if (elements.length !== 1) {
-        await discardDetachedVideoElements(input.stream, input.userId, elements);
+        await discardDetachedVideoElements(
+          input.stream,
+          input.userId,
+          elements,
+        );
         return false;
       }
       fallbackElement = elements[0];
@@ -2290,15 +2295,13 @@ export function ZoomVideoSessionAdapter({
         return;
       }
 
-      const failures = await cleanup({
+      await cleanup({
         destroyClient: true,
         endSession: false,
       });
       setState("ended");
       setMessage(
-        failures.length > 0
-          ? "O encontro foi encerrado. Houve uma falha ao limpar a mídia local; você já pode compartilhar seu feedback."
-          : "O encontro foi encerrado. Você já pode compartilhar seu feedback e confirmar como ele aconteceu.",
+        "O encontro foi encerrado. A avaliação ficará disponível quando os registros da sala estiverem prontos.",
       );
     } catch {
       setState("joined");
@@ -2319,7 +2322,7 @@ export function ZoomVideoSessionAdapter({
 
     try {
       const response = await fetch(
-        `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
+        `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}&actorRole=${actorRole}`,
         { cache: "no-store" },
       );
       const payload = (await response.json().catch(() => null)) as {
@@ -2329,14 +2332,12 @@ export function ZoomVideoSessionAdapter({
       const feedbackStatus = payload?.data?.status;
       const feedbackAvailable =
         payload?.ok &&
-        (feedbackStatus === "eligible" ||
-          feedbackStatus === "incident_only" ||
-          feedbackStatus === "submitted");
+        (feedbackStatus === "eligible" || feedbackStatus === "submitted");
 
       if (feedbackAvailable) {
         setState("ended");
         setMessage(
-          "O encontro foi encerrado. Você já pode compartilhar seu feedback e confirmar como ele aconteceu.",
+          "O encontro foi encerrado. Você pode avaliar a qualidade desta sessão.",
         );
         return;
       }
@@ -3177,6 +3178,13 @@ export function ZoomVideoSessionAdapter({
     );
   }
 
+  const handleFeedbackSubmitted = useCallback(() => {
+    // The detail route was rendered before the answer existed. Clear the
+    // client router cache so returning to it reads the persisted feedback and
+    // the respondent's private quality response.
+    router.refresh();
+  }, [router]);
+
   if (state === "ended") {
     return (
       <section className={sectionClassName} aria-label="Feedback da sessão">
@@ -3184,6 +3192,8 @@ export function ZoomVideoSessionAdapter({
           actorRole={actorRole}
           bookingId={bookingId}
           introductoryMessage={message}
+          onSubmitted={handleFeedbackSubmitted}
+          publicReviewTherapist={publicReviewTherapist}
           sessionLabel={
             actorRole === "patient"
               ? "Seu encontro foi encerrado"
@@ -3204,21 +3214,34 @@ export function ZoomVideoSessionAdapter({
   }
 
   if (state === "idle") {
-    const waitingKind = previewUnavailable
-      ? "operational_unavailable"
-      : currentAccess?.allowed
-        ? "entry_available"
-        : currentAccess?.reason === ZoomAccessReason.TooEarly
-          ? "too_early"
-          : waitingRoomKind === "ended" ||
-              waitingRoomKind === "arrival_expired" ||
-              waitingRoomKind === "schedule_ended"
-            ? waitingRoomKind
-            : waitingRoomKind === "therapist_absent_prolonged"
-              ? "therapist_absent_prolonged"
-              : currentAccess?.reason === ZoomAccessReason.TherapistNotInSession
-                ? "waiting_therapist"
-                : "operational_unavailable";
+    const waitingKind =
+      waitingRoomKind === "not_performed"
+        ? "not_performed"
+        : previewUnavailable
+          ? "operational_unavailable"
+          : currentAccess?.allowed
+            ? "entry_available"
+            : currentAccess?.reason === ZoomAccessReason.TooEarly
+              ? "too_early"
+              : currentAccess?.reason ===
+                  ZoomAccessReason.TherapistArrivalWindowExpired
+                ? actorRole === "patient"
+                  ? "therapist_no_show"
+                  : "not_performed"
+                : currentAccess?.reason === ZoomAccessReason.BothNoShow
+                  ? "both_no_show"
+                  : waitingRoomKind === "ended" ||
+                      waitingRoomKind === "arrival_expired" ||
+                      waitingRoomKind === "schedule_ended"
+                    ? waitingRoomKind
+                    : waitingRoomKind === "therapist_absent_prolonged" ||
+                        waitingRoomKind === "therapist_no_show" ||
+                        waitingRoomKind === "both_no_show"
+                      ? waitingRoomKind
+                      : currentAccess?.reason ===
+                          ZoomAccessReason.TherapistNotInSession
+                        ? "waiting_therapist"
+                        : "operational_unavailable";
 
     return (
       <ZoomWaitingRoom
@@ -3250,11 +3273,7 @@ export function ZoomVideoSessionAdapter({
         previewLoading={previewLoading}
         scheduleLabel={scheduleLabel}
         sessionTitle={sessionTitle}
-        supportHref={
-          actorRole === "patient"
-            ? `${routes.patient.messages}?context=suporte&booking=${bookingId}`
-            : `${routes.therapist.messages}?context=suporte&booking=${bookingId}`
-        }
+        supportHref={getSupportWhatsAppHref("waiting_room", bookingId)}
       />
     );
   }
@@ -3274,6 +3293,10 @@ export function ZoomVideoSessionAdapter({
     fallbackStartsAt: scheduledStartsAt,
     serverClockOffsetMs,
   });
+  const isMobileCameraReload =
+    state === "reload_required" &&
+    isMobileDevice &&
+    lastFailure?.phase === "video";
 
   return (
     <section
@@ -3299,23 +3322,27 @@ export function ZoomVideoSessionAdapter({
           videoOn={videoOn}
         />
 
-        <ZoomVideoControls
-          actorRole={actorRole}
-          audioMuted={audioMuted}
-          canEndForAll={finalEndAvailable}
-          isBusy={isBusy}
-          isOnline={isOnline}
-          onJoin={() => void joinSession()}
-          onLeave={() => void leaveSession(false)}
-          onReviewPermissions={() => void reviewPermissions()}
-          onTherapistEnd={() => void leaveSession(true)}
-          onToggleAudio={() => void toggleAudio()}
-          onToggleVideo={() => void toggleVideo()}
-          roleType={roleType}
-          state={state}
-          supportHref={`${actorRole === "patient" ? routes.patient.messages : routes.therapist.messages}?context=suporte&booking=${bookingId}`}
-          videoOn={videoOn}
-        />
+        {!isMobileCameraReload ? (
+          <ZoomVideoControls
+            actorRole={actorRole}
+            audioMuted={audioMuted}
+            canEndForAll={finalEndAvailable}
+            isBusy={isBusy}
+            isMobileDevice={isMobileDevice}
+            isOnline={isOnline}
+            onJoin={() => void joinSession()}
+            onLeave={() => void leaveSession(false)}
+            onOpenSupport={() => setSupportDialogOpen(true)}
+            onReviewPermissions={() => void reviewPermissions()}
+            onTherapistEnd={() => void leaveSession(true)}
+            onToggleAudio={() => void toggleAudio()}
+            onToggleVideo={() => void toggleVideo()}
+            roleType={roleType}
+            state={state}
+            supportHref={getSupportWhatsAppHref("in_call", bookingId)}
+            videoOn={videoOn}
+          />
+        ) : null}
         {activeSessionCountdown ? (
           <p
             aria-live="polite"
@@ -3359,67 +3386,89 @@ export function ZoomVideoSessionAdapter({
       {state === "error" || state === "reload_required" ? (
         <div className="mt-3 grid gap-3 rounded-lg border border-brand-lavender bg-white p-4">
           <p className="text-sm font-extrabold text-brand-deep">
-            {state === "reload_required"
-              ? "Reiniciar o vídeo da sala"
-              : "Recuperar acesso ao encontro"}
+            {isMobileCameraReload
+              ? "A câmera não respondeu no celular"
+              : state === "reload_required"
+                ? "Reiniciar o vídeo da sala"
+                : "Recuperar acesso ao encontro"}
           </p>
+          {isMobileCameraReload ? (
+            <p className="text-sm font-semibold leading-5 text-tesText-secondary">
+              Atualize esta página para reiniciar somente o vídeo. Seu encontro
+              e horário continuam preservados.
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
-            {lastFailure?.phase === "access" && lastFailure.code === 401 ? (
-              <a
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                href={
-                  actorRole === "patient"
-                    ? routes.public.clientSignIn
-                    : routes.public.therapistSignIn
-                }
-              >
-                Entrar novamente
-              </a>
-            ) : null}
-            {state === "reload_required" ? (
+            {isMobileCameraReload ? (
               <button
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                 onClick={() => window.location.reload()}
                 type="button"
               >
                 <RefreshCw aria-hidden="true" size={18} />
-                Recarregar sala
+                Atualizar página
               </button>
             ) : null}
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              disabled={!isOnline || state === "reload_required"}
-              onClick={() => void joinSession()}
-              type="button"
-            >
-              <RefreshCw aria-hidden="true" size={18} />
-              Tentar novamente
-            </button>
-            {lastFailure?.category === "permission" ? (
-              <button
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                onClick={() => void reviewPermissions()}
-                type="button"
-              >
-                <Mic aria-hidden="true" size={18} />
-                Revisar permissões
-              </button>
+            {!isMobileCameraReload ? (
+              <>
+                {lastFailure?.phase === "access" && lastFailure.code === 401 ? (
+                  <a
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    href={
+                      actorRole === "patient"
+                        ? routes.public.clientSignIn
+                        : routes.public.therapistSignIn
+                    }
+                  >
+                    Entrar novamente
+                  </a>
+                ) : null}
+                {state === "reload_required" ? (
+                  <button
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    onClick={() => window.location.reload()}
+                    type="button"
+                  >
+                    <RefreshCw aria-hidden="true" size={18} />
+                    Recarregar sala
+                  </button>
+                ) : null}
+                <button
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  disabled={!isOnline || state === "reload_required"}
+                  onClick={() => void joinSession()}
+                  type="button"
+                >
+                  <RefreshCw aria-hidden="true" size={18} />
+                  Tentar novamente
+                </button>
+                {lastFailure?.category === "permission" ? (
+                  <button
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    onClick={() => void reviewPermissions()}
+                    type="button"
+                  >
+                    <Mic aria-hidden="true" size={18} />
+                    Revisar permissões
+                  </button>
+                ) : null}
+                <button
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  onClick={() => void copySupportReference()}
+                  type="button"
+                >
+                  <Copy aria-hidden="true" size={18} />
+                  Copiar referência
+                </button>
+                <button
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-transparent px-4 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  onClick={() => void backToWaitingRoom()}
+                  type="button"
+                >
+                  Voltar à sala de espera
+                </button>
+              </>
             ) : null}
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              onClick={() => void copySupportReference()}
-              type="button"
-            >
-              <Copy aria-hidden="true" size={18} />
-              Copiar referência
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-transparent px-4 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              onClick={() => void backToWaitingRoom()}
-              type="button"
-            >
-              Voltar à sala de espera
-            </button>
           </div>
           {recoveryMessage ? (
             <p
@@ -3472,6 +3521,31 @@ export function ZoomVideoSessionAdapter({
                 Encerrar para todos
               </button>
             </div>
+          </div>
+        </TESDialog>
+      ) : null}
+      {supportDialogOpen ? (
+        <TESDialog
+          description={`Você será direcionado ao WhatsApp do suporte TES. Seu ${actorRole === "patient" ? "encontro" : "sessão"} continua aberto aqui.`}
+          onClose={() => setSupportDialogOpen(false)}
+          title="Falar com o suporte"
+        >
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender px-5 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={() => setSupportDialogOpen(false)}
+              type="button"
+            >
+              Cancelar
+            </button>
+            <a
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={getSupportWhatsAppHref("in_call", bookingId)}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Abrir WhatsApp
+            </a>
           </div>
         </TESDialog>
       ) : null}
