@@ -1012,6 +1012,18 @@ correções de fixtures e contratos de teste estão locais, aguardando PR manual
 isso não fecha os gates bancários ou de estabilização. Evidências e limites:
 [`session-financial-flow-v10-phase7-validation-2026-09-17.md`](session-financial-flow-v10-phase7-validation-2026-09-17.md).
 
+Em 21/09/2026, uma conciliação de Payout Test pago mostrou cinco Transfers V10
+integralmente alocados e um par antigo `payment`/`payment_refund` de efeito
+líquido zero. A regra anterior considerava qualquer movimento sem associação
+como bloqueio, repetindo o incidente apesar da soma exata. A correção local
+exige vínculo do estorno comprovado na Stripe, preserva o par para auditoria e
+mantém pares sem prova como incidente. Alertas antigos de Transfer V10 são
+resolvidos somente após sucesso do mesmo job, sem antecipar `pending_source`
+ou o Payout bancário. Os avisos administrativos passam a distinguir o tipo da
+ocorrência e deixam de comunicar atenção depois da resolução, preservando o
+histórico. Publicação e reteste em HML ainda são necessários; esta
+correção não encerra a Fase 7 nem autoriza produção.
+
 Evidências do canário HML de 15/09/2026:
 
 - a cobrança e o Transfer foram criados uma única vez, sem duplicidade na

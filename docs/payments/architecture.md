@@ -172,6 +172,13 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - A criacao do Transfer grava o debito financeiro uma unica vez, mas o estado
   bancario continua pendente. O repasse direto so conclui depois de
   `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
+- A conciliação de Payout ignora pares `payment`/`payment_refund` apenas quando
+  o Refund consultado na Stripe comprova a mesma Charge, a Balance Transaction
+  exata e o valor integral em BRL, sem vínculo do crédito com um Transfer TES.
+  Os IDs neutros ficam auditáveis; pares sem essa prova continuam como
+  movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
+  após sucesso comprovado do mesmo job, mesmo que `pending_source` permaneça
+  aguardando o Payout bancário.
 - Quando a divida consome integralmente os 85%, o job termina como
   `offset_only`, nenhum Transfer Stripe e criado e a interface apresenta
   “Compensado” com valor bancario zero. Esse item nao integra os totais em

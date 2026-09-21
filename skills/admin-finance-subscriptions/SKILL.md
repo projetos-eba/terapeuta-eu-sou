@@ -105,6 +105,10 @@ Do not send generic `select *` payloads to React.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
+- Administrative payout-incident notifications distinguish bank reconciliation
+  from a session transfer. A session-linked incident opens that payment's
+  detail; resolved incidents keep their history but no longer claim that
+  attention is still required. This messaging never advances financial state.
 
 ## Never Expose In The Browser
 

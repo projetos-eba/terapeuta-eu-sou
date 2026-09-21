@@ -208,6 +208,25 @@ Para Payout automático:
 11. concluir cada lote somente após todos os Transfers terem cobertura integral
     em Payouts reconciliados e `paid`.
 
+Uma movimentação `payment` seguida de `payment_refund` na conta conectada só
+pode ser retirada da contagem de itens sem associação quando a consulta do
+Refund à Stripe comprovar a Charge de origem, a Balance Transaction exata do
+estorno, status concluído, moeda BRL e valor integral oposto. A reconciliação
+confere novamente a unicidade do par e que o crédito não pertence a um Transfer
+TES; registra os IDs do par no Payout para auditoria. Soma zero isolada ou
+estorno sem prova de origem permanece incidente crítico. A exclusão do par
+neutro não cria alocação, lançamento no ledger nem comunicação de repasse.
+
+Um incidente `session_direct_transfer_attention` anterior ao sucesso do
+Transfer V10 pode ser resolvido quando o mesmo job possui pagamento pago,
+Transfer de origem e conta congelada comprovados, valor íntegro e registro
+local de sucesso. Isso não altera `pending_source`: o depósito bancário continua
+dependendo de Payout `paid` e alocação integral.
+As notificações administrativas distinguem conciliação bancária de repasse de
+sessão; este último aviso aponta ao detalhe do pagamento quando houver vínculo
+válido. Quando o incidente é resolvido, o aviso histórico passa a informar a
+resolução; uma reabertura volta a sinalizar atenção sem criar outro registro.
+
 Eventos duplicados e reconciliações repetidas não duplicam alocações, ledger,
 e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,
 gera incidente e comunicação corretiva.

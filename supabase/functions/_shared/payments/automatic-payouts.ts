@@ -20,8 +20,9 @@ export function extractTransferDestinationReference(
       destinationPaymentId: destinationPayment,
     };
   }
-  if (!destinationPayment || typeof destinationPayment !== "object")
+  if (!destinationPayment || typeof destinationPayment !== "object") {
     return null;
+  }
   const payment = destinationPayment as unknown as Record<string, unknown>;
   const id = stringOrNull(payment.id);
   if (!id) return null;
@@ -51,12 +52,71 @@ export function sanitizePayoutBalanceTransaction(
     id: transaction.id,
     net: transaction.net,
     reporting_category: transaction.reporting_category,
-    source:
-      typeof transaction.source === "string"
-        ? transaction.source
-        : stringOrNull(asRecord(transaction.source).id),
+    source: typeof transaction.source === "string"
+      ? transaction.source
+      : stringOrNull(asRecord(transaction.source).id),
     type: transaction.type,
   };
+}
+
+type SanitizedPayoutTransaction =
+  & ReturnType<
+    typeof sanitizePayoutBalanceTransaction
+  >
+  & { verified_refund_charge?: string };
+
+// A zero-sum pair is not enough evidence to omit provider movements. The
+// connected-account Refund must identify the exact payment and balance debit.
+export async function annotateVerifiedPayoutRefunds(
+  transactions: SanitizedPayoutTransaction[],
+  stripe: StripeClient,
+  accountId: string,
+): Promise<SanitizedPayoutTransaction[]> {
+  const payments = transactions.filter((transaction) =>
+    transaction.type === "payment" && transaction.amount > 0 &&
+    transaction.net > 0 && transaction.currency === "brl" &&
+    transaction.source
+  );
+  const verified = new Map<string, string>();
+
+  for (const transaction of transactions) {
+    if (
+      transaction.type !== "payment_refund" || transaction.amount >= 0 ||
+      transaction.net >= 0 || transaction.currency !== "brl" ||
+      !transaction.source
+    ) continue;
+
+    try {
+      const refund = await stripe.refunds.retrieve(
+        transaction.source,
+        {},
+        { stripeContext: accountId },
+      );
+      const chargeId = objectId(refund.charge);
+      if (
+        refund.status !== "succeeded" ||
+        refund.amount !== -transaction.amount ||
+        refund.currency !== transaction.currency ||
+        objectId(refund.balance_transaction) !== transaction.id ||
+        !chargeId ||
+        payments.filter((payment) =>
+            payment.source === chargeId &&
+            payment.amount === -transaction.amount &&
+            payment.net === -transaction.net
+          ).length !== 1
+      ) continue;
+      verified.set(transaction.id, chargeId);
+    } catch {
+      // Missing provider evidence remains unmatched in the database.
+    }
+  }
+
+  return transactions.map((transaction) => {
+    const chargeId = verified.get(transaction.id);
+    return chargeId
+      ? { ...transaction, verified_refund_charge: chargeId }
+      : transaction;
+  });
 }
 
 export function isAllocatablePayoutBalanceTransaction(
@@ -105,8 +165,8 @@ export async function syncAutomaticStripePayout(input: {
       p_payout_balance_transaction_id: objectId(
         input.payout.balance_transaction,
       ),
-      p_provider_reconciliation_status:
-        input.payout.reconciliation_status ?? "not_applicable",
+      p_provider_reconciliation_status: input.payout.reconciliation_status ??
+        "not_applicable",
       p_provider_status: input.payout.status,
       p_source_type: input.payout.source_type ?? null,
       p_stripe_account_id: input.accountId,
@@ -120,8 +180,7 @@ export async function syncAutomaticStripePayout(input: {
     return {
       handled: true,
       payoutId: recorded.payoutId ?? null,
-      reconciliationStatus:
-        input.payout.reconciliation_status ?? "not_applicable",
+      reconciliationStatus: input.payout.reconciliation_status ?? "not_applicable",
     };
   }
 
@@ -151,9 +210,13 @@ export async function syncAutomaticStripePayout(input: {
   } while (startingAfter);
 
   const reconciliation = await input.client.rpc<Record<string, unknown>>(
-    "reconcile_automatic_stripe_payout_v1",
+    "reconcile_automatic_stripe_payout_v2",
     {
-      p_balance_transactions: transactions,
+      p_balance_transactions: await annotateVerifiedPayoutRefunds(
+        transactions,
+        input.stripe,
+        input.accountId,
+      ),
       p_observed_at: new Date().toISOString(),
       p_stripe_account_id: input.accountId,
       p_stripe_payout_id: input.payout.id,
