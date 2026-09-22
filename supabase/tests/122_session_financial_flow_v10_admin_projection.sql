@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(24);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -399,6 +399,43 @@ select is(
   '2098-11-01T18:00:00+00:00',
   'the bank completion timestamp comes from the paid payout'
 );
+
+reset role;
+update public.bookings
+set status = 'no_show_both'
+where id = 'b1220000-0000-4000-8000-000000000011';
+set local role authenticated;
+
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,booking_status}',
+  'no_show_both',
+  'the administrative detail exposes the booking attendance outcome'
+);
+select is(
+  (select row_payload ->> 'booking_status'
+   from jsonb_array_elements(public.admin_get_finance_module_v2(
+     'payments', '{"page":1,"pageSize":50}'::jsonb
+   ) -> 'rows') as row_payload
+   where row_payload ->> 'id' = 'b1220000-0000-4000-8000-000000000021'),
+  'no_show_both',
+  'the administrative list exposes the same booking attendance outcome'
+);
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,service_status}',
+  'scheduled',
+  'the operational projection does not rewrite the payment service snapshot'
+);
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,payout_display_status}',
+  'paid',
+  'the operational outcome does not alter the reconciled payout state'
+);
 select ok(
   not has_function_privilege(
     'authenticated',
@@ -406,6 +443,14 @@ select ok(
     'EXECUTE'
   ),
   'the internal V10 projection is not executable by the browser role'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.private_admin_session_operational_projection_v1(uuid)',
+    'EXECUTE'
+  ),
+  'the internal booking outcome projection is not executable by the browser role'
 );
 select ok(
   not has_function_privilege(
