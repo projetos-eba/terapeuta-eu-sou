@@ -113,6 +113,30 @@ describe("admin finance mappers", () => {
     });
   });
 
+  it("presents a payment-cancelled booking as cancelled", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          booking_status: "cancelled_by_payment",
+          financial_status: "canceled",
+          id: "payment-canceled",
+          service_status: "scheduled",
+          transfer_status: "not_eligible",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Atendimento",
+      value: "Cancelado",
+    });
+    expect(row.fields).toContainEqual({
+      label: "Repasse",
+      value: "Ainda não elegível",
+    });
+  });
+
   it("keeps a refund closed even when the booking has a no-show outcome", () => {
     const [row] = mapAdminFinanceRows({
       module: "payments",
