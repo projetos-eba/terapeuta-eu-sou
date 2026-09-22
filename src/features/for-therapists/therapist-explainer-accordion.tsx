@@ -10,13 +10,15 @@ import {
 
 export function TherapistExplainerAccordion({
   accordion,
+  className,
 }: {
   accordion: TherapistExplainerAccordion;
+  className?: string;
 }) {
   const AccentIcon = therapistExplainerAccentIcons[accordion.id];
 
   return (
-    <section className="px-5 pb-16 sm:px-8 lg:px-12">
+    <section className={cn("px-5 pb-16 sm:px-8 lg:px-12", className)}>
       <div className="mx-auto max-w-[1320px]">
         <details className="group overflow-hidden rounded-[26px] border border-brand-lavender/70 bg-white shadow-card">
           <summary className="grid min-h-20 cursor-pointer list-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-5 py-5 text-left outline-none transition hover:bg-brand-lavenderSoft/35 focus-visible:bg-brand-lavenderSoft/45 focus-visible:ring-4 focus-visible:ring-ring/20 sm:min-h-24 sm:gap-6 sm:px-8 lg:px-10 [&::-webkit-details-marker]:hidden">
@@ -55,7 +57,10 @@ export function TherapistExplainerAccordion({
                 fill
                 sizes="(min-width: 1024px) 350px, 0px"
                 src={accordion.decorativeImage}
-                className={cn("pointer-events-none opacity-90", accordion.imageClassName)}
+                className={cn(
+                  "pointer-events-none translate-y-10 opacity-90",
+                  accordion.imageClassName,
+                )}
               />
               <span className="relative z-10 mt-auto text-[10px] font-extrabold uppercase tracking-[0.24em] text-brand-primary/75">
                 Terapeuta Eu Sou

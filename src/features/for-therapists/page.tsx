@@ -13,6 +13,7 @@ import {
 } from "./content";
 import { PlansPreviewSection } from "./plan-comparison";
 import { TherapistExplainerAccordion } from "./therapist-explainer-accordion";
+import { TherapistFaq } from "./therapist-faq";
 
 function Hero() {
   return (
@@ -337,7 +338,9 @@ export function ForTherapistsPage() {
       <PlansPreviewSection />
       <TherapistExplainerAccordion
         accordion={therapistExplainerAccordions[1]}
+        className="pt-8 sm:pt-10"
       />
+      <TherapistFaq />
       <PublicFooter />
     </main>
   );
