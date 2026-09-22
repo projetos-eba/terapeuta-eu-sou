@@ -9,7 +9,8 @@ insert into public.availability_exceptions (
   'b1150000-0000-4000-8000-000000000010',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
-  '2099-01-01 00:00:00+00', '2100-01-01 00:00:00+00', true,
+  date_trunc('day', now() + interval '20 days'),
+  date_trunc('day', now() + interval '40 days'), true,
   'Cobertura de agenda para retry pgTAP', 'active'
 );
 
@@ -120,7 +121,8 @@ values
     'b1000000-0000-4000-8000-000000000010',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-09-24 13:00:00+00', '2099-09-24 13:50:00+00',
+    date_trunc('day', now() + interval '30 days') + interval '13 hours',
+    date_trunc('day', now() + interval '30 days') + interval '13 hours 50 minutes',
     'America/Sao_Paulo', 'draft', 'not_started', now()
   ),
   (

@@ -7,13 +7,23 @@ alter table public.booking_holds disable trigger validate_booking_hold_schedule;
 insert into public.availability_exceptions (
   id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
   reason, status
-) values (
-  'b1060000-0000-4000-8000-000000000010',
-  'c1000000-0000-4000-8000-000000000001',
-  'd1000000-0000-4000-8000-000000000001',
-  '2099-01-01 00:00:00+00', '2100-01-01 00:00:00+00', true,
-  'Cobertura de agenda para retry pgTAP', 'active'
-);
+) values
+  (
+    'b1060000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    date_trunc('day', now() + interval '20 days'),
+    date_trunc('day', now() + interval '40 days'), true,
+    'Cobertura de agenda para retry pgTAP', 'active'
+  ),
+  (
+    'b1060000-0000-4000-8000-000000000011',
+    'c1000000-0000-4000-8000-000000000002',
+    'd1000000-0000-4000-8000-000000000002',
+    date_trunc('day', now() + interval '20 days'),
+    date_trunc('day', now() + interval '40 days'), true,
+    'Cobertura de agenda para conflito de retry pgTAP', 'active'
+  );
 
 -- Paid but not yet projected into the booking is already authoritative.
 insert into public.bookings (
@@ -138,7 +148,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000004',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-03-04 10:00:00+00', '2099-03-04 10:50:00+00',
+    date_trunc('day', now() + interval '30 days') + interval '10 hours',
+    date_trunc('day', now() + interval '30 days') + interval '10 hours 50 minutes',
     'America/Sao_Paulo', 'confirmed', 'paid'
   ),
   (
@@ -146,7 +157,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000004',
     'c1000000-0000-4000-8000-000000000002',
     'd1000000-0000-4000-8000-000000000002',
-    '2099-03-04 10:10:00+00', '2099-03-04 11:10:00+00',
+    date_trunc('day', now() + interval '30 days') + interval '10 hours',
+    date_trunc('day', now() + interval '30 days') + interval '11 hours',
     'America/Sao_Paulo', 'cancelled_by_payment', 'failed'
   );
 
@@ -211,7 +223,8 @@ set local request.jwt.claim.sub = 'bbbbbbbb-0000-4000-8000-000000000004';
 select is(
   (select count(*)::text
    from public.get_my_patient_schedule_blocking_intervals_v1(
-     '2099-03-04 10:00:00+00', '2099-03-04 11:00:00+00'
+     date_trunc('day', now() + interval '30 days') + interval '10 hours',
+     date_trunc('day', now() + interval '30 days') + interval '11 hours'
    )),
   '1',
   'authenticated patient interval RPC returns only the own blocker'

@@ -144,4 +144,25 @@ describe("refined admin finance pages", () => {
     expect(html).not.toContain("PaymentIntent");
     expect(html).not.toContain("Metadados internos");
   });
+
+  it("renders a canceled payment as canceled instead of under review", () => {
+    const html = renderToStaticMarkup(
+      <AdminPaymentDetailPage
+        data={{
+          backHref: "/admin/pagamentos",
+          events: [],
+          generatedAt: "2026-09-22T18:00:00.000Z",
+          id: "payment-canceled",
+          module: "payments",
+          safetyNotes: [],
+          sections: [],
+          statusLabel: "canceled",
+          title: "Constelação Familiar",
+        }}
+      />,
+    );
+
+    expect(html).toContain("Cancelado");
+    expect(html).not.toContain("Em análise");
+  });
 });

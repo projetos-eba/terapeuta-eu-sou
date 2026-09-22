@@ -131,7 +131,7 @@ select ok(
     public.submit_therapy_catalog_request_v1(
       'aaaaaaaa-0000-4000-8000-000000000001',
       jsonb_build_object(
-        'informedName', 'Terapia solicitada sem auditoria admin',
+        'informedName', 'Terapia de auditoria',
         'description', 'Descrição responsável para análise administrativa.',
         'justification', 'Validar que terapeuta nao cria evento admin.',
         'useCases', 'Acolhimento e organização da experiência.',
@@ -151,7 +151,7 @@ select is(
     from public.admin_audit_events
     where next_state @> jsonb_build_object(
       'informedName',
-      'Terapia solicitada sem auditoria admin'
+      'Terapia de auditoria'
     )
   ),
   0,

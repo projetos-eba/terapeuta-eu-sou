@@ -423,6 +423,7 @@ function formatServiceStatus(
 
   const booking = asText(bookingStatus).trim().toLowerCase();
   const bookingLabels: Record<string, string> = {
+    cancelled_by_payment: "Cancelado",
     cancelled_by_patient: "Cancelado",
     cancelled_by_therapist: "Cancelado",
     completed: "Concluído",
