@@ -61,6 +61,11 @@ Do not send generic `select *` payloads to React.
   present in `data.metrics`, `data.rows` or `data.query`.
 - Payment rows must stay anchored to the sanitized mapper contract already in
   use by `src/features/admin-finance/admin-finance.mappers.ts`.
+- The payment list and detail expose `booking_status` only as the operational
+  outcome of the session. It is translated before rendering and must not be
+  used to rewrite `session_payments.service_status`, Transfer, Payout, ledger
+  or refund state. No-show outcomes render as `Não realizado` while the
+  independently reconciled financial state remains unchanged.
 - Commission amounts are snapshot values: new session payments use the active
   15% TES policy while historical 20% records remain immutable and visible as
   their original financial evidence.
