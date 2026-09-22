@@ -4,9 +4,11 @@ import { BookingStatus } from "@/domain/tes";
 import { formatSessionDateTime } from "@/features/bookings";
 
 import {
+  buildLoadMoreSessionsHref,
   buildNextSessionsHref,
   parseTherapistSessionCursor,
   parseTherapistSessionFilters,
+  parseTherapistSessionListLimits,
 } from "./therapist-session-filters";
 
 describe("therapist session filters", () => {
@@ -21,6 +23,7 @@ describe("therapist session filters", () => {
     const defaultPeriod = parseTherapistSessionFilters({});
     expect(defaultPeriod).toMatchObject({
       filters: {
+        limit: 5,
         periodPreset: "30",
         periodEnd: "2026-08-25T12:00:00.000Z",
         periodStart: "2026-07-26T12:00:00.000Z",
@@ -139,6 +142,57 @@ describe("therapist session filters", () => {
         "upcoming",
       ),
     ).toEqual({ cursor, valid: true });
+  });
+
+  it("starts each session group with five items and adds ten on demand", () => {
+    const limits = parseTherapistSessionListLimits({}, 5);
+
+    expect(limits).toEqual({
+      limits: { past: 5, upcoming: 5 },
+      valid: true,
+    });
+
+    if (!limits.valid) throw new Error("Expected valid session list limits");
+
+    const href = buildLoadMoreSessionsHref(
+      { limit: 5, periodPreset: "30" },
+      "past",
+      limits.limits,
+    );
+
+    expect(href).toContain("limit=5");
+    expect(href).toContain("pastLimit=15");
+    expect(href).toContain("upcomingLimit=5");
+  });
+
+  it("keeps a prior expanded group visible when loading the other group", () => {
+    const limits = parseTherapistSessionListLimits(
+      { pastLimit: "15", upcomingLimit: "5" },
+      5,
+    );
+
+    expect(limits).toEqual({
+      limits: { past: 15, upcoming: 5 },
+      valid: true,
+    });
+    if (!limits.valid) throw new Error("Expected valid session list limits");
+
+    expect(
+      buildLoadMoreSessionsHref(
+        { limit: 5 },
+        "upcoming",
+        limits.limits,
+      ),
+    ).toContain("pastLimit=15&upcomingLimit=15");
+  });
+
+  it("rejects invalid scoped limits", () => {
+    expect(
+      parseTherapistSessionListLimits({ pastLimit: "101" }, 5),
+    ).toEqual({
+      message: "Revise os filtros informados e tente novamente.",
+      valid: false,
+    });
   });
 });
 

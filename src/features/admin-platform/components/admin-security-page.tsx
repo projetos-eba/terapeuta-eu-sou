@@ -14,7 +14,7 @@ import type { AdminSecurityPageData } from "../admin-platform.types";
 export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
-      <AppPageHeader eyebrow="Admin" title="Segurança">
+      <AppPageHeader eyebrow="Admin" title="Auditoria">
         Consulte os registros recentes das ações administrativas.
       </AppPageHeader>
 

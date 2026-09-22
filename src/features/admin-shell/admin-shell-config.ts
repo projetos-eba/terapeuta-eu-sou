@@ -4,7 +4,7 @@ import { routes } from "@/lib/routes";
 
 type AdminModuleKey =
   | "dashboard"
-  | "integrations"
+  | "emailManagement"
   | "matching"
   | "patients"
   | "payments"
@@ -138,20 +138,20 @@ export const adminModuleRegistry: AdminModule[] = [
   },
   {
     group: "platform",
-    href: routes.admin.integrations,
-    icon: "route",
-    key: "integrations",
-    label: "Integrações",
-    permission: "admin.integrations.read",
-    status: "hidden",
-  },
-  {
-    group: "platform",
     href: routes.admin.security,
     icon: "shield",
     key: "security",
-    label: "Segurança",
+    label: "Auditoria",
     permission: "admin.security.read",
+    status: "enabled",
+  },
+  {
+    group: "platform",
+    href: routes.admin.emailManagement,
+    icon: "message",
+    key: "emailManagement",
+    label: "E-mails",
+    permission: "admin.settings.read",
     status: "enabled",
   },
   {
@@ -170,7 +170,7 @@ export const adminModuleRegistry: AdminModule[] = [
     key: "settings",
     label: "Configurações",
     permission: "admin.settings.read",
-    status: "enabled",
+    status: "hidden",
   },
 ];
 
