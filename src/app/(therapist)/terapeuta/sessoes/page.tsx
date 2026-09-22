@@ -32,7 +32,6 @@ import {
   mapSessionPresentation,
   type SessionPresentation,
   type SessionReadModelItem,
-  type TherapistSessionsCursor,
   type TherapistSessionsSummary,
 } from "@/features/bookings";
 import {
@@ -44,11 +43,12 @@ import {
 import { PendingNavigationLink } from "@/components/tes/pending-navigation-link";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
-  buildNextSessionsHref,
+  buildLoadMoreSessionsHref,
   getTherapistActorSessionStates,
   getTherapistSessionsPage,
   parseTherapistSessionCursor,
   parseTherapistSessionFilters,
+  parseTherapistSessionListLimits,
   type TherapistSessionCursorScope,
 } from "@/features/therapist-sessions";
 import { getSessionTimingBadge } from "@/features/therapist-sessions/session-timing-badge";
@@ -70,6 +70,14 @@ export default async function TherapistSessionsPage({
 
   if (!parsedFilters.valid) {
     return <SessionsErrorState message={parsedFilters.message} />;
+  }
+  const listLimits = parseTherapistSessionListLimits(
+    rawSearchParams,
+    parsedFilters.filters.limit,
+  );
+
+  if (!listLimits.valid) {
+    return <SessionsErrorState message={listLimits.message} />;
   }
 
   const referenceDate = new Date();
@@ -93,11 +101,13 @@ export default async function TherapistSessionsPage({
   const historyFilters = {
     ...parsedFilters.filters,
     cursor: pastCursor,
+    limit: listLimits.limits.past,
     periodEnd: now,
   };
   const upcomingFilters = {
     ...parsedFilters.filters,
     cursor: upcomingCursor,
+    limit: listLimits.limits.upcoming,
     periodEnd: undefined,
     periodPreset: undefined,
     periodStart: now,
@@ -210,12 +220,11 @@ export default async function TherapistSessionsPage({
                   description="Atendimentos futuros que seguem disponíveis para acontecer."
                   emptyMessage="Não há sessões futuras neste recorte."
                   items={upcomingItems}
-                  nextHref={buildScopedNextSessionsHref(
-                    upcomingFilters,
-                    upcomingData?.page.nextCursor,
+                  nextHref={buildScopedLoadMoreSessionsHref(
+                    parsedFilters.filters,
                     "upcoming",
                     searchQuery,
-                    { past: pastCursor, upcoming: upcomingCursor },
+                    listLimits.limits,
                   )}
                   page={upcomingData?.page ?? null}
                   actorSessionStates={actorSessionStates}
@@ -225,12 +234,11 @@ export default async function TherapistSessionsPage({
                   description="Sessões encerradas, canceladas ou com horário já ultrapassado."
                   emptyMessage="Não há sessões passadas neste recorte."
                   items={pastItems}
-                  nextHref={buildScopedNextSessionsHref(
-                    historyFilters,
-                    historyData?.page.nextCursor,
+                  nextHref={buildScopedLoadMoreSessionsHref(
+                    parsedFilters.filters,
                     "past",
                     searchQuery,
-                    { past: pastCursor, upcoming: upcomingCursor },
+                    listLimits.limits,
                   )}
                   page={historyData?.page ?? null}
                   actorSessionStates={actorSessionStates}
@@ -993,10 +1001,7 @@ function SessionGroup({
   emptyMessage: string;
   items: SessionReadModelItem[];
   nextHref: string | null;
-  page: {
-    hasMore: boolean;
-    nextCursor: TherapistSessionsCursor | null;
-  } | null;
+  page: { hasMore: boolean } | null;
   title: string;
   id?: string;
 }) {
@@ -1042,7 +1047,7 @@ function SessionGroup({
           </p>
         </div>
       )}
-      {page?.hasMore && page.nextCursor && nextHref ? (
+      {page?.hasMore && nextHref ? (
         <div className="flex justify-center border-t border-brand-lavender/40 px-4 py-4 sm:px-5">
           <PendingNavigationLink
             className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
@@ -1205,31 +1210,16 @@ function withSearchQuery(href: string, searchQuery: string) {
   return `${pathname}?${params.toString()}`;
 }
 
-function buildScopedNextSessionsHref(
-  filters: Parameters<typeof buildNextSessionsHref>[0],
-  cursor: TherapistSessionsCursor | null | undefined,
+function buildScopedLoadMoreSessionsHref(
+  filters: Parameters<typeof buildLoadMoreSessionsHref>[0],
   scope: TherapistSessionCursorScope,
   searchQuery: string,
-  currentCursors: Partial<
-    Record<TherapistSessionCursorScope, TherapistSessionsCursor | undefined>
-  >,
+  limits: Parameters<typeof buildLoadMoreSessionsHref>[2],
 ) {
-  if (!cursor) return null;
-
-  const href = withSearchQuery(
-    buildNextSessionsHref(filters, cursor, scope),
+  return withSearchQuery(
+    buildLoadMoreSessionsHref(filters, scope, limits),
     searchQuery,
   );
-  const otherScope = scope === "past" ? "upcoming" : "past";
-  const otherCursor = currentCursors[otherScope];
-  if (!otherCursor) return href;
-
-  const [pathname, query = ""] = href.split("?");
-  const params = new URLSearchParams(query);
-  const otherPrefix = `${otherScope}Cursor`;
-  params.set(`${otherPrefix}StartsAt`, otherCursor.startsAt);
-  params.set(`${otherPrefix}BookingId`, otherCursor.bookingId);
-  return `${pathname}?${params.toString()}`;
 }
 
 function normalizeSearchText(value: string) {

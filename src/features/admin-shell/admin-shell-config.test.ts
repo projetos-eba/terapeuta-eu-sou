@@ -20,7 +20,7 @@ describe("admin shell config", () => {
       "/admin/terapias",
       "/admin/matching",
       "/admin/seguranca",
-      "/admin/configuracoes",
+      "/admin/configuracoes/emails",
     ]);
     expect(navigation.map((item) => item.label)).toEqual([
       "Visão geral",
@@ -33,8 +33,8 @@ describe("admin shell config", () => {
       "Assinaturas",
       "Terapias",
       "Match",
-      "Segurança",
-      "Configurações",
+      "Auditoria",
+      "E-mails",
     ]);
     expect(navigation.flatMap((item) => item.children ?? [])).toEqual([
       {

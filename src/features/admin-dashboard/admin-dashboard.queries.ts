@@ -74,13 +74,10 @@ export const getAdminDashboardPage = cache(
     const catalogModule = buildCatalogModule(countResults);
     const operationModule = buildOperationModule(countResults);
     const financeModule = buildFinanceModule(countResults);
-    const integrationModule = buildIntegrationModule(countResults);
     const alerts = buildAlerts({
       catalogModule,
       countResults,
-      integrationModule,
     });
-    const settingsModule = buildSettingsModule();
 
     return {
       dashboard: {
@@ -91,14 +88,11 @@ export const getAdminDashboardPage = cache(
           catalogModule,
           operationModule,
           financeModule,
-          integrationModule,
-          settingsModule,
         ],
         summary: [
           ...catalogModule.metrics,
           ...operationModule.metrics,
           ...financeModule.metrics,
-          ...integrationModule.metrics,
         ]
           .filter((metric) =>
             [
@@ -240,56 +234,6 @@ function buildFinanceModule(countResults: CountResult[]): AdminDashboardModule {
   });
 }
 
-function buildIntegrationModule(
-  countResults: CountResult[],
-): AdminDashboardModule {
-  return moduleFromCounts({
-    countResults,
-    description:
-      "Pagamentos, vídeo, e-mail e contas de recebimento.",
-    href: routes.admin.integrations,
-    keys: [
-      "failed-webhooks",
-      "failed-zoom-webhooks",
-      "failed-video-sessions",
-      "failed-emails",
-      "restricted-connect-accounts",
-      "active-subscriptions",
-    ],
-    label: "Integrações",
-    key: "integrations",
-  });
-}
-
-function buildSettingsModule(): AdminDashboardModule {
-  return {
-    description:
-      "Governança de produto, operação e critérios de release.",
-    href: routes.admin.settings,
-    key: "settings",
-    label: "Configurações",
-    metrics: [
-      metric(
-        "admin-settings-governance",
-        "Governança",
-        1,
-        "Área de configurações habilitada.",
-        "adminModuleRegistry",
-        "success",
-      ),
-      metric(
-        "admin-secrets-readonly",
-        "Credenciais protegidas",
-        1,
-        "Alterações sensíveis permanecem fora da interface.",
-        "AGENTS.md",
-        "success",
-      ),
-    ],
-    status: "ready",
-  };
-}
-
 function moduleFromCounts({
   countResults,
   description,
@@ -334,11 +278,9 @@ function moduleFromCounts({
 function buildAlerts({
   catalogModule,
   countResults,
-  integrationModule,
 }: {
   catalogModule: AdminDashboardModule;
   countResults: CountResult[];
-  integrationModule: AdminDashboardModule;
 }) {
   const alerts: AdminDashboardAlert[] = [];
   const valueByKey = new Map(
@@ -356,21 +298,7 @@ function buildAlerts({
     });
   }
 
-  const failedStripe = valueByKey.get("failed-webhooks") ?? 0;
-  const failedZoom = valueByKey.get("failed-zoom-webhooks") ?? 0;
-  const failedEmails = valueByKey.get("failed-emails") ?? 0;
   const attentionSubscriptions = valueByKey.get("attention-subscriptions") ?? 0;
-
-  if (failedStripe > 0 || failedZoom > 0 || failedEmails > 0) {
-    alerts.push({
-      description:
-        "Há falhas recentes em integrações críticas. Revise a área responsável.",
-      href: routes.admin.integrations,
-      key: "integration-failures",
-      label: "Falhas de integração",
-      severity: "critical",
-    });
-  }
 
   if (attentionSubscriptions > 0) {
     alerts.push({
@@ -379,17 +307,6 @@ function buildAlerts({
       key: "subscription-attention",
       label: "Assinaturas exigem atenção",
       severity: "warning",
-    });
-  }
-
-  if (integrationModule.status === "degraded") {
-    alerts.push({
-      description:
-        "Alguns indicadores de integrações precisam de nova tentativa de leitura.",
-      href: routes.admin.integrations,
-      key: "integration-degraded",
-      label: "Integrações pedem atenção",
-      severity: "info",
     });
   }
 

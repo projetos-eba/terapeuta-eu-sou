@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 import {
-  AlertTriangle,
   ArrowRight,
   CalendarDays,
   HeartPulse,
@@ -15,7 +14,6 @@ import { routes } from "@/lib/routes";
 
 import type {
   AdminDashboard,
-  AdminDashboardAlert,
   AdminDashboardMetric,
   AdminDashboardModule,
 } from "../admin-dashboard.types";
@@ -36,12 +34,6 @@ type BreakdownItem = {
 
 type FunnelStep = AvailableMetric & {
   colorClass: string;
-};
-
-type HealthRow = {
-  label: string;
-  tone: AdminDashboardMetric["tone"] | AdminDashboardAlert["severity"];
-  value: string;
 };
 
 const DONUT_COLORS = [
@@ -113,13 +105,8 @@ export function AdminDashboardPage({ dashboard }: AdminDashboardPageProps) {
           <DistributionPanel items={moduleBreakdown} />
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[390px_340px]">
+        <section className="max-w-[390px]">
           <OperationalFunnelPanel steps={funnelSteps} />
-          <PlatformHealthPanel
-            alerts={dashboard.alerts}
-            metrics={allMetrics}
-            modules={dashboard.modules}
-          />
         </section>
       </div>
     </main>
@@ -500,57 +487,6 @@ function OperationalFunnelPanel({ steps }: { steps: FunnelStep[] }) {
   );
 }
 
-function PlatformHealthPanel({
-  alerts,
-  metrics,
-  modules,
-}: {
-  alerts: AdminDashboardAlert[];
-  metrics: AdminDashboardMetric[];
-  modules: AdminDashboardModule[];
-}) {
-  const healthRows = buildHealthRows({ alerts, metrics, modules });
-
-  return (
-    <article className="min-h-[373px] rounded-[20px] border border-brand-lavender/80 bg-white p-6 shadow-[0_18px_42px_rgba(108,61,145,0.08)]">
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="max-w-[190px] text-xl font-extrabold leading-tight text-brand-deep">
-          Saúde da plataforma
-        </h2>
-        <span className="rounded-full bg-white px-3 py-2 text-[0.68rem] font-extrabold text-brand-primary shadow-[0_8px_24px_rgba(20,16,90,0.07)]">
-          Hoje
-        </span>
-      </div>
-
-      <div className="mt-7 divide-y divide-brand-lavender/70">
-        {healthRows.map((row) => (
-          <div
-            className="flex min-h-[45px] items-center justify-between gap-4 py-3"
-            key={row.label}
-          >
-            <span className="text-sm font-extrabold leading-tight text-tesText-secondary">
-              {row.label}
-            </span>
-            <StatusPill tone={row.tone}>{row.value}</StatusPill>
-          </div>
-        ))}
-      </div>
-
-      {alerts.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          {alerts.slice(0, 1).map((alert) => (
-            <AlertItem alert={alert} key={alert.key} />
-          ))}
-        </div>
-      ) : null}
-
-      <StaticCardFooter>
-        Alertas acionáveis aparecem acima com destino específico.
-      </StaticCardFooter>
-    </article>
-  );
-}
-
 function DistributionItem({
   item,
   total,
@@ -712,28 +648,6 @@ function SvgTooltip({
   );
 }
 
-function AlertItem({ alert }: { alert: AdminDashboardAlert }) {
-  return (
-    <Link
-      className="flex items-start gap-3 rounded-[16px] bg-surface-soft p-3 outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-      href={(alert.href ?? routes.admin.home) as Route<string>}
-    >
-      <AlertTriangle
-        aria-hidden="true"
-        className={`mt-0.5 size-4 shrink-0 ${alertIconClass(alert.severity)}`}
-      />
-      <span>
-        <span className="block text-sm font-extrabold text-brand-deep">
-          {alert.label}
-        </span>
-        <span className="mt-1 block text-xs font-bold leading-5 text-tesText-secondary">
-          {alert.description}
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 function StaticCardFooter({ children }: { children: ReactNode }) {
   return (
     <p className="mt-7 border-t border-brand-lavender/70 pt-5 text-center text-sm font-extrabold leading-6 text-tesText-secondary">
@@ -749,7 +663,7 @@ function StatusPill({
 }: {
   children: ReactNode;
   className?: string;
-  tone: AdminDashboardMetric["tone"] | AdminDashboardAlert["severity"];
+  tone: AdminDashboardMetric["tone"];
 }) {
   return (
     <span
@@ -807,55 +721,6 @@ function buildFunnelSteps(metrics: AdminDashboardMetric[]) {
     }));
 }
 
-function buildHealthRows({
-  alerts,
-  metrics,
-  modules,
-}: {
-  alerts: AdminDashboardAlert[];
-  metrics: AdminDashboardMetric[];
-  modules: AdminDashboardModule[];
-}): HealthRow[] {
-  const readyModules = modules.filter(
-    (module) => module.status === "ready",
-  ).length;
-  const totalModules = Math.max(modules.length, 1);
-  const openSupport = findMetric(metrics, "open-support-tickets");
-  const attentionSessions = findMetric(metrics, "attention-sessions");
-  const pendingTherapists = findMetric(metrics, "pending-therapists");
-  const criticalAlerts = alerts.filter(
-    (alert) => alert.severity === "critical",
-  );
-
-  return [
-    {
-      label: "Módulos operacionais",
-      tone: readyModules === modules.length ? "success" : "warning",
-      value: `${readyModules}/${totalModules}`,
-    },
-    {
-      label: "Alertas críticos",
-      tone: criticalAlerts.length === 0 ? "success" : "danger",
-      value: formatNumber(criticalAlerts.length),
-    },
-    {
-      label: "Sessões com atenção",
-      tone: hasPositiveValue(attentionSessions) ? "warning" : "success",
-      value: formatMetricValue(attentionSessions),
-    },
-    {
-      label: "Profissionais pendentes",
-      tone: hasPositiveValue(pendingTherapists) ? "warning" : "success",
-      value: formatMetricValue(pendingTherapists),
-    },
-    {
-      label: "Chamados abertos",
-      tone: hasPositiveValue(openSupport) ? "warning" : "success",
-      value: formatMetricValue(openSupport),
-    },
-  ];
-}
-
 function buildModuleBreakdown(modules: AdminDashboardModule[]) {
   return modules.map((module, index) => ({
     colorClass: DONUT_COLORS[index % DONUT_COLORS.length],
@@ -876,7 +741,6 @@ function getDashboardModuleHref(module: AdminDashboardModule) {
   if (module.key === "catalog") return routes.admin.therapies;
   if (module.key === "finance") return routes.admin.payments;
   if (module.key === "operation") return routes.admin.sessions;
-  if (module.key === "settings") return routes.admin.settings;
 
   return undefined;
 }
@@ -898,10 +762,6 @@ function isAvailableMetric(
   return Boolean(
     metric && metric.status === "available" && metric.value !== null,
   );
-}
-
-function hasPositiveValue(metric: AdminDashboardMetric | undefined) {
-  return isAvailableMetric(metric) && metric.value > 0;
 }
 
 function buildLinePath(
@@ -1051,23 +911,16 @@ function dotClass(tone: AdminDashboardMetric["tone"]) {
 }
 
 function statusPillClass(
-  tone: AdminDashboardMetric["tone"] | AdminDashboardAlert["severity"],
+  tone: AdminDashboardMetric["tone"],
 ) {
   if (tone === "success") return "bg-status-successBg text-status-success";
   if (tone === "warning") return "bg-status-warningBg text-status-warning";
-  if (tone === "danger" || tone === "critical") {
+  if (tone === "danger") {
     return "bg-status-dangerBg text-status-danger";
   }
   if (tone === "info") return "bg-status-infoBg text-status-info";
 
   return "bg-brand-lavenderSoft text-brand-primary";
-}
-
-function alertIconClass(severity: AdminDashboardAlert["severity"]) {
-  if (severity === "critical") return "text-status-danger";
-  if (severity === "warning") return "text-status-warning";
-
-  return "text-status-info";
 }
 
 function shortMetricLabel(metric: AdminDashboardMetric) {

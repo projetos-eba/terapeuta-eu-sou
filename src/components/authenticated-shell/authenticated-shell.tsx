@@ -191,7 +191,7 @@ function getDefaultAccountHref(
   variant: NonNullable<AuthenticatedShellProps["variant"]>,
 ) {
   if (variant === "therapist") return routes.therapist.settings;
-  if (variant === "admin") return routes.admin.settings;
+  if (variant === "admin") return routes.admin.emailManagement;
 
   return routes.patient.settings;
 }

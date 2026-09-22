@@ -273,10 +273,9 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/admin/assinaturas`: assinaturas e planos.
 - `/admin/terapias`: terapias.
 - `/admin/matching`: regras de recomendação.
-- `/admin/integracoes`: integrações.
-- `/admin/seguranca`: segurança.
+- `/admin/seguranca`: auditoria.
 - `/admin/relatorios`: relatórios.
-- `/admin/configuracoes`: configurações.
+- `/admin/configuracoes`: configurações por acesso direto.
 - `/admin/configuracoes/emails`: central de e-mails transacionais.
 - `/admin/configuracoes/emails/eventos/:actionKey`: configuração de um evento
   de e-mail allowlisted.
@@ -288,8 +287,8 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - Sessões: `/admin/sessoes` -> filtrar status -> abrir caso -> suporte ou pagamento.
 - Financeiro: `/admin/pagamentos` -> transações, repasses e relatórios.
 - Catálogo: `/admin/terapias` -> temas da terapia -> `/admin/matching`.
-- E-mails: `/admin/configuracoes` -> E-mails -> evento transacional -> voltar
-  para a central.
+- E-mails: navegação Admin -> `/admin/configuracoes/emails` -> evento
+  transacional -> voltar para a central.
 
 ## Relações
 

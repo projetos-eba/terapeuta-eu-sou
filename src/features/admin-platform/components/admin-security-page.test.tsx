@@ -8,6 +8,18 @@ import type { AdminSecurityPageData } from "../admin-platform.types";
 afterEach(cleanup);
 
 describe("AdminSecurityPage", () => {
+  it("presents the audit workspace without changing the audit data", () => {
+    render(
+      <AdminSecurityPage
+        data={makeData({ auditEvents: [], auditEventsStatus: "available" })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Auditoria" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows an explicit warning when centralized audit cannot be loaded", () => {
     render(
       <AdminSecurityPage

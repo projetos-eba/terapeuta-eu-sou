@@ -10,6 +10,14 @@ import { AdminDashboardPage } from "./admin-dashboard-page";
 afterEach(cleanup);
 
 describe("AdminDashboardPage", () => {
+  it("does not render the platform health module", () => {
+    render(<AdminDashboardPage dashboard={dashboardFixture()} />);
+
+    expect(
+      screen.queryByRole("heading", { name: "Saúde da plataforma" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("exposes details for each evolution point", () => {
     render(<AdminDashboardPage dashboard={dashboardFixture()} />);
 

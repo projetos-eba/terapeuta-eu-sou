@@ -18,11 +18,25 @@ export type ParsedTherapistSessionCursor =
   | { cursor: TherapistSessionsCursor | undefined; valid: true }
   | { message: string; valid: false };
 
+export type TherapistSessionListLimits = {
+  past: number;
+  upcoming: number;
+};
+
+export type ParsedTherapistSessionListLimits =
+  | { limits: TherapistSessionListLimits; valid: true }
+  | { message: string; valid: false };
+
+export const THERAPIST_SESSION_INITIAL_LOAD_SIZE = 5;
+export const THERAPIST_SESSION_LOAD_MORE_SIZE = 10;
+
 export function parseTherapistSessionFilters(
   searchParams: SearchParams,
 ): ParsedTherapistSessionFilters {
   const limitValue = first(searchParams.limit);
-  const limit = limitValue ? Number(limitValue) : 20;
+  const limit = limitValue
+    ? Number(limitValue)
+    : THERAPIST_SESSION_INITIAL_LOAD_SIZE;
   const bookingStatus = first(searchParams.status);
   const modalityValue = first(searchParams.modality);
   const requestedPeriod = first(searchParams.period);
@@ -104,6 +118,15 @@ export function buildNextSessionsHref(
   cursor: { bookingId: string; startsAt: string },
   cursorScope?: TherapistSessionCursorScope,
 ) {
+  const params = buildSessionsQueryParams(filters);
+  const cursorPrefix = cursorScope ? `${cursorScope}Cursor` : "cursor";
+  params.set(`${cursorPrefix}StartsAt`, cursor.startsAt);
+  params.set(`${cursorPrefix}BookingId`, cursor.bookingId);
+
+  return `/terapeuta/sessoes?${params.toString()}`;
+}
+
+function buildSessionsQueryParams(filters: TherapistSessionFilters) {
   const params = new URLSearchParams();
   if (filters.bookingStatus) params.set("status", filters.bookingStatus);
   if (filters.modality) params.set("modality", filters.modality);
@@ -113,9 +136,37 @@ export function buildNextSessionsHref(
   if (filters.periodStart) params.set("periodStart", filters.periodStart);
   if (filters.serviceId) params.set("service", filters.serviceId);
   params.set("limit", String(filters.limit));
-  const cursorPrefix = cursorScope ? `${cursorScope}Cursor` : "cursor";
-  params.set(`${cursorPrefix}StartsAt`, cursor.startsAt);
-  params.set(`${cursorPrefix}BookingId`, cursor.bookingId);
+  return params;
+}
+
+export function parseTherapistSessionListLimits(
+  searchParams: SearchParams,
+  fallbackLimit: number,
+): ParsedTherapistSessionListLimits {
+  const past = parseListLimit(first(searchParams.pastLimit), fallbackLimit);
+  const upcoming = parseListLimit(
+    first(searchParams.upcomingLimit),
+    fallbackLimit,
+  );
+
+  if (past === null || upcoming === null) return invalidListLimits();
+
+  return { limits: { past, upcoming }, valid: true };
+}
+
+export function buildLoadMoreSessionsHref(
+  filters: TherapistSessionFilters,
+  scope: TherapistSessionCursorScope,
+  limits: TherapistSessionListLimits,
+) {
+  const nextLimits = {
+    ...limits,
+    [scope]: Math.min(limits[scope] + THERAPIST_SESSION_LOAD_MORE_SIZE, 100),
+  };
+  const params = buildSessionsQueryParams(filters);
+
+  params.set("pastLimit", String(nextLimits.past));
+  params.set("upcomingLimit", String(nextLimits.upcoming));
 
   return `/terapeuta/sessoes?${params.toString()}`;
 }
@@ -155,6 +206,19 @@ function invalidCursor(): { message: string; valid: false } {
     message: "Revise os filtros informados e tente novamente.",
     valid: false,
   };
+}
+
+function invalidListLimits(): ParsedTherapistSessionListLimits {
+  return {
+    message: "Revise os filtros informados e tente novamente.",
+    valid: false,
+  };
+}
+
+function parseListLimit(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+  const limit = Number(value);
+  return Number.isInteger(limit) && limit >= 1 && limit <= 100 ? limit : null;
 }
 
 function first(value: string | string[] | undefined) {
