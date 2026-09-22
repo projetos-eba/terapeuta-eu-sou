@@ -190,6 +190,10 @@ function mapPatientEncounter(
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
+  const paymentWasNotCompleted =
+    booking.status === "cancelled_by_payment" &&
+    (payment?.financial_status === "failed" ||
+      payment?.financial_status === "canceled");
   const { paymentScheduled, status, statusLabel } =
     getPatientEncounterStatusPresentation({
       booking,
@@ -205,6 +209,8 @@ function mapPatientEncounter(
   return {
     actionHint: paymentScheduled
       ? "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro."
+      : paymentWasNotCompleted
+        ? "O pagamento não foi concluído; este encontro foi cancelado."
       : payment?.financial_status === "paid" && status === "confirmed"
         ? `Acesso à sala liberado ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} minutos antes.`
         : undefined,
@@ -293,13 +299,6 @@ function getEncounterStatus(
     }
   }
   if (isCompletedBookingStatus(booking.status)) return "completed";
-  if (
-    booking.status === "cancelled_by_payment" &&
-    (payment?.financial_status === "failed" ||
-      payment?.financial_status === "canceled")
-  ) {
-    return "payment_incomplete";
-  }
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
   if (
     booking.status === "pending_payment" ||
@@ -352,14 +351,6 @@ function getPrimaryAction(
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
       label: "Acompanhar pagamento",
-    };
-  }
-
-  if (status === "payment_incomplete") {
-    return {
-      href: `/reserva?booking=${encodeURIComponent(booking.id)}&etapa=pagamento`,
-      kind: "link",
-      label: "Tentar pagamento novamente",
     };
   }
 
@@ -441,7 +432,6 @@ function getStatusLabel(status: PatientEncounterStatus) {
     refunded: "Reembolsado",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
-    payment_incomplete: "Pagamento não concluído",
     pending_payment: "Pagamento pendente",
     reschedule_requested: "Reagendamento solicitado",
   };
