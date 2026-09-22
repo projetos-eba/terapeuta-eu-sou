@@ -72,6 +72,66 @@ describe("admin finance mappers", () => {
     });
   });
 
+  it("uses the booking outcome for attendance without changing the paid payout", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          booking_status: "no_show_both",
+          financial_status: "paid",
+          id: "payment-no-show",
+          payout_display_status: "paid",
+          service_status: "scheduled",
+          transfer_status: "transferred",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Atendimento",
+      value: "Não realizado",
+    });
+    expect(row.fields).toContainEqual({ label: "Repasse", value: "Pago" });
+  });
+
+  it("keeps scheduled as the fallback for a confirmed future booking", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          booking_status: "confirmed",
+          financial_status: "paid",
+          id: "payment-confirmed",
+          service_status: "scheduled",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Atendimento",
+      value: "Agendado",
+    });
+  });
+
+  it("keeps a refund closed even when the booking has a no-show outcome", () => {
+    const [row] = mapAdminFinanceRows({
+      module: "payments",
+      rows: [
+        {
+          booking_status: "no_show_therapist",
+          financial_status: "refunded",
+          id: "payment-refunded-no-show",
+          service_status: "scheduled",
+        },
+      ],
+    });
+
+    expect(row.fields).toContainEqual({
+      label: "Atendimento",
+      value: "Encerrado",
+    });
+  });
+
   it("presents the V10 bank and compensation projection without internal terms", () => {
     const [row] = mapAdminFinanceRows({
       module: "payments",
