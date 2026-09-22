@@ -211,3 +211,36 @@ export const therapistExplainerAccentIcons = {
   alcance: Heart,
   parceria: Sprout,
 } as const;
+
+export const therapistFaqItems = [
+  {
+    answer:
+      "Sim. O TES possui o plano Free, com mensalidade de R$ 0, para você começar sua jornada. Se quiser acessar outros recursos, também poderá escolher um dos planos pagos.",
+    question: "O cadastro é realmente gratuito?",
+  },
+  {
+    answer:
+      "Não. Não existe uma formação específica obrigatória para se cadastrar no TES. Caso você tenha uma formação, poderá informá-la no seu perfil profissional.",
+    question: "Preciso ter formação específica para me cadastrar?",
+  },
+  {
+    answer:
+      "Do agendamento à sessão, tudo acontece dentro do TES. Você organiza sua disponibilidade, recebe os agendamentos e realiza seus atendimentos online pela plataforma.",
+    question: "Como funcionam os atendimentos pelo TES?",
+  },
+  {
+    answer:
+      "O TES possui os planos Premium e Premium Plus, com recursos e benefícios diferentes para cada momento da sua jornada. Você pode comparar tudo o que cada plano oferece na tabela acima.",
+    question: "Como funcionam os planos pagos?",
+  },
+  {
+    answer:
+      "Você. Cada terapeuta define o valor do próprio atendimento dentro do TES.",
+    question: "Quem define o valor da minha sessão?",
+  },
+  {
+    answer:
+      "Após a confirmação da cobrança, o valor do seu atendimento segue o fluxo de processamento do pagamento. O prazo para ficar disponível varia conforme o meio de pagamento utilizado e, quando disponível, o valor é enviado automaticamente para a conta bancária cadastrada por você. Você encontra todos os detalhes sobre prazos e recebimentos nos Termos de Uso do TES.",
+    question: "Quando e como recebo pelos atendimentos?",
+  },
+] as const;
