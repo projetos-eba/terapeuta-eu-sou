@@ -29,6 +29,7 @@ export function PatientFavoriteTherapistsPage({
           className="absolute inset-y-0 right-0 hidden w-[56%] md:block"
           fade="left"
           fadeTone="soft"
+          imageClassName="!object-contain"
           objectPosition="right top"
           priority
           sizes="(min-width: 768px) 52vw, 100vw"

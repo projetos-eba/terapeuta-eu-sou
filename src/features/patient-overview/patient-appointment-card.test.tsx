@@ -118,7 +118,7 @@ describe("PatientAppointmentCard", () => {
 
   it.each([
     ["pending_payment", "Reservado"],
-    ["payment_incomplete", "Pagamento não concluído"],
+    ["cancelled", "Encontro cancelado"],
     ["reschedule_requested", "Reagendamento solicitado"],
   ] as const)("exibe o estado %s recebido da agenda completa", (status, label) => {
     render(

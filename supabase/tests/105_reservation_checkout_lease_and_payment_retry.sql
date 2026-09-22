@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(18);
 
 select has_column(
   'public', 'session_payment_attempts', 'attempt_kind',
@@ -199,6 +199,28 @@ select is(
   )->>'reason'),
   'expired',
   'late authorization cannot revive an expired initial reservation'
+);
+
+select is(
+  (select financial_status::text from public.session_payments
+   where id = 'e1050000-0000-4000-8000-000000000004'),
+  'canceled',
+  'expired initial reservation cancels its pending payment'
+);
+
+select is(
+  (select status::text from public.bookings
+   where id = 'a1050000-0000-4000-8000-000000000004'),
+  'cancelled_by_payment',
+  'expired initial reservation cancels its booking through the payment workflow'
+);
+
+select is(
+  (public.preflight_session_payment_retry_v1(
+    'a1050000-0000-4000-8000-000000000004'
+  )->>'reason'),
+  'available',
+  'payment-cancelled reservation no longer occupies its original slot'
 );
 
 insert into public.bookings (
