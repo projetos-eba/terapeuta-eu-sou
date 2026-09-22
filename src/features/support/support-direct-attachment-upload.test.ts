@@ -51,8 +51,15 @@ describe("direct support attachment uploads", () => {
             ],
           });
         }
-        expect(init?.method).toBe("PUT");
-        expect(init?.headers).toEqual({ "x-upsert": "false" });
+        const index = url.endsWith("/one") ? 0 : 1;
+        expect(init).toMatchObject({
+          body: files[index],
+          headers: {
+            "Content-Type": files[index]?.type,
+            "x-upsert": "false",
+          },
+          method: "PUT",
+        });
         return new Response(null, { status: 200 });
       },
     );
