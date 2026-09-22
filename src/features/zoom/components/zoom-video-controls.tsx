@@ -32,6 +32,7 @@ type ZoomVideoControlsProps = {
   onToggleVideo: () => void;
   onTherapistEnd: () => void;
   roleType: 0 | 1 | null;
+  showMobileMediaRecoveryNotice?: boolean;
   state:
     | "idle"
     | "loading"
@@ -65,6 +66,7 @@ export function ZoomVideoControls({
   onToggleVideo,
   onTherapistEnd,
   roleType,
+  showMobileMediaRecoveryNotice = true,
   state,
   videoOn,
 }: ZoomVideoControlsProps) {
@@ -121,7 +123,9 @@ export function ZoomVideoControls({
   return (
     <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-start">
       <div className="grid gap-3">
-        <MobileMediaRecoveryNotice onOpenSupport={onOpenSupport} />
+        {showMobileMediaRecoveryNotice ? (
+          <MobileMediaRecoveryNotice onOpenSupport={onOpenSupport} />
+        ) : null}
         <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
           <ControlButton
             active={!audioMuted}
