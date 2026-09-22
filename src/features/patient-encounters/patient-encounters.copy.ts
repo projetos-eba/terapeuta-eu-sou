@@ -18,6 +18,8 @@ const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
   live: "A entrada está disponível agora.",
   pending_payment:
     "O pagamento precisa de atenção antes da confirmação do encontro.",
+  payment_incomplete:
+    "O pagamento não foi concluído. Consulte os detalhes para verificar se este horário ainda pode ser retomado.",
   reschedule_requested: "Há uma solicitação de reagendamento em andamento.",
 };
 

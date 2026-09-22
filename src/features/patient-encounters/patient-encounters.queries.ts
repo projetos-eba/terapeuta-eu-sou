@@ -55,6 +55,11 @@ type AttemptAttendance = {
   patientPresentAtTolerance: boolean;
 };
 
+type PaymentRetryContext = {
+  bookingId?: string;
+  canRetry?: boolean;
+};
+
 export class PatientEncountersDataError extends Error {
   constructor() {
     super("Não foi possível carregar seus encontros.");
@@ -157,6 +162,7 @@ async function getSupabasePatientEncountersPage(
     reschedules,
     unreadMessages,
     attemptAttendance,
+    paymentRetryContexts,
   ] = await Promise.all([
     getRowsByIds<TherapistRecord>(
       config,
@@ -202,8 +208,15 @@ async function getSupabasePatientEncountersPage(
           config,
           "/rest/v1/rpc/get_session_attempt_attendance_batch_v1",
           { body: { p_booking_ids: bookingIds }, method: "POST" },
-        )
+      )
       : Promise.resolve({} as Record<string, AttemptAttendance>),
+    bookingIds.length > 0
+      ? supabaseRequest<Record<string, PaymentRetryContext>>(
+          config,
+          "/rest/v1/rpc/get_patient_reservation_retry_contexts_v1",
+          { body: { p_booking_ids: bookingIds }, method: "POST" },
+        ).catch(() => ({} as Record<string, PaymentRetryContext>))
+      : Promise.resolve({} as Record<string, PaymentRetryContext>),
   ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
   const therapies = await getRowsByIds<TherapyRecord>(
@@ -231,6 +244,14 @@ async function getSupabasePatientEncountersPage(
         booking.id,
         attemptAttendance[booking.id]?.patientPresentAtTolerance === true,
       ]),
+    ),
+    paymentRetryAvailableByBookingId: new Map(
+      Object.entries(paymentRetryContexts)
+        .filter(
+          ([bookingId, context]) =>
+            context?.bookingId === bookingId && context.canRetry === true,
+        )
+        .map(([bookingId]) => [bookingId, true]),
     ),
     reviews,
     serviceById: new Map(services.map((service) => [service.id, service])),

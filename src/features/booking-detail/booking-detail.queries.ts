@@ -191,6 +191,10 @@ export const getPatientSessionDetailPage = cache(
             )
           : [];
 
+      const checkoutRetryAvailable = mapCheckoutRetryAvailability(
+        checkoutRetryContext,
+        booking.id,
+      );
       const detail = mapBookingDetail({
         booking,
         completedBookings,
@@ -201,7 +205,8 @@ export const getPatientSessionDetailPage = cache(
             sessionQuality.attendance as
               | { patientPresentAtTolerance?: boolean }
               | undefined
-          )?.patientPresentAtTolerance === true,
+            )?.patientPresentAtTolerance === true,
+        paymentRetryAvailable: checkoutRetryAvailable,
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -242,10 +247,7 @@ export const getPatientSessionDetailPage = cache(
         delayNotice,
         paymentRecovery: {
           ...mapSessionChargeStatus(chargeStatus),
-          checkoutAvailable: mapCheckoutRetryAvailability(
-            checkoutRetryContext,
-            booking.id,
-          ),
+          checkoutAvailable: checkoutRetryAvailable,
         },
       };
     } catch (error) {

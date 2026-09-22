@@ -1,10 +1,21 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 select has_column(
   'public', 'session_payment_attempts', 'attempt_kind',
   'attempts classify initial holds and payment retries'
+);
+
+insert into public.availability_exceptions (
+  id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
+  reason, status
+) values (
+  'b1050000-0000-4000-8000-000000000010',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  '2099-01-01 00:00:00+00', '2100-01-01 00:00:00+00', true,
+  'Cobertura de agenda para retry pgTAP', 'active'
 );
 select has_column(
   'public', 'session_payment_attempts', 'reservation_expires_at',
@@ -62,6 +73,31 @@ select is(
   'retry preflight does not occupy an available slot'
 );
 
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object(
+    'sub', 'aaaaaaaa-0000-4000-8000-000000000001',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+select is(
+  public.get_patient_reservation_retry_context_v1(
+    'a1050000-0000-4000-8000-000000000001'
+  ) ->> 'canRetry',
+  'true',
+  'the patient retry context exposes only a currently eligible slot'
+);
+select is(
+  public.get_patient_reservation_retry_contexts_v1(
+    array['a1050000-0000-4000-8000-000000000001'::uuid]
+  ) #>> '{a1050000-0000-4000-8000-000000000001,canRetry}',
+  'true',
+  'the patient batch retry context matches the single safe context'
+);
+reset role;
+
 select is(
   (public.claim_session_payment_authorization_v1(
     'e1050000-0000-4000-8000-000000000001',
@@ -96,7 +132,7 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000002',
     'c1000000-0000-4000-8000-000000000002',
     'd1000000-0000-4000-8000-000000000002',
-    '2099-02-02 10:00:00+00', '2099-02-02 11:00:00+00',
+    '2099-02-02 10:00:00+00', '2099-02-02 10:50:00+00',
     'America/Sao_Paulo', 'cancelled_by_payment', 'failed'
   ),
   (

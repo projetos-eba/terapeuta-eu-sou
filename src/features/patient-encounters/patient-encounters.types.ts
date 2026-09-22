@@ -89,6 +89,7 @@ export type PatientEncounterStatus =
   | "live"
   | "confirmed"
   | "pending_payment"
+  | "payment_incomplete"
   | "awaiting_feedback"
   | "reschedule_requested"
   | "completed"

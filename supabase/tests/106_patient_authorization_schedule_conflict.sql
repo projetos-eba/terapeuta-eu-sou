@@ -4,6 +4,17 @@ select plan(16);
 
 alter table public.booking_holds disable trigger validate_booking_hold_schedule;
 
+insert into public.availability_exceptions (
+  id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
+  reason, status
+) values (
+  'b1060000-0000-4000-8000-000000000010',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  '2099-01-01 00:00:00+00', '2100-01-01 00:00:00+00', true,
+  'Cobertura de agenda para retry pgTAP', 'active'
+);
+
 -- Paid but not yet projected into the booking is already authoritative.
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at,

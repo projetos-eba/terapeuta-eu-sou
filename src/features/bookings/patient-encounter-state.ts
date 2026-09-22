@@ -74,6 +74,7 @@ type Input = {
   now?: Date;
   patientHasJoined?: boolean;
   paymentFlowVersion?: string;
+  paymentRetryAvailable?: boolean;
   provider: "external" | "google_meet" | "zoom";
   startsAt: string;
   zoomAccess?: ZoomAccessState | null;
@@ -91,6 +92,7 @@ export function getPatientEncounterPresentationState({
   now = new Date(),
   patientHasJoined = false,
   paymentFlowVersion = "v9",
+  paymentRetryAvailable = false,
   provider,
   startsAt,
   zoomAccess = null,
@@ -103,6 +105,7 @@ export function getPatientEncounterPresentationState({
     financialStatus,
     nowMs,
     paymentFlowVersion,
+    paymentRetryAvailable,
     startsAtMs,
   });
   const waitingRoom = getWaitingRoomState({
@@ -156,12 +159,14 @@ function getPaymentState({
   financialStatus,
   nowMs,
   paymentFlowVersion,
+  paymentRetryAvailable,
   startsAtMs,
 }: {
   bookingStatus: string;
   financialStatus: SessionFinancialStatus | null;
   nowMs: number;
   paymentFlowVersion: string;
+  paymentRetryAvailable: boolean;
   startsAtMs: number;
 }): PatientEncounterPresentationState["payment"] {
   if (
@@ -246,32 +251,34 @@ function getPaymentState({
   }
 
   if (financialStatus === SessionFinancialStatus.Failed) {
-    const canRetry = Number.isFinite(startsAtMs) && nowMs < startsAtMs;
+    const canRetry =
+      bookingStatus === BookingStatus.CancelledByPayment &&
+      paymentRetryAvailable;
 
     return {
       kind: "failed",
-      message:
-        "Não foi possível confirmar o pagamento. A entrada na sala online só será liberada após a confirmação.",
+      message: canRetry
+        ? "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será confirmado após a autorização."
+        : "O pagamento não foi concluído e este horário não pode mais ser retomado.",
       retryAllowed: canRetry,
       slotState: canRetry ? "review" : "released",
-      title: "Pagamento não confirmado",
+      title: canRetry ? "Pagamento não concluído" : "Encontro cancelado",
     };
   }
 
   if (financialStatus === SessionFinancialStatus.Canceled) {
     const canRetry =
       bookingStatus === BookingStatus.CancelledByPayment &&
-      Number.isFinite(startsAtMs) &&
-      nowMs < startsAtMs;
+      paymentRetryAvailable;
 
     return {
       kind: "cancelled",
       message: canRetry
         ? "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será confirmado após a autorização."
-        : "A cobrança foi cancelada. Este horário não pode mais ser retomado.",
+        : "O pagamento não foi concluído e este horário não pode mais ser retomado.",
       retryAllowed: canRetry,
       slotState: "released",
-      title: canRetry ? "Pagamento não concluído" : "Cobrança cancelada",
+      title: canRetry ? "Pagamento não concluído" : "Encontro cancelado",
     };
   }
 
