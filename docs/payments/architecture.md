@@ -331,10 +331,17 @@ Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
   autorização, reivindicação do slot e motivo terminal auditáveis.
 
 Pagamentos de encontro usam autorização e captura separadas. O Checkout inicial
-ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
+ocupa a agenda por cinco minutos a partir da abertura do formulário. Ao fim do
+prazo, o pagamento permanece terminal e a reserva é cancelada por pagamento,
+com o intervalo liberado. A apresentação ao paciente só chama esse estado de
+“Pagamento não concluído” quando a retomada ainda é elegível pela agenda atual;
+caso contrário, apresenta “Encontro cancelado”. Uma
 retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
-atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+atomicamente antes da captura. Antes de expor ou processar a retomada, a mesma
+verificação confere o candidato exato no motor de agenda (serviço ativo,
+disponibilidade e exceções, antecedência mínima, horizonte, duração, buffers e
+cadência), além dos conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
 mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
 leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
 em uma única transação ainda com a reserva liberada, e somente o

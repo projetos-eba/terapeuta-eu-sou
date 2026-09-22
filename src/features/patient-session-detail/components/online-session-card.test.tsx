@@ -244,6 +244,21 @@ describe("OnlineSessionCard", () => {
       financialStatus: SessionFinancialStatus.Canceled,
       status: BookingStatus.CancelledByPayment,
     });
+    data.paymentRecovery = {
+      available: false,
+      checkoutAvailable: true,
+      dueAt: null,
+      status: null,
+    };
+    data.encounterState = getPatientEncounterPresentationState({
+      bookingStatus: data.booking.status,
+      endsAt: data.booking.endsAt,
+      financialStatus: data.booking.paymentStatus,
+      now: new Date("2026-08-01T13:00:00.000Z"),
+      paymentRetryAvailable: true,
+      provider: data.onlineSession.provider,
+      startsAt: data.booking.startsAt,
+    });
 
     render(
       <>
@@ -254,7 +269,7 @@ describe("OnlineSessionCard", () => {
 
     expect(
       screen
-        .getAllByRole("link", { name: "Tentar pagamento novamente" })
+        .getAllByRole("link", { name: "Continuar pagamento" })
         .every(
           (link) =>
             link.getAttribute("href") ===

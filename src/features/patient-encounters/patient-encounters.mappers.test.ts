@@ -149,6 +149,42 @@ describe("patient encounters mapper", () => {
     });
   });
 
+  it("keeps an eligible payment retry in history with a payment-incomplete status", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000016",
+        new Date(Date.now() + 48 * 60 * 60 * 1000),
+      ),
+      status: "cancelled_by_payment",
+    };
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      paymentRetryAvailableByBookingId: new Map([[booking.id, true]]),
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "canceled" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter).toBeNull();
+    expect(result.upcomingEncounters).toEqual([]);
+    expect(result.historyEncounters[0]).toMatchObject({
+      actionHint:
+        "O pagamento não foi concluído. Você pode tentar novamente se o horário continuar disponível.",
+      status: "payment_incomplete",
+      statusLabel: "Pagamento não concluído",
+    });
+  });
+
   it("surfaces pending reschedule requests on active encounters", () => {
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000002",

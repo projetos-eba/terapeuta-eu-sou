@@ -232,7 +232,7 @@ describe("getPatientEncounterPresentationState", () => {
     );
   });
 
-  it("blocks Zoom access for failed payments and exposes retry only before start", () => {
+  it("blocks Zoom access for failed payments unless the server confirms retry eligibility", () => {
     const state = getPatientEncounterPresentationState({
       ...baseInput,
       bookingStatus: BookingStatus.CancelledByPayment,
@@ -241,19 +241,18 @@ describe("getPatientEncounterPresentationState", () => {
     });
 
     expect(state.payment.kind).toBe("failed");
-    expect(state.payment.retryAllowed).toBe(true);
+    expect(state.payment.retryAllowed).toBe(false);
     expect(state.waitingRoom.kind).toBe("ended");
-    expect(state.actions).toEqual(
-      expect.arrayContaining(["retry_payment", "contact_support"]),
-    );
+    expect(state.actions).not.toContain("retry_payment");
   });
 
-  it("offers a cancelled payment retry only for a future payment-cancelled booking", () => {
+  it("offers a cancelled payment retry only when the server confirms the slot is eligible", () => {
     const retryable = getPatientEncounterPresentationState({
       ...baseInput,
       bookingStatus: BookingStatus.CancelledByPayment,
       financialStatus: SessionFinancialStatus.Canceled,
       now: new Date("2026-08-01T13:40:00.000Z"),
+      paymentRetryAvailable: true,
     });
     const unrelatedCancellation = getPatientEncounterPresentationState({
       ...baseInput,

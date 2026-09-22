@@ -13,6 +13,7 @@ const statusClasses: Record<PatientEncounterStatus, string> = {
   confirmed: "text-brand-primary",
   live: "bg-status-successBg text-status-success",
   pending_payment: "bg-status-warningBg text-status-warning",
+  payment_incomplete: "bg-status-warningBg text-status-warning",
   reschedule_requested: "bg-status-warningBg text-status-warning",
 };
 
@@ -24,6 +25,7 @@ const emphasizedStatuses = new Set<PatientEncounterStatus>([
   "refunded",
   "live",
   "pending_payment",
+  "payment_incomplete",
   "reschedule_requested",
 ]);
 
