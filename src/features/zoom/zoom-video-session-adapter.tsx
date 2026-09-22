@@ -1472,17 +1472,18 @@ export function ZoomVideoSessionAdapter({
         );
       }
       await enableVideoForSession(stream, { userGesture: true });
+      setLastFailure(null);
       if (isMobileBrowser()) retryLocalPreview();
       scheduleRemoteVideoResync();
     } catch (error) {
       if (!mounted.current || leavingRef.current) return;
       const failure = normalizeZoomFailure(error, "video");
+      setLastFailure(failure);
       if (
         isMobileBrowser() &&
         !videoStartedRef.current &&
         failure.shouldReload
       ) {
-        setLastFailure(failure);
         setRecoveryAttempt(0);
         setState("reload_required");
         setMessage(null);
@@ -3338,6 +3339,9 @@ export function ZoomVideoSessionAdapter({
             onToggleAudio={() => void toggleAudio()}
             onToggleVideo={() => void toggleVideo()}
             roleType={roleType}
+            showMobileMediaRecoveryNotice={
+              lastFailure?.category !== "permission"
+            }
             state={state}
             supportHref={getSupportWhatsAppHref("in_call", bookingId)}
             videoOn={videoOn}
