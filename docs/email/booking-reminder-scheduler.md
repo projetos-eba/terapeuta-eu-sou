@@ -2,9 +2,10 @@
 
 ## Escopo
 
-Esta implementação envia somente os lembretes do paciente:
+Esta implementação mantém os contratos de lembrete do paciente:
 
-- `booking_reminder_24h_patient`: `bookings.starts_at - 24 horas`;
+- `booking_reminder_24h_patient`: `bookings.starts_at - 24 horas`, preservado
+  mas inativo no fluxo financeiro V10;
 - `booking_reminder_1h_patient`: `bookings.starts_at - 1 hora`.
 
 O e-mail aponta para `/app/encontros/:bookingId`. Não são incluídos URL do
@@ -23,6 +24,20 @@ O job é criado e reclamado somente quando:
 
 O horário é calculado com o instante absoluto de `starts_at`. O timezone do
 booking é usado na apresentação da data e hora.
+
+### Decisão operacional V10
+
+No V10, reservas futuras são cobradas em T-24. A confirmação do booking ocorre
+somente depois da confirmação do pagamento, quando o alvo do lembrete de 24
+horas já chegou ou passou. Como o scheduler aceita apenas alvos estritamente
+futuros, esse lembrete não deve ser criado como catch-up.
+
+A confirmação do pagamento já gera as mensagens de pagamento aprovado e de
+encontro confirmado. Por isso, `booking_reminder_24h_patient` permanece
+registrado para permitir uma reativação futura, mas fica com definição,
+habilitação e despacho automático inativos. A listagem administrativa o oculta
+enquanto os dois controles estiverem desabilitados. O lembrete de 1 hora
+continua disponível e não é afetado.
 
 ## Estados e idempotência
 
@@ -64,17 +79,20 @@ administrativa/operacional do ambiente, sem alterar migrations já aplicadas.
 
 ### Ativação administrativa
 
-A superfície oficial para habilitar os lembretes é
+A superfície oficial para habilitar o lembrete vigente é
 `/admin/configuracoes/emails`. Depois de confirmar que existe um remetente
 ativo padrão, que o provider está disponível e que o dispatcher interno está
-configurado, o administrador deve abrir e salvar individualmente os eventos:
+configurado, o administrador deve abrir e salvar o evento:
 
-- `Lembrete de encontro — 24 horas — pessoa`;
 - `Lembrete de encontro — 1 hora — pessoa`.
 
 Em cada evento, habilite `Evento habilitado` e `Envio automático`. Essa ação
 grava apenas a configuração operacional do ambiente e não altera migrations ou
 defaults versionados.
+
+Uma eventual reativação do lembrete de 24 horas exige decisão operacional
+explícita e uma migration progressiva que restaure a definição e os dois
+controles. Não deve haver backfill de horários já vencidos.
 
 Jobs históricos em `skipped` não são reativados automaticamente. O scheduler
 possui janela estrita de um minuto e não faz backfill; somente jobs futuros e

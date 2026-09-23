@@ -60,6 +60,15 @@ where action_key in (
   'booking_reminder_1h_patient'
 );
 
+-- The T-24 action is operationally inactive in V10, but its retained contract
+-- remains covered here so a future explicit reactivation stays safe.
+update public.email_action_definitions
+set active = true
+where action_key in (
+  'booking_reminder_24h_patient',
+  'booking_reminder_1h_patient'
+);
+
 insert into public.bookings (
   id,
   patient_profile_id,
