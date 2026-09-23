@@ -74,11 +74,15 @@ const promotionCode = codePage.data.find(
   (item) => item.metadata?.offer_key === "therapist_founder",
 );
 if (!promotionCode) throw new Error("TERAPEUTAFUNDADOR is missing.");
-if (promotionCode.active !== (target === "test")) {
+const founderPromotionExpiresAt = Date.parse("2026-09-11T03:00:00.000Z") / 1000;
+const expectedFounderPromotionActive =
+  target === "test" &&
+  Math.floor(Date.now() / 1000) < founderPromotionExpiresAt;
+if (promotionCode.active !== expectedFounderPromotionActive) {
   throw new Error("TERAPEUTAFUNDADOR active state diverges.");
 }
 if (
-  promotionCode.expires_at !== Date.parse("2026-09-11T03:00:00.000Z") / 1000 ||
+  promotionCode.expires_at !== founderPromotionExpiresAt ||
   promotionCode.restrictions?.first_time_transaction !== true
 ) {
   throw new Error("TERAPEUTAFUNDADOR restrictions diverge.");
