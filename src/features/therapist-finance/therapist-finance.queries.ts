@@ -17,7 +17,7 @@ export function queryTherapistFinancialOverview(
 }
 
 export function queryTherapistReceipts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_receipts_v3", {
+  return requestFinanceRpc("get_private_therapist_receipts_v4", {
     accessToken,
     body,
   });

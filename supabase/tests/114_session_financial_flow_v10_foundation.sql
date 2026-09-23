@@ -1,6 +1,6 @@
 begin;
 
-select plan(81);
+select plan(83);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -1082,6 +1082,32 @@ select is(
   ),
   0,
   'the compensated receipt has no amount on its way to the therapist bank'
+);
+
+select is(
+  (
+    select item ->> 'receiptStatus'
+    from jsonb_array_elements(public.get_private_therapist_receipts_v4(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000022'
+  ),
+  'compensated',
+  'receipts V4 exposes the payout compensation without changing charge status'
+);
+
+select is(
+  (
+    select item ->> 'chargeStatus'
+    from jsonb_array_elements(public.get_private_therapist_receipts_v4(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000022'
+  ),
+  'approved',
+  'receipts V4 preserves the successful charge state for a compensated session'
 );
 
 select is(
