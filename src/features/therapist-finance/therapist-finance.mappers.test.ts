@@ -346,7 +346,7 @@ describe("therapist finance mappers", () => {
 
   it("maps the charge-focused receipt contract", () => {
     const receipts = mapTherapistReceiptsContract({
-      contractVersion: 3,
+      contractVersion: 4,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -365,6 +365,7 @@ describe("therapist finance mappers", () => {
           grossAmountCents: 5000,
           patientDisplayName: "Lucas",
           receiptUrl: null,
+          receiptStatus: "refunded",
           refundedAmountCents: 1000,
           scheduledChargeAt: null,
           sessionDate: "2026-07-28T13:00:00.000Z",
@@ -393,6 +394,7 @@ describe("therapist finance mappers", () => {
 
     expect(receipts.items[0]).toMatchObject({
       chargeStatus: "refunded",
+      receiptStatus: "refunded",
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
     });
@@ -401,8 +403,26 @@ describe("therapist finance mappers", () => {
   it("maps the simplified payout agenda and history", () => {
     const payouts = mapTherapistPayoutsContract({
       agenda: {
-        awaitingBankDate: [{ amountCents: 4000, composition: [], date: null, id: "bank-date-pending", sessionCount: 1, status: "awaiting_bank_date" }],
-        balanceAvailable: [{ amountCents: 10455, composition: [], date: "2026-08-01", id: "balance:2026-08-01", sessionCount: 1, status: "balance_schedule" }],
+        awaitingBankDate: [
+          {
+            amountCents: 4000,
+            composition: [],
+            date: null,
+            id: "bank-date-pending",
+            sessionCount: 1,
+            status: "awaiting_bank_date",
+          },
+        ],
+        balanceAvailable: [
+          {
+            amountCents: 10455,
+            composition: [],
+            date: "2026-08-01",
+            id: "balance:2026-08-01",
+            sessionCount: 1,
+            status: "balance_schedule",
+          },
+        ],
         days: 15,
         inTransit: [
           {
