@@ -46,13 +46,17 @@ O hook de falha é exclusivamente HML, one-shot, com validade máxima de dez
 minutos e segredo próprio. Ele nunca cria evento, outbox ou log artificial.
 
 O scheduler de lembretes de encontros é separado do recovery da outbox. O job
-`tes-booking-reminders-v1` roda a cada minuto no Postgres, processa somente
-`booking_reminder_24h_patient` e `booking_reminder_1h_patient`, e grava o
-resultado em `booking_reminder_jobs`. Ele nunca chama o provider diretamente:
+`tes-booking-reminders-v1` roda a cada minuto no Postgres e grava o resultado
+em `booking_reminder_jobs`. O contrato de `booking_reminder_24h_patient` fica
+preservado, mas inativo no V10; `booking_reminder_1h_patient` permanece o evento
+operacional vigente. O scheduler nunca chama o provider diretamente:
 apenas cria uma entrega transacional no `email_outbox`. O claim revalida status
 confirmado, pagamento elegível, versão da reserva e início futuro. Cancelamento
 ou reagendamento invalida jobs pendentes; lembretes fora do ciclo estrito do
 cron são marcados como `missed`, sem catch-up.
+Na listagem Admin, a ação T-24 é ocultada quando habilitação e despacho
+automático estão ambos desativados; a rota e a estrutura continuam preservadas
+para uma eventual reativação progressiva.
 
 Envio manual e novos gatilhos de domínio continuam fora do piloto.
 

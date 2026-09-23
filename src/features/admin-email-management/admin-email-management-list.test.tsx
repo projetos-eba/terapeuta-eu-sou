@@ -76,7 +76,7 @@ describe("AdminEmailManagementList", () => {
     expect(document.body.textContent).not.toMatch(/provider|tokens|outbox/i);
   });
 
-  it("renders both booking reminder events in the Encontros category", async () => {
+  it("hides the inactive 24-hour reminder and keeps the 1-hour reminder", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -134,18 +134,19 @@ describe("AdminEmailManagementList", () => {
 
     expect(await screen.findByText("Encontros")).toBeInTheDocument();
     expect(
-      screen.getByText("Lembrete de encontro — 24 horas — pessoa"),
-    ).toBeInTheDocument();
+      screen.queryByText("Lembrete de encontro — 24 horas — pessoa"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText("Lembrete de encontro — 1 hora — pessoa"),
     ).toBeInTheDocument();
 
     const links = screen.getAllByRole("link", { name: /Configurar mensagem/i });
-    expect(links.map((link) => link.getAttribute("href"))).toEqual(
-      expect.arrayContaining([
-        "/admin/configuracoes/emails/eventos/booking_reminder_24h_patient",
-        "/admin/configuracoes/emails/eventos/booking_reminder_1h_patient",
-      ]),
+    const hrefs = links.map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain(
+      "/admin/configuracoes/emails/eventos/booking_reminder_1h_patient",
+    );
+    expect(hrefs).not.toContain(
+      "/admin/configuracoes/emails/eventos/booking_reminder_24h_patient",
     );
   });
 });
