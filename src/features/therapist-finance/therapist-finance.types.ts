@@ -109,6 +109,7 @@ export type TherapistReceiptItem = {
   patientDisplayName: string;
   receiptUrl: string | null;
   refundedAmountCents: number;
+  receiptStatus: TherapistReceiptStatus;
   scheduledChargeAt: string | null;
   sessionDate: string;
   sessionPaymentId: string;
@@ -123,7 +124,7 @@ export type TherapistReceiptTherapyOption = {
 };
 
 export type TherapistReceiptsContract = {
-  contractVersion: 3;
+  contractVersion: 4;
   filters: TherapistFinancePeriod & {
     search: string | null;
     status: TherapistChargeStatus | null;
@@ -157,7 +158,11 @@ export type TherapistPayoutAgendaGroup = {
   date: string | null;
   id: string;
   sessionCount: number;
-  status: "in_transit" | "predicted" | "balance_schedule" | "awaiting_bank_date";
+  status:
+    | "in_transit"
+    | "predicted"
+    | "balance_schedule"
+    | "awaiting_bank_date";
 };
 
 export type TherapistPayoutHistoryItem = {

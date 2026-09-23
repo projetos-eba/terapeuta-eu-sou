@@ -19,6 +19,7 @@ import {
   reconcileChargeSettlements,
   refreshRecoverableConnectPayments,
 } from "../_shared/payments/charge-settlement.ts";
+import { reconcileUnknownFullSessionRefundsV10 } from "../_shared/payments/full-session-refund-reconciliation-v10.ts";
 
 const runtime = getPaymentsRuntime("reconcile-stripe-transfers");
 
@@ -166,6 +167,13 @@ runtime.serve(async (request) => {
       payoutsReconciled.push({ localPayoutId: row.id, status: payout.status });
     }
 
+    const refundDecisionsReconciled =
+      await reconcileUnknownFullSessionRefundsV10({
+        client,
+        stripe,
+        environment: config.stripeMode,
+      });
+
     if (reconciliationRun) {
       await client.rpc("finalize_financial_reconciliation_run_v1", {
         p_last_error: null,
@@ -184,6 +192,7 @@ runtime.serve(async (request) => {
       expiredLeases,
       payoutsReconciled,
       recoverableConnectPayments,
+      refundDecisionsReconciled,
       runId: reconciliationRun?.runId ?? null,
       settlementsReconciled,
       sourceChargesReconciled,

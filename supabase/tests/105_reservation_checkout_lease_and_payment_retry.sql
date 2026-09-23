@@ -1,11 +1,32 @@
 begin;
 
-select plan(15);
+select plan(20);
 
 select has_column(
   'public', 'session_payment_attempts', 'attempt_kind',
   'attempts classify initial holds and payment retries'
 );
+
+insert into public.availability_exceptions (
+  id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
+  reason, status
+) values
+  (
+    'b1050000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    date_trunc('day', now() + interval '20 days'),
+    date_trunc('day', now() + interval '40 days'), true,
+    'Cobertura de agenda para retry pgTAP', 'active'
+  ),
+  (
+    'b1050000-0000-4000-8000-000000000011',
+    'c1000000-0000-4000-8000-000000000002',
+    'd1000000-0000-4000-8000-000000000002',
+    date_trunc('day', now() + interval '20 days'),
+    date_trunc('day', now() + interval '40 days'), true,
+    'Cobertura de agenda para conflito de retry pgTAP', 'active'
+  );
 select has_column(
   'public', 'session_payment_attempts', 'reservation_expires_at',
   'attempts persist the authoritative reservation deadline'
@@ -19,7 +40,8 @@ insert into public.bookings (
   'b1000000-0000-4000-8000-000000000001',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
-  '2099-02-01 10:00:00+00', '2099-02-01 10:50:00+00',
+  date_trunc('day', now() + interval '30 days') + interval '10 hours',
+  date_trunc('day', now() + interval '30 days') + interval '10 hours 50 minutes',
   'America/Sao_Paulo', 'cancelled_by_payment', 'failed'
 );
 
@@ -62,6 +84,31 @@ select is(
   'retry preflight does not occupy an available slot'
 );
 
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object(
+    'sub', 'bbbbbbbb-0000-4000-8000-000000000001',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+select is(
+  public.get_patient_reservation_retry_context_v1(
+    'a1050000-0000-4000-8000-000000000001'
+  ) ->> 'canRetry',
+  'true',
+  'the patient retry context exposes only a currently eligible slot'
+);
+select is(
+  public.get_patient_reservation_retry_contexts_v1(
+    array['a1050000-0000-4000-8000-000000000001'::uuid]
+  ) #>> '{a1050000-0000-4000-8000-000000000001,canRetry}',
+  'true',
+  'the patient batch retry context matches the single safe context'
+);
+reset role;
+
 select is(
   (public.claim_session_payment_authorization_v1(
     'e1050000-0000-4000-8000-000000000001',
@@ -96,7 +143,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000002',
     'c1000000-0000-4000-8000-000000000002',
     'd1000000-0000-4000-8000-000000000002',
-    '2099-02-02 10:00:00+00', '2099-02-02 11:00:00+00',
+    date_trunc('day', now() + interval '31 days') + interval '10 hours',
+    date_trunc('day', now() + interval '31 days') + interval '11 hours',
     'America/Sao_Paulo', 'cancelled_by_payment', 'failed'
   ),
   (
@@ -104,7 +152,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000003',
     'c1000000-0000-4000-8000-000000000002',
     'd1000000-0000-4000-8000-000000000002',
-    '2099-02-02 10:00:00+00', '2099-02-02 11:00:00+00',
+    date_trunc('day', now() + interval '31 days') + interval '10 hours',
+    date_trunc('day', now() + interval '31 days') + interval '11 hours',
     'America/Sao_Paulo', 'confirmed', 'paid'
   );
 
@@ -164,7 +213,8 @@ insert into public.bookings (
   'b1000000-0000-4000-8000-000000000003',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
-  '2099-02-03 10:00:00+00', '2099-02-03 10:50:00+00',
+  date_trunc('day', now() + interval '32 days') + interval '10 hours',
+  date_trunc('day', now() + interval '32 days') + interval '10 hours 50 minutes',
   'America/Sao_Paulo', 'draft', 'not_started'
 );
 
@@ -201,6 +251,28 @@ select is(
   'late authorization cannot revive an expired initial reservation'
 );
 
+select is(
+  (select financial_status::text from public.session_payments
+   where id = 'e1050000-0000-4000-8000-000000000004'),
+  'canceled',
+  'expired initial reservation cancels its pending payment'
+);
+
+select is(
+  (select status::text from public.bookings
+   where id = 'a1050000-0000-4000-8000-000000000004'),
+  'cancelled_by_payment',
+  'expired initial reservation cancels its booking through the payment workflow'
+);
+
+select is(
+  (public.preflight_session_payment_retry_v1(
+    'a1050000-0000-4000-8000-000000000004'
+  )->>'reason'),
+  'available',
+  'payment-cancelled reservation no longer occupies its original slot'
+);
+
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at,
   timezone, status, payment_status
@@ -210,7 +282,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000004',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-02-04 10:00:00+00', '2099-02-04 10:50:00+00',
+    date_trunc('day', now() + interval '33 days') + interval '10 hours',
+    date_trunc('day', now() + interval '33 days') + interval '10 hours 50 minutes',
     'America/Sao_Paulo', 'draft', 'not_started'
   ),
   (
@@ -218,7 +291,8 @@ insert into public.bookings (
     'b1000000-0000-4000-8000-000000000005',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-02-05 10:00:00+00', '2099-02-05 10:50:00+00',
+    date_trunc('day', now() + interval '34 days') + interval '10 hours',
+    date_trunc('day', now() + interval '34 days') + interval '10 hours 50 minutes',
     'America/Sao_Paulo', 'draft', 'not_started'
   );
 
@@ -235,7 +309,8 @@ insert into public.booking_holds (
     'b1000000-0000-4000-8000-000000000004',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-02-04 10:00:00+00', '2099-02-04 10:50:00+00',
+    date_trunc('day', now() + interval '33 days') + interval '10 hours',
+    date_trunc('day', now() + interval '33 days') + interval '10 hours 50 minutes',
     'America/Sao_Paulo', 'consumed', 'bootstrap-orphan-105-0005',
     now() + interval '5 minutes', 'Reiki online', 50, 17000, 'BRL', 10, 10,
     now(), 'a1050000-0000-4000-8000-000000000005', now(), now(), now()
@@ -245,7 +320,8 @@ insert into public.booking_holds (
     'b1000000-0000-4000-8000-000000000005',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-02-05 10:00:00+00', '2099-02-05 10:50:00+00',
+    date_trunc('day', now() + interval '34 days') + interval '10 hours',
+    date_trunc('day', now() + interval '34 days') + interval '10 hours 50 minutes',
     'America/Sao_Paulo', 'consumed', 'bootstrap-orphan-105-0006',
     now() - interval '1 second', 'Reiki online', 50, 17000, 'BRL', 10, 10,
     now() - interval '10 minutes',

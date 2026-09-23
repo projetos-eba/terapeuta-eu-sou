@@ -99,7 +99,6 @@ export const routes = {
       `/admin/assinaturas/${subscriptionId}`,
     therapies: "/admin/terapias",
     matching: "/admin/matching",
-    integrations: "/admin/integracoes",
     security: "/admin/seguranca",
     reports: "/admin/relatorios",
     settings: "/admin/configuracoes",

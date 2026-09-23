@@ -73,7 +73,9 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Compensação: R$ 10,00");
     expect(html).toContain("Valor encaminhado: R$ 75,00");
     expect(html).toContain("A caminho do banco");
-    expect(html).toContain("Reembolso");
+    expect(html).not.toContain("Abrir avaliação de reembolso da sessão");
+    expect(html).not.toContain(">Reembolso</a>");
+    expect(html).toContain("Ver detalhes");
     expect(html).not.toMatch(
       /source_transaction|transfer reversal|payout_display_status/i,
     );
@@ -141,5 +143,26 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Valor encaminhado");
     expect(html).not.toContain("PaymentIntent");
     expect(html).not.toContain("Metadados internos");
+  });
+
+  it("renders a canceled payment as canceled instead of under review", () => {
+    const html = renderToStaticMarkup(
+      <AdminPaymentDetailPage
+        data={{
+          backHref: "/admin/pagamentos",
+          events: [],
+          generatedAt: "2026-09-22T18:00:00.000Z",
+          id: "payment-canceled",
+          module: "payments",
+          safetyNotes: [],
+          sections: [],
+          statusLabel: "canceled",
+          title: "Constelação Familiar",
+        }}
+      />,
+    );
+
+    expect(html).toContain("Cancelado");
+    expect(html).not.toContain("Em análise");
   });
 });

@@ -1,13 +1,20 @@
 import {
   CalendarCheck,
   ChartNoAxesColumnIncreasing,
+  Coins,
   CreditCard,
+  Heart,
   LockKeyhole,
+  Megaphone,
   MessageCircle,
+  Settings,
   ShieldCheck,
   Sparkles,
+  Sprout,
   UserRoundCheck,
+  UsersRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const forTherapistsHero = {
   eyebrow: "PARA TERAPEUTAS",
@@ -94,3 +101,146 @@ export const commercialNotes = [
   "A assinatura do terapeuta e os pagamentos de sessões são fluxos separados.",
   "A ativação dos planos pagos acontece após a confirmação do pagamento.",
 ];
+
+export type TherapistExplainerAccordion = {
+  accent: {
+    body: string;
+    label: string;
+    title: string;
+  };
+  decorativeImage: string;
+  eyebrow: string;
+  id: "alcance" | "parceria";
+  imageClassName: string;
+  intro: {
+    body: string;
+    title: string;
+  };
+  items: Array<{
+    body: string;
+    icon: LucideIcon;
+    title: string;
+  }>;
+  number: string;
+  subtitle: string;
+  title: string;
+};
+
+export const therapistExplainerAccordions: TherapistExplainerAccordion[] = [
+  {
+    accent: {
+      body: "Muito do trabalho para que esse encontro seja possível acontece antes mesmo de a pessoa entrar no TES.",
+      label: "Conexões que transformam",
+      title: "Porque antes de existir um agendamento, precisa existir um encontro.",
+    },
+    decorativeImage: "/therapists/profile-bio/warm-chair.png",
+    eyebrow: "Mais pessoas encontrando caminhos. Mais encontros com sentido.",
+    id: "alcance",
+    imageClassName: "object-contain object-bottom object-center",
+    intro: {
+      body: "Enquanto você se dedica aos seus atendimentos, existe uma estrutura trabalhando para que mais pessoas conheçam o TES, cheguem até a plataforma e possam encontrar profissionais que façam sentido para o que estão buscando.",
+      title:
+        "Antes de um encontro acontecer, existe todo um trabalho para torná-lo possível.",
+    },
+    items: [
+      {
+        body: "Investimos em divulgação, campanhas e anúncios patrocinados para ampliar a presença do TES e alcançar pessoas que estão buscando cuidado e desenvolvimento.",
+        icon: Megaphone,
+        title: "Fazer o TES chegar a mais pessoas",
+      },
+      {
+        body: "Profissionais de comunicação, marketing e tráfego pago trabalham nos bastidores, planejando e acompanhando ações para fortalecer a presença do TES e conectar nossa proposta ao público certo.",
+        icon: ChartNoAxesColumnIncreasing,
+        title: "Estratégia por trás desse alcance",
+      },
+      {
+        body: "Não basta uma pessoa conhecer o TES. Construímos caminhos para que ela possa chegar à plataforma, conhecer os profissionais, suas abordagens e especialidades e encontrar alguém com quem se identifique.",
+        icon: UsersRound,
+        title: "Transformar alcance em descoberta",
+      },
+      {
+        body: "Marca, conteúdo, comunicação, tecnologia e experiência também fazem parte desse trabalho. Cada ponto de contato ajuda a construir um ambiente em que a pessoa possa conhecer o TES e seguir sua jornada com mais clareza e segurança.",
+        icon: ShieldCheck,
+        title: "Construir confiança para o encontro acontecer",
+      },
+    ],
+    number: "1",
+    subtitle:
+      "Descubra como o TES trabalha dentro e fora da plataforma para aproximar pessoas de você.",
+    title: "O que acontece antes de um atendimento chegar até você?",
+  },
+  {
+    accent: {
+      body: "É assim que construímos uma parceria em que cada atendimento também ajuda a manter e fortalecer o caminho que aproxima pessoas e terapeutas.",
+      label: "Parcerias que fazem sentido",
+      title:
+        "Você cuida do encontro. O TES cuida da estrutura que ajuda esse encontro a acontecer.",
+    },
+    decorativeImage: "/therapists/profile-bio/natural-plant.png",
+    eyebrow: "Você cuida do encontro. O TES cuida do caminho.",
+    id: "parceria",
+    imageClassName: "object-contain object-bottom object-right",
+    intro: {
+      body: "O TES constrói e mantém uma estrutura para aproximar pessoas e terapeutas e para que essa jornada possa continuar dentro da plataforma, do encontro com o profissional ao atendimento. Quando uma sessão é contratada e paga pelo TES, essa parceria também funciona de forma simples e transparente.",
+      title: "Uma parceria que funciona junto com cada atendimento.",
+    },
+    items: [
+      {
+        body: "Em cada atendimento contratado e pago pela plataforma, 85% do valor efetivamente cobrado é destinado a você e 15% fica com o TES. Essa comissão é a mesma em todos os planos.",
+        icon: Coins,
+        title: "Quando uma sessão acontece pelo TES",
+      },
+      {
+        body: "A comissão faz parte da sustentação da infraestrutura, da intermediação e dos serviços oferecidos pelo TES — além de todo o trabalho que apresentamos anteriormente para fortalecer o ecossistema e aproximar pessoas e terapeutas.",
+        icon: Settings,
+        title: "O que mantém essa estrutura acontecendo",
+      },
+      {
+        body: "Após a confirmação da cobrança, o valor do seu atendimento segue o fluxo de processamento do pagamento. O prazo para ficar disponível varia conforme o meio de pagamento utilizado e, quando disponível, o valor é enviado automaticamente para a conta bancária cadastrada por você.",
+        icon: CreditCard,
+        title: "Como funciona o recebimento dos seus atendimentos",
+      },
+    ],
+    number: "2",
+    subtitle: "Entenda como o TES e você caminham juntos a cada atendimento.",
+    title: "Como funciona essa parceria na prática?",
+  },
+];
+
+export const therapistExplainerAccentIcons = {
+  alcance: Heart,
+  parceria: Sprout,
+} as const;
+
+export const therapistFaqItems = [
+  {
+    answer:
+      "Sim. O TES possui o plano Free, com mensalidade de R$ 0, para você começar sua jornada. Se quiser acessar outros recursos, também poderá escolher um dos planos pagos.",
+    question: "O cadastro é realmente gratuito?",
+  },
+  {
+    answer:
+      "Não. Não existe uma formação específica obrigatória para se cadastrar no TES. Caso você tenha uma formação, poderá informá-la no seu perfil profissional.",
+    question: "Preciso ter formação específica para me cadastrar?",
+  },
+  {
+    answer:
+      "Do agendamento à sessão, tudo acontece dentro do TES. Você organiza sua disponibilidade, recebe os agendamentos e realiza seus atendimentos online pela plataforma.",
+    question: "Como funcionam os atendimentos pelo TES?",
+  },
+  {
+    answer:
+      "O TES possui os planos Premium e Premium Plus, com recursos e benefícios diferentes para cada momento da sua jornada. Você pode comparar tudo o que cada plano oferece na tabela acima.",
+    question: "Como funcionam os planos pagos?",
+  },
+  {
+    answer:
+      "Você. Cada terapeuta define o valor do próprio atendimento dentro do TES.",
+    question: "Quem define o valor da minha sessão?",
+  },
+  {
+    answer:
+      "Após a confirmação da cobrança, o valor do seu atendimento segue o fluxo de processamento do pagamento. O prazo para ficar disponível varia conforme o meio de pagamento utilizado e, quando disponível, o valor é enviado automaticamente para a conta bancária cadastrada por você. Você encontra todos os detalhes sobre prazos e recebimentos nos Termos de Uso do TES.",
+    question: "Quando e como recebo pelos atendimentos?",
+  },
+] as const;

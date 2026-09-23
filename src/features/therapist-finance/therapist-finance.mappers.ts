@@ -20,6 +20,7 @@ import type {
   TherapistPayoutHistoryItem,
   TherapistPayoutsContract,
   TherapistReceiptItem,
+  TherapistReceiptStatus,
   TherapistReceiptTherapyOption,
   TherapistReceiptsContract,
 } from "./therapist-finance.types";
@@ -43,6 +44,24 @@ const chargeStatuses = new Set<TherapistChargeStatus>([
   "refunded",
   "scheduled",
   "under_review",
+]);
+
+const receiptStatuses = new Set<TherapistReceiptStatus>([
+  "bank_pending",
+  "blocked",
+  "canceled",
+  "compensated",
+  "disputed",
+  "eligible",
+  "failed",
+  "paid",
+  "payout_processing",
+  "receivable",
+  "refunded",
+  "reversed",
+  "waiting_confirmation",
+  "waiting_safety_period",
+  "waiting_settlement",
 ]);
 
 const connectStatuses = new Set<TherapistConnectOnboardingStatus>([
@@ -127,7 +146,7 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalThree(value.contractVersion),
+      contractVersion: literalNumber(value.contractVersion, 4),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
@@ -430,6 +449,7 @@ function receiptItem(input: unknown): TherapistReceiptItem {
     grossAmountCents: nonNegativeInteger(value.grossAmountCents),
     patientDisplayName: nonEmptyString(value.patientDisplayName),
     receiptUrl: nullableString(value.receiptUrl),
+    receiptStatus: receiptStatus(value.receiptStatus),
     refundedAmountCents: nonNegativeInteger(value.refundedAmountCents),
     scheduledChargeAt: nullableDateTime(value.scheduledChargeAt),
     sessionDate: dateTime(value.sessionDate),
@@ -726,6 +746,16 @@ function chargeStatus(value: unknown): TherapistChargeStatus {
   throw new Error("Invalid charge status.");
 }
 
+function receiptStatus(value: unknown): TherapistReceiptStatus {
+  if (
+    typeof value === "string" &&
+    receiptStatuses.has(value as TherapistReceiptStatus)
+  ) {
+    return value as TherapistReceiptStatus;
+  }
+  throw new Error("Invalid receipt status.");
+}
+
 function nullableChargeStatus(value: unknown) {
   if (value === null || value === undefined) return null;
   return chargeStatus(value);
@@ -734,7 +764,13 @@ function nullableChargeStatus(value: unknown) {
 function payoutAgendaStatus(
   value: unknown,
 ): TherapistPayoutAgendaGroup["status"] {
-  if (value === "in_transit" || value === "predicted" || value === "balance_schedule" || value === "awaiting_bank_date") return value;
+  if (
+    value === "in_transit" ||
+    value === "predicted" ||
+    value === "balance_schedule" ||
+    value === "awaiting_bank_date"
+  )
+    return value;
   throw new Error("Invalid payout agenda status.");
 }
 
@@ -866,11 +902,6 @@ function literalOne(value: unknown): 1 {
 
 function literalTwo(value: unknown): 2 {
   if (value === 2) return 2;
-  throw new Error("Invalid contract version.");
-}
-
-function literalThree(value: unknown): 3 {
-  if (value === 3) return 3;
   throw new Error("Invalid contract version.");
 }
 

@@ -24,7 +24,7 @@ export default async function AdminSecurityRoute({
           Administração
         </p>
         <h1 className="mt-3 text-3xl font-extrabold text-brand-deep">
-          Segurança
+          Auditoria
         </h1>
         <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
           {result.message}

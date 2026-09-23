@@ -145,6 +145,7 @@ export type MapBookingDetailInput = {
   intake: BookingDetailIntakeRow | null;
   patient: BookingDetailProfileRow;
   patientHasJoined: boolean;
+  paymentRetryAvailable?: boolean;
   patientProfile: BookingDetailPatientProfileRow;
   perspective: BookingDetailPerspective;
   policy: BookingDetailCancellationPolicyRow | null;
@@ -175,6 +176,11 @@ export function mapBookingDetail(
     (input.sessionPayment.financial_status === SessionFinancialStatus.Pending ||
       input.sessionPayment.financial_status ===
         SessionFinancialStatus.Processing);
+  const isPaymentRetryCancelled =
+    input.booking.status === "cancelled_by_payment" &&
+    (input.sessionPayment?.financial_status === SessionFinancialStatus.Failed ||
+      input.sessionPayment?.financial_status ===
+        SessionFinancialStatus.Canceled);
   const provider = getMeetingProvider(
     input.booking.meeting_provider ??
       (isReservedAwaitingPayment ? "zoom_video_sdk" : null),
@@ -249,7 +255,9 @@ export function mapBookingDetail(
       status,
       statusLabel: isReservedAwaitingPayment
         ? "Reservado"
-        : getBookingDetailStatusLabel(status),
+        : isPaymentRetryCancelled && !input.paymentRetryAvailable
+          ? "Encontro cancelado"
+          : getBookingDetailStatusLabel(status),
       timeRangeLabel: formatSessionTimeRange(
         input.booking.starts_at,
         input.booking.ends_at,
@@ -264,6 +272,7 @@ export function mapBookingDetail(
       financialStatus: input.sessionPayment?.financial_status ?? null,
       patientHasJoined: input.patientHasJoined,
       paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
+      paymentRetryAvailable: input.paymentRetryAvailable === true,
       provider,
       startsAt: input.booking.starts_at,
     }),

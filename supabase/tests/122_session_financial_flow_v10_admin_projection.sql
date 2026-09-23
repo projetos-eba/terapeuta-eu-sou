@@ -1,5 +1,5 @@
 begin;
-select plan(17);
+select plan(24);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -184,8 +184,8 @@ select is(
      'payments', '{"page":1,"pageSize":50}'::jsonb
    ) -> 'rows') row_payload
    where row_payload ->> 'id' = 'b1220000-0000-4000-8000-000000000021'),
-  'bank_pending',
-  'a created V10 transfer is presented as on its way to the bank'
+  'processing',
+  'a created V10 transfer without a Payout remains processing'
 );
 select is(
   (select (row_payload ->> 'debt_offset_amount_cents')::integer
@@ -216,15 +216,15 @@ select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220000-0000-4000-8000-000000000021'
   ) #>> '{record,payout_display_status}',
-  'bank_pending',
+  'processing',
   'the administrative detail uses the same bank state'
 );
 select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220001-0000-4000-8000-000000000021'
   ) #>> '{record,payout_display_status}',
-  'bank_pending',
-  'a historical V9 transfer is not mistaken for a completed bank payout'
+  'processing',
+  'a historical V9 transfer without a Payout remains processing'
 );
 select is(
   (public.admin_get_finance_detail_v1(
@@ -289,8 +289,8 @@ insert into public.stripe_payouts (
   'c1000000-0000-4000-8000-000000000001',
   (select connect_account_id_snapshot from public.session_payments
    where id = 'b1220001-0000-4000-8000-000000000021'),
-  'po_test_v9_admin_122', 8500, 'BRL', 'paid', 'paid', true,
-  'completed', 'completed', '2098-11-03 18:00:00+00'
+  'po_test_v9_admin_122', 8500, 'BRL', 'in_transit', 'in_transit', true,
+  'completed', 'completed', null
 );
 insert into public.stripe_payout_transfer_allocations (
   stripe_payout_id, stripe_transfer_id, payout_batch_id,
@@ -304,6 +304,20 @@ insert into public.stripe_payout_transfer_allocations (
   'txn_test_v9_admin_122', 'py_test_v9_admin_122',
   8500, 'BRL', 'weekly_batch', '2098-11-03 18:00:00+00'
 );
+set local role authenticated;
+
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220001-0000-4000-8000-000000000021'
+  ) #>> '{record,payout_display_status}',
+  'bank_pending',
+  'a fully allocated in-transit V9 Payout is on its way to the bank'
+);
+reset role;
+update public.stripe_payouts
+set status = 'paid', provider_status = 'paid',
+    paid_at = '2098-11-03 18:00:00+00'
+where id = 'b1220001-0000-4000-8000-000000000071';
 set local role authenticated;
 
 select is(
@@ -343,8 +357,8 @@ insert into public.stripe_payouts (
   'c1000000-0000-4000-8000-000000000001',
   (select connect_account_id_snapshot from public.session_payments
    where id = 'b1220000-0000-4000-8000-000000000021'),
-  'po_test_v10_admin_122', 7500, 'BRL', 'paid', 'paid', true,
-  'completed', 'completed', '2098-11-01 18:00:00+00'
+  'po_test_v10_admin_122', 7500, 'BRL', 'pending', 'pending', true,
+  'completed', 'completed', null
 );
 insert into public.stripe_payout_transfer_allocations (
   stripe_payout_id, stripe_transfer_id, connected_balance_transaction_id,
@@ -361,6 +375,20 @@ select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220000-0000-4000-8000-000000000021'
   ) #>> '{record,payout_display_status}',
+  'bank_pending',
+  'a fully allocated pending V10 Payout is on its way to the bank'
+);
+reset role;
+update public.stripe_payouts
+set status = 'paid', provider_status = 'paid',
+    paid_at = '2098-11-01 18:00:00+00'
+where id = 'b1220000-0000-4000-8000-000000000061';
+set local role authenticated;
+
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,payout_display_status}',
   'paid',
   'paid is shown only after complete payout reconciliation and allocation'
 );
@@ -371,6 +399,43 @@ select is(
   '2098-11-01T18:00:00+00:00',
   'the bank completion timestamp comes from the paid payout'
 );
+
+reset role;
+update public.bookings
+set status = 'no_show_both'
+where id = 'b1220000-0000-4000-8000-000000000011';
+set local role authenticated;
+
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,booking_status}',
+  'no_show_both',
+  'the administrative detail exposes the booking attendance outcome'
+);
+select is(
+  (select row_payload ->> 'booking_status'
+   from jsonb_array_elements(public.admin_get_finance_module_v2(
+     'payments', '{"page":1,"pageSize":50}'::jsonb
+   ) -> 'rows') as row_payload
+   where row_payload ->> 'id' = 'b1220000-0000-4000-8000-000000000021'),
+  'no_show_both',
+  'the administrative list exposes the same booking attendance outcome'
+);
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,service_status}',
+  'scheduled',
+  'the operational projection does not rewrite the payment service snapshot'
+);
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,payout_display_status}',
+  'paid',
+  'the operational outcome does not alter the reconciled payout state'
+);
 select ok(
   not has_function_privilege(
     'authenticated',
@@ -378,6 +443,14 @@ select ok(
     'EXECUTE'
   ),
   'the internal V10 projection is not executable by the browser role'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.private_admin_session_operational_projection_v1(uuid)',
+    'EXECUTE'
+  ),
+  'the internal booking outcome projection is not executable by the browser role'
 );
 select ok(
   not has_function_privilege(

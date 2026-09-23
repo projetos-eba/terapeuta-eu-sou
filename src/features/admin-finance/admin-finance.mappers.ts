@@ -34,7 +34,11 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
       field("Profissional", asText(row.therapist_name)),
       field(
         "Atendimento",
-        formatServiceStatus(row.service_status, row.financial_status),
+        formatServiceStatus(
+          row.service_status,
+          row.financial_status,
+          row.booking_status,
+        ),
       ),
       field("Repasse", formatPaymentTransferStatus(row)),
       field(
@@ -163,7 +167,11 @@ function getDetailSections(
         field("Status financeiro", asText(record.financial_status)),
         field(
           "Status do atendimento",
-          formatServiceStatus(record.service_status, record.financial_status),
+          formatServiceStatus(
+            record.service_status,
+            record.financial_status,
+            record.booking_status,
+          ),
         ),
         field("Repasse", formatPaymentTransferStatus(record)),
         field("Bloqueio de repasse", asText(record.transfer_blocked_reason)),
@@ -363,7 +371,7 @@ export function formatTransferStatus(value: unknown) {
     not_eligible: "Ainda não elegível",
     reversed: "Repasse revertido",
     transfer_pending: "Em processamento",
-    transferred: "A caminho do banco",
+    transferred: "Processando",
     waiting_confirmation: "Aguardando confirmação",
     waiting_safety_period: "Em liquidação",
     waiting_settlement: "Em liquidação",
@@ -386,7 +394,7 @@ function formatPaymentTransferStatus(record: UnknownRecord) {
     failed: "Falhou",
     needs_review: "Em análise",
     paid: "Pago",
-    processing: "Em processamento",
+    processing: "Processando",
     refunded: "Repasse encerrado",
     reversed: "Repasse revertido",
   };
@@ -404,10 +412,29 @@ function formatPaymentTransferStatus(record: UnknownRecord) {
   return formatTransferStatus(transferStatus);
 }
 
-function formatServiceStatus(value: unknown, financialStatus: unknown) {
+function formatServiceStatus(
+  value: unknown,
+  financialStatus: unknown,
+  bookingStatus?: unknown,
+) {
   if (asText(financialStatus).trim().toLowerCase() === "refunded") {
     return "Encerrado";
   }
+
+  const booking = asText(bookingStatus).trim().toLowerCase();
+  const bookingLabels: Record<string, string> = {
+    cancelled_by_payment: "Cancelado",
+    cancelled_by_patient: "Cancelado",
+    cancelled_by_therapist: "Cancelado",
+    completed: "Concluído",
+    no_show_both: "Não realizado",
+    no_show_patient: "Não realizado",
+    no_show_therapist: "Não realizado",
+    payment_cancelled: "Cancelado",
+    refunded: "Encerrado",
+  };
+
+  if (bookingLabels[booking]) return bookingLabels[booking];
 
   const status = asText(value).trim().toLowerCase();
   const labels: Record<string, string> = {

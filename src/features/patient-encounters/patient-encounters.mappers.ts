@@ -82,6 +82,7 @@ type MapPatientEncountersInput = {
   patient: PatientEncountersPatient;
   actorRealizedBookingIds?: Set<string>;
   patientEntryEntitlementByBookingId?: Map<string, boolean>;
+  paymentRetryAvailableByBookingId?: Map<string, boolean>;
   pendingFeedbackBookingIds?: Set<string>;
   historyPage?: number;
   reviews: ReviewRecord[];
@@ -113,6 +114,7 @@ export function mapPatientEncountersPage(
         encounter.status !== "not_performed" &&
         encounter.status !== "refunded" &&
         encounter.status !== "cancelled" &&
+        encounter.status !== "payment_incomplete" &&
         new Date(encounter.endsAt) >= now,
     )
     .sort(sortUpcomingEncounters);
@@ -127,6 +129,7 @@ export function mapPatientEncountersPage(
         encounter.status === "not_performed" ||
         encounter.status === "refunded" ||
         encounter.status === "cancelled" ||
+        encounter.status === "payment_incomplete" ||
         encounter.status === "awaiting_feedback",
     )
     .sort((left, right) => sortByStartsAt(right, left))
@@ -190,6 +193,12 @@ function mapPatientEncounter(
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
+  const paymentWasNotCompleted =
+    booking.status === "cancelled_by_payment" &&
+    (payment?.financial_status === "failed" ||
+      payment?.financial_status === "canceled");
+  const paymentRetryAvailable =
+    input.paymentRetryAvailableByBookingId?.get(booking.id) === true;
   const { paymentScheduled, status, statusLabel } =
     getPatientEncounterStatusPresentation({
       booking,
@@ -199,12 +208,17 @@ function mapPatientEncounter(
       patientHasEntryEntitlement:
         input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
       payment,
+      paymentRetryAvailable,
       reschedule,
     });
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
   return {
     actionHint: paymentScheduled
       ? "Seu cartão está salvo. A cobrança será realizada 24 horas antes do encontro."
+      : paymentWasNotCompleted
+        ? paymentRetryAvailable
+          ? "O pagamento não foi concluído. Você pode tentar novamente se o horário continuar disponível."
+          : "O pagamento não foi concluído; este encontro foi cancelado."
       : payment?.financial_status === "paid" && status === "confirmed"
         ? `Acesso à sala liberado ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} minutos antes.`
         : undefined,
@@ -244,6 +258,7 @@ export function getPatientEncounterStatusPresentation(input: {
   feedbackPending?: boolean;
   patientHasEntryEntitlement?: boolean;
   payment: SessionPaymentRecord | null;
+  paymentRetryAvailable?: boolean;
   reschedule: RescheduleRecord | null;
 }) {
   const paymentScheduled = isFutureV10ChargeScheduled(
@@ -253,6 +268,7 @@ export function getPatientEncounterStatusPresentation(input: {
   const status = getEncounterStatus(
     input.booking,
     input.payment,
+    input.paymentRetryAvailable ?? false,
     input.reschedule,
     input.patientHasEntryEntitlement ?? false,
     input.feedbackPending ?? false,
@@ -271,6 +287,7 @@ export function getPatientEncounterStatusPresentation(input: {
 function getEncounterStatus(
   booking: Pick<BookingRecord, "ends_at" | "starts_at" | "status">,
   payment: SessionPaymentRecord | null,
+  paymentRetryAvailable: boolean,
   reschedule: RescheduleRecord | null,
   patientHasEntryEntitlement: boolean,
   feedbackPending: boolean,
@@ -298,7 +315,7 @@ function getEncounterStatus(
     (payment?.financial_status === "failed" ||
       payment?.financial_status === "canceled")
   ) {
-    return "payment_incomplete";
+    return paymentRetryAvailable ? "payment_incomplete" : "cancelled";
   }
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
   if (
@@ -357,9 +374,9 @@ function getPrimaryAction(
 
   if (status === "payment_incomplete") {
     return {
-      href: `/reserva?booking=${encodeURIComponent(booking.id)}&etapa=pagamento`,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Tentar pagamento novamente",
+      label: "Ver detalhes do encontro",
     };
   }
 
@@ -441,8 +458,8 @@ function getStatusLabel(status: PatientEncounterStatus) {
     refunded: "Reembolsado",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
-    payment_incomplete: "Pagamento não concluído",
     pending_payment: "Pagamento pendente",
+    payment_incomplete: "Pagamento não concluído",
     reschedule_requested: "Reagendamento solicitado",
   };
 

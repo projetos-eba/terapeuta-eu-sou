@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { Heart, Search, Star, Trash2 } from "lucide-react";
+import { Heart, Star, Trash2 } from "lucide-react";
 
 import { AppPageContainer } from "@/components/app-page/app-page";
 import { TESDecorativeMedia } from "@/components/tes";
@@ -29,7 +29,8 @@ export function PatientFavoriteTherapistsPage({
           className="absolute inset-y-0 right-0 hidden w-[56%] md:block"
           fade="left"
           fadeTone="soft"
-          objectPosition="right center"
+          imageClassName="!object-contain"
+          objectPosition="right top"
           priority
           sizes="(min-width: 768px) 52vw, 100vw"
           src={platformAssets.patientFavoritesHero.src}
@@ -38,7 +39,7 @@ export function PatientFavoriteTherapistsPage({
           <Heart aria-hidden="true" size={16} />
           Favoritos
         </span>
-        <div className="relative z-10 mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="relative z-10 mt-6">
           <div>
             <h1 className="font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
               Seus terapeutas favoritos
@@ -47,13 +48,6 @@ export function PatientFavoriteTherapistsPage({
               Aqui ficam os terapeutas que você escolheu guardar para consultar depois. Quando quiser, acesse o perfil de cada profissional e veja as opções para agendar um encontro.​
             </p>
           </div>
-          <Link
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={routes.public.therapists as Route<string>}
-          >
-            <Search aria-hidden="true" size={18} />
-            Encontrar terapeutas
-          </Link>
         </div>
       </header>
 

@@ -172,6 +172,13 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - A criacao do Transfer grava o debito financeiro uma unica vez, mas o estado
   bancario continua pendente. O repasse direto so conclui depois de
   `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
+- A conciliação de Payout ignora pares `payment`/`payment_refund` apenas quando
+  o Refund consultado na Stripe comprova a mesma Charge, a Balance Transaction
+  exata e o valor integral em BRL, sem vínculo do crédito com um Transfer TES.
+  Os IDs neutros ficam auditáveis; pares sem essa prova continuam como
+  movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
+  após sucesso comprovado do mesmo job, mesmo que `pending_source` permaneça
+  aguardando o Payout bancário.
 - Quando a divida consome integralmente os 85%, o job termina como
   `offset_only`, nenhum Transfer Stripe e criado e a interface apresenta
   “Compensado” com valor bancario zero. Esse item nao integra os totais em
@@ -324,10 +331,17 @@ Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
   autorização, reivindicação do slot e motivo terminal auditáveis.
 
 Pagamentos de encontro usam autorização e captura separadas. O Checkout inicial
-ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
+ocupa a agenda por cinco minutos a partir da abertura do formulário. Ao fim do
+prazo, o pagamento permanece terminal e a reserva é cancelada por pagamento,
+com o intervalo liberado. A apresentação ao paciente só chama esse estado de
+“Pagamento não concluído” quando a retomada ainda é elegível pela agenda atual;
+caso contrário, apresenta “Encontro cancelado”. Uma
 retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
-atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+atomicamente antes da captura. Antes de expor ou processar a retomada, a mesma
+verificação confere o candidato exato no motor de agenda (serviço ativo,
+disponibilidade e exceções, antecedência mínima, horizonte, duração, buffers e
+cadência), além dos conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
 mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
 leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
 em uma única transação ainda com a reserva liberada, e somente o

@@ -17,6 +17,7 @@ import type {
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
 import { formatCurrency, formatDateTime } from "./financial-formatters";
+import { FinancialStatusBadge } from "./financial-status-badge";
 import { buildFinanceHref } from "./financial-route";
 import { FinancialPeriodFields } from "./financial-period-fields";
 
@@ -313,7 +314,7 @@ export function FinancialReceiptsTab({
                         {formatCurrency(item.therapistNetAmountCents)}
                       </TableCell>
                       <TableCell>
-                        <ChargeStatusBadge status={item.chargeStatus} />
+                        <ReceiptSituation item={item} />
                       </TableCell>
                       <TableCell muted>
                         {nextStep(item, receipts.filters.timezone)}
@@ -346,7 +347,7 @@ export function FinancialReceiptsTab({
                         )}
                       </p>
                     </div>
-                    <ChargeStatusBadge status={item.chargeStatus} />
+                    <ReceiptSituation item={item} />
                   </div>
                   <dl className="mt-4 grid gap-3 sm:grid-cols-3">
                     <ReceiptDetail
@@ -457,10 +458,29 @@ function ChargeStatusBadge({ status }: { status: TherapistChargeStatus }) {
   );
 }
 
+function ReceiptSituation({
+  item,
+}: {
+  item: TherapistReceiptsContract["items"][number];
+}) {
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <ChargeStatusBadge status={item.chargeStatus} />
+      {item.receiptStatus === "compensated" ? (
+        <FinancialStatusBadge status="compensated" type="receipt" />
+      ) : null}
+    </div>
+  );
+}
+
 function nextStep(
   item: TherapistReceiptsContract["items"][number],
   timezone: string,
 ) {
+  if (item.receiptStatus === "compensated") {
+    return "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.";
+  }
+
   switch (item.chargeStatus) {
     case "scheduled":
       return item.scheduledChargeAt

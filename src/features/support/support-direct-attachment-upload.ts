@@ -130,12 +130,12 @@ function toAttachmentDescriptor({
 }
 
 async function uploadToSignedUrl(file: File, signedUrl: string) {
-  const formData = new FormData();
-  formData.append("cacheControl", "3600");
-  formData.append("", file);
   const response = await fetch(signedUrl, {
-    body: formData,
-    headers: { "x-upsert": "false" },
+    body: file,
+    headers: {
+      "Content-Type": file.type,
+      "x-upsert": "false",
+    },
     method: "PUT",
   });
   if (!response.ok) throw new Error("Support signed upload failed");

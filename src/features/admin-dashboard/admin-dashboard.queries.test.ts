@@ -95,6 +95,12 @@ describe("admin dashboard queries", () => {
     expect(result.dashboard.events).toEqual([
       expect.objectContaining({ eventType: "therapy_published" }),
     ]);
+    expect(result.dashboard.modules.map((module) => module.key)).not.toEqual(
+      expect.arrayContaining(["integrations", "settings"]),
+    );
+    expect(JSON.stringify(result.dashboard)).not.toContain(
+      "/admin/integracoes",
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
       "/rest/v1/rpc/admin_get_dashboard_v1",
@@ -133,7 +139,7 @@ describe("admin dashboard queries", () => {
       result.dashboard.modules
         .flatMap((module) => module.metrics)
         .every((metric) => metric.status === "unavailable"),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       result.dashboard.modules
         .find((module) => module.key === "catalog")

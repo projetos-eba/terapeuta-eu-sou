@@ -18,6 +18,17 @@ describe("PatientFavoriteTherapistsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Seus terapeutas favoritos" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Encontrar terapeutas" }),
+    ).not.toBeInTheDocument();
+    const hero = screen
+      .getAllByAltText("")
+      .find((image) =>
+        decodeURIComponent(image.getAttribute("src") ?? "").includes(
+          "patient-favorites-hero",
+        ),
+      );
+    expect(hero).toHaveStyle({ objectPosition: "right top" });
     expect(screen.getByRole("main")).toHaveClass("max-w-[1210px]");
     expect(screen.getByText("Ana Oliveira")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver perfil" })).toHaveAttribute(

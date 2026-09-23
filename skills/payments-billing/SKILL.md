@@ -241,6 +241,15 @@ Edge Functions:
   component list and require full Transfer allocation before bank-paid status.
 - A Transfer creates the ledger debit; the Payout is a separate bank-delivery state and must not create a second ledger debit.
 - Only `payout.paid` queues payout success. Accept and escalate a later `payout.failed`.
+- A connected-account `payment`/`payment_refund` pair is neutral only after
+  Stripe confirms the Refund's Charge, exact balance debit, BRL amount and
+  succeeded status; the database also requires a unique opposite pair and no
+  TES Transfer binding. Persist pair identifiers for audit. Unrelated zero-sum
+  movements remain unmatched and block bank completion.
+- A V10 Transfer success may resolve its earlier operational attention incident
+  while its job remains `pending_source`. That job advances to bank-paid only
+  after a fully allocated paid Payout; never conflate alert resolution with
+  bank delivery.
 
 ## Secrets
 

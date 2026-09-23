@@ -2,6 +2,18 @@ begin;
 
 select plan(118);
 
+insert into public.availability_exceptions (
+  id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
+  reason, status
+) values (
+  'b1150000-0000-4000-8000-000000000010',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  date_trunc('day', now() + interval '20 days'),
+  date_trunc('day', now() + interval '40 days'), true,
+  'Cobertura de agenda para retry pgTAP', 'active'
+);
+
 select ok(
   has_function_privilege(
     'service_role',
@@ -109,7 +121,8 @@ values
     'b1000000-0000-4000-8000-000000000010',
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
-    '2099-09-24 13:00:00+00', '2099-09-24 13:50:00+00',
+    date_trunc('day', now() + interval '30 days') + interval '13 hours',
+    date_trunc('day', now() + interval '30 days') + interval '13 hours 50 minutes',
     'America/Sao_Paulo', 'draft', 'not_started', now()
   ),
   (

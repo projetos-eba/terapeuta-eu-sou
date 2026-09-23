@@ -371,6 +371,34 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a fully offset payment as compensated without losing its approved charge", () => {
+    const base = fixture();
+    const approvedReceipt = base.receipts.items[0]!;
+
+    renderPage("receipts", {
+      receipts: {
+        ...base.receipts,
+        items: [
+          {
+            ...approvedReceipt,
+            receiptStatus: "compensated",
+          },
+        ],
+      },
+    });
+
+    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Compensado").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByText("Acompanhe a previsão de chegada em Repasses."),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the generic receipts copy when no charge status is selected", () => {
     renderPage("receipts");
 
@@ -991,7 +1019,7 @@ function fixture(): TherapistFinancePageData {
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 3,
+      contractVersion: 4,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -1010,6 +1038,7 @@ function fixture(): TherapistFinancePageData {
           grossAmountCents: 10000,
           patientDisplayName: "Lucas",
           receiptUrl: "https://stripe.test/receipt",
+          receiptStatus: "bank_pending",
           refundedAmountCents: 0,
           scheduledChargeAt: null,
           sessionDate: "2026-07-28T13:00:00.000Z",

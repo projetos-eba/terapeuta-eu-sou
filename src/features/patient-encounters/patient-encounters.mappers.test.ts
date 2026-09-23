@@ -110,7 +110,7 @@ describe("patient encounters mapper", () => {
     });
   });
 
-  it("distinguishes an incomplete payment and links to a safe retry", () => {
+  it("places a payment-cancelled encounter in history with its cancellation reason", () => {
     const booking = {
       ...createBooking(
         "95000000-0000-4000-8000-000000000011",
@@ -135,11 +135,53 @@ describe("patient encounters mapper", () => {
       unreadNotificationsCount: 0,
     });
 
-    expect(result.nextEncounter?.status).toBe("payment_incomplete");
-    expect(result.nextEncounter?.statusLabel).toBe("Pagamento não concluído");
-    expect(result.nextEncounter?.primaryAction).toMatchObject({
-      href: `/reserva?booking=${booking.id}&etapa=pagamento`,
-      label: "Tentar pagamento novamente",
+    expect(result.nextEncounter).toBeNull();
+    expect(result.upcomingEncounters).toEqual([]);
+    expect(result.historyEncounters).toHaveLength(1);
+    expect(result.historyEncounters[0]).toMatchObject({
+      actionHint: "O pagamento não foi concluído; este encontro foi cancelado.",
+      primaryAction: {
+        href: `/app/encontros/${booking.id}`,
+        label: "Ver detalhes do encontro",
+      },
+      status: "cancelled",
+      statusLabel: "Encontro cancelado",
+    });
+  });
+
+  it("keeps an eligible payment retry in history with a payment-incomplete status", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000016",
+        new Date(Date.now() + 48 * 60 * 60 * 1000),
+      ),
+      status: "cancelled_by_payment",
+    };
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      paymentRetryAvailableByBookingId: new Map([[booking.id, true]]),
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "canceled" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter).toBeNull();
+    expect(result.upcomingEncounters).toEqual([]);
+    expect(result.historyEncounters[0]).toMatchObject({
+      actionHint:
+        "O pagamento não foi concluído. Você pode tentar novamente se o horário continuar disponível.",
+      status: "payment_incomplete",
+      statusLabel: "Pagamento não concluído",
     });
   });
 

@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(20);
+select plan(31);
 
 select ok(
   exists (
@@ -247,6 +247,125 @@ select is(
     where payout.stripe_payout_id = 'po_auto_many_1'),
   2,
   'duplicate Balance Transaction reconciliation is idempotent'
+);
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_old_payment','source','py_old_payment','type','payment','amount',1000,'net',1000,'currency','brl'),
+      jsonb_build_object('id','txn_old_refund','source','pyr_old_refund','type','payment_refund','amount',-1000,'net',-1000,'currency','brl','verified_refund_charge','py_old_payment')
+    ), '2026-08-27 10:02:30+00'
+  );
+end $$;
+
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'completed',
+  'provider-linked neutral payment and refund do not block a fully allocated payout'
+);
+select is(
+  (select unmatched_transaction_count from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  0,
+  'only residual unmatched transactions count toward payout attention'
+);
+select is(
+  (select jsonb_array_length(neutral_transaction_pairs) from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  1,
+  'neutral provider transaction IDs remain auditable without a ledger entry'
+);
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_old_payment','source','py_old_payment','type','payment','amount',1000,'net',1000,'currency','brl'),
+      jsonb_build_object('id','txn_old_refund','source','pyr_old_refund','type','payment_refund','amount',-1000,'net',-1000,'currency','brl','verified_refund_charge','py_unrelated')
+    ), '2026-08-27 10:02:31+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'partial',
+  'opposing movements without the same verified source remain fail-closed'
+);
+select is(
+  (select notification.title from public.notifications as notification
+    join public.payout_operational_incidents as incident
+      on notification.event_key='payout_incident:' || incident.id::text
+    join public.stripe_payouts as payout on payout.id=incident.stripe_payout_id
+    where payout.stripe_payout_id='po_auto_many_1'
+      and notification.kind='payout_operational_alert_admin'
+    limit 1),
+  'Conciliação de repasse exige atenção',
+  'the admin notice identifies the unresolved bank reconciliation'
+);
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_refund_of_tes_transfer','source','pyr_refund_of_tes_transfer','type','payment_refund','amount',-9600,'net',-9600,'currency','brl','verified_refund_charge','py_auto_many_a')
+    ), '2026-08-27 10:02:31+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'partial',
+  'a refund of a TES-bound payment cannot be hidden as an unrelated neutral pair'
+);
+select is(
+  (select jsonb_array_length(neutral_transaction_pairs) from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  0,
+  'TES-bound payment remains outside the neutral-pair audit'
+);
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_old_payment','source','py_old_payment','type','payment','amount',1000,'net',1000,'currency','brl'),
+      jsonb_build_object('id','txn_old_refund','source','pyr_old_refund','type','payment_refund','amount',-1000,'net',-1000,'currency','brl','verified_refund_charge','py_old_payment')
+    ), '2026-08-27 10:02:32+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'completed',
+  'a later authoritative replay restores payout completion'
+);
+select is(
+  (select status from public.payout_operational_incidents
+    where incident_key = 'automatic-payout:' ||
+      (select id::text from public.stripe_payouts where stripe_payout_id='po_auto_many_1') || ':allocation'),
+  'resolved',
+  'the earlier attention incident resolves after verified reconciliation'
+);
+select is(
+  (select notification.title from public.notifications as notification
+    join public.payout_operational_incidents as incident
+      on notification.event_key='payout_incident:' || incident.id::text
+    join public.stripe_payouts as payout on payout.id=incident.stripe_payout_id
+    where payout.stripe_payout_id='po_auto_many_1'
+      and notification.kind='payout_operational_alert_admin'
+    limit 1),
+  'Ocorrência de repasse resolvida',
+  'historical admin notice no longer claims that a resolved payout needs attention'
+);
+select is(
+  (select count(*)::integer from public.stripe_payout_transfer_allocations allocation
+    join public.stripe_payouts payout on payout.id=allocation.stripe_payout_id
+    where payout.stripe_payout_id='po_auto_many_1'),
+  2,
+  'replaying a neutral pair never duplicates Transfer allocations'
 );
 
 select ok(

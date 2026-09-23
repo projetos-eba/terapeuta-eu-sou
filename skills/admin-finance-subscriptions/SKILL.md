@@ -61,6 +61,11 @@ Do not send generic `select *` payloads to React.
   present in `data.metrics`, `data.rows` or `data.query`.
 - Payment rows must stay anchored to the sanitized mapper contract already in
   use by `src/features/admin-finance/admin-finance.mappers.ts`.
+- The payment list and detail expose `booking_status` only as the operational
+  outcome of the session. It is translated before rendering and must not be
+  used to rewrite `session_payments.service_status`, Transfer, Payout, ledger
+  or refund state. No-show outcomes render as `Não realizado` while the
+  independently reconciled financial state remains unchanged.
 - Commission amounts are snapshot values: new session payments use the active
   15% TES policy while historical 20% records remain immutable and visible as
   their original financial evidence.
@@ -94,9 +99,21 @@ Do not send generic `select *` payloads to React.
   detail hierarchy already established for professionals and clients:
   breadcrumbs, editorial heading, transaction hero, value KPIs, grouped
   sections and recent movements.
+- The payments list offers only `Ver detalhes`. Full-session refund review is
+  available exclusively inside `/admin/pagamentos/[paymentId]`, so the admin
+  sees the complete financial context before starting the audited command.
+- A Connect Transfer is not a bank Payout. In the Admin payout projection,
+  `Processando` covers a completed Transfer that has no fully associated bank
+  Payout; `A caminho do banco` requires a full allocation to a provider Payout
+  in `pending` or `in_transit`; `Pago` still requires the Payout, provider
+  reconciliation and allocation to be fully completed.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
+- Administrative payout-incident notifications distinguish bank reconciliation
+  from a session transfer. A session-linked incident opens that payment's
+  detail; resolved incidents keep their history but no longer claim that
+  attention is still required. This messaging never advances financial state.
 
 ## Never Expose In The Browser
 

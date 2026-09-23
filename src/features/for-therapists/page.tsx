@@ -5,8 +5,15 @@ import { PublicFooter, PublicHeader, TESButton } from "@/components/tes";
 import { TherapistPlan, getPlanSignupHref } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 
-import { benefitCards, forTherapistsHero, trustItems } from "./content";
+import {
+  benefitCards,
+  forTherapistsHero,
+  therapistExplainerAccordions,
+  trustItems,
+} from "./content";
 import { PlansPreviewSection } from "./plan-comparison";
+import { TherapistExplainerAccordion } from "./therapist-explainer-accordion";
+import { TherapistFaq } from "./therapist-faq";
 
 function Hero() {
   return (
@@ -325,7 +332,15 @@ export function ForTherapistsPage() {
       <PublicHeader />
       <Hero />
       <Benefits />
+      <TherapistExplainerAccordion
+        accordion={therapistExplainerAccordions[0]}
+      />
       <PlansPreviewSection />
+      <TherapistExplainerAccordion
+        accordion={therapistExplainerAccordions[1]}
+        className="pt-8 sm:pt-10"
+      />
+      <TherapistFaq />
       <PublicFooter />
     </main>
   );

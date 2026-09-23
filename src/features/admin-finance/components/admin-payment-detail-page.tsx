@@ -245,6 +245,8 @@ function formatFinanceStatus(value?: string) {
   if (!value) return "";
   const labels: Record<string, string> = {
     blocked: "Repasse em espera",
+    canceled: "Cancelado",
+    cancelled: "Cancelado",
     failed: "Falhou",
     not_eligible: "Ainda não elegível",
     paid: "Confirmado",
