@@ -97,6 +97,11 @@ refresh, cópia de link e QA com Playwright.
 - `/admin/sessoes` usa `AdminOperationalOverviewPage` com agenda em tabela no
   desktop e cards no mobile. Exibe somente sessão, profissional, cliente,
   horário, duração, pagamento, status e link de detalhe já existentes no DTO.
+- A lista mantém os enums canônicos de reserva e pagamento no DTO e os traduz
+  somente na apresentação Admin. `cancelled_by_payment` e todos os estados
+  `no_show_*` devem aparecer em português na tabela, no resumo, nos cards
+  mobile e nos filtros; essa tradução não altera as apresentações de cliente
+  ou terapeuta nem participa de decisões de transição.
 - `/admin/suporte` reutiliza a mesma estrutura visual com colunas específicas
   para assunto, solicitante, categoria, prioridade, status e detalhe.
 - Os resumos por status são derivados exclusivamente de `data.rows` e devem ser
