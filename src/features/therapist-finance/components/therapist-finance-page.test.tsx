@@ -399,6 +399,21 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows partial compensation and the residual bank amount separately", () => {
+    renderPage("receipts");
+
+    expect(
+      screen.getAllByText(
+        "R$ 10,00 foram usados para compensar o saldo pendente e R$ 70,00 seguem para sua conta. Acompanhe a chegada em Repasses.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByText(
+        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the generic receipts copy when no charge status is selected", () => {
     renderPage("receipts");
 
@@ -820,7 +835,7 @@ function fixture(): TherapistFinancePageData {
     },
     analytics: {
       metrics: {
-        contractVersion: 1,
+        contractVersion: 2,
         financialEvolution: [
           {
             grossAmountCents: 10000,
@@ -830,7 +845,7 @@ function fixture(): TherapistFinancePageData {
             therapistNetAmountCents: 7000,
           },
         ],
-        metricDefinitionVersion: 1,
+        metricDefinitionVersion: 2,
         period: {
           end: "2026-07-28",
           generatedAt: "2026-07-28T12:00:00.000Z",
@@ -910,7 +925,7 @@ function fixture(): TherapistFinancePageData {
     },
     overview: {
       blockedCents: 0,
-      contractVersion: 2,
+      contractVersion: 3,
       disputedCents: 0,
       eligibleForPayoutCents: 8000,
       generatedAt: "2026-07-28T12:00:00.000Z",
@@ -1019,7 +1034,7 @@ function fixture(): TherapistFinancePageData {
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 4,
+      contractVersion: 5,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -1031,9 +1046,11 @@ function fixture(): TherapistFinancePageData {
       generatedAt: "2026-07-28T12:00:00.000Z",
       items: [
         {
+          bankTransferAmountCents: 7000,
           bookingId: "booking-1",
           chargeStatus: "approved",
           createdAt: "2026-07-28T12:00:00.000Z",
+          debtOffsetAmountCents: 1000,
           financialStatus: "paid",
           grossAmountCents: 10000,
           patientDisplayName: "Lucas",
@@ -1110,7 +1127,7 @@ function advancedFixture(): TherapistAdvancedFinancialDashboard {
       sampleSize: null,
       status: "insufficient_sample",
     },
-    contractVersion: 1,
+    contractVersion: 2,
     financialEvolution: [
       {
         contractedNetCents: 8000,

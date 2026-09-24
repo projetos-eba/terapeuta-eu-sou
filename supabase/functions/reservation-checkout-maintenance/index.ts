@@ -227,9 +227,9 @@ async function reconcileSucceededPayment(
     sessionPaymentId: string;
   },
 ) {
-  const now = new Date().toISOString();
   const paymentIntentId = stringOrNull(input.paymentIntent.id);
   if (!paymentIntentId) throw new Error("payment_intent_id_missing");
+  const providerCreatedAt = stripeObjectCreatedAt(input.paymentIntent);
 
   if (input.checkoutSessionId) {
     const checkout = await stripe.checkout.sessions.retrieve(
@@ -268,7 +268,7 @@ async function reconcileSucceededPayment(
     p_session_payment_id: input.sessionPaymentId,
     p_stripe_charge_id: chargeId,
     p_stripe_checkout_session_id: input.checkoutSessionId,
-    p_stripe_event_created_at: now,
+    p_stripe_event_created_at: providerCreatedAt,
     p_stripe_event_id: `maintenance:${paymentIntentId}:paid`,
     p_stripe_payment_intent_id: paymentIntentId,
   });
@@ -283,7 +283,7 @@ async function reconcileSucceededPayment(
       p_session_payment_id: input.sessionPaymentId,
       p_stripe_balance_transaction_id: stringOrNull(balanceTransaction.id),
       p_stripe_charge_id: chargeId,
-      p_stripe_event_created_at: now,
+      p_stripe_event_created_at: providerCreatedAt,
       p_stripe_event_id: `maintenance:${paymentIntentId}:paid`,
       p_stripe_fee_amount_cents: numberOrNull(balanceTransaction.fee),
       p_stripe_net_amount_cents: numberOrNull(balanceTransaction.net),
@@ -298,6 +298,18 @@ async function reconcileSucceededPayment(
       zoomEnvironment,
     });
   }
+}
+
+function stripeObjectCreatedAt(value: Record<string, unknown>) {
+  const created = value.created;
+  if (
+    typeof created !== "number" ||
+    !Number.isSafeInteger(created) ||
+    created <= 0
+  ) {
+    throw new Error("payment_intent_created_at_invalid");
+  }
+  return new Date(created * 1000).toISOString();
 }
 
 function getConfiguredZoomEnvironment() {

@@ -111,7 +111,7 @@ export function mapTherapistFinancialOverview(
 
     return {
       blockedCents: integer(value.blockedCents),
-      contractVersion: literalTwo(value.contractVersion),
+      contractVersion: literalNumber(value.contractVersion, 3),
       disputedCents: integer(value.disputedCents),
       eligibleForPayoutCents: integer(value.eligibleForPayoutCents),
       generatedAt: dateTime(value.generatedAt),
@@ -146,7 +146,7 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalNumber(value.contractVersion, 4),
+      contractVersion: literalNumber(value.contractVersion, 5),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
@@ -248,11 +248,11 @@ export function mapTherapistFinancialMetrics(
     const retention = record(value.retention);
 
     return {
-      contractVersion: literalOne(value.contractVersion),
+      contractVersion: literalNumber(value.contractVersion, 2),
       financialEvolution: array(value.financialEvolution).map(
         financialEvolutionPoint,
       ),
-      metricDefinitionVersion: literalOne(value.metricDefinitionVersion),
+      metricDefinitionVersion: literalNumber(value.metricDefinitionVersion, 2),
       period: {
         end: dateString(period.end),
         generatedAt: dateTime(period.generatedAt),
@@ -349,7 +349,7 @@ export function mapTherapistAdvancedFinancialDashboard(
         windowStart: dateString(agendaPotential.windowStart),
       },
       benchmark: benchmarkContract(benchmark),
-      contractVersion: literalOne(value.contractVersion),
+      contractVersion: literalNumber(value.contractVersion, 2),
       financialEvolution: array(value.financialEvolution).map(
         advancedEvolutionPoint,
       ),
@@ -442,9 +442,15 @@ function receiptItem(input: unknown): TherapistReceiptItem {
   const value = record(input);
 
   return {
+    bankTransferAmountCents: nullableNonNegativeInteger(
+      value.bankTransferAmountCents,
+    ),
     bookingId: nonEmptyString(value.bookingId),
     chargeStatus: chargeStatus(value.chargeStatus),
     createdAt: dateTime(value.createdAt),
+    debtOffsetAmountCents: nullableNonNegativeInteger(
+      value.debtOffsetAmountCents,
+    ),
     financialStatus: financialStatus(value.financialStatus),
     grossAmountCents: nonNegativeInteger(value.grossAmountCents),
     patientDisplayName: nonEmptyString(value.patientDisplayName),
@@ -945,6 +951,13 @@ function integer(value: unknown): number {
 function nullableInteger(value: unknown): number | null {
   if (value === null || value === undefined) return null;
   return integer(value);
+}
+
+function nullableNonNegativeInteger(value: unknown): number | null {
+  const parsed = nullableInteger(value);
+  if (parsed === null) return null;
+  if (parsed < 0) throw new Error("Expected a non-negative integer or null");
+  return parsed;
 }
 
 function number(value: unknown): number {

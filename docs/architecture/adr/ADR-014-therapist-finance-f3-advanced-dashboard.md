@@ -28,14 +28,21 @@ Todos derivam o terapeuta de `auth.uid()`, exigem plano `premium_plus` e
 retornam estados discriminados. Free mantém a operação F0/F1. Premium mantém
 F2. Premium Plus acessa F2 e F3 via capability `advanced_financials`.
 
+A correção aditiva V10 publica
+`get_private_therapist_advanced_financial_dashboard_v2`, preserva o contrato v1
+para compatibilidade e exclui pagamentos integralmente reembolsados da receita
+realizada e do ranking por terapia. O líquido realizado é limitado a zero por
+pagamento. Nenhuma dessas regras modifica ledger, reembolso, compensação,
+Transfer ou Payout.
+
 ## Metodologias
 
-| Versão                           | Uso                         | Regra central                                                                                           |
-| -------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `tes-financial-forecast-v1`      | Receita no mês              | Separa realizado líquido, sessões futuras já pagas e potencial estimado.                                |
+| Versão                           | Uso                         | Regra central                                                                                                                                                             |
+| -------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tes-financial-forecast-v1`      | Receita no mês              | Separa realizado líquido, sessões futuras já pagas e potencial estimado.                                                                                                  |
 | `tes-agenda-potential-v1`        | Potencial da agenda         | Une janelas entre terapias, aplica bloqueios no escopo global ou da terapia, subtrai a ocupação global das reservas com buffers snapshot e usa preço histórico quando há. |
-| `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                    |
-| `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.               |
+| `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                                                                                      |
+| `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.                                                                                 |
 
 Projeções nunca criam lançamentos em `financial_ledger_entries`, nunca alteram
 saldo, repasse, comissão, reembolso, disputa ou transferência.
