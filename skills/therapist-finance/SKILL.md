@@ -45,13 +45,16 @@ Never use `bookings.payment_status` for balances or financial authority.
 
 Private RPCs:
 
-- `get_private_therapist_financial_overview_v1`;
-- `get_private_therapist_receipts_v1`;
-- `get_private_therapist_payouts_v1`;
+- `get_private_therapist_financial_overview_v3` (current UI consumer; v1/v2
+  remain compatibility contracts);
+- `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
+  compatibility contracts);
+- `get_private_therapist_payouts_v4` (current UI consumer; earlier versions
+  remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
-- `get_private_therapist_financial_metrics_v1` for F2 Premium/Premium Plus
+- `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
   summary metrics.
-- `get_private_therapist_advanced_financial_dashboard_v1` for F3 Premium Plus
+- `get_private_therapist_advanced_financial_dashboard_v2` for F3 Premium Plus
   advanced dashboard.
 - Segmented F3 contracts:
   `get_private_therapist_financial_forecast_v1`,
@@ -72,6 +75,13 @@ All derive the therapist from `auth.uid()`. Do not accept
   show the prior 20% split and must not be recalculated in the UI.
 - Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
   present = Valor líquido do terapeuta.
+- `Sessões pagas` excludes fully refunded payments. Partial refunds and open
+  disputes remain visible, and realized therapist revenue must never be
+  negative.
+- Receipts with debt compensation must distinguish full offset (no bank
+  transfer) from partial offset (offset amount plus the remaining bank-transfer
+  amount). Never describe a partial offset as if the whole receipt were
+  consumed.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.
@@ -172,6 +182,12 @@ recebimento`; provider and reconciliation terminology stays in the service
   only batch/Transfer/Payout states, never payment preparation states.
 - Treat therapist receipt status as paid only after a paid, completed automatic
   Payout allocates the complete Transfer amount.
+- Missing Stripe receipt URLs may be enriched only from the immutable Charge
+  already bound to the payment. Receipt-only candidates use
+  `record_session_payment_receipt_url_v1`, not settlement reconciliation. The
+  worker must fail closed on Charge, currency, amount or balance-transaction
+  mismatch and must not change financial status, ledger, Transfer, refund or
+  payout state while repairing presentation data.
 - Realized, contracted and estimated values must remain visually separated.
 - Potential agenda revenue is an estimate, not guaranteed revenue, and never
   affects ledger, payouts or balances.

@@ -617,15 +617,15 @@ para confirmar pagamento, onboarding ou repasse.
 
 Read models privados:
 
-- `get_private_therapist_financial_overview_v1`;
-- `get_private_therapist_receipts_v1`;
-- `get_private_therapist_payouts_v1`;
+- `get_private_therapist_financial_overview_v3`;
+- `get_private_therapist_receipts_v5`;
+- `get_private_therapist_payouts_v4`;
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
-- `get_private_therapist_financial_metrics_v1` para métricas F2 Premium e
+- `get_private_therapist_financial_metrics_v2` para métricas F2 Premium e
   Premium Plus;
-- `get_private_therapist_advanced_financial_dashboard_v1` e contratos
+- `get_private_therapist_advanced_financial_dashboard_v2` e contratos
   segmentados F3 para Premium Plus.
 
 Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não
@@ -780,7 +780,7 @@ operacional sem imprimir o secret.
 
 O TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
 
-Assinaturas de terapeutas usam invoices do Stripe Billing, com `hosted_invoice_url`, PDF da invoice ou Billing Portal quando disponiveis. Pagamentos de sessoes usam recibos da Charge/PaymentIntent, incluindo `receipt_url` quando a Stripe gerar esse comprovante. Transfers Connect e payouts bancarios sao comprovantes operacionais distintos e tambem nao sao notas fiscais.
+Assinaturas de terapeutas usam invoices do Stripe Billing, com `hosted_invoice_url`, PDF da invoice ou Billing Portal quando disponiveis. Pagamentos de sessoes usam recibos da Charge/PaymentIntent, incluindo `receipt_url` quando a Stripe gerar esse comprovante. Se a URL não tiver sido projetada, a fila `get_session_payment_charge_reconciliation_candidates_v2` separa explicitamente saldo e comprovante; o caminho exclusivo de comprovante consulta o Charge imutável já vinculado e chama `record_session_payment_receipt_url_v1`. Essa correção de apresentação não altera status financeiro, ledger, reembolso, Transfer ou Payout. Transfers Connect e payouts bancarios sao comprovantes operacionais distintos e tambem nao sao notas fiscais.
 
 Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e nacional ou emissao em nome dos terapeutas. A fronteira futura deve permanecer desacoplada do dominio financeiro.
 

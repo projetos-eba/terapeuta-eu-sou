@@ -8,12 +8,15 @@ export type ChargeSettlementSnapshot = {
   currency: string;
   feeAmountCents: number | null;
   netAmountCents: number | null;
+  receiptUrl: string | null;
   sourceChargeId: string;
   status: "available" | "pending";
 };
 
 type SettlementCandidate = {
   id: string;
+  needs_receipt: boolean;
+  needs_settlement: boolean;
   stripe_charge_id: string;
 };
 
@@ -74,6 +77,7 @@ export function extractChargeSettlementSnapshot(
     currency,
     feeAmountCents: numberOrNull(transaction.fee),
     netAmountCents: numberOrNull(transaction.net),
+    receiptUrl: stripeReceiptUrlOrNull(charge.receipt_url),
     sourceChargeId: chargeId,
     status,
   };
@@ -108,7 +112,7 @@ export async function persistChargeSettlementSnapshot(input: {
       p_balance_status: input.snapshot.status,
       p_payment_method_type: null,
       p_payment_origin: "stripe_checkout",
-      p_receipt_url: null,
+      p_receipt_url: input.snapshot.receiptUrl,
       p_session_payment_id: input.paymentId,
       p_stripe_balance_transaction_id: input.snapshot.balanceTransactionId,
       p_stripe_charge_id: input.snapshot.sourceChargeId,
@@ -120,6 +124,22 @@ export async function persistChargeSettlementSnapshot(input: {
   );
 }
 
+export async function persistChargeReceiptUrl(input: {
+  client: SupabaseRestClient;
+  paymentId: string;
+  receiptUrl: string;
+  sourceChargeId: string;
+}) {
+  return input.client.rpc<Record<string, unknown>>(
+    "record_session_payment_receipt_url_v1",
+    {
+      p_receipt_url: input.receiptUrl,
+      p_session_payment_id: input.paymentId,
+      p_stripe_charge_id: input.sourceChargeId,
+    },
+  );
+}
+
 export async function reconcileChargeSettlements(input: {
   client: SupabaseRestClient;
   limit?: number;
@@ -127,8 +147,9 @@ export async function reconcileChargeSettlements(input: {
   stripe: StripeClient;
 }) {
   const limit = Math.min(Math.max(input.limit ?? 500, 1), 500);
-  const rows = await input.client.get<SettlementCandidate[]>(
-    `/rest/v1/session_payments?select=id,stripe_charge_id&financial_status=in.(paid,partially_refunded)&stripe_charge_id=not.is.null&or=(stripe_balance_transaction_id.is.null,stripe_balance_status.is.null,stripe_balance_status.eq.pending)&order=stripe_balance_checked_at.asc.nullsfirst,updated_at.asc&limit=${limit}`,
+  const rows = await input.client.rpc<SettlementCandidate[]>(
+    "get_session_payment_charge_reconciliation_candidates_v2",
+    { p_limit: limit },
   );
   const observedAt = input.observedAt ?? new Date().toISOString();
   const results = [];
@@ -142,15 +163,47 @@ export async function reconcileChargeSettlements(input: {
       results.push({ paymentId: row.id, reconciled: false });
       continue;
     }
-    const persisted = await persistChargeSettlementSnapshot({
-      client: input.client,
-      eventCreatedAt: observedAt,
-      eventId:
-        `settlement-reconcile:${row.id}:${snapshot.status}:${snapshot.balanceTransactionId}`,
+    if (row.needs_settlement) {
+      const persisted = await persistChargeSettlementSnapshot({
+        client: input.client,
+        eventCreatedAt: observedAt,
+        eventId: `settlement-reconcile:${row.id}:${snapshot.status}:${snapshot.balanceTransactionId}`,
+        paymentId: row.id,
+        snapshot,
+      });
+      results.push({
+        paymentId: row.id,
+        receiptReconciled: row.needs_receipt && snapshot.receiptUrl !== null,
+        reconciled: true,
+        settlementReconciled: true,
+        persisted,
+      });
+      continue;
+    }
+
+    if (row.needs_receipt && snapshot.receiptUrl) {
+      const persisted = await persistChargeReceiptUrl({
+        client: input.client,
+        paymentId: row.id,
+        receiptUrl: snapshot.receiptUrl,
+        sourceChargeId: snapshot.sourceChargeId,
+      });
+      results.push({
+        paymentId: row.id,
+        receiptReconciled: true,
+        reconciled: true,
+        settlementReconciled: false,
+        persisted,
+      });
+      continue;
+    }
+
+    results.push({
       paymentId: row.id,
-      snapshot,
+      receiptReconciled: false,
+      reconciled: false,
+      settlementReconciled: false,
     });
-    results.push({ paymentId: row.id, reconciled: true, persisted });
   }
 
   return results;
@@ -168,6 +221,19 @@ function objectId(value: unknown) {
 
 function stringOrNull(value: unknown) {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function stripeReceiptUrlOrNull(value: unknown) {
+  const receiptUrl = stringOrNull(value);
+  if (!receiptUrl) return null;
+  try {
+    const url = new URL(receiptUrl);
+    return url.protocol === "https:" && url.hostname === "pay.stripe.com"
+      ? receiptUrl
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function numberOrNull(value: unknown) {
@@ -192,14 +258,14 @@ export function isChargeSettlementAvailable(
 ) {
   return Boolean(
     snapshot &&
-      snapshot.status === "available" &&
-      snapshot.amountCents === expected.amountCents &&
-      snapshot.balanceTransactionId === expected.balanceTransactionId &&
-      snapshot.sourceChargeId === expected.chargeId &&
-      snapshot.currency === (expected.currency ?? "brl").toLowerCase() &&
-      Date.parse(snapshot.availableOn) <=
-        (expected.operationInstant
-          ? Date.parse(expected.operationInstant)
-          : Date.now()),
+    snapshot.status === "available" &&
+    snapshot.amountCents === expected.amountCents &&
+    snapshot.balanceTransactionId === expected.balanceTransactionId &&
+    snapshot.sourceChargeId === expected.chargeId &&
+    snapshot.currency === (expected.currency ?? "brl").toLowerCase() &&
+    Date.parse(snapshot.availableOn) <=
+      (expected.operationInstant
+        ? Date.parse(expected.operationInstant)
+        : Date.now()),
   );
 }

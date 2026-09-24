@@ -20,7 +20,9 @@ oportunidades, benchmark, comparação com a plataforma e recomendações TES.
 ## Decisão
 
 Criar o read model privado
-`get_private_therapist_financial_metrics_v1(date,date,text)`.
+`get_private_therapist_financial_metrics_v1(date,date,text)`. A correção
+aditiva V10 publica `get_private_therapist_financial_metrics_v2` e mantém a v1
+instalada para compatibilidade.
 
 O contrato:
 
@@ -44,7 +46,7 @@ para fases futuras de inteligência financeira avançada.
 | Receita líquida no período | Soma do valor líquido devido ao terapeuta para pagamentos confirmados no período, depois da comissão TES e de reembolsos ao cliente com status `succeeded`. | `session_payments` + `session_refunds`                  |
 | Ticket médio bruto         | `grossPaidCents / paidSessionCount`.                                                                                                                        | `session_payments`                                      |
 | Ticket médio líquido       | `therapistNetCents / paidSessionCount`.                                                                                                                     | read model                                              |
-| Sessões pagas              | Quantidade de pagamentos em `paid`, `partially_refunded`, `refunded` ou `disputed` dentro do período.                                                       | `session_payments`                                      |
+| Sessões pagas              | Quantidade de pagamentos em `paid`, `partially_refunded` ou `disputed` dentro do período; pagamentos integralmente `refunded` são excluídos.                | `session_payments`                                      |
 | Sessões realizadas         | Bookings concluídos ou pagamentos com confirmação canônica de realização.                                                                                   | `bookings` + `session_payments.service_status`          |
 | Taxa de retorno simples    | Percentual de pacientes elegíveis que tiveram nova sessão paga em até 90 dias depois da primeira sessão concluída no período.                               | `bookings` + `session_payments`                         |
 | Taxa de cancelamento       | `cancelledSessions / eligibleScheduledSessions`.                                                                                                            | `bookings`                                              |
@@ -97,8 +99,10 @@ estado de disputa continua visível nos read models operacionais da F0/F1.
 Pagamento pago sem sessão realizada entra em sessões pagas e receita, mas não
 infla sessões realizadas.
 
-Reembolso parcial ou total reduz a receita líquida quando existe registro
-canônico em `session_refunds.status = succeeded`.
+Reembolso parcial reduz a receita líquida quando existe registro canônico em
+`session_refunds.status = succeeded`, com mínimo zero por pagamento. Reembolso
+total exclui o pagamento da contagem de sessões pagas e da receita realizada.
+Essa regra é somente de projeção e não altera ledger, dívida ou repasse.
 
 ## Faturamento Por Terapia
 

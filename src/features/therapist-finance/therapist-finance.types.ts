@@ -81,7 +81,7 @@ export type TherapistFinancePeriod = {
 
 export type TherapistFinancialOverview = TherapistFinancePeriod & {
   blockedCents: number;
-  contractVersion: 2;
+  contractVersion: 3;
   disputedCents: number;
   eligibleForPayoutCents: number;
   generatedAt: string;
@@ -101,9 +101,11 @@ export type TherapistFinancialOverview = TherapistFinancePeriod & {
 };
 
 export type TherapistReceiptItem = {
+  bankTransferAmountCents: number | null;
   bookingId: string;
   chargeStatus: TherapistChargeStatus;
   createdAt: string;
+  debtOffsetAmountCents: number | null;
   financialStatus: TherapistFinancialStatus;
   grossAmountCents: number;
   patientDisplayName: string;
@@ -124,7 +126,7 @@ export type TherapistReceiptTherapyOption = {
 };
 
 export type TherapistReceiptsContract = {
-  contractVersion: 4;
+  contractVersion: 5;
   filters: TherapistFinancePeriod & {
     search: string | null;
     status: TherapistChargeStatus | null;
@@ -297,7 +299,7 @@ export type TherapistAdvancedFinancialDashboard = {
     sampleSize: number | null;
     status: "available" | "disabled" | "insufficient_sample" | "not_comparable";
   };
-  contractVersion: 1;
+  contractVersion: 2;
   financialEvolution: Array<{
     contractedNetCents: number;
     periodEnd: string;
@@ -413,7 +415,7 @@ export type AdvancedFinancialInsight = {
 };
 
 export type TherapistFinancialMetrics = {
-  contractVersion: 1;
+  contractVersion: 2;
   financialEvolution: Array<{
     grossAmountCents: number;
     periodEnd: string;
@@ -421,7 +423,7 @@ export type TherapistFinancialMetrics = {
     previousPeriodNetAmountCents: number | null;
     therapistNetAmountCents: number;
   }>;
-  metricDefinitionVersion: 1;
+  metricDefinitionVersion: 2;
   period: {
     end: string;
     generatedAt: string;
