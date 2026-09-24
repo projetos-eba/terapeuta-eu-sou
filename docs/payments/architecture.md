@@ -591,9 +591,11 @@ financeira.
 Desde 2026-09-17, Recebimentos e Repasses consomem projeções privadas v3
 aditivas. Recebimentos comunica a cobrança de cada sessão; Repasses comunica a
 chegada bancária como `Previsto → A caminho da sua conta → Recebido`. A Agenda
-de Repasses contém apenas datas futuras sustentadas por `arrival_at`, agrupadas
-por data, e nunca inclui valores já recebidos. A confirmação de `Recebido`
-permanece condicionada ao Payout pago, à reconciliação concluída e à alocação
+de Repasses contém apenas datas futuras sustentadas por `arrival_at`, tratada
+como data civil sem conversão de fuso, agrupadas por data, e nunca inclui
+valores já recebidos. Um Payout pago pelo provedor continua `A caminho` enquanto
+essa chegada estiver no futuro. A confirmação de `Recebido` permanece
+condicionada ao Payout pago, à chegada alcançada, à reconciliação concluída e à alocação
 integral. Os contratos v2, os caminhos V9/V10, workers, jobs, ledger e comandos
 financeiros não foram modificados por essa camada de apresentação.
 
@@ -622,7 +624,7 @@ Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
 - `get_private_therapist_receipts_v5`;
-- `get_private_therapist_payouts_v4`;
+- `get_private_therapist_payouts_v6`;
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;

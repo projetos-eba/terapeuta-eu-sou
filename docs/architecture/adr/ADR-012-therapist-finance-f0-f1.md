@@ -52,6 +52,12 @@ A composição aprovada é:
 - menos Reembolsos ao cliente, somente quando existirem;
 - igual Valor líquido do terapeuta.
 
+Emenda de apresentação de 2026-09-24: pagamentos integralmente reembolsados
+ficam fora da coorte realizada de valor bruto, comissão e sessões pagas. O
+total `Reembolsos ao cliente` permanece visível como informação, mas não é
+subtraído novamente na interface; reembolsos parciais já estão refletidos no
+valor líquido calculado pelo read model.
+
 Não existe linha genérica de correção manual na composição visual do terapeuta.
 Taxa Stripe é custo da TES no modelo atual e não aparece como desconto do
 terapeuta.

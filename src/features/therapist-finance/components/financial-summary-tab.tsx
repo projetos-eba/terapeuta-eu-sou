@@ -283,7 +283,9 @@ function FinancialKpiCard({
         </p>
       </div>
       <div className="self-start">
-        <p className={`flex items-center gap-1.5 text-sm font-extrabold ${statusClass}`}>
+        <p
+          className={`flex items-center gap-1.5 text-sm font-extrabold ${statusClass}`}
+        >
           {comparisonAvailable ? (
             <TrendIcon aria-hidden="true" className="shrink-0" size={18} />
           ) : null}
@@ -309,7 +311,7 @@ function MoneyCompositionPanel({
     {
       color: "bg-brand-primary",
       label: "Valor bruto",
-      note: "Antes dos custos da plataforma e reembolsos",
+      note: "Sessões com receita no período",
       value: formatCurrencyOrDash(overview.grossPaidCents, hasFinancialData),
     },
     {
@@ -325,8 +327,8 @@ function MoneyCompositionPanel({
           {
             color: "bg-status-warning",
             label: "Reembolsos ao cliente",
-            note: "Devoluções confirmadas no período",
-            value: `− ${formatCurrency(Math.abs(overview.refundedToCustomersCents))}`,
+            note: "Informativo — já refletido nos valores acima",
+            value: formatCurrency(Math.abs(overview.refundedToCustomersCents)),
           },
         ]
       : []),
@@ -347,7 +349,7 @@ function MoneyCompositionPanel({
         <FinancialInfoTooltip
           align="end"
           label="Seu dinheiro"
-          text="Veja como o valor bruto, os custos da plataforma e os reembolsos confirmados compõem sua receita líquida."
+          text="O valor líquido já considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído."
         />
       </div>
 
@@ -430,7 +432,9 @@ function AgendaPotentialPanel({
 
       <div className="rounded-xl bg-surface-soft px-4 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <p className="text-sm font-extrabold text-brand-deep">Ocupação da agenda</p>
+          <p className="text-sm font-extrabold text-brand-deep">
+            Ocupação da agenda
+          </p>
           <strong className="tabular-nums text-xl font-extrabold text-brand-deep">
             {available && occupancy !== null ? formatPercent(occupancy) : "-"}
           </strong>
@@ -439,7 +443,9 @@ function AgendaPotentialPanel({
           <span
             aria-hidden="true"
             className="block h-full rounded-full bg-brand-primary"
-            style={{ width: `${available && occupancy !== null ? Math.max(0, Math.min(100, occupancy)) : 0}%` }}
+            style={{
+              width: `${available && occupancy !== null ? Math.max(0, Math.min(100, occupancy)) : 0}%`,
+            }}
           />
         </div>
       </div>
@@ -460,7 +466,9 @@ function AgendaPotentialPanel({
           Potencial estimado da agenda
         </p>
         <p className="mt-2 tabular-nums text-[27px] font-extrabold leading-none tracking-[-0.035em] text-status-warning">
-          {available ? formatCurrency(agenda?.expectedPotentialCents ?? 0) : "-"}
+          {available
+            ? formatCurrency(agenda?.expectedPotentialCents ?? 0)
+            : "-"}
         </p>
         <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
           {agendaCapacityMessage(agenda)} Potencial é uma estimativa e não
@@ -469,22 +477,21 @@ function AgendaPotentialPanel({
       </div>
 
       <p className="flex items-start gap-3 rounded-xl bg-brand-lavenderSoft/70 px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        <Lightbulb aria-hidden="true" className="mt-0.5 shrink-0 text-status-warning" size={20} />
-        {opportunity?.description ?? (agenda?.reason === "no_active_services"
-          ? "Ative uma terapia para estimar o potencial dos horários já configurados. O potencial é uma estimativa e não representa receita garantida."
-          : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida.")}
+        <Lightbulb
+          aria-hidden="true"
+          className="mt-0.5 shrink-0 text-status-warning"
+          size={20}
+        />
+        {opportunity?.description ??
+          (agenda?.reason === "no_active_services"
+            ? "Ative uma terapia para estimar o potencial dos horários já configurados. O potencial é uma estimativa e não representa receita garantida."
+            : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida.")}
       </p>
     </section>
   );
 }
 
-function AgendaDetail({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function AgendaDetail({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-brand-lavender/80 bg-white px-3 py-3">
       <dt className="text-sm font-semibold text-tesText-secondary">{label}</dt>
@@ -554,7 +561,9 @@ function TherapyRankingCard({
               <tr>
                 <th className="w-8 pb-2 font-inherit">#</th>
                 <th className="pb-2 font-inherit">Terapia</th>
-                <th className="pb-2 text-right font-inherit">Receita líquida</th>
+                <th className="pb-2 text-right font-inherit">
+                  Receita líquida
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-lavender/80">
@@ -577,7 +586,6 @@ function TherapyRankingCard({
       ) : (
         <ReferenceBars message="O ranking será preenchido quando houver recebimentos confirmados." />
       )}
-
     </section>
   );
 }
@@ -735,7 +743,8 @@ function FinancialMethodology({
             Como calculamos estes indicadores
           </h2>
           <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-            O valor líquido considera o bruto, os custos da plataforma e os reembolsos confirmados.
+            O valor líquido considera o bruto, os custos da plataforma e os
+            reembolsos confirmados.
           </p>
         </div>
         <p className="shrink-0 text-xs font-semibold text-tesText-muted">

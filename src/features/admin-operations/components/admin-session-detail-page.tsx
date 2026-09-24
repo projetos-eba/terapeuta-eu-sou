@@ -26,7 +26,7 @@ import {
   StatsGrid,
   fieldMap,
   findSection,
-  formatStatusLabel,
+  formatSessionStatusLabel,
 } from "./admin-operation-display";
 import { AdminSessionAttendanceResolution } from "./admin-session-attendance-resolution";
 
@@ -49,7 +49,7 @@ export function AdminSessionDetailPage({
   const onlineRoomFields = fieldMap(onlineRoom?.fields ?? []);
   const quality = sessionFeedback?.status === "available" ? sessionFeedback.data.qualityReview : undefined;
   const status = quality?.isOpen ? "Realizada, em análise" : quality?.allAnswered
-    ? "Realizada (confirmada)" : formatStatusLabel(data.statusLabel);
+    ? "Realizada (confirmada)" : formatSessionStatusLabel(data.statusLabel);
   const rawRoomStatus = onlineRoomFields.get("Situação da sala") ?? "";
   const attendanceClassification = sessionFeedback?.status === "available"
     ? sessionFeedback.data.attendance.classification
@@ -748,13 +748,16 @@ function formatPaymentLabel(value?: string) {
 
   const labels: Record<string, string> = {
     canceled: "Cancelado",
+    cancelled: "Cancelado",
     failed: "Falhou",
+    not_started: "Não iniciado",
     paid: "Pago",
+    partially_refunded: "Reembolso parcial",
     pending: "Pendente",
     refunded: "Reembolsado",
   };
 
-  return labels[key] ?? formatStatusLabel(value);
+  return labels[key] ?? "Situação indisponível";
 }
 
 function statusTone(status: string) {

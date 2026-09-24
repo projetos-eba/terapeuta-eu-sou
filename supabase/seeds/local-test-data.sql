@@ -1923,8 +1923,32 @@ from public.list_booking_reschedule_candidates_v1(
   now() + interval '2 days',
   now() + interval '30 days',
   now(),
-  1
+  100
 ) as candidate
+where not exists (
+  select 1
+  from public.bookings as conflict
+  where conflict.therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'::uuid
+    and conflict.id <> 'f2000000-0000-4000-8000-000000000004'::uuid
+    and conflict.status in ('draft', 'pending_payment', 'confirmed')
+    and conflict.occupied_during && candidate.occupied_during
+)
+and not exists (
+  select 1
+  from public.booking_holds as hold
+  where hold.therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'::uuid
+    and hold.status = 'active'
+    and hold.expires_at > now()
+    and hold.occupied_during && candidate.occupied_during
+)
+and not public.patient_has_schedule_conflict_v1(
+  'b1000000-0000-4000-8000-000000000004'::uuid,
+  candidate.starts_at,
+  candidate.ends_at,
+  'f2000000-0000-4000-8000-000000000004'::uuid
+)
+order by candidate.starts_at
+limit 1
 on conflict (id) do update
 set
   proposed_starts_at = excluded.proposed_starts_at,

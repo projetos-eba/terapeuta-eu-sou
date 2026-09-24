@@ -24,7 +24,7 @@ export function queryTherapistReceipts(accessToken: string, body: QueryBody) {
 }
 
 export function queryTherapistPayouts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_payouts_v4", {
+  return requestFinanceRpc("get_private_therapist_payouts_v6", {
     accessToken,
     body,
   });

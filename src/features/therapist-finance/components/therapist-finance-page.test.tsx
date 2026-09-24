@@ -82,6 +82,25 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows refunds as already reflected information instead of subtracting them twice", () => {
+    renderPage();
+
+    expect(
+      screen.getByText("Informativo — já refletido nos valores acima"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("− R$ 10,00")).not.toBeInTheDocument();
+    expect(screen.getAllByText("R$ 10,00").length).toBeGreaterThan(0);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Saiba mais sobre Seu dinheiro" }),
+    );
+    expect(
+      screen.getByText(
+        "O valor líquido já considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído.",
+      ),
+    ).toBeVisible();
+  });
+
   it("offers a contextual explanation for every summary indicator", () => {
     renderPage();
 
@@ -992,7 +1011,7 @@ function fixture(): TherapistFinancePageData {
           },
         ],
       },
-      contractVersion: 4,
+      contractVersion: 6,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",

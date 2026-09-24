@@ -11,7 +11,12 @@ import {
 
 import { BookingReference } from "@/features/bookings";
 
-import { ProductPagination } from "./admin-operation-display";
+import {
+  ProductPagination,
+  formatSessionPaymentStatusLabel,
+  formatSessionStatusLabel,
+  formatStatusLabel,
+} from "./admin-operation-display";
 
 import type {
   AdminOperationMetric,
@@ -72,7 +77,7 @@ export function AdminOperationalOverviewPage({
   module: SupportedModule;
 }) {
   const config = PAGE_CONFIG[module];
-  const breakdown = buildStatusBreakdown(data.rows);
+  const breakdown = buildStatusBreakdown(data.rows, module);
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -369,7 +374,7 @@ function SessionsTable({ rows }: { rows: AdminOperationRow[] }) {
                 </p>
                 <p className="mt-1 text-xs font-semibold text-tesText-muted">
                   {fields.Pagamento
-                    ? `Pagamento: ${productLabel(fields.Pagamento)}`
+                    ? `Pagamento: ${formatSessionPaymentStatusLabel(fields.Pagamento)}`
                     : "Pagamento não informado"}
                 </p>
               </td>
@@ -390,7 +395,7 @@ function SessionsTable({ rows }: { rows: AdminOperationRow[] }) {
                 </p>
               </td>
               <td className="px-4 py-4">
-                <StatusBadge label={row.statusLabel} />
+                <StatusBadge label={row.statusLabel} session />
               </td>
               <td className="px-5 py-4 text-right">
                 <DetailLink href={row.detailHref} />
@@ -488,7 +493,7 @@ function MobileRow({
             </p>
           ) : null}
         </div>
-        <StatusBadge label={row.statusLabel} />
+        <StatusBadge label={row.statusLabel} session={module === "sessions"} />
       </div>
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
         {visibleFields.map((label) => (
@@ -497,7 +502,10 @@ function MobileRow({
               {label}
             </dt>
             <dd className="mt-1 break-words text-sm font-semibold text-brand-deep">
-              {productLabel(fields[label]) || "Não informado"}
+              {module === "sessions" && label === "Pagamento"
+                ? formatSessionPaymentStatusLabel(fields[label]) ||
+                  "Não informado"
+                : productLabel(fields[label]) || "Não informado"}
               {module === "sessions" && label === "Cliente" ? (
                 <BookingReference id={row.id} />
               ) : null}
@@ -569,8 +577,16 @@ function StateMessage({ message, title }: { message: string; title: string }) {
   );
 }
 
-function StatusBadge({ label }: { label?: string }) {
-  const text = productLabel(label) || "Não informado";
+function StatusBadge({
+  label,
+  session = false,
+}: {
+  label?: string;
+  session?: boolean;
+}) {
+  const text =
+    (session ? formatSessionStatusLabel(label) : formatStatusLabel(label)) ||
+    "Não informado";
   const normalized = (label ?? "").toLowerCase();
   const tone =
     normalized.includes("confirm") ||
@@ -635,10 +651,16 @@ function rowFields(row: AdminOperationRow) {
   );
 }
 
-function buildStatusBreakdown(rows: AdminOperationRow[]) {
+function buildStatusBreakdown(
+  rows: AdminOperationRow[],
+  module: SupportedModule,
+) {
   const counts = new Map<string, number>();
   rows.forEach((row) => {
-    const label = productLabel(row.statusLabel) || "Não informado";
+    const label =
+      (module === "sessions"
+        ? formatSessionStatusLabel(row.statusLabel)
+        : formatStatusLabel(row.statusLabel)) || "Não informado";
     counts.set(label, (counts.get(label) ?? 0) + 1);
   });
   const colors = [

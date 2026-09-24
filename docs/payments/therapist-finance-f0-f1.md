@@ -126,7 +126,7 @@ integralmente conciliado.
 ### Projeções de produto v3 — Recebimentos e Repasses
 
 `get_private_therapist_receipts_v3` e
-`get_private_therapist_payouts_v4` são projeções aditivas, privadas e somente
+`get_private_therapist_payouts_v6` são projeções aditivas, privadas e somente
 leitura. Os contratos v2 permanecem instalados para compatibilidade; nenhum
 worker, job, comando de pagamento, ledger ou regra de transição foi alterado.
 
@@ -149,6 +149,10 @@ overview v2, mas exclui pagamentos integralmente reembolsados da coorte de
 receita/sessões pagas. O total de reembolsos continua no card dedicado, com a
 mesma janela histórica do contrato anterior.
 
+Na composição `Seu dinheiro`, esse total de reembolsos é informativo: o valor
+líquido já o considera e pagamentos integralmente reembolsados já estão fora do
+bruto e da comissão realizados. A interface não volta a subtrair o total.
+
 `get_private_therapist_receipts_v5` mantém a projeção de recebimentos e adiciona
 `debtOffsetAmountCents` e `bankTransferAmountCents`. Compensação integral
 continua informando que não haverá depósito; compensação parcial informa
@@ -167,6 +171,9 @@ produto: `predicted` (Previsto), `in_transit` (A caminho da sua conta) e
 há alocação integral do valor e mostra apenas o futuro. Valores recebidos saem
 da Agenda e permanecem no resumo e no histórico. `received` continua exigindo
 Payout pago, reconciliação concluída e cobertura integral da movimentação.
+V6 preserva as regras financeiras anteriores, trata `arrival_at` como data civil
+sem recuo de fuso e mantém um Payout pago pelo provedor em `in_transit` até a
+data de chegada. `paid_at` permanece apenas como fallback.
 
 A Agenda oferece 7, 15 e 30 dias, com padrão de 15 dias, agrupa valores pela
 data de chegada e permite expandir apenas a composição por sessão. A origem V9
@@ -261,13 +268,13 @@ política real.
 | Elemento implementado     | Definição                                                                                                                                    | Fonte                                                                                                 | Estado sem dados                                       | Capability             |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------- |
 | Total líquido no período  | Resultado operacional do período.                                                                                                            | `get_private_therapist_financial_overview_v3`                                                         | R$ 0,00 com data de atualização.                       | `operation_essentials` |
-| A receber                 | Valores previstos na janela de 7, 15 ou 30 dias, mais repasses sem data bancária.                                                            | `get_private_therapist_payouts_v4.summary.expectedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
-| A caminho da sua conta    | Valores que já iniciaram o processo efetivo de depósito.                                                                                     | `get_private_therapist_payouts_v4.summary.inTransitCents`                                             | R$ 0,00.                                               | `operation_essentials` |
-| Recebido                  | Chegada bancária confirmada no período histórico.                                                                                            | `get_private_therapist_payouts_v4.summary.receivedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
+| A receber                 | Valores previstos na janela de 7, 15 ou 30 dias, mais repasses sem data bancária.                                                            | `get_private_therapist_payouts_v6.summary.expectedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
+| A caminho da sua conta    | Valores que já iniciaram o depósito, inclusive Payout pago pelo provedor cuja data civil de chegada ainda não ocorreu.                       | `get_private_therapist_payouts_v6.summary.inTransitCents`                                             | R$ 0,00.                                               | `operation_essentials` |
+| Recebido                  | Chegada bancária confirmada no período histórico, sem converter a data civil `arrival_at` por fuso.                                          | `get_private_therapist_payouts_v6.summary.receivedCents`                                              | R$ 0,00.                                               | `operation_essentials` |
 | Indicadores de cobrança   | Aprovados, processando, agendados e reembolsos.                                                                                              | `get_private_therapist_receipts_v5.summary`                                                           | R$ 0,00.                                               | `operation_essentials` |
 | Movimentações por sessão  | Cobrança, valor da sessão, Comissão TES, valor do terapeuta, compensação e próxima etapa.                                                    | `get_private_therapist_receipts_v5`                                                                   | Estado vazio honesto.                                  | `operation_essentials` |
-| Agenda de repasses        | Depósito em andamento, chegada prevista, disponibilidade do saldo e valores sem data bancária; nunca confundir disponibilidade com depósito. | `get_private_therapist_payouts_v4.agenda`                                                             | Nenhum repasse previsto.                               | `operation_essentials` |
-| Histórico de repasses     | Valores recebidos e exceções discretas em análise.                                                                                           | `get_private_therapist_payouts_v4.historyItems`                                                       | Nenhum valor recebido no período.                      | `operation_essentials` |
+| Agenda de repasses        | Depósito em andamento, chegada prevista, disponibilidade do saldo e valores sem data bancária; nunca confundir disponibilidade com depósito. | `get_private_therapist_payouts_v6.agenda`                                                             | Nenhum repasse previsto.                               | `operation_essentials` |
+| Histórico de repasses     | Valores recebidos após a chegada bancária e exceções discretas em análise.                                                                   | `get_private_therapist_payouts_v6.historyItems`                                                       | Nenhum valor recebido no período.                      | `operation_essentials` |
 | Conta de recebimento      | Estado Connect hospedado.                                                                                                                    | `get_private_therapist_connect_account_v1` + Edge Functions Connect                                   | CTA para conectar.                                     | `operation_essentials` |
 | Receita líquida           | Valor líquido do terapeuta no período, nunca negativo por pagamento.                                                                         | `get_private_therapist_financial_metrics_v2`                                                          | R$ 0,00 ou estado insuficiente.                        | `advanced_metrics`     |
 | Ticket médio              | Ticket médio líquido principal; sessões integralmente reembolsadas não entram no denominador.                                                | `get_private_therapist_financial_metrics_v2`                                                          | “Sem base”.                                            | `advanced_metrics`     |
