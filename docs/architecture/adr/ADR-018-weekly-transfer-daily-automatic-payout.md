@@ -32,6 +32,11 @@ cronograma automático `daily`.
   após cobertura reconciliada em Payouts `paid`.
 - O ledger continua com uma única baixa no Transfer.
 - Valores sem correspondência falham fechado em ocorrência operacional.
+- Um par conectado `payment`/`payment_refund` com soma zero não é alocado. Ele
+  só deixa de contar como divergência depois da prova Stripe da origem e do
+  valor integral. Quando ligado ao TES, exige também Transfer direto V10,
+  reembolso integral da sessão e Transfer Reversal integral reconciliados;
+  qualquer estado parcial ou ambíguo continua falhando fechado.
 - Um Payout só conclui o pagamento ao terapeuta quando está `paid`, a
   reconciliação terminou e a alocação corresponde integralmente ao Transfer.
 - O débito agregado do próprio Payout nunca participa da lista de componentes
