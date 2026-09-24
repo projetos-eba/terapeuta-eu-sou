@@ -78,7 +78,9 @@ ocorrência.
   e auditoria em `financial_reconciliation_runs`, recupera Charges ausentes,
   atualiza liquidação/elegibilidade e também reconcilia Transfers e Payouts. O
   minuto 17 não coincide com a confirmação automática (:07) nem com os ticks
-  semanais (:00/:15/:30/:45).
+  semanais (:00/:15/:30/:45). A chamada `pg_net` aguarda até 60 segundos pela
+  resposta para não registrar falso timeout enquanto a Function ainda conclui
+  uma reconciliação válida; isso não adiciona retry nem muda idempotência.
 - Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
   bloqueio administrativo impede confirmação automática e inclusão no lote.
 - Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.

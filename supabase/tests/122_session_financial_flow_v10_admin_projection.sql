@@ -1,5 +1,5 @@
 begin;
-select plan(24);
+select plan(25);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -316,6 +316,7 @@ select is(
 reset role;
 update public.stripe_payouts
 set status = 'paid', provider_status = 'paid',
+    arrival_at = '2098-11-04 12:00:00+00',
     paid_at = '2098-11-03 18:00:00+00'
 where id = 'b1220001-0000-4000-8000-000000000071';
 set local role authenticated;
@@ -338,8 +339,8 @@ select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220001-0000-4000-8000-000000000021'
   ) #>> '{record,bank_paid_at}',
-  '2098-11-03T18:00:00+00:00',
-  'the historical V9 bank timestamp comes from its reconciled payout'
+  '2098-11-04T12:00:00+00:00',
+  'the historical V9 bank timestamp prioritizes Stripe arrival evidence'
 );
 
 reset role;
@@ -347,6 +348,31 @@ update public.therapist_financial_debts
 set status = 'settled', open_amount_cents = 0, recovered_amount_cents = 7500,
     closed_at = '2098-11-01 17:00:00+00'
 where id = 'b1220000-0000-4000-8000-000000000051';
+
+insert into public.therapist_financial_debt_events (
+  therapist_financial_debt_id, event_type, direction, amount_cents,
+  idempotency_key
+) values (
+  'b1220000-0000-4000-8000-000000000051',
+  'transfer_offset', 'decrease', 7500, 'tes:test:admin:122:offset'
+);
+update public.session_payments
+set financial_status = 'refunded'
+where id = 'b1220000-0000-4000-8000-000000000021';
+set local role authenticated;
+
+select is(
+  public.admin_get_finance_detail_v1(
+    'payments', 'b1220000-0000-4000-8000-000000000021'
+  ) #>> '{record,payout_display_status}',
+  'compensated',
+  'a refunded Transfer with fully settled offset debt is no longer left in review'
+);
+
+reset role;
+update public.session_payments
+set financial_status = 'paid'
+where id = 'b1220000-0000-4000-8000-000000000021';
 
 insert into public.stripe_payouts (
   id, therapist_profile_id, connect_account_id, stripe_payout_id,
@@ -381,6 +407,7 @@ select is(
 reset role;
 update public.stripe_payouts
 set status = 'paid', provider_status = 'paid',
+    arrival_at = '2098-11-02 12:00:00+00',
     paid_at = '2098-11-01 18:00:00+00'
 where id = 'b1220000-0000-4000-8000-000000000061';
 set local role authenticated;
@@ -396,19 +423,19 @@ select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220000-0000-4000-8000-000000000021'
   ) #>> '{record,bank_paid_at}',
-  '2098-11-01T18:00:00+00:00',
-  'the bank completion timestamp comes from the paid payout'
+  '2098-11-02T12:00:00+00:00',
+  'the bank completion timestamp comes from Stripe arrival evidence'
 );
 
 reset role;
 update public.bookings
 set status = 'no_show_both'
-where id = 'b1220000-0000-4000-8000-000000000011';
+where id = 'b1220001-0000-4000-8000-000000000011';
 set local role authenticated;
 
 select is(
   public.admin_get_finance_detail_v1(
-    'payments', 'b1220000-0000-4000-8000-000000000021'
+    'payments', 'b1220001-0000-4000-8000-000000000021'
   ) #>> '{record,booking_status}',
   'no_show_both',
   'the administrative detail exposes the booking attendance outcome'
@@ -418,20 +445,20 @@ select is(
    from jsonb_array_elements(public.admin_get_finance_module_v2(
      'payments', '{"page":1,"pageSize":50}'::jsonb
    ) -> 'rows') as row_payload
-   where row_payload ->> 'id' = 'b1220000-0000-4000-8000-000000000021'),
+   where row_payload ->> 'id' = 'b1220001-0000-4000-8000-000000000021'),
   'no_show_both',
   'the administrative list exposes the same booking attendance outcome'
 );
 select is(
   public.admin_get_finance_detail_v1(
-    'payments', 'b1220000-0000-4000-8000-000000000021'
+    'payments', 'b1220001-0000-4000-8000-000000000021'
   ) #>> '{record,service_status}',
   'scheduled',
   'the operational projection does not rewrite the payment service snapshot'
 );
 select is(
   public.admin_get_finance_detail_v1(
-    'payments', 'b1220000-0000-4000-8000-000000000021'
+    'payments', 'b1220001-0000-4000-8000-000000000021'
   ) #>> '{record,payout_display_status}',
   'paid',
   'the operational outcome does not alter the reconciled payout state'

@@ -107,6 +107,11 @@ Do not send generic `select *` payloads to React.
   Payout; `A caminho do banco` requires a full allocation to a provider Payout
   in `pending` or `in_transit`; `Pago` still requires the Payout, provider
   reconciliation and allocation to be fully completed.
+- A refunded Transfer with open recovery debt is `Valor a compensar`. It becomes
+  `Compensado` only when durable `transfer_offset` evidence covers the settled
+  debt principal. A settled row without that evidence remains under review.
+- For a fully reconciled paid Payout, the administrative bank date prefers
+  Stripe `arrival_at` and uses `paid_at` only as a fallback.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
