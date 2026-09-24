@@ -22,6 +22,7 @@ export type PlanFeatureCode =
   | "complete_financial_dashboard"
   | "complete_message_automation"
   | "journey_history_crm"
+  | "session_observations"
   | "advanced_badge_system"
   | "seasonal_campaigns"
   | "tes_academy";
@@ -205,6 +206,14 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
     label: "Histórico de pessoas atendidas",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "full_crm",
+  },
+  {
+    category: "premium_plus",
+    code: "session_observations",
+    description: "Observações privadas em cada sessão encerrada.",
+    label: "Observações privadas por sessão",
+    minimumPlan: TherapistPlan.PremiumPlus,
+    capability: "session_observations",
   },
   {
     category: "premium_plus",
