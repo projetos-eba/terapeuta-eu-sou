@@ -37,7 +37,8 @@ select cron.schedule(
         where name = 'PAYMENTS_INTERNAL_OPERATIONS_TOKEN'
       )
     ),
-    body := '{}'::jsonb
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
   );
   $cron$
 );

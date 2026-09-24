@@ -619,7 +619,7 @@ Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
 - `get_private_therapist_receipts_v5`;
-- `get_private_therapist_payouts_v4`;
+- `get_private_therapist_payouts_v5`;
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;

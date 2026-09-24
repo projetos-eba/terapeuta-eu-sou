@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v4` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v5` (current UI consumer; earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -73,8 +73,10 @@ All derive the therapist from `auth.uid()`. Do not accept
 - Commission totals and receipt values come from each payment snapshot. New
   payments use the active 15% TES policy; historical records can legitimately
   show the prior 20% split and must not be recalculated in the UI.
-- Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
-  present = Valor líquido do terapeuta.
+- The realized gross, commission and net cohort excludes fully refunded
+  payments. `Reembolsos ao cliente` remains visible as an informational total
+  and must not be subtracted a second time in the browser. Partial refunds are
+  already reflected by the server-side realized-net contract.
 - `Sessões pagas` excludes fully refunded payments. Partial refunds and open
   disputes remain visible, and realized therapist revenue must never be
   negative.
@@ -182,6 +184,9 @@ recebimento`; provider and reconciliation terminology stays in the service
   only batch/Transfer/Payout states, never payment preparation states.
 - Treat therapist receipt status as paid only after a paid, completed automatic
   Payout allocates the complete Transfer amount.
+- For a completed bank Payout, show `arrival_at` as the receipt date when Stripe
+  provides it; use `paid_at` only as a fallback. Do not change financial state
+  or allocation from this presentation rule.
 - Missing Stripe receipt URLs may be enriched only from the immutable Charge
   already bound to the payment. Receipt-only candidates use
   `record_session_payment_receipt_url_v1`, not settlement reconciliation. The
@@ -263,7 +268,8 @@ distinguish the financial series. The colors identify categories, not financial
 health.
 
 Below the quick summary, `Seu dinheiro` uses purple, red and green only for
-gross amount, costs/refunds and net amount. `Saúde financeira` uses green for
+gross amount, platform costs and net amount. Refunds are an informational
+warning already reflected in the authoritative net amount. `Saúde financeira` uses green for
 occupied capacity, purple for contracted revenue and orange for estimated
 available potential. `Crescimento` uses red and orange surfaces to make unused
 estimated potential and availability scannable, while maintaining copy that

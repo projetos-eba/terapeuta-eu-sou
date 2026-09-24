@@ -17403,6 +17403,17 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_payouts_v5: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_profile_editor_v1: {
         Args: { p_actor_user_id: string }
         Returns: Json

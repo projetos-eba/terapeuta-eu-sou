@@ -1,6 +1,6 @@
 begin;
 
-select plan(87);
+select plan(88);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -1160,6 +1160,15 @@ select is(
   ),
   0,
   'receipts V5 never presents a fully compensated session as a deposit'
+);
+
+select is(
+  (public.get_private_therapist_receipts_v5(
+    date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+    'America/Sao_Paulo'
+  ) #>> '{summary,approvedCents}')::integer,
+  17000,
+  'approved charges include both partial and full debt compensation outcomes'
 );
 
 select is(
