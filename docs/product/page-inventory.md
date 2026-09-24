@@ -293,8 +293,11 @@ ainda não confirmadas exibem “Aguardando confirmação” em desktop e mobile
 - O fim do prazo de exclusividade não impede pagar pelo mesmo encontro.
   Após liberação confirmada, `Continuar pagamento` reabre o Stripe sem novo
   contador e sem nova seleção de horário; a disponibilidade continua sujeita a
-  validação antes da cobrança. Se o pagamento já estiver em confirmação, o CTA
-  acompanha sua situação em vez de iniciar uma segunda tentativa.
+  validação antes da cobrança, preservando a duração, o fuso e os buffers
+  registrados na reserva original. Alterações posteriores de buffers não
+  bloqueiam isoladamente uma retomada cujo intervalo ainda esteja disponível.
+  Se o pagamento já estiver em confirmação, o CTA acompanha sua situação em
+  vez de iniciar uma segunda tentativa.
 - A Jornada `12272:2` confirma os 6 perfis, 24 fluxos e 92 etapas usados neste inventário.
 - `/termos` e `/privacidade` não aparecem como etapas da Jornada. Permanecem
   por necessidade legal. As antigas superfícies públicas `/ajuda` e

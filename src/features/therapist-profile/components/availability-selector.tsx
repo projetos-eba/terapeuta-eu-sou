@@ -1,18 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
 import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
 import { TrackedBookingLink } from "@/features/public-metrics";
 
-import type { TherapistProfileService } from "../types";
+import type { AvailabilityDay, TherapistProfileService } from "../types";
 import { AvailabilityCalendarModal } from "./availability-calendar-modal";
 
 type AvailabilitySelectorProps = {
   services: TherapistProfileService[];
   therapistSlug: string;
 };
+
+type CompactAvailability = {
+  days: AvailabilityDay[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isAvailabilityDay(value: unknown): value is AvailabilityDay {
+  return (
+    isRecord(value) &&
+    typeof value.date === "string" &&
+    typeof value.dateLabel === "string" &&
+    typeof value.dayLabel === "string" &&
+    Array.isArray(value.slots)
+  );
+}
+
+function readCompactAvailability(value: unknown): CompactAvailability | null {
+  if (
+    !isRecord(value) ||
+    value.type !== "compact" ||
+    !isRecord(value.availability) ||
+    !Array.isArray(value.availability.days)
+  ) {
+    return null;
+  }
+
+  return { days: value.availability.days.filter(isAvailabilityDay) };
+}
 
 export function AvailabilitySelector({
   staticPreview = false,
@@ -23,6 +54,13 @@ export function AvailabilitySelector({
     services[0]?.id ?? "",
   );
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [liveDaysByService, setLiveDaysByService] = useState<
+    Record<string, AvailabilityDay[]>
+  >({});
+  const [unavailableServiceIds, setUnavailableServiceIds] = useState<string[]>(
+    [],
+  );
+  const activeRequest = useRef<AbortController | null>(null);
   const selectedInteractiveService = useMemo(
     () =>
       services.find((service) => service.id === selectedServiceId) ??
@@ -32,8 +70,79 @@ export function AvailabilitySelector({
   const selectedService = staticPreview
     ? services[0]
     : selectedInteractiveService;
-  const days = selectedService?.availability ?? [];
+  const refreshServiceAvailability = useCallback(async (serviceId: string) => {
+    activeRequest.current?.abort();
+    const controller = new AbortController();
+    activeRequest.current = controller;
+
+    try {
+      const response = await fetch(
+        `/api/public/service-availability?service=${encodeURIComponent(serviceId)}&compact=1`,
+        { cache: "no-store", signal: controller.signal },
+      );
+      const availability = response.ok
+        ? readCompactAvailability(await response.json())
+        : null;
+      if (!availability || controller.signal.aborted) {
+        if (!controller.signal.aborted) {
+          setUnavailableServiceIds((current) =>
+            current.includes(serviceId) ? current : [...current, serviceId],
+          );
+        }
+        return;
+      }
+
+      setLiveDaysByService((current) => ({
+        ...current,
+        [serviceId]: availability.days,
+      }));
+      setUnavailableServiceIds((current) =>
+        current.filter((id) => id !== serviceId),
+      );
+    } catch {
+      if (!controller.signal.aborted) {
+        setUnavailableServiceIds((current) =>
+          current.includes(serviceId) ? current : [...current, serviceId],
+        );
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (staticPreview || !selectedService) return;
+
+    const refresh = () => {
+      void refreshServiceAvailability(selectedService.id);
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      activeRequest.current?.abort();
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshServiceAvailability, selectedService, staticPreview]);
+
+  const isAvailabilityUnavailable = Boolean(
+    selectedService && unavailableServiceIds.includes(selectedService.id),
+  );
+  const days = isAvailabilityUnavailable
+    ? []
+    : (selectedService && liveDaysByService[selectedService.id]) ??
+      selectedService?.availability ??
+      [];
   const compactDays = days.slice(0, 3);
+
+  function openCalendar() {
+    if (!selectedService) return;
+    void refreshServiceAvailability(selectedService.id);
+    setIsCalendarOpen(true);
+  }
 
   return (
     <section className="max-h-none overflow-visible rounded-[22px] bg-brand-primary p-6 text-white sm:p-8 lg:max-h-[620px] lg:overflow-y-auto">
@@ -126,7 +235,9 @@ export function AvailabilitySelector({
           ))
         ) : (
           <div className="rounded-[14px] bg-brand-primaryPressed px-5 py-4 text-sm font-medium">
-            Agenda temporariamente indisponível para esta terapia.
+            {isAvailabilityUnavailable
+              ? "Não foi possível atualizar os horários agora. Tente abrir a agenda completa novamente."
+              : "Agenda temporariamente indisponível para esta terapia."}
           </div>
         )}
       </div>
@@ -138,8 +249,11 @@ export function AvailabilitySelector({
       ) : (
         <button
           className="mx-auto mt-8 block w-fit text-base font-medium outline-none transition hover:text-white/80 focus-visible:ring-4 focus-visible:ring-white/20"
-          disabled={!selectedService || days.length === 0}
-          onClick={() => setIsCalendarOpen(true)}
+          disabled={
+            !selectedService ||
+            (days.length === 0 && !isAvailabilityUnavailable)
+          }
+          onClick={openCalendar}
           type="button"
         >
           Ver agenda completa e mais horários →
@@ -149,8 +263,11 @@ export function AvailabilitySelector({
       {!staticPreview && isCalendarOpen && selectedService ? (
         <AvailabilityCalendarModal
           initialDays={days}
-          onClose={() => setIsCalendarOpen(false)}
-          service={selectedService}
+          onClose={() => {
+            setIsCalendarOpen(false);
+            void refreshServiceAvailability(selectedService.id);
+          }}
+          service={{ ...selectedService, availability: days }}
           therapistSlug={therapistSlug}
         />
       ) : null}

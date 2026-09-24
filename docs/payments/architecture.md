@@ -343,8 +343,11 @@ retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
 atomicamente antes da captura. Antes de expor ou processar a retomada, a mesma
 verificação confere o candidato exato no motor de agenda (serviço ativo,
-disponibilidade e exceções, antecedência mínima, horizonte, duração, buffers e
-cadência), além dos conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
+disponibilidade e exceções, antecedência mínima, horizonte e cadência), usando
+a duração, fuso e buffers imutáveis registrados na reserva. Alterações futuras
+nos buffers do serviço não invalidam por si só uma retomada cujo intervalo
+original ainda caiba na agenda atual. Além disso, a verificação confere os
+conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
 mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
 leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
 em uma única transação ainda com a reserva liberada, e somente o

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  getPublicServiceCompactAvailability,
   getPublicServiceAvailabilityForDay,
   getPublicServiceAvailabilityMonth,
   isDateKey,
@@ -16,11 +17,28 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const serviceId = url.searchParams.get("service") ?? "";
+  const compact = url.searchParams.get("compact");
   const month = url.searchParams.get("month");
   const date = url.searchParams.get("date");
 
-  if (!UUID.test(serviceId) || Boolean(month) === Boolean(date)) {
+  if (
+    !UUID.test(serviceId) ||
+    (compact !== null && compact !== "1") ||
+    (compact === "1" ? Boolean(month || date) : Boolean(month) === Boolean(date))
+  ) {
     return failure("Disponibilidade indisponível no momento.", 400);
+  }
+
+  if (compact === "1") {
+    const result = await getPublicServiceCompactAvailability(serviceId);
+    if (result.status === "error") {
+      return failure("Disponibilidade indisponível no momento.", 503);
+    }
+
+    return NextResponse.json(
+      { availability: result.data, ok: true, type: "compact" },
+      { headers: noStoreHeaders },
+    );
   }
 
   if (month) {
