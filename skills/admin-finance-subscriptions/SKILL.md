@@ -54,6 +54,10 @@ Do not send generic `select *` payloads to React.
 
 - The payments module currently exposes only metric counts and sanitized
   operational rows.
+- `failed-session-payments` counts only canonical
+  `session_payments.financial_status = 'failed'`. Canceled payments remain
+  queryable through their dedicated status and must not inflate the
+  `Pagamentos com falha` KPI.
 - The first four metrics can be used as KPI cards and the remaining metrics can
   be shown as secondary operational indicators.
 - Do not invent monetary totals, deltas, charts, date ranges, payment method

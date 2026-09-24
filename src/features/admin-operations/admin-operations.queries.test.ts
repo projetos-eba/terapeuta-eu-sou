@@ -132,6 +132,41 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("offers every canonical booking status through Portuguese admin filters", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          metrics: {},
+          module: "sessions",
+          page: { page: 1, pageSize: 12, total: 0, hasNext: false },
+          rows: [],
+        }),
+      ),
+    );
+
+    const result = await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "sessions",
+      searchParams: {},
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.filterOptions.status).toEqual(
+        expect.arrayContaining([
+          {
+            label: "Canceladas por falha no pagamento",
+            value: "cancelled_by_payment",
+          },
+          { label: "Cliente ausente", value: "no_show_patient" },
+          { label: "Terapeuta ausente", value: "no_show_therapist" },
+          { label: "Ambos ausentes", value: "no_show_both" },
+        ]),
+      );
+    }
+  });
+
   it("loads current-attempt private quality through the Admin V2 contract", async () => {
     const bookingId = "00000000-0000-4000-8000-000000000153";
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
