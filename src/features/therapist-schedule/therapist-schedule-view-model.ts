@@ -21,6 +21,12 @@ type ScheduleRuleView = {
   startTime: string;
 };
 
+export type AvailabilityRuleOverlap<Rule extends ScheduleRuleView> = {
+  leftRule: Rule;
+  rightRule: Rule;
+  serviceId: string;
+};
+
 export function normalizeClock(value: string) {
   return value.slice(0, 5);
 }
@@ -35,11 +41,26 @@ export function getRulesForScope<Rule extends ScheduleRuleView>(
 export function hasOverlappingAvailabilityRules<Rule extends ScheduleRuleView>(
   rules: Rule[],
 ) {
-  return rules.some((leftRule, index) =>
-    rules.slice(index + 1).some((rightRule) =>
-      availabilityRulesOverlap(leftRule, rightRule),
-    ),
-  );
+  return Boolean(findAvailabilityRuleOverlap(rules));
+}
+
+export function findAvailabilityRuleOverlap<Rule extends ScheduleRuleView>(
+  rules: Rule[],
+): AvailabilityRuleOverlap<Rule> | null {
+  for (const [index, leftRule] of rules.entries()) {
+    const rightRule = rules
+      .slice(index + 1)
+      .find((candidate) => availabilityRulesOverlap(leftRule, candidate));
+    if (!rightRule) continue;
+
+    return {
+      leftRule,
+      rightRule,
+      serviceId: leftRule.serviceId,
+    };
+  }
+
+  return null;
 }
 
 export function availabilityRulesOverlap(

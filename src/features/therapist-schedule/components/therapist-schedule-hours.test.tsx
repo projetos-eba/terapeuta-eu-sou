@@ -168,12 +168,8 @@ describe("TherapistScheduleHours", () => {
     fireEvent.change(starts[1]!, { target: { value: "08:00" } });
 
     await waitFor(() => expect(starts[1]).toHaveValue("08:00"));
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-
-    fireEvent.blur(screen.getAllByLabelText("Início de Segunda-feira")[0]!);
-
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Essa faixa se sobrepõe a outro horário disponível no mesmo dia.",
+      "Há duas faixas que se sobrepõem nesta terapia.",
     );
 
     const fetchMock = vi.fn();
@@ -182,6 +178,53 @@ describe("TherapistScheduleHours", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(starts[1]).toHaveValue("08:00");
+  });
+
+  it("keeps a conflict associated with its therapy when the scope changes", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const initialSchedule = scheduleFixture();
+    initialSchedule.services.push({
+      ...initialSchedule.services[0]!,
+      id: "d1000000-0000-4000-8000-000000000002",
+      title: "Tarô online",
+    });
+    renderSchedule(initialSchedule);
+
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar faixa" }));
+    fireEvent.click(
+      within(
+        await screen.findByRole("dialog", { name: "Adicionar faixa de horário" }),
+      ).getByRole("button", { name: "Adicionar faixa" }),
+    );
+    fireEvent.change(screen.getAllByLabelText("Início de Segunda-feira")[1]!, {
+      target: { value: "10:00" },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Há duas faixas que se sobrepõem nesta terapia.",
+    );
+
+    fireEvent.change(screen.getByLabelText("Configuração aplicada a"), {
+      target: { value: "d1000000-0000-4000-8000-000000000002" },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Há um ajuste pendente em Reiki online.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Configuração aplicada a")).toHaveValue(
+        serviceId,
+      ),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Há duas faixas que se sobrepõem nesta terapia.",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("sends the versioned command and confirms a successful save", async () => {

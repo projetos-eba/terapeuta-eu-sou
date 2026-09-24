@@ -9,6 +9,7 @@ import type { TherapistAgendaReadModel } from "@/features/bookings";
 import {
   buildUpcomingExceptions,
   calculateWeeklyAvailability,
+  findAvailabilityRuleOverlap,
   findDefaultScheduleScope,
   formatDuration,
   getRulesForScope,
@@ -135,6 +136,25 @@ describe("therapist schedule view model", () => {
         }),
       ]),
     ).toBe(false);
+  });
+
+  it("identifies the therapy responsible for an overlap", () => {
+    const overlap = findAvailabilityRuleOverlap([
+      ruleFixture({ endTime: "12:00", startTime: "09:00" }),
+      ruleFixture({
+        endTime: "13:00",
+        id: "a1000000-0000-4000-8000-000000000008",
+        startTime: "10:00",
+      }),
+      ruleFixture({
+        endTime: "12:00",
+        id: "a1000000-0000-4000-8000-000000000009",
+        serviceId: secondServiceId,
+        startTime: "09:00",
+      }),
+    ]);
+
+    expect(overlap?.serviceId).toBe(serviceId);
   });
 });
 
