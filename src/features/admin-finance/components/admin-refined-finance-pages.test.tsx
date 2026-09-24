@@ -137,7 +137,7 @@ describe("refined admin finance pages", () => {
     const html = renderToStaticMarkup(<AdminPaymentDetailPage data={data} />);
 
     expect(html).toContain("Detalhes do financeiro");
-    expect(html).toContain("Pagamento processado");
+    expect(html).toContain("Tentativa de pagamento registrada");
     expect(html).toContain("Repasse previsto");
     expect(html).toContain("Compensação");
     expect(html).toContain("Valor encaminhado");

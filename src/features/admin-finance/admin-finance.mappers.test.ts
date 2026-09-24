@@ -317,6 +317,34 @@ describe("admin finance mappers", () => {
     );
   });
 
+  it("does not treat the existence of a payment attempt as financial confirmation", () => {
+    const detail = mapAdminFinanceDetail({
+      events: [],
+      generatedAt: "2026-09-24T19:01:00.000Z",
+      module: "payments",
+      record: {
+        financial_status: "failed",
+        has_charge: true,
+        has_payment_intent: true,
+        id: "payment-failed-with-attempt",
+        service_title: "Constelação Familiar",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          {
+            label: "Tentativa de pagamento registrada",
+            value: "Sim",
+          },
+        ]),
+        title: "Conciliação segura",
+      }),
+    );
+    expect(JSON.stringify(detail)).not.toContain("Pagamento confirmado");
+  });
+
   it("presents the Stripe bank arrival as a civil date without timezone rollback", () => {
     const detail = mapAdminFinanceDetail({
       events: [],
