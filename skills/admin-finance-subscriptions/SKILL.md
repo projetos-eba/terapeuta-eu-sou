@@ -112,6 +112,9 @@ Do not send generic `select *` payloads to React.
   debt principal. A settled row without that evidence remains under review.
 - For a fully reconciled paid Payout, the administrative bank date prefers
   Stripe `arrival_at` and uses `paid_at` only as a fallback.
+- `arrival_at` is a civil bank date. Even when the provider status is `paid`, a
+  future arrival remains `A caminho do banco`; `Pago` and the date-only Admin
+  field are exposed only after the arrival evidence is reached.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.

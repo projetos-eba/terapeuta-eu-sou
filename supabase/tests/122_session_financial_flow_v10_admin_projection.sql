@@ -316,8 +316,8 @@ select is(
 reset role;
 update public.stripe_payouts
 set status = 'paid', provider_status = 'paid',
-    arrival_at = '2098-11-04 12:00:00+00',
-    paid_at = '2098-11-03 18:00:00+00'
+    arrival_at = date_trunc('day', now()) - interval '1 day',
+    paid_at = now() - interval '2 days'
 where id = 'b1220001-0000-4000-8000-000000000071';
 set local role authenticated;
 
@@ -338,9 +338,9 @@ select is(
 select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220001-0000-4000-8000-000000000021'
-  ) #>> '{record,bank_paid_at}',
-  '2098-11-04T12:00:00+00:00',
-  'the historical V9 bank timestamp prioritizes Stripe arrival evidence'
+  ) #>> '{record,bank_paid_date}',
+  (current_date - 1)::text,
+  'the historical V9 bank date preserves Stripe civil arrival evidence'
 );
 
 reset role;
@@ -407,8 +407,8 @@ select is(
 reset role;
 update public.stripe_payouts
 set status = 'paid', provider_status = 'paid',
-    arrival_at = '2098-11-02 12:00:00+00',
-    paid_at = '2098-11-01 18:00:00+00'
+    arrival_at = date_trunc('day', now()) - interval '1 day',
+    paid_at = now() - interval '2 days'
 where id = 'b1220000-0000-4000-8000-000000000061';
 set local role authenticated;
 
@@ -422,9 +422,9 @@ select is(
 select is(
   public.admin_get_finance_detail_v1(
     'payments', 'b1220000-0000-4000-8000-000000000021'
-  ) #>> '{record,bank_paid_at}',
-  '2098-11-02T12:00:00+00:00',
-  'the bank completion timestamp comes from Stripe arrival evidence'
+  ) #>> '{record,bank_paid_date}',
+  (current_date - 1)::text,
+  'the bank completion date comes from Stripe civil arrival evidence'
 );
 
 reset role;
