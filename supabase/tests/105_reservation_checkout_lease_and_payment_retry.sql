@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(21);
 
 select has_column(
   'public', 'session_payment_attempts', 'attempt_kind',
@@ -74,6 +74,18 @@ select throws_ok(
     where id = 'a1050000-0000-4000-8000-000000000001'$$,
   'P0001', 'PAYMENT_RETRY_CLAIM_REQUIRED',
   'direct SQL cannot reopen a payment-cancelled booking'
+);
+
+update public.therapist_service_booking_settings
+set buffer_after_minutes = 25
+where service_id = 'd1000000-0000-4000-8000-000000000001';
+
+select is(
+  (public.preflight_session_payment_retry_v1(
+    'a1050000-0000-4000-8000-000000000001'
+  )->>'reason'),
+  'available',
+  'retry preserves the original booking buffers when current service buffers change'
 );
 
 select is(

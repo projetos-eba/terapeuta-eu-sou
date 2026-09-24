@@ -1,5 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TherapistProfileService } from "../types";
 import { AvailabilitySelector } from "./availability-selector";
@@ -78,7 +84,30 @@ const tarot = createService({
 });
 
 describe("AvailabilitySelector", () => {
-  afterEach(cleanup);
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const serviceId = new URL(String(input), "http://localhost").searchParams.get(
+          "service",
+        );
+        const service = serviceId === tarot.id ? tarot : reiki;
+        return new Response(
+          JSON.stringify({
+            availability: { days: service.availability },
+            ok: true,
+            type: "compact",
+          }),
+          { status: 200 },
+        );
+      }),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("shows only the three closest available dates", () => {
     const serviceWithFourDays: TherapistProfileService = {
@@ -142,6 +171,57 @@ describe("AvailabilitySelector", () => {
       expect.stringContaining("service=service-reiki"),
     );
     expect(screen.queryByRole("link", { name: "10:15" })).toBeNull();
+  });
+
+  it("replaces the server snapshot with current compact availability", async () => {
+    const staleService: TherapistProfileService = {
+      ...reiki,
+      availability: [createAvailabilityDay("2026-09-01", "01/09", "09:00")],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            availability: {
+              days: [createAvailabilityDay("2026-09-02", "02/09", "10:00")],
+            },
+            ok: true,
+            type: "compact",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    render(
+      <AvailabilitySelector
+        services={[staleService]}
+        therapistSlug="antonio-ferrari-e2e"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "09:00" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "10:00" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("link", { name: "09:00" })).toBeNull();
+  });
+
+  it("keeps the full calendar available when compact availability cannot refresh", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
+
+    render(
+      <AvailabilitySelector
+        services={[reiki]}
+        therapistSlug="antonio-ferrari-e2e"
+      />,
+    );
+
+    await screen.findByText(/Não foi possível atualizar os horários agora/i);
+    expect(
+      screen.getByRole("button", { name: /Ver agenda completa/i }),
+    ).toBeEnabled();
   });
 });
 

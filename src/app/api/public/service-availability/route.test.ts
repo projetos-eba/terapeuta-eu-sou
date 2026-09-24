@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const availability = vi.hoisted(() => ({
+  getPublicServiceCompactAvailability: vi.fn(),
   getPublicServiceAvailabilityForDay: vi.fn(),
   getPublicServiceAvailabilityMonth: vi.fn(),
   isDateKey: vi.fn((value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value)),
@@ -57,6 +58,30 @@ describe("public service availability route", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toMatchObject({ ok: true, type: "month" });
+  });
+
+  it("returns the current compact contract without caching it", async () => {
+    availability.getPublicServiceCompactAvailability.mockResolvedValue({
+      data: {
+        days: [],
+        horizonEndsAt: "2026-11-25T12:00:00.000Z",
+        timezone: "America/Sao_Paulo",
+      },
+      status: "success",
+    });
+
+    const response = await GET(
+      new Request(
+        `http://localhost/api/public/service-availability?service=${serviceId}&compact=1`,
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({ ok: true, type: "compact" });
+    expect(availability.getPublicServiceCompactAvailability).toHaveBeenCalledWith(
+      serviceId,
+    );
   });
 
   it("does not turn an availability failure into an empty day", async () => {

@@ -32,6 +32,7 @@ import {
   buildPopularScheduleTimes,
   buildUpcomingExceptions,
   calculateWeeklyAvailability,
+  findAvailabilityRuleOverlap,
   findDefaultScheduleScope,
   formatDuration,
   getRulesForScope,
@@ -52,7 +53,10 @@ type EditableRule = Omit<TherapistScheduleRule, "id"> & {
   id: string | null;
 };
 
-type SaveFeedback = { message: string; tone: "error" | "success" } | null;
+type SaveFeedback = {
+  message: string;
+  tone: "error" | "success" | "warning";
+} | null;
 
 type LastAvailabilityAction =
   | { kind: "deactivate-day"; dayOfWeek: number }
@@ -110,6 +114,7 @@ export function TherapistScheduleHours({
     setScheduleVersion(initialSchedule.scheduleVersion);
     setIsPubliclyVisible(initialSchedule.isPubliclyVisible);
     setIsDirty(false);
+    setFeedback(null);
   }, [initialSchedule, scheduleVersion]);
 
   const currentService = useMemo(
@@ -120,6 +125,32 @@ export function TherapistScheduleHours({
     () => getRulesForScope(rules, scope),
     [rules, scope],
   );
+  const availabilityOverlap = useMemo(
+    () => findAvailabilityRuleOverlap(rules),
+    [rules],
+  );
+  const overlapService = useMemo(
+    () =>
+      availabilityOverlap
+        ? services.find(
+            (service) => service.id === availabilityOverlap.serviceId,
+          ) ?? null
+        : null,
+    [availabilityOverlap, services],
+  );
+  const validationFeedback: SaveFeedback = availabilityOverlap
+    ? availabilityOverlap.serviceId === scope
+      ? {
+          message:
+            "Há duas faixas que se sobrepõem nesta terapia. Ajuste os horários antes de salvar.",
+          tone: "error",
+        }
+      : {
+          message: `Há um ajuste pendente em ${overlapService?.title ?? "outra terapia"}. Volte a essa terapia antes de salvar as alterações.`,
+          tone: "warning",
+        }
+    : null;
+  const visibleFeedback = feedback ?? validationFeedback;
   const summary = useMemo(
     () => calculateWeeklyAvailability(rules, scope),
     [rules, scope],
@@ -160,12 +191,6 @@ export function TherapistScheduleHours({
 
     setRules(nextRules);
     markChanged();
-  }
-
-  function validateEditedRange() {
-    if (hasOverlappingAvailabilityRules(rules)) {
-      showOverlapFeedback();
-    }
   }
 
   function toggleDay(dayOfWeek: number) {
@@ -314,6 +339,7 @@ export function TherapistScheduleHours({
       (rule) => normalizeClock(rule.startTime) >= normalizeClock(rule.endTime),
     );
     if (invalidRule) {
+      setScope(invalidRule.serviceId);
       setFeedback({
         message: "O horário final deve ser posterior ao horário inicial.",
         tone: "error",
@@ -321,8 +347,9 @@ export function TherapistScheduleHours({
       return;
     }
 
-    if (hasOverlappingAvailabilityRules(rules)) {
-      showOverlapFeedback();
+    if (availabilityOverlap) {
+      setScope(availabilityOverlap.serviceId);
+      setFeedback(null);
       return;
     }
 
@@ -472,16 +499,18 @@ export function TherapistScheduleHours({
           }
         />
 
-        {feedback ? (
+        {visibleFeedback ? (
           <div
             className={`mt-5 flex items-start gap-3 rounded-lg border p-4 text-sm font-bold ${
-              feedback.tone === "success"
+              visibleFeedback.tone === "success"
                 ? "border-status-success/30 bg-status-success/10 text-status-success"
-                : "border-status-danger/30 bg-status-dangerBg text-status-danger"
+                : visibleFeedback.tone === "warning"
+                  ? "border-status-warning/30 bg-status-warningBg text-status-warning"
+                  : "border-status-danger/30 bg-status-dangerBg text-status-danger"
             }`}
-            role={feedback.tone === "error" ? "alert" : "status"}
+            role={visibleFeedback.tone === "error" ? "alert" : "status"}
           >
-            {feedback.tone === "success" ? (
+            {visibleFeedback.tone === "success" ? (
               <Check aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
             ) : (
               <AlertCircle
@@ -490,7 +519,7 @@ export function TherapistScheduleHours({
                 size={18}
               />
             )}
-            {feedback.message}
+            {visibleFeedback.message}
           </div>
         ) : null}
 
@@ -526,7 +555,10 @@ export function TherapistScheduleHours({
                 <select
                   className="mt-2 min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 sm:max-w-md"
                   id="schedule-scope"
-                  onChange={(event) => setScope(event.target.value)}
+                  onChange={(event) => {
+                    setScope(event.target.value);
+                    setFeedback(null);
+                  }}
                   value={scope}
                 >
                   {services.map((service) => (
@@ -593,7 +625,6 @@ export function TherapistScheduleHours({
                                   onChange={(value) =>
                                     updateRule(rule, "startTime", value)
                                   }
-                                  onBlur={validateEditedRange}
                                   value={normalizeClock(rule.startTime)}
                                 />
                                 <span
@@ -607,7 +638,6 @@ export function TherapistScheduleHours({
                                   onChange={(value) =>
                                     updateRule(rule, "endTime", value)
                                   }
-                                  onBlur={validateEditedRange}
                                   value={normalizeClock(rule.endTime)}
                                 />
                                 <button
@@ -1298,12 +1328,10 @@ const scheduleTimeOptions = Array.from({ length: 96 }, (_, index) =>
 
 function TimeSelect({
   ariaLabel,
-  onBlur,
   onChange,
   value,
 }: {
   ariaLabel: string;
-  onBlur: () => void;
   onChange: (value: string) => void;
   value: string;
 }) {
@@ -1316,7 +1344,6 @@ function TimeSelect({
       aria-label={ariaLabel}
       className="min-h-11 min-w-0 w-full rounded-lg border border-brand-lavender bg-white px-3 text-center text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
       onChange={(event) => onChange(event.target.value)}
-      onBlur={onBlur}
       value={value}
     >
       {options.map((option) => (
