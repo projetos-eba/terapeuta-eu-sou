@@ -61,6 +61,8 @@ type Result = {
   senders: Sender[];
 };
 
+const HIDDEN_WHEN_DISABLED_ACTIONS = new Set(["booking_reminder_24h_patient"]);
+
 export function AdminEmailManagementList() {
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState("");
@@ -104,15 +106,19 @@ export function AdminEmailManagementList() {
 }
 
 function EmailManagementContent({ data }: { data: Result }) {
+  const visibleActions = useMemo(
+    () => data.actions.filter(isVisibleEmailAction),
+    [data.actions],
+  );
   const actionsByCategory = useMemo(() => {
-    return data.actions.reduce<Map<string, Action[]>>((groups, action) => {
+    return visibleActions.reduce<Map<string, Action[]>>((groups, action) => {
       groups.set(action.category, [
         ...(groups.get(action.category) ?? []),
         action,
       ]);
       return groups;
     }, new Map());
-  }, [data.actions]);
+  }, [visibleActions]);
   const defaultSender = data.senders.find(
     (sender) => sender.active && sender.is_default,
   );
@@ -195,11 +201,11 @@ function EmailManagementContent({ data }: { data: Result }) {
             </p>
           </div>
           <StatusPill tone="neutral">
-            {data.actions.length} mensagens
+            {visibleActions.length} mensagens
           </StatusPill>
         </div>
 
-        {data.actions.length ? (
+        {visibleActions.length ? (
           <div className="mt-7 space-y-8">
             {[...actionsByCategory.entries()].map(([category, actions]) => (
               <section
@@ -265,6 +271,15 @@ function EmailManagementContent({ data }: { data: Result }) {
         </div>
       </AppPageSection>
     </AppPageContainer>
+  );
+}
+
+function isVisibleEmailAction(action: Action) {
+  if (!HIDDEN_WHEN_DISABLED_ACTIONS.has(action.actionKey)) return true;
+
+  return !(
+    action.setting?.enabled === false &&
+    action.setting.automatic_dispatch_enabled === false
   );
 }
 

@@ -82,7 +82,7 @@ Os cenários 18 e 19 usam a tabela/job persistente `booking_reminder_jobs`, não
 - usar a outbox para dedupe/entrega; e
 - ser acionado por `tes-booking-reminders-v1` no Supabase Cron, com recovery da outbox e observabilidade.
 
-Status local: **IMPLEMENTED_LOCAL** para `booking_reminder_24h_patient` e `booking_reminder_1h_patient`. O primeiro lote não cria lembretes para terapeuta. A ativação automática das actions permanece uma decisão operacional por ambiente.
+Status local: o contrato de `booking_reminder_24h_patient` está preservado, mas **INACTIVE_V10**, pois a cobrança e a confirmação ocorrem no próprio T-24. `booking_reminder_1h_patient` permanece **IMPLEMENTED_LOCAL** e disponível para ativação operacional. O primeiro lote não cria lembretes para terapeuta.
 
 ## Lotes de implementação propostos
 
