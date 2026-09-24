@@ -209,6 +209,9 @@ verify_jwt = false
 [functions.session-journey-themes-command]
 verify_jwt = false
 
+[functions.session-observations-command]
+verify_jwt = false
+
 [functions.auto-confirm-sessions]
 verify_jwt = false
 

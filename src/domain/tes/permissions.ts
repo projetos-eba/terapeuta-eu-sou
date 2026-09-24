@@ -17,7 +17,8 @@ export type TherapistCapability =
   | "advanced_financials"
   | "agenda_insights"
   | "request_new_therapy"
-  | "custom_profile_slug";
+  | "custom_profile_slug"
+  | "session_observations";
 
 export const therapistPlanCapabilities: Record<
   TherapistPlan,
