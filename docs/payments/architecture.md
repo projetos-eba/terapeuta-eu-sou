@@ -174,9 +174,12 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
 - A conciliação de Payout ignora pares `payment`/`payment_refund` apenas quando
   o Refund consultado na Stripe comprova a mesma Charge, a Balance Transaction
-  exata e o valor integral em BRL, sem vínculo do crédito com um Transfer TES.
-  Os IDs neutros ficam auditáveis; pares sem essa prova continuam como
-  movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
+  exata e o valor integral em BRL. Sem vínculo TES, o par comprovado é neutro.
+  Com vínculo TES, a exclusão exige adicionalmente um Transfer direto V10, um
+  único reembolso integral conciliado e uma única reversão integral bem-sucedida
+  do mesmo Transfer; estados ativos, parciais ou ambíguos continuam bloqueados.
+  Os IDs e a classificação ficam auditáveis; pares sem essa prova continuam
+  como movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
   após sucesso comprovado do mesmo job, mesmo que `pending_source` permaneça
   aguardando o Payout bancário.
 - Quando a divida consome integralmente os 85%, o job termina como

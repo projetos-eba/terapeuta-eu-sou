@@ -212,10 +212,14 @@ Uma movimentação `payment` seguida de `payment_refund` na conta conectada só
 pode ser retirada da contagem de itens sem associação quando a consulta do
 Refund à Stripe comprovar a Charge de origem, a Balance Transaction exata do
 estorno, status concluído, moeda BRL e valor integral oposto. A reconciliação
-confere novamente a unicidade do par e que o crédito não pertence a um Transfer
-TES; registra os IDs do par no Payout para auditoria. Soma zero isolada ou
-estorno sem prova de origem permanece incidente crítico. A exclusão do par
-neutro não cria alocação, lançamento no ledger nem comunicação de repasse.
+confere novamente a unicidade do par. Sem vínculo TES, essa prova é suficiente.
+Se o crédito pertence a um Transfer TES, a exclusão exige um Transfer direto
+V10 em estado `reversed`, os dois identificadores conectados exatos, um único
+reembolso integral conciliado para a sessão e uma única reversão integral
+bem-sucedida para o Transfer. Reversão parcial, Transfer ativo, múltiplos
+vínculos ou evidência incompleta permanecem incidentes críticos. Os IDs e a
+classificação do par ficam no Payout para auditoria. A exclusão não cria
+alocação, lançamento no ledger nem comunicação de repasse.
 
 Um incidente `session_direct_transfer_attention` anterior ao sucesso do
 Transfer V10 pode ser resolvido quando o mesmo job possui pagamento pago,
