@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v5` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v6` (current UI consumer; earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -187,6 +187,9 @@ recebimento`; provider and reconciliation terminology stays in the service
 - For a completed bank Payout, show `arrival_at` as the receipt date when Stripe
   provides it; use `paid_at` only as a fallback. Do not change financial state
   or allocation from this presentation rule.
+- Treat Stripe `arrival_at` as a civil bank date, without timezone rollback. A
+  fully reconciled Payout whose arrival is still in the future remains `A
+caminho` and does not enter received history or totals early.
 - Missing Stripe receipt URLs may be enriched only from the immutable Charge
   already bound to the payment. Receipt-only candidates use
   `record_session_payment_receipt_url_v1`, not settlement reconciliation. The

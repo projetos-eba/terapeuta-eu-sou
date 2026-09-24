@@ -249,7 +249,11 @@ function getDetailSections(
         field("Transferências", formatCount(record.transfer_count)),
         field("Lançamentos", formatCount(record.ledger_entry_count)),
         field("Elegível em", formatDate(record.eligible_at)),
-        field("Pago ao banco em", formatDate(record.bank_paid_at)),
+        field(
+          "Pago ao banco em",
+          formatBankDate(record.bank_paid_date) ||
+            formatDate(record.bank_paid_at),
+        ),
       ]),
       timestampSection(record),
     ];
@@ -518,6 +522,20 @@ function formatDate(value: unknown) {
     dateStyle: "short",
     timeStyle: "short",
     timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+function formatBankDate(value: unknown) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "";
+  }
+
+  const date = new Date(`${value}T12:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
   }).format(date);
 }
 
