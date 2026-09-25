@@ -1,5 +1,5 @@
 begin;
-select plan(15);
+select plan(18);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -124,14 +124,15 @@ insert into public.session_transfer_jobs (
 insert into public.stripe_payouts (
   id, therapist_profile_id, connect_account_id, stripe_payout_id,
   amount_cents, currency, status, provider_status, automatic,
-  provider_reconciliation_status, allocation_status, paid_at
+  provider_reconciliation_status, allocation_status, arrival_at, paid_at
 ) values (
   'b1210000-0000-4000-8000-000000000051',
   'c1000000-0000-4000-8000-000000000001',
   (select connect_account_id_snapshot from public.session_payments
    where id = 'b1210000-0000-4000-8000-000000000022'),
   'po_test_v10_history_121_2', 8500, 'BRL', 'paid', 'paid', true,
-  'completed', 'completed', '2098-10-02 18:00:00+00'
+  'completed', 'completed', '2098-10-03 15:00:00+00',
+  '2098-10-02 18:00:00+00'
 );
 
 insert into public.stripe_payout_transfer_allocations (
@@ -154,6 +155,30 @@ select set_config('request.jwt.claims',
     'role', 'authenticated'
   )::text, true);
 set local role authenticated;
+
+select is(
+  (public.get_private_therapist_payouts_v5(
+    '2098-10-01', '2098-10-03', 1, 20, 'America/Sao_Paulo', 15
+  ) ->> 'contractVersion')::integer,
+  5,
+  'the current payout projection publishes contract V5'
+);
+select is(
+  (select item ->> 'date'
+   from jsonb_array_elements(public.get_private_therapist_payouts_v5(
+     '2098-10-01', '2098-10-03', 1, 20, 'America/Sao_Paulo', 15
+   ) -> 'historyItems') as item
+   where item ->> 'status' = 'received'),
+  '2098-10-03',
+  'received history uses the Stripe bank arrival date instead of the earlier paid event'
+);
+select is(
+  (public.get_private_therapist_payouts_v5(
+    '2098-10-01', '2098-10-03', 1, 20, 'America/Sao_Paulo', 15
+  ) #>> '{summary,receivedCents}')::integer,
+  8500,
+  'the received total uses the same arrival-backed period as the history'
+);
 
 select is(
   (public.get_private_therapist_payouts_v2(

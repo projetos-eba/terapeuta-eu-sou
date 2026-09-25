@@ -399,8 +399,7 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
               A confirmação individual é separada da avaliação da sessão. Se
-              permanecer pendente, o sistema a registra após 30 dias do fim
-              previsto, observadas as análises de qualidade em andamento.
+              permanecer pendente, o sistema a registra após 30 dias.
             </p>
           </div>
         </div>

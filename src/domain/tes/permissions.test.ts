@@ -19,3 +19,20 @@ describe("custom profile slug capability", () => {
     ).toBe(true);
   });
 });
+
+describe("session observations capability", () => {
+  it("is reserved for Premium Plus", () => {
+    expect(
+      canUseTherapistCapability(TherapistPlan.Free, "session_observations"),
+    ).toBe(false);
+    expect(
+      canUseTherapistCapability(TherapistPlan.Premium, "session_observations"),
+    ).toBe(false);
+    expect(
+      canUseTherapistCapability(
+        TherapistPlan.PremiumPlus,
+        "session_observations",
+      ),
+    ).toBe(true);
+  });
+});

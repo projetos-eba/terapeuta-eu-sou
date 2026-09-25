@@ -14,7 +14,7 @@ describe("therapist finance mappers", () => {
   it("maps the financial overview without recalculating cents in the browser", () => {
     const overview = mapTherapistFinancialOverview({
       blockedCents: 0,
-      contractVersion: 2,
+      contractVersion: 3,
       disputedCents: 7000,
       eligibleForPayoutCents: 12000,
       generatedAt: "2026-07-28T12:00:00.000Z",
@@ -52,7 +52,7 @@ describe("therapist finance mappers", () => {
 
   it("maps F2 financial metrics with comparisons and insufficient-data states", () => {
     const metrics = mapTherapistFinancialMetrics({
-      contractVersion: 1,
+      contractVersion: 2,
       financialEvolution: [
         {
           grossAmountCents: 10000,
@@ -62,7 +62,7 @@ describe("therapist finance mappers", () => {
           therapistNetAmountCents: 7000,
         },
       ],
-      metricDefinitionVersion: 1,
+      metricDefinitionVersion: 2,
       period: {
         end: "2026-07-28",
         generatedAt: "2026-07-28T12:00:00.000Z",
@@ -190,7 +190,7 @@ describe("therapist finance mappers", () => {
         sampleSize: null,
         status: "insufficient_sample",
       },
-      contractVersion: 1,
+      contractVersion: 2,
       financialEvolution: [
         {
           contractedNetCents: 8000,
@@ -346,7 +346,7 @@ describe("therapist finance mappers", () => {
 
   it("maps the charge-focused receipt contract", () => {
     const receipts = mapTherapistReceiptsContract({
-      contractVersion: 4,
+      contractVersion: 5,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -358,9 +358,11 @@ describe("therapist finance mappers", () => {
       generatedAt: "2026-07-28T12:00:00.000Z",
       items: [
         {
+          bankTransferAmountCents: 3000,
           bookingId: "f6100000-0000-4000-8000-000000000001",
           chargeStatus: "refunded",
           createdAt: "2026-07-28T12:00:00.000Z",
+          debtOffsetAmountCents: 1000,
           financialStatus: "partially_refunded",
           grossAmountCents: 5000,
           patientDisplayName: "Lucas",
@@ -393,7 +395,9 @@ describe("therapist finance mappers", () => {
     });
 
     expect(receipts.items[0]).toMatchObject({
+      bankTransferAmountCents: 3000,
       chargeStatus: "refunded",
+      debtOffsetAmountCents: 1000,
       receiptStatus: "refunded",
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
@@ -447,7 +451,7 @@ describe("therapist finance mappers", () => {
         periodStart: "2026-07-28",
         predicted: [],
       },
-      contractVersion: 4,
+      contractVersion: 8,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",

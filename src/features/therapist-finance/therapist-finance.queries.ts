@@ -10,21 +10,21 @@ export function queryTherapistFinancialOverview(
   accessToken: string,
   body: QueryBody,
 ) {
-  return requestFinanceRpc("get_private_therapist_financial_overview_v2", {
+  return requestFinanceRpc("get_private_therapist_financial_overview_v3", {
     accessToken,
     body,
   });
 }
 
 export function queryTherapistReceipts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_receipts_v4", {
+  return requestFinanceRpc("get_private_therapist_receipts_v5", {
     accessToken,
     body,
   });
 }
 
 export function queryTherapistPayouts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_payouts_v4", {
+  return requestFinanceRpc("get_private_therapist_payouts_v8", {
     accessToken,
     body,
   });
@@ -41,7 +41,7 @@ export function queryTherapistFinancialMetrics(
   accessToken: string,
   body: QueryBody,
 ) {
-  return requestFinanceRpc("get_private_therapist_financial_metrics_v1", {
+  return requestFinanceRpc("get_private_therapist_financial_metrics_v2", {
     accessToken,
     body,
   });
@@ -52,7 +52,7 @@ export function queryTherapistAdvancedFinancialDashboard(
   body: QueryBody,
 ) {
   return requestFinanceRpc(
-    "get_private_therapist_advanced_financial_dashboard_v1",
+    "get_private_therapist_advanced_financial_dashboard_v2",
     {
       accessToken,
       body,

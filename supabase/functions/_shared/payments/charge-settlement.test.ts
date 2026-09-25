@@ -25,22 +25,27 @@ Deno.test(
         status: "available",
       },
       id: "ch_source",
+      receipt_url: "https://pay.stripe.com/receipts/test-receipt",
     });
 
     assertEquals(snapshot?.balanceTransactionId, "txn_settlement");
     assertEquals(snapshot?.status, "available");
     assertEquals(snapshot?.currency, "brl");
     assertEquals(snapshot?.availableOn, "2026-08-29T10:40:00.000Z");
+    assertEquals(
+      snapshot?.receiptUrl,
+      "https://pay.stripe.com/receipts/test-receipt",
+    );
   },
 );
 
 Deno.test(
   "reconciles an unsettled charge independently of the transfer lifecycle",
   async () => {
-    const requests: Array<{ path?: string }> = [];
+    const requests: Array<{ body?: unknown; name?: string }> = [];
     const client = {
-      get: (path: string) => {
-        requests.push({ path });
+      rpc: (name: string, body: unknown) => {
+        requests.push({ body, name });
         return Promise.resolve([]);
       },
     } as unknown as SupabaseRestClient;
@@ -52,8 +57,66 @@ Deno.test(
 
     assertEquals(results.length, 0);
     assertEquals(
-      requests[0]?.path,
-      "/rest/v1/session_payments?select=id,stripe_charge_id&financial_status=in.(paid,partially_refunded)&stripe_charge_id=not.is.null&or=(stripe_balance_transaction_id.is.null,stripe_balance_status.is.null,stripe_balance_status.eq.pending)&order=stripe_balance_checked_at.asc.nullsfirst,updated_at.asc&limit=500",
+      requests[0]?.name,
+      "get_session_payment_charge_reconciliation_candidates_v2",
+    );
+    assertEquals((requests[0]?.body as { p_limit?: number }).p_limit, 500);
+  },
+);
+
+Deno.test(
+  "repairs a missing receipt without invoking financial settlement",
+  async () => {
+    const requests: Array<{ body?: unknown; name?: string }> = [];
+    const client = {
+      rpc: (name: string, body: unknown) => {
+        requests.push({ body, name });
+        if (
+          name === "get_session_payment_charge_reconciliation_candidates_v2"
+        ) {
+          return Promise.resolve([
+            {
+              id: "payment-receipt-only",
+              needs_receipt: true,
+              needs_settlement: false,
+              stripe_charge_id: "ch_receipt_only",
+            },
+          ]);
+        }
+        return Promise.resolve({ receiptRecorded: true });
+      },
+    } as unknown as SupabaseRestClient;
+    const stripe = {
+      charges: {
+        retrieve: () =>
+          Promise.resolve({
+            balance_transaction: {
+              amount: 12_300,
+              available_on: 1_788_000_000,
+              currency: "brl",
+              id: "txn_receipt_only",
+              source: "ch_receipt_only",
+              status: "available",
+            },
+            id: "ch_receipt_only",
+            receipt_url: "https://pay.stripe.com/receipts/receipt-only",
+          }),
+      },
+    };
+
+    const results = await reconcileChargeSettlements({
+      client,
+      stripe: stripe as never,
+    });
+
+    assertEquals(results.length, 1);
+    assertEquals(requests[1]?.name, "record_session_payment_receipt_url_v1");
+    assertEquals(
+      requests.some(
+        (request) =>
+          request.name === "record_session_payment_stripe_reconciliation_v2",
+      ),
+      false,
     );
   },
 );
@@ -61,7 +124,8 @@ Deno.test(
 Deno.test(
   "rechecks payments blocked only because Connect was not ready",
   async () => {
-    const requests: Array<{ body?: unknown; name?: string; path?: string }> = [];
+    const requests: Array<{ body?: unknown; name?: string; path?: string }> =
+      [];
     const client = {
       get: (path: string) => {
         requests.push({ path });
@@ -118,6 +182,7 @@ Deno.test(
       currency: "brl",
       feeAmountCents: 1_845,
       netAmountCents: 10_455,
+      receiptUrl: null,
       sourceChargeId: "ch_source",
       status: "available" as const,
     };

@@ -33,6 +33,38 @@ describe("mapBookingDetail", () => {
     expect(result.encounterState.waitingRoom.kind).toBe(
       "operational_unavailable",
     );
+    expect(result.encounterState.waitingRoom.message).not.toContain("Zoom");
+  });
+
+  it("keeps a server-authorized V10 retry attached to the platform room", () => {
+    const input = createInput();
+    const result = mapBookingDetail({
+      ...input,
+      booking: {
+        ...input.booking,
+        status: "cancelled_by_payment",
+      },
+      paymentRetryAvailable: true,
+      sessionPayment: {
+        ...input.sessionPayment!,
+        financial_status: SessionFinancialStatus.Canceled,
+      },
+    });
+
+    expect(result.onlineSession.provider).toBe("zoom");
+    expect(result.encounterState.waitingRoom).toEqual({
+      kind: "payment_required",
+      message: "A sala será liberada quando o pagamento for confirmado.",
+      title: "Pagamento necessário",
+    });
+    expect(result.actionPolicy.cancellation).toMatchObject({
+      allowed: false,
+      disabledReason: "Conclua o pagamento para confirmar este horário.",
+    });
+    expect(result.actionPolicy.reschedule).toMatchObject({
+      allowed: false,
+      disabledReason: "Conclua o pagamento para confirmar este horário.",
+    });
   });
 });
 

@@ -54,6 +54,10 @@ Do not send generic `select *` payloads to React.
 
 - The payments module currently exposes only metric counts and sanitized
   operational rows.
+- `failed-session-payments` counts only canonical
+  `session_payments.financial_status = 'failed'`. Canceled payments remain
+  queryable through their dedicated status and must not inflate the
+  `Pagamentos com falha` KPI.
 - The first four metrics can be used as KPI cards and the remaining metrics can
   be shown as secondary operational indicators.
 - Do not invent monetary totals, deltas, charts, date ranges, payment method
@@ -107,9 +111,21 @@ Do not send generic `select *` payloads to React.
   Payout; `A caminho do banco` requires a full allocation to a provider Payout
   in `pending` or `in_transit`; `Pago` still requires the Payout, provider
   reconciliation and allocation to be fully completed.
+- A refunded Transfer with open recovery debt is `Valor a compensar`. It becomes
+  `Compensado` only when durable `transfer_offset` evidence covers the settled
+  debt principal. A settled row without that evidence remains under review.
+- For a fully reconciled paid Payout, the administrative bank date prefers
+  Stripe `arrival_at` and uses `paid_at` only as a fallback.
+- `arrival_at` is a civil bank date. Even when the provider status is `paid`, a
+  future arrival remains `A caminho do banco`; `Pago` and the date-only Admin
+  field are exposed only after the arrival evidence is reached.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
+- A PaymentIntent identifier proves only that a payment attempt exists. The
+  detail renders it as `Tentativa de pagamento registrada` and never as
+  payment confirmation; the canonical `financial_status` remains the authority
+  for `Pago`, `Falhou`, `Cancelado` and refund states.
 - Administrative payout-incident notifications distinguish bank reconciliation
   from a session transfer. A session-linked incident opens that payment's
   detail; resolved incidents keep their history but no longer claim that

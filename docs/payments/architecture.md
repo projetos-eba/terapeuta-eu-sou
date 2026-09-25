@@ -174,9 +174,12 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   `payout.paid`, reconciliacao concluida e alocacao integral do Transfer.
 - A conciliação de Payout ignora pares `payment`/`payment_refund` apenas quando
   o Refund consultado na Stripe comprova a mesma Charge, a Balance Transaction
-  exata e o valor integral em BRL, sem vínculo do crédito com um Transfer TES.
-  Os IDs neutros ficam auditáveis; pares sem essa prova continuam como
-  movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
+  exata e o valor integral em BRL. Sem vínculo TES, o par comprovado é neutro.
+  Com vínculo TES, a exclusão exige adicionalmente um Transfer direto V10, um
+  único reembolso integral conciliado e uma única reversão integral bem-sucedida
+  do mesmo Transfer; estados ativos, parciais ou ambíguos continuam bloqueados.
+  Os IDs e a classificação ficam auditáveis; pares sem essa prova continuam
+  como movimentações sem associação. Um alerta antigo de Transfer V10 é encerrado
   após sucesso comprovado do mesmo job, mesmo que `pending_source` permaneça
   aguardando o Payout bancário.
 - Quando a divida consome integralmente os 85%, o job termina como
@@ -340,8 +343,11 @@ retomada não ocupa o horário enquanto o cartão é preenchido; no evento
 `payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
 atomicamente antes da captura. Antes de expor ou processar a retomada, a mesma
 verificação confere o candidato exato no motor de agenda (serviço ativo,
-disponibilidade e exceções, antecedência mínima, horizonte, duração, buffers e
-cadência), além dos conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
+disponibilidade e exceções, antecedência mínima, horizonte e cadência), usando
+a duração, fuso e buffers imutáveis registrados na reserva. Alterações futuras
+nos buffers do serviço não invalidam por si só uma retomada cujo intervalo
+original ainda caiba na agenda atual. Além disso, a verificação confere os
+conflitos de terapeuta e paciente. Conflito cancela a autorização sem captura. O
 mesmo princípio vale para Checkout V10 em modo Setup: a preparação é somente
 leitura, a nova Checkout Session e a tentativa `payment_retry` são persistidas
 em uma única transação ainda com a reserva liberada, e somente o
@@ -585,9 +591,11 @@ financeira.
 Desde 2026-09-17, Recebimentos e Repasses consomem projeções privadas v3
 aditivas. Recebimentos comunica a cobrança de cada sessão; Repasses comunica a
 chegada bancária como `Previsto → A caminho da sua conta → Recebido`. A Agenda
-de Repasses contém apenas datas futuras sustentadas por `arrival_at`, agrupadas
-por data, e nunca inclui valores já recebidos. A confirmação de `Recebido`
-permanece condicionada ao Payout pago, à reconciliação concluída e à alocação
+de Repasses contém apenas datas futuras sustentadas por `arrival_at`, tratada
+como data civil sem conversão de fuso, agrupadas por data, e nunca inclui
+valores já recebidos. Um Payout pago pelo provedor continua `A caminho` enquanto
+essa chegada estiver no futuro. A confirmação de `Recebido` permanece
+condicionada ao Payout pago, à chegada alcançada, à reconciliação concluída e à alocação
 integral. Os contratos v2, os caminhos V9/V10, workers, jobs, ledger e comandos
 financeiros não foram modificados por essa camada de apresentação.
 
@@ -614,15 +622,15 @@ para confirmar pagamento, onboarding ou repasse.
 
 Read models privados:
 
-- `get_private_therapist_financial_overview_v1`;
-- `get_private_therapist_receipts_v1`;
-- `get_private_therapist_payouts_v1`;
+- `get_private_therapist_financial_overview_v3`;
+- `get_private_therapist_receipts_v5`;
+- `get_private_therapist_payouts_v8`;
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
-- `get_private_therapist_financial_metrics_v1` para métricas F2 Premium e
+- `get_private_therapist_financial_metrics_v2` para métricas F2 Premium e
   Premium Plus;
-- `get_private_therapist_advanced_financial_dashboard_v1` e contratos
+- `get_private_therapist_advanced_financial_dashboard_v2` e contratos
   segmentados F3 para Premium Plus.
 
 Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não
@@ -777,7 +785,7 @@ operacional sem imprimir o secret.
 
 O TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
 
-Assinaturas de terapeutas usam invoices do Stripe Billing, com `hosted_invoice_url`, PDF da invoice ou Billing Portal quando disponiveis. Pagamentos de sessoes usam recibos da Charge/PaymentIntent, incluindo `receipt_url` quando a Stripe gerar esse comprovante. Transfers Connect e payouts bancarios sao comprovantes operacionais distintos e tambem nao sao notas fiscais.
+Assinaturas de terapeutas usam invoices do Stripe Billing, com `hosted_invoice_url`, PDF da invoice ou Billing Portal quando disponiveis. Pagamentos de sessoes usam recibos da Charge/PaymentIntent, incluindo `receipt_url` quando a Stripe gerar esse comprovante. Se a URL não tiver sido projetada, a fila `get_session_payment_charge_reconciliation_candidates_v2` separa explicitamente saldo e comprovante; o caminho exclusivo de comprovante consulta o Charge imutável já vinculado e chama `record_session_payment_receipt_url_v1`. Essa correção de apresentação não altera status financeiro, ledger, reembolso, Transfer ou Payout. Transfers Connect e payouts bancarios sao comprovantes operacionais distintos e tambem nao sao notas fiscais.
 
 Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e nacional ou emissao em nome dos terapeutas. A fronteira futura deve permanecer desacoplada do dominio financeiro.
 

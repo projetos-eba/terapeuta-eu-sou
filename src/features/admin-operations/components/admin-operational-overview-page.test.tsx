@@ -61,6 +61,46 @@ describe("AdminOperationalOverviewPage", () => {
     expect(html).not.toContain("bookings");
   });
 
+  it("normalizes booking and payment enums only in the admin presentation", () => {
+    const html = renderToStaticMarkup(
+      <AdminOperationalOverviewPage
+        data={{
+          ...baseData,
+          rows: [
+            {
+              ...baseData.rows[0],
+              fields: baseData.rows[0].fields.map((field) =>
+                field.label === "Pagamento"
+                  ? { ...field, value: "cancelled" }
+                  : field,
+              ),
+              statusLabel: "cancelled_by_payment",
+            },
+            {
+              ...baseData.rows[0],
+              id: "session-2",
+              statusLabel: "no_show_patient",
+            },
+            {
+              ...baseData.rows[0],
+              id: "session-3",
+              statusLabel: "draft",
+            },
+          ],
+        }}
+        module="sessions"
+      />,
+    );
+
+    expect(html).toContain("Cancelada por falha no pagamento");
+    expect(html).toContain("Não realizada — cliente ausente");
+    expect(html).toContain("Pagamento: Cancelado");
+    expect(html).toContain("Rascunho");
+    expect(html).not.toContain("Cancelled by payment");
+    expect(html).not.toContain("No show patient");
+    expect(html).not.toContain("Perfil em construção");
+  });
+
   it("renders the support workspace with module-specific language", () => {
     const html = renderToStaticMarkup(
       <AdminOperationalOverviewPage

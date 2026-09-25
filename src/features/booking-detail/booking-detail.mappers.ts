@@ -181,9 +181,11 @@ export function mapBookingDetail(
     (input.sessionPayment?.financial_status === SessionFinancialStatus.Failed ||
       input.sessionPayment?.financial_status ===
         SessionFinancialStatus.Canceled);
+  const usesCanonicalZoomRoom =
+    input.sessionPayment?.payment_flow_version === "v10";
   const provider = getMeetingProvider(
     input.booking.meeting_provider ??
-      (isReservedAwaitingPayment ? "zoom_video_sdk" : null),
+      (usesCanonicalZoomRoom ? "zoom_video_sdk" : null),
   );
   const canJoin =
     status === "live" &&
@@ -233,6 +235,7 @@ export function mapBookingDetail(
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
       paymentFlowVersion: input.sessionPayment?.payment_flow_version ?? "v9",
+      paymentRetryAvailable: input.paymentRetryAvailable === true,
       startsAt: input.booking.starts_at,
     }),
     booking: {

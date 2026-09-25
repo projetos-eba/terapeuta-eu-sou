@@ -416,6 +416,9 @@ export function formatStatusLabel(value?: string) {
     active: "Ativo",
     approved: "Aprovado",
     anonymized: "Anonimizado",
+    cancelled_by_patient: "Cancelada pelo cliente",
+    cancelled_by_payment: "Cancelada por falha no pagamento",
+    cancelled_by_therapist: "Cancelada pelo terapeuta",
     changes_requested: "Ajustes solicitados",
     completed: "Concluída",
     confirmed: "Confirmada",
@@ -441,6 +444,33 @@ export function formatStatusLabel(value?: string) {
   };
 
   return labels[key] ?? sentenceCase(value ?? "");
+}
+
+export function formatSessionPaymentStatusLabel(value?: string) {
+  const key = (value ?? "").trim().toLowerCase();
+
+  if (!key) return "";
+
+  const labels: Record<string, string> = {
+    canceled: "Cancelado",
+    cancelled: "Cancelado",
+    failed: "Falhou",
+    not_started: "Não iniciado",
+    paid: "Confirmado",
+    partially_refunded: "Reembolso parcial",
+    pending: "Pendente",
+    refunded: "Reembolsado",
+  };
+
+  return labels[key] ?? "Situação indisponível";
+}
+
+export function formatSessionStatusLabel(value?: string) {
+  const key = (value ?? "").trim().toLowerCase();
+
+  if (key === "draft") return "Rascunho";
+
+  return formatStatusLabel(value);
 }
 
 export function formatPlanLabel(value?: string) {

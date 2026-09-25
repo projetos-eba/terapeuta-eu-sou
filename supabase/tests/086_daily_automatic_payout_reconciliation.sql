@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(31);
+select plan(40);
 
 select ok(
   exists (
@@ -324,6 +324,228 @@ select is(
   (select jsonb_array_length(neutral_transaction_pairs) from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
   0,
   'TES-bound payment remains outside the neutral-pair audit'
+);
+
+insert into public.bookings (
+  id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at,
+  timezone, status, payment_status, service_title_snapshot,
+  service_duration_minutes_snapshot, service_price_cents_snapshot
+) values (
+  'fb000000-0000-4000-8000-000000000010',
+  'b1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  now() - interval '16 days', now() - interval '16 days' + interval '50 minutes',
+  'America/Sao_Paulo', 'completed', 'refunded',
+  'Fixture V10 integralmente revertida', 50, 10000
+);
+
+insert into public.session_payments (
+  id, booking_id, patient_profile_id, therapist_profile_id, service_id,
+  policy_version_id, stripe_payment_intent_id, stripe_charge_id,
+  stripe_balance_transaction_id, gross_amount_cents, platform_commission_bps,
+  platform_gross_commission_cents, therapist_amount_cents, financial_status,
+  service_status, transfer_status, paid_at, payment_flow_version,
+  connect_account_id_snapshot, stripe_connect_account_id_snapshot,
+  payment_due_at, refund_pending, metadata
+)
+select
+  'fb100000-0000-4000-8000-000000000010',
+  'fb000000-0000-4000-8000-000000000010',
+  'b1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001', policy.id,
+  'pi_auto_reversed_v10', 'ch_auto_reversed_v10', 'txn_auto_charge_reversed_v10',
+  10000, 1500, 1500, 8500, 'refunded', 'scheduled', 'reversed',
+  '2026-08-25 05:00:00+00', 'v10', account.id, account.stripe_account_id,
+  '2026-08-24 05:00:00+00', false,
+  '{"fixture":"automatic_payout_fully_reversed_v10"}'::jsonb
+from public.financial_policy_versions as policy
+cross join public.therapist_connect_accounts as account
+where policy.policy_key = 'tes-payments-v10-setup-t24-immediate-transfer'
+  and account.stripe_account_id = 'acct_tes_local_weekly_payout_fixture';
+
+insert into public.stripe_transfers (
+  id, session_payment_id, therapist_profile_id, connect_account_id,
+  stripe_transfer_id, idempotency_key, request_fingerprint, amount_cents,
+  status, stripe_source_charge_id, transfer_origin,
+  therapist_gross_amount_cents, debt_offset_amount_cents,
+  stripe_destination_payment_id, stripe_connected_balance_transaction_id,
+  transferred_at
+)
+select
+  'fb200000-0000-4000-8000-000000000010', payment.id,
+  payment.therapist_profile_id, payment.connect_account_id_snapshot,
+  'tr_auto_reversed_v10', 'tes:v10:transfer:auto-reversed-v10',
+  'fingerprint:auto-reversed-v10', 8500, 'reversed',
+  payment.stripe_charge_id, 'session_direct', 8500, 0,
+  'py_auto_reversed_v10', 'txn_auto_reversed_v10',
+  '2026-08-25 05:10:00+00'
+from public.session_payments as payment
+where payment.id = 'fb100000-0000-4000-8000-000000000010';
+
+insert into public.session_refunds (
+  session_payment_id, stripe_refund_id, amount_cents, currency,
+  status, processed_at, metadata
+) values (
+  'fb100000-0000-4000-8000-000000000010',
+  're_auto_reversed_v10', 10000, 'BRL', 'succeeded',
+  '2026-08-25 05:20:00+00', '{"paymentFlowVersion":"v10"}'::jsonb
+);
+
+insert into public.stripe_transfer_reversals (
+  stripe_transfer_id, stripe_transfer_reversal_id, amount_cents,
+  currency, reason, status, metadata
+) values (
+  'fb200000-0000-4000-8000-000000000010',
+  'trr_auto_reversed_v10', 8500, 'BRL', 'refund', 'succeeded',
+  '{"paymentFlowVersion":"v10"}'::jsonb
+);
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10')
+    ), '2026-08-27 10:02:31+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'completed',
+  'a fully refunded and fully reversed V10 Transfer is neutral to the bank Payout'
+);
+select is(
+  (select neutral_transaction_pairs -> 0 ->> 'classification'
+   from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'tes_v10_fully_reversed_transfer',
+  'the excluded V10 pair remains explicitly classified for audit'
+);
+select is(
+  (select count(*)::integer from public.stripe_payout_transfer_allocations
+   where stripe_transfer_id='fb200000-0000-4000-8000-000000000010'),
+  0,
+  'a reversed Transfer never receives a bank Payout allocation'
+);
+
+update public.stripe_transfer_reversals
+set amount_cents = 4000
+where stripe_transfer_reversal_id = 'trr_auto_reversed_v10';
+update public.stripe_transfers
+set status = 'partially_reversed'
+where id = 'fb200000-0000-4000-8000-000000000010';
+update public.session_payments
+set transfer_status = 'transferred'
+where id = 'fb100000-0000-4000-8000-000000000010';
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10')
+    ), '2026-08-27 10:02:32+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'partial',
+  'a partial V10 reversal remains fail-closed'
+);
+select is(
+  (select jsonb_array_length(neutral_transaction_pairs)
+   from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  0,
+  'a partial V10 reversal is not recorded as neutral'
+);
+
+update public.stripe_transfer_reversals
+set amount_cents = 8500
+where stripe_transfer_reversal_id = 'trr_auto_reversed_v10';
+update public.stripe_transfers
+set status = 'reversed'
+where id = 'fb200000-0000-4000-8000-000000000010';
+update public.session_payments
+set transfer_status = 'reversed'
+where id = 'fb100000-0000-4000-8000-000000000010';
+update public.session_refunds
+set status = 'failed'
+where stripe_refund_id = 're_auto_reversed_v10';
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10')
+    ), '2026-08-27 10:02:33+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'partial',
+  'a V10 pair without a reconciled full customer refund remains fail-closed'
+);
+
+update public.session_refunds
+set status = 'succeeded'
+where stripe_refund_id = 're_auto_reversed_v10';
+update public.stripe_transfers
+set status = 'transferred'
+where id = 'fb200000-0000-4000-8000-000000000010';
+update public.session_payments
+set transfer_status = 'transferred'
+where id = 'fb100000-0000-4000-8000-000000000010';
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10')
+    ), '2026-08-27 10:02:34+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'partial',
+  'an active TES Transfer is never hidden by its opposing provider movement'
+);
+
+update public.stripe_transfers
+set status = 'reversed'
+where id = 'fb200000-0000-4000-8000-000000000010';
+update public.session_payments
+set transfer_status = 'reversed'
+where id = 'fb100000-0000-4000-8000-000000000010';
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10')
+    ), '2026-08-27 10:02:35+00'
+  );
+end $$;
+select is(
+  (select allocation_status from public.stripe_payouts where stripe_payout_id='po_auto_many_1'),
+  'completed',
+  'the same authoritative snapshot converges after all V10 reversal evidence is restored'
+);
+select is(
+  (select status from public.payout_operational_incidents
+   where incident_key = 'automatic-payout:' ||
+     (select id::text from public.stripe_payouts where stripe_payout_id='po_auto_many_1') || ':allocation'),
+  'resolved',
+  'the payout attention incident resolves only after the strict V10 proof passes'
 );
 
 do $$ begin

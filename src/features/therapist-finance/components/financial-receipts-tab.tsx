@@ -481,6 +481,15 @@ function nextStep(
     return "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.";
   }
 
+  if (
+    item.debtOffsetAmountCents !== null &&
+    item.debtOffsetAmountCents > 0 &&
+    item.bankTransferAmountCents !== null &&
+    item.bankTransferAmountCents > 0
+  ) {
+    return `${formatCurrency(item.debtOffsetAmountCents)} foram usados para compensar o saldo pendente e ${formatCurrency(item.bankTransferAmountCents)} seguem para sua conta. Acompanhe a chegada em Repasses.`;
+  }
+
   switch (item.chargeStatus) {
     case "scheduled":
       return item.scheduledChargeAt

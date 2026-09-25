@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_audit_events: {
@@ -4293,6 +4318,42 @@ export type Database = {
           },
         ]
       }
+      patient_booking_restrictions: {
+        Row: {
+          patient_profile_id: string
+          suspended_at: string | null
+          suspended_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          patient_profile_id: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          patient_profile_id?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_booking_restrictions_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: true
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_booking_restrictions_suspended_by_fkey"
+            columns: ["suspended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_profiles: {
         Row: {
           avatar_url: string | null
@@ -7962,6 +8023,7 @@ export type Database = {
           included_transaction_net_cents: number | null
           lease_expires_at: string | null
           lease_owner: string | null
+          neutral_transaction_pairs: Json
           next_retry_at: string | null
           paid_at: string | null
           payout_balance_transaction_id: string | null
@@ -7997,6 +8059,7 @@ export type Database = {
           included_transaction_net_cents?: number | null
           lease_expires_at?: string | null
           lease_owner?: string | null
+          neutral_transaction_pairs?: Json
           next_retry_at?: string | null
           paid_at?: string | null
           payout_balance_transaction_id?: string | null
@@ -8032,6 +8095,7 @@ export type Database = {
           included_transaction_net_cents?: number | null
           lease_expires_at?: string | null
           lease_owner?: string | null
+          neutral_transaction_pairs?: Json
           next_retry_at?: string | null
           paid_at?: string | null
           payout_balance_transaction_id?: string | null
@@ -15754,12 +15818,33 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_execute_operation_command_v2_before_patient_restrictions: {
+        Args: {
+          p_action: string
+          p_correlation_id?: string
+          p_entity_id: string
+          p_payload?: Json
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_execute_operation_command_v2_internal: {
         Args: {
           p_action: string
           p_correlation_id?: string
           p_entity_id: string
           p_payload?: Json
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_execute_patient_booking_command_v1: {
+        Args: {
+          p_action: string
+          p_correlation_id?: string
+          p_entity_id: string
           p_reason: string
           p_request_id: string
         }
@@ -15837,6 +15922,10 @@ export type Database = {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
+      admin_get_operation_detail_v1_before_patient_restrictions: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
       admin_get_operation_detail_v1_internal: {
         Args: { p_id: string; p_module: string }
         Returns: Json
@@ -15845,11 +15934,23 @@ export type Database = {
         Args: { p_limit?: number; p_module: string; p_offset?: number }
         Returns: Json
       }
+      admin_get_operation_module_v1_before_verification_queue: {
+        Args: { p_limit?: number; p_module: string; p_offset?: number }
+        Returns: Json
+      }
       admin_get_operation_module_v1_internal: {
         Args: { p_limit?: number; p_module: string; p_offset?: number }
         Returns: Json
       }
+      admin_get_operation_module_v1_internal_before_professional_iden: {
+        Args: { p_limit?: number; p_module: string; p_offset?: number }
+        Returns: Json
+      }
       admin_get_operation_module_v2: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      admin_get_operation_module_v2_before_patient_restrictions: {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
@@ -17097,6 +17198,10 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: Json
       }
+      get_patient_reservation_retry_contexts_v1: {
+        Args: { p_booking_ids: string[] }
+        Returns: Json
+      }
       get_patient_schedule_blocking_bookings_v1: {
         Args: {
           p_exclude_booking_id: string
@@ -17124,6 +17229,14 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_advanced_financial_dashboard_v1: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_advanced_financial_dashboard_v2: {
         Args: {
           p_period_end?: string
           p_period_start?: string
@@ -17206,6 +17319,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_financial_metrics_v2: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_financial_opportunities_v1: {
         Args: {
           p_period_end?: string
@@ -17223,6 +17344,14 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_financial_overview_v2: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_financial_overview_v3: {
         Args: {
           p_period_end?: string
           p_period_start?: string
@@ -17252,6 +17381,72 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_payouts_v3: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v4: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v5: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v6: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v7: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v8: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_profile_editor_v1: {
         Args: { p_actor_user_id: string }
         Returns: Json
@@ -17271,6 +17466,45 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_receipts_v2: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_search?: string
+          p_status?: string
+          p_therapy_id?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_receipts_v3: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_search?: string
+          p_status?: string
+          p_therapy_id?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_receipts_v4: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_search?: string
+          p_status?: string
+          p_therapy_id?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_receipts_v5: {
         Args: {
           p_page?: number
           p_page_size?: number
@@ -17340,6 +17574,26 @@ export type Database = {
       }
       get_session_feedback_v1: { Args: { p_booking_id: string }; Returns: Json }
       get_session_feedback_v2: { Args: { p_booking_id: string }; Returns: Json }
+      get_session_payment_charge_reconciliation_candidates_v1: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          stripe_charge_id: string
+        }[]
+      }
+      get_session_payment_charge_reconciliation_candidates_v2: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          needs_receipt: boolean
+          needs_settlement: boolean
+          stripe_charge_id: string
+        }[]
+      }
+      get_session_payment_retry_slot_eligibility_v1: {
+        Args: { p_booking_id: string; p_reference_at: string }
+        Returns: Json
+      }
       get_session_quality_feedback_v1: {
         Args: { p_booking_id: string }
         Returns: Json
@@ -17423,6 +17677,14 @@ export type Database = {
       get_therapist_interest_metrics_v1: {
         Args: { p_period_days?: number }
         Returns: Json
+      }
+      get_therapist_journey_session_states_v1: {
+        Args: { p_booking_ids: string[] }
+        Returns: {
+          booking_id: string
+          confirmation_status: string
+          realization_status: string
+        }[]
       }
       get_therapist_metrics_dashboard_v2: {
         Args: { p_period_days?: number }
@@ -17624,6 +17886,21 @@ export type Database = {
         Args: { p_limit?: number; p_now: string }
         Returns: Json
       }
+      list_payment_retry_schedule_candidates_v1: {
+        Args: {
+          p_booking_id: string
+          p_limit?: number
+          p_range_end: string
+          p_range_start: string
+          p_reference_at?: string
+        }
+        Returns: {
+          ends_at: string
+          occupied_during: unknown
+          starts_at: string
+          timezone: string
+        }[]
+      }
       list_private_therapist_services_v1: {
         Args: { p_actor_user_id: string }
         Returns: Json
@@ -17735,6 +18012,10 @@ export type Database = {
         Args: { p_review: Database["public"]["Tables"]["reviews"]["Row"] }
         Returns: Json
       }
+      payout_incident_admin_notification_v2: {
+        Args: { p_incident_type: string; p_metadata: Json; p_status: string }
+        Returns: Json
+      }
       preflight_session_payment_retry_v1: {
         Args: { p_booking_id: string }
         Returns: Json
@@ -17762,6 +18043,10 @@ export type Database = {
       }
       private_admin_get_finance_module_v2_v9_legacy: {
         Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_session_operational_projection_v1: {
+        Args: { p_session_payment_id: string }
         Returns: Json
       }
       private_admin_session_payout_projection_v10: {
@@ -17803,6 +18088,10 @@ export type Database = {
           scheduled_minutes: number
         }[]
       }
+      private_therapist_charge_status_v3: {
+        Args: { p_session_payment_id: string }
+        Returns: string
+      }
       private_therapist_finance_advanced_comparison_v1: {
         Args: { p_current: number; p_previous: number }
         Returns: Json
@@ -17827,6 +18116,12 @@ export type Database = {
         Returns: Json
       }
       private_therapist_finance_net_cents_v1: {
+        Args: {
+          p_payment: Database["public"]["Tables"]["session_payments"]["Row"]
+        }
+        Returns: number
+      }
+      private_therapist_finance_realized_net_cents_v2: {
         Args: {
           p_payment: Database["public"]["Tables"]["session_payments"]["Row"]
         }
@@ -17934,6 +18229,15 @@ export type Database = {
         Returns: number
       }
       reconcile_automatic_stripe_payout_v1: {
+        Args: {
+          p_balance_transactions: Json
+          p_observed_at?: string
+          p_stripe_account_id: string
+          p_stripe_payout_id: string
+        }
+        Returns: Json
+      }
+      reconcile_automatic_stripe_payout_v2: {
         Args: {
           p_balance_transactions: Json
           p_observed_at?: string
@@ -18121,6 +18425,14 @@ export type Database = {
           p_stripe_customer_id: string
           p_stripe_environment: string
           p_stripe_payment_method_id: string
+        }
+        Returns: Json
+      }
+      record_session_payment_receipt_url_v1: {
+        Args: {
+          p_receipt_url: string
+          p_session_payment_id: string
+          p_stripe_charge_id: string
         }
         Returns: Json
       }
@@ -18514,6 +18826,10 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_successful_session_direct_transfer_attention_v10: {
+        Args: { p_session_payment_id: string }
+        Returns: number
+      }
       resolve_therapist_block_impact_v1: {
         Args: {
           p_actor_user_id: string
@@ -18834,6 +19150,19 @@ export type Database = {
           p_outcome: string
           p_rating: number
           p_request_id: string
+        }
+        Returns: Json
+      }
+      submit_session_quality_feedback_only_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_booking_id: string
+          p_comment: string
+          p_quality_reason: string
+          p_rating: number
+          p_request_id: string
+          p_session_attempt_id: string
+          p_successful: boolean
         }
         Returns: Json
       }
@@ -19552,6 +19881,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],

@@ -348,6 +348,25 @@ with generated_bookings as (
       + make_time(generated_bookings.start_hour, 0, 0)
     ) at time zone 'America/Sao_Paulo' as starts_at
   from generated_bookings
+), conflict_free_booking_times as (
+  select
+    booking_times.n,
+    booking_times.patient_profile_id,
+    available_time.starts_at
+  from booking_times
+  cross join lateral (
+    select
+      booking_times.starts_at + generated_offset.hours * interval '1 hour' as starts_at
+    from generate_series(0, 5) as generated_offset(hours)
+    where not public.patient_has_schedule_conflict_v1(
+      booking_times.patient_profile_id,
+      booking_times.starts_at + generated_offset.hours * interval '1 hour',
+      booking_times.starts_at + generated_offset.hours * interval '1 hour' + interval '1 hour',
+      null
+    )
+    order by generated_offset.hours
+    limit 1
+  ) as available_time
 )
 insert into public.bookings (
   id,
@@ -364,19 +383,19 @@ insert into public.bookings (
   completed_at
 )
 select
-  md5('tes-metrics-full-booking-' || booking_times.n)::uuid,
-  booking_times.patient_profile_id,
+  md5('tes-metrics-full-booking-' || conflict_free_booking_times.n)::uuid,
+  conflict_free_booking_times.patient_profile_id,
   'cc000000-0000-4000-8000-000000000002',
   'dc000000-0000-4000-8000-000000000001',
-  booking_times.starts_at,
-  booking_times.starts_at + interval '1 hour',
+  conflict_free_booking_times.starts_at,
+  conflict_free_booking_times.starts_at + interval '1 hour',
   'America/Sao_Paulo',
   'completed',
   'paid',
   'zoom',
   'https://example.test/metrics-fixture',
-  booking_times.starts_at + interval '1 hour'
-from booking_times
+  conflict_free_booking_times.starts_at + interval '1 hour'
+from conflict_free_booking_times
 on conflict (id) do update
 set
   patient_profile_id = excluded.patient_profile_id,

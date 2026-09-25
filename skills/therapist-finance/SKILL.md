@@ -45,13 +45,16 @@ Never use `bookings.payment_status` for balances or financial authority.
 
 Private RPCs:
 
-- `get_private_therapist_financial_overview_v1`;
-- `get_private_therapist_receipts_v1`;
-- `get_private_therapist_payouts_v1`;
+- `get_private_therapist_financial_overview_v3` (current UI consumer; v1/v2
+  remain compatibility contracts);
+- `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
+  compatibility contracts);
+- `get_private_therapist_payouts_v8` (current UI consumer; earlier versions
+  remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
-- `get_private_therapist_financial_metrics_v1` for F2 Premium/Premium Plus
+- `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
   summary metrics.
-- `get_private_therapist_advanced_financial_dashboard_v1` for F3 Premium Plus
+- `get_private_therapist_advanced_financial_dashboard_v2` for F3 Premium Plus
   advanced dashboard.
 - Segmented F3 contracts:
   `get_private_therapist_financial_forecast_v1`,
@@ -70,8 +73,29 @@ All derive the therapist from `auth.uid()`. Do not accept
 - Commission totals and receipt values come from each payment snapshot. New
   payments use the active 15% TES policy; historical records can legitimately
   show the prior 20% split and must not be recalculated in the UI.
-- Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
-  present = Valor líquido do terapeuta.
+- The realized gross, commission and net cohort excludes fully refunded
+  payments. `Reembolsos ao cliente` remains visible as an informational total
+  and must not be subtracted a second time in the browser. Partial refunds are
+  already reflected by the server-side realized-net contract.
+- `Sessões pagas` excludes fully refunded payments. Partial refunds and open
+  disputes remain visible, and realized therapist revenue must never be
+  negative.
+- Receipts with debt compensation must distinguish full offset (no bank
+  transfer) from partial offset (offset amount plus the remaining bank-transfer
+  amount). Never describe a partial offset as if the whole receipt were
+  consumed.
+- Payout history must exclude unpaid `failed` or `canceled` payments when no
+  payout batch item, transfer job, Stripe Transfer or Stripe Payout exists.
+  Actual payout artifacts in a failed, reversed or reconciliation state remain
+  visible for operational review even if the payment projection is inconsistent.
+- A direct V10 Transfer that has one full successful customer refund and one
+  full successful reversal, exact local bindings, no Payout allocation and no
+  open debt is financially closed and must not remain under review. Partial,
+  ambiguous, allocated or debt-bearing reversals remain fail-closed.
+- If a Payout was already paid and reconciled before a refund created therapist
+  debt, preserve the allocated bank lifecycle as in transit and then received.
+  Debt recovery is a separate axis; a later partial offset exposes only the
+  positive net Transfer that actually continues to the therapist's bank history.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.
@@ -172,6 +196,18 @@ recebimento`; provider and reconciliation terminology stays in the service
   only batch/Transfer/Payout states, never payment preparation states.
 - Treat therapist receipt status as paid only after a paid, completed automatic
   Payout allocates the complete Transfer amount.
+- For a completed bank Payout, show `arrival_at` as the receipt date when Stripe
+  provides it; use `paid_at` only as a fallback. Do not change financial state
+  or allocation from this presentation rule.
+- Treat Stripe `arrival_at` as a civil bank date, without timezone rollback. A
+  fully reconciled Payout whose arrival is still in the future remains `A
+caminho` and does not enter received history or totals early.
+- Missing Stripe receipt URLs may be enriched only from the immutable Charge
+  already bound to the payment. Receipt-only candidates use
+  `record_session_payment_receipt_url_v1`, not settlement reconciliation. The
+  worker must fail closed on Charge, currency, amount or balance-transaction
+  mismatch and must not change financial status, ledger, Transfer, refund or
+  payout state while repairing presentation data.
 - Realized, contracted and estimated values must remain visually separated.
 - Potential agenda revenue is an estimate, not guaranteed revenue, and never
   affects ledger, payouts or balances.
@@ -247,7 +283,8 @@ distinguish the financial series. The colors identify categories, not financial
 health.
 
 Below the quick summary, `Seu dinheiro` uses purple, red and green only for
-gross amount, costs/refunds and net amount. `Saúde financeira` uses green for
+gross amount, platform costs and net amount. Refunds are an informational
+warning already reflected in the authoritative net amount. `Saúde financeira` uses green for
 occupied capacity, purple for contracted revenue and orange for estimated
 available potential. `Crescimento` uses red and orange surfaces to make unused
 estimated potential and availability scannable, while maintaining copy that

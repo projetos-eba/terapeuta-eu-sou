@@ -317,6 +317,58 @@ describe("admin finance mappers", () => {
     );
   });
 
+  it("does not treat the existence of a payment attempt as financial confirmation", () => {
+    const detail = mapAdminFinanceDetail({
+      events: [],
+      generatedAt: "2026-09-24T19:01:00.000Z",
+      module: "payments",
+      record: {
+        financial_status: "failed",
+        has_charge: true,
+        has_payment_intent: true,
+        id: "payment-failed-with-attempt",
+        service_title: "Constelação Familiar",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          {
+            label: "Tentativa de pagamento registrada",
+            value: "Sim",
+          },
+        ]),
+        title: "Conciliação segura",
+      }),
+    );
+    expect(JSON.stringify(detail)).not.toContain("Pagamento confirmado");
+  });
+
+  it("presents the Stripe bank arrival as a civil date without timezone rollback", () => {
+    const detail = mapAdminFinanceDetail({
+      events: [],
+      generatedAt: "2026-09-25T03:00:00.000Z",
+      module: "payments",
+      record: {
+        bank_paid_at: "2026-09-25T00:00:00.000Z",
+        bank_paid_date: "2026-09-25",
+        financial_status: "paid",
+        id: "payment-bank-date",
+        payout_display_status: "paid",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "Pago ao banco em", value: "25/09/2026" },
+        ]),
+        title: "Risco e repasse",
+      }),
+    );
+  });
+
   it("maps subscription details without exposing provider ids or invoice urls", () => {
     const detail = mapAdminFinanceDetail({
       events: [

@@ -20,6 +20,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page/app-page";
+import { canUseTherapistCapability } from "@/domain/tes";
 import {
   BookingReference,
   formatSessionMoney,
@@ -34,6 +35,11 @@ import { getSessionDelayNoticeState } from "@/features/session-actions/session-d
 import { TherapistJourneyThemesForm } from "@/features/session-feedback/components/therapist-journey-themes-form";
 import { SessionQualityStatus } from "@/features/session-feedback/components/session-quality-status";
 import { SharedIntakeCard } from "@/features/patient-session-detail/components/shared-intake-card";
+import {
+  getTherapistSessionObservation,
+  isSessionObservationEligible,
+  SessionObservationCard,
+} from "@/features/therapist-session-observations";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
@@ -81,7 +87,12 @@ export default async function TherapistSessionDetailPage({
     financialStatus: booking.financialStatus,
     startsAt: booking.startsAt,
   });
-  const [pendingReschedule, feedbackSummary, delayNotice] = await Promise.all([
+  const [
+    pendingReschedule,
+    feedbackSummary,
+    delayNotice,
+    sessionObservationAccess,
+  ] = await Promise.all([
     getTherapistSessionPendingReschedule({
       accessToken: therapist.accessToken,
       bookingId: booking.bookingId,
@@ -98,8 +109,20 @@ export default async function TherapistSessionDetailPage({
       bookingVersion: booking.bookingVersion,
       userId: therapist.userId,
     }),
+    getTherapistSessionObservation({
+      accessToken: therapist.accessToken,
+      bookingId: booking.bookingId,
+    }),
   ]);
   const feedbackStatus = feedbackSummary.status;
+  const canEditSessionObservation =
+    canUseTherapistCapability(therapist.plan, "session_observations") &&
+    isSessionObservationEligible({
+      bookingStatus: booking.bookingStatus,
+      endsAt: booking.endsAt,
+    });
+  const shouldShowSessionObservation =
+    canEditSessionObservation || Boolean(sessionObservationAccess?.observation);
   if (feedbackSummary.quality?.realizationStatus === "performed") {
     presentation.label = "Sessão realizada";
     presentation.description = "A realização foi registrada pelo sistema.";
@@ -141,6 +164,17 @@ export default async function TherapistSessionDetailPage({
             feedbackStatus={feedbackStatus}
             presentation={presentation}
           />
+          {shouldShowSessionObservation ? (
+            <SessionObservationCard
+              bookingId={booking.bookingId}
+              initialAccess={
+                sessionObservationAccess ?? {
+                  canEdit: canEditSessionObservation,
+                  observation: null,
+                }
+              }
+            />
+          ) : null}
           {shouldShowTherapistSessionJourneyThemes(
             therapist.plan,
             feedbackSummary,

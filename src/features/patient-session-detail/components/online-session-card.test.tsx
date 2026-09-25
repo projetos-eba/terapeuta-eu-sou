@@ -289,6 +289,11 @@ describe("OnlineSessionCard", () => {
     expect(
       screen.queryByRole("link", { name: "Entrar no encontro" }),
     ).toBeNull();
+    expect(screen.getByText("Pagamento necessário")).toBeInTheDocument();
+    expect(screen.queryByText("Sala encerrada")).toBeNull();
+    expect(
+      screen.queryByText("Este encontro já foi encerrado ou cancelado."),
+    ).toBeNull();
   });
 
   it("offers the server-authorized checkout retry for an expired V10 checkout", () => {

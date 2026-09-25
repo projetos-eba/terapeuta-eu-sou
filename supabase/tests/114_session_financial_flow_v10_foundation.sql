@@ -1,6 +1,6 @@
 begin;
 
-select plan(83);
+select plan(88);
 
 select has_table('public', 'session_payment_setups', 'V10 setup bindings exist');
 select has_table('public', 'session_payment_schedules', 'V10 charge schedules exist');
@@ -1108,6 +1108,67 @@ select is(
   ),
   'approved',
   'receipts V4 preserves the successful charge state for a compensated session'
+);
+
+select is(
+  (
+    select (item ->> 'debtOffsetAmountCents')::integer
+    from jsonb_array_elements(public.get_private_therapist_receipts_v5(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000021'
+  ),
+  1000,
+  'receipts V5 exposes the partial debt compensation separately'
+);
+
+select is(
+  (
+    select (item ->> 'bankTransferAmountCents')::integer
+    from jsonb_array_elements(public.get_private_therapist_receipts_v5(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000021'
+  ),
+  7500,
+  'receipts V5 exposes only the residual amount as bank-bound'
+);
+
+select is(
+  (
+    select (item ->> 'debtOffsetAmountCents')::integer
+    from jsonb_array_elements(public.get_private_therapist_receipts_v5(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000022'
+  ),
+  8500,
+  'receipts V5 preserves the full compensation amount'
+);
+
+select is(
+  (
+    select (item ->> 'bankTransferAmountCents')::integer
+    from jsonb_array_elements(public.get_private_therapist_receipts_v5(
+      date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+      'America/Sao_Paulo'
+    ) -> 'items') item
+    where item ->> 'sessionPaymentId' = 'b1140000-0000-4000-8000-000000000022'
+  ),
+  0,
+  'receipts V5 never presents a fully compensated session as a deposit'
+);
+
+select is(
+  (public.get_private_therapist_receipts_v5(
+    date '2098-09-01', date '2098-09-30', null, null, null, 1, 500,
+    'America/Sao_Paulo'
+  ) #>> '{summary,approvedCents}')::integer,
+  17000,
+  'approved charges include both partial and full debt compensation outcomes'
 );
 
 select is(
