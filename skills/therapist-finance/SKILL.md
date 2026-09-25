@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v6` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v7` (current UI consumer; earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -84,6 +84,10 @@ All derive the therapist from `auth.uid()`. Do not accept
   transfer) from partial offset (offset amount plus the remaining bank-transfer
   amount). Never describe a partial offset as if the whole receipt were
   consumed.
+- Payout history must exclude unpaid `failed` or `canceled` payments when no
+  payout batch item, transfer job, Stripe Transfer or Stripe Payout exists.
+  Actual payout artifacts in a failed, reversed or reconciliation state remain
+  visible for operational review even if the payment projection is inconsistent.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.

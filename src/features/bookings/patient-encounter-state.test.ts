@@ -269,6 +269,11 @@ describe("getPatientEncounterPresentationState", () => {
 
     expect(retryable.payment.retryAllowed).toBe(true);
     expect(retryable.actions).toContain("retry_payment");
+    expect(retryable.waitingRoom).toEqual({
+      kind: "payment_required",
+      message: "A sala será liberada quando o pagamento for confirmado.",
+      title: "Pagamento necessário",
+    });
     expect(unrelatedCancellation.payment.retryAllowed).toBe(false);
     expect(unrelatedCancellation.actions).not.toContain("retry_payment");
     expect(elapsed.payment.retryAllowed).toBe(false);

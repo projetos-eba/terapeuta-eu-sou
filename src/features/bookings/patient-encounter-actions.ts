@@ -20,6 +20,7 @@ export type PatientEncounterActionPolicyInput = {
   endsAt: string;
   financialStatus: SessionFinancialStatusValue | string | null;
   paymentFlowVersion?: string;
+  paymentRetryAvailable?: boolean;
   now?: Date;
   startsAt: string;
 };
@@ -58,6 +59,7 @@ export function getPatientEncounterActionPolicy({
   endsAt,
   financialStatus,
   paymentFlowVersion = "v9",
+  paymentRetryAvailable = false,
   now = new Date(),
   startsAt,
 }: PatientEncounterActionPolicyInput): PatientEncounterActionPolicy {
@@ -74,6 +76,7 @@ export function getPatientEncounterActionPolicy({
     paymentFlowVersion,
     future,
     moreThan24Hours: startsAtMs - nowMs > 24 * ONE_HOUR_MS,
+    paymentRetryAvailable,
     terminal,
   });
   const cancelDisabledReason = getCancelDisabledReason({
@@ -82,6 +85,7 @@ export function getPatientEncounterActionPolicy({
     paymentFlowVersion,
     future,
     moreThan24Hours: startsAtMs - nowMs > 24 * ONE_HOUR_MS,
+    paymentRetryAvailable,
     terminal,
   });
 
@@ -126,6 +130,7 @@ function getRescheduleDisabledReason({
   paymentFlowVersion,
   future,
   moreThan24Hours,
+  paymentRetryAvailable,
   terminal,
 }: {
   bookingStatus: string;
@@ -133,8 +138,15 @@ function getRescheduleDisabledReason({
   paymentFlowVersion: string;
   future: boolean;
   moreThan24Hours: boolean;
+  paymentRetryAvailable: boolean;
   terminal: boolean;
 }) {
+  if (
+    bookingStatus === BookingStatus.CancelledByPayment &&
+    paymentRetryAvailable
+  ) {
+    return "Conclua o pagamento para confirmar este horário.";
+  }
   if (terminal) return "Este encontro já foi encerrado ou cancelado.";
   if (paymentFlowVersion === "v10") {
     if (bookingStatus === BookingStatus.Confirmed &&
@@ -160,6 +172,7 @@ function getCancelDisabledReason({
   paymentFlowVersion,
   future,
   moreThan24Hours,
+  paymentRetryAvailable,
   terminal,
 }: {
   bookingStatus: string;
@@ -167,8 +180,15 @@ function getCancelDisabledReason({
   paymentFlowVersion: string;
   future: boolean;
   moreThan24Hours: boolean;
+  paymentRetryAvailable: boolean;
   terminal: boolean;
 }) {
+  if (
+    bookingStatus === BookingStatus.CancelledByPayment &&
+    paymentRetryAvailable
+  ) {
+    return "Conclua o pagamento para confirmar este horário.";
+  }
   if (terminal) return "Este encontro já foi encerrado ou cancelado.";
   if (paymentFlowVersion === "v10") {
     if (bookingStatus === BookingStatus.Confirmed &&

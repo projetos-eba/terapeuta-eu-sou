@@ -102,6 +102,10 @@ revalidada no servidor antes do checkout.
   persistido; parâmetros equivalentes enviados pelo navegador não são
   autoridade. `payment_retry` não cria hold nem contador enquanto o formulário
   Stripe está aberto.
+- No detalhe autenticado, uma retomada autorizada preserva a apresentação da
+  sala segura da plataforma e informa que o acesso depende da confirmação do
+  pagamento. A expiração do hold não transforma essa sala em externa ou
+  encerrada enquanto o mesmo booking ainda puder ser retomado.
 - No status de uma retomada, a tentativa Stripe atual tem precedência sobre o
   `canceled` financeiro herdado da tentativa anterior. Enquanto ela estiver em
   `checkout_created` ou `waiting_payment`, retornar `waiting_payment`; só um

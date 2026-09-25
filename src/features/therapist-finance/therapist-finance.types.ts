@@ -186,7 +186,7 @@ export type TherapistPayoutsContract = {
     periodStart: string;
     predicted: TherapistPayoutAgendaGroup[];
   };
-  contractVersion: 6;
+  contractVersion: 7;
   filters: TherapistFinancePeriod & {
     agendaDays: 7 | 15 | 30;
   };

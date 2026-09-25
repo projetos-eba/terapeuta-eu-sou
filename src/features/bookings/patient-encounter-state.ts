@@ -114,6 +114,7 @@ export function getPatientEncounterPresentationState({
     financialStatus,
     nowMs,
     patientHasJoined,
+    paymentRetryAllowed: payment.retryAllowed,
     provider,
     startsAtMs,
     zoomAccess,
@@ -334,6 +335,7 @@ function getWaitingRoomState({
   financialStatus,
   nowMs,
   patientHasJoined,
+  paymentRetryAllowed,
   provider,
   startsAtMs,
   zoomAccess,
@@ -343,6 +345,7 @@ function getWaitingRoomState({
   financialStatus: SessionFinancialStatus | null;
   nowMs: number;
   patientHasJoined: boolean;
+  paymentRetryAllowed: boolean;
   provider: "external" | "google_meet" | "zoom";
   startsAtMs: number;
   zoomAccess: ZoomAccessState | null;
@@ -368,6 +371,16 @@ function getWaitingRoomState({
       title: "Sessão não realizada",
     };
   }
+  if (
+    bookingStatus === BookingStatus.CancelledByPayment &&
+    paymentRetryAllowed
+  ) {
+    return {
+      kind: "payment_required",
+      message: "A sala será liberada quando o pagamento for confirmado.",
+      title: "Pagamento necessário",
+    };
+  }
   if (isTerminalBookingStatus(bookingStatus)) {
     return {
       kind: "ended",
@@ -380,8 +393,8 @@ function getWaitingRoomState({
     return {
       kind: "operational_unavailable",
       message:
-        "Este encontro não usa a sala Zoom autenticada. Siga as orientações exibidas para a videochamada.",
-      title: "Sala externa",
+        "A sala deste encontro ainda não está disponível. Se precisar, fale com o suporte.",
+      title: "Sala indisponível",
     };
   }
 
