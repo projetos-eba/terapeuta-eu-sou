@@ -451,7 +451,7 @@ describe("therapist finance mappers", () => {
         periodStart: "2026-07-28",
         predicted: [],
       },
-      contractVersion: 7,
+      contractVersion: 8,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",
