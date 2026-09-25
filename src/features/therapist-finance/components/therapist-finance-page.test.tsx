@@ -1011,7 +1011,7 @@ function fixture(): TherapistFinancePageData {
           },
         ],
       },
-      contractVersion: 6,
+      contractVersion: 7,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",

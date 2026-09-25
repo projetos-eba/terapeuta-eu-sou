@@ -173,6 +173,11 @@ anotação.
   inconclusiva falham fechado. A ação usa exclusivamente
   `/reserva?booking=<uuid>&etapa=pagamento` e a interface não expõe nomes
   internos do fluxo.
+- Enquanto essa retomada estiver autorizada pelo servidor, o booking
+  `cancelled_by_payment` não apresenta a sala como encerrada nem como externa.
+  A sala continua sendo a sala segura da plataforma, permanece bloqueada até a
+  confirmação financeira e as ações de cancelamento e reagendamento orientam
+  a concluir o pagamento sem se tornarem disponíveis.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados
