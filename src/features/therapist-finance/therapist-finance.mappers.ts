@@ -186,7 +186,7 @@ export function mapTherapistPayoutsContract(
         periodStart: dateString(agenda.periodStart),
         predicted: array(agenda.predicted).map(payoutAgendaGroup),
       },
-      contractVersion: literalNumber(value.contractVersion, 7),
+      contractVersion: literalNumber(value.contractVersion, 8),
       filters: {
         agendaDays: agendaDays(filters.agendaDays),
         periodEnd: dateString(filters.periodEnd),

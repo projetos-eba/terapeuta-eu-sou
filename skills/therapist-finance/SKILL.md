@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v7` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v8` (current UI consumer; earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -88,6 +88,14 @@ All derive the therapist from `auth.uid()`. Do not accept
   payout batch item, transfer job, Stripe Transfer or Stripe Payout exists.
   Actual payout artifacts in a failed, reversed or reconciliation state remain
   visible for operational review even if the payment projection is inconsistent.
+- A direct V10 Transfer that has one full successful customer refund and one
+  full successful reversal, exact local bindings, no Payout allocation and no
+  open debt is financially closed and must not remain under review. Partial,
+  ambiguous, allocated or debt-bearing reversals remain fail-closed.
+- If a Payout was already paid and reconciled before a refund created therapist
+  debt, preserve the allocated bank lifecycle as in transit and then received.
+  Debt recovery is a separate axis; a later partial offset exposes only the
+  positive net Transfer that actually continues to the therapist's bank history.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.
