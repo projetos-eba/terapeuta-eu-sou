@@ -77,7 +77,8 @@ select throws_ok(
 );
 
 update public.therapist_service_booking_settings
-set buffer_after_minutes = 25
+set buffer_after_minutes = 25,
+    interval_minutes = 15
 where service_id = 'd1000000-0000-4000-8000-000000000001';
 
 select is(
@@ -85,16 +86,35 @@ select is(
     'a1050000-0000-4000-8000-000000000001'
   )->>'reason'),
   'available',
-  'retry preserves the original booking buffers when current service buffers change'
+  'retry preserves the original booking buffers beyond the first 64 schedule candidates'
 );
 
-select is(
-  (public.preflight_session_payment_retry_v1(
-    'a1050000-0000-4000-8000-000000000001'
-  )->>'reason'),
-  'available',
-  'retry preflight does not occupy an available slot'
-);
+select ok(
+  not exists (
+    select 1
+    from public.list_payment_retry_schedule_candidates_v1(
+      booking.id,
+      booking.starts_at - interval '1 day',
+      booking.ends_at + interval '1 day',
+      now(),
+      64
+    ) as candidate
+    where candidate.starts_at = booking.starts_at
+  ) and exists (
+    select 1
+    from public.list_payment_retry_schedule_candidates_v1(
+      booking.id,
+      booking.starts_at - interval '1 day',
+      booking.ends_at + interval '1 day',
+      now(),
+      500
+    ) as candidate
+    where candidate.starts_at = booking.starts_at
+  ),
+  'the wide 64-candidate query truncates the original slot in this dense schedule'
+)
+from public.bookings as booking
+where booking.id = 'a1050000-0000-4000-8000-000000000001';
 
 set local role authenticated;
 select set_config(

@@ -122,6 +122,10 @@ Do not send generic `select *` payloads to React.
 - Technical reconciliation labels are translated before rendering:
   PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
   must not appear in the browser. The underlying DTO remains unchanged.
+- A PaymentIntent identifier proves only that a payment attempt exists. The
+  detail renders it as `Tentativa de pagamento registrada` and never as
+  payment confirmation; the canonical `financial_status` remains the authority
+  for `Pago`, `Falhou`, `Cancelado` and refund states.
 - Administrative payout-incident notifications distinguish bank reconciliation
   from a session transfer. A session-linked incident opens that payment's
   detail; resolved incidents keep their history but no longer claim that

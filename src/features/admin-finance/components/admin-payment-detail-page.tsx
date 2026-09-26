@@ -210,7 +210,8 @@ function cleanReconciliationFields(
     "Charge recebida": "Cobrança registrada",
     "Checkout Stripe recebido": "Pagamento iniciado",
     "Evento Stripe em": "Última confirmação",
-    "PaymentIntent recebido": "Pagamento processado",
+    "Pagamento confirmado": "Tentativa de pagamento registrada",
+    "PaymentIntent recebido": "Tentativa de pagamento registrada",
   };
   return fields
     .filter((field) => field.label !== "Metadados internos presentes")

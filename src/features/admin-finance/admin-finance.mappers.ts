@@ -230,7 +230,7 @@ function getDetailSections(
           asBooleanLabel(record.has_checkout_session),
         ),
         field(
-          "Pagamento confirmado",
+          "Tentativa de pagamento registrada",
           asBooleanLabel(record.has_payment_intent),
         ),
         field("Cobrança registrada", asBooleanLabel(record.has_charge)),

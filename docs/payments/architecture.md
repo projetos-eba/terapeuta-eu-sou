@@ -147,6 +147,11 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
   processamento abre incidente e continua bloqueando a sala; somente ausencia
   comprovada de cobranca ou PaymentIntent cancelado libera o horario. O
   fechamento e idempotente e notifica paciente e terapeuta sem termos internos.
+  O webhook `payment_intent.canceled` emitido pela Stripe depois desse
+  fechamento e aceito como no-op somente quando PaymentIntent, reserva, versao,
+  Customer, valor, moeda e estados terminais locais coincidem integralmente e
+  nao existe obrigacao de Transfer; qualquer divergencia continua falhando
+  fechado para investigacao.
 - O worker local `process-session-transfers` congela a conta Connect da reserva,
   compensa dividas abertas antes da chamada e cria um unico Transfer com a
   Charge original em `source_transaction`. Resposta ambigua exige conciliacao;
@@ -624,7 +629,7 @@ Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
 - `get_private_therapist_receipts_v5`;
-- `get_private_therapist_payouts_v6`;
+- `get_private_therapist_payouts_v8`;
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
