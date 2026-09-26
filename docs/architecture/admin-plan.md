@@ -324,6 +324,19 @@ Mudancas:
 - Falha no RPC deixa metricas como `unavailable`/modulos degradados, sem
   converter erro de infraestrutura em zero.
 
+### Evolução visual do Dashboard (2026-09-26)
+
+- `admin_get_dashboard_v1()` passou a incluir somente agregados sanitizados de
+  30 dias para os gráficos da Visão geral: movimentação de cadastros/sessões e
+  resultado das sessões confirmadas.
+- O resultado financeiro usa a comissão bruta registrada em
+  `session_payments.platform_gross_commission_cents`, menos as taxas Stripe já
+  conciliadas em `stripe_fee_amount_cents`. Pagamentos com taxa ainda ausente
+  mantêm o estado explícito de conciliação; não há valor estimado.
+- O contrato expõe sete faixas temporais e comparação com os 30 dias
+  anteriores, sem dados individualizados, identificadores de pagamento ou
+  objetos do provedor.
+
 Validacoes locais realizadas no corte:
 
 - `npx vitest run src/features/admin-dashboard/admin-dashboard.queries.test.ts src/features/admin-platform/admin-platform.queries.test.ts`

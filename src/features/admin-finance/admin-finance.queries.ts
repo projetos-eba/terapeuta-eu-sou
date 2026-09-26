@@ -7,10 +7,8 @@ import { routes } from "@/lib/routes";
 import {
   ADMIN_LIST_DEFAULT_PAGE_SIZE,
   parseAdminListQuery,
-  toAdminListRpcQuery,
   type AdminListOption,
   type AdminListPageInfo,
-  type AdminListQuery,
 } from "@/features/admin-shared/admin-list-query";
 
 import {
@@ -19,8 +17,10 @@ import {
 } from "./admin-finance.mappers";
 import type {
   AdminFinanceDetailPageResult,
+  AdminFinanceListQuery,
   AdminFinanceMetric,
   AdminFinanceModuleKey,
+  AdminFinancePeriod,
   AdminFinancePageData,
   AdminFinancePageResult,
 } from "./admin-finance.types";
@@ -33,6 +33,12 @@ type CountSpec = {
   source: string;
   tone: AdminFinanceMetric["tone"];
 };
+
+const PAYMENT_PERIOD_OPTIONS: AdminListOption[] = [
+  option("7d", "Últimos 7 dias"),
+  option("30d", "Últimos 30 dias"),
+  option("90d", "Últimos 90 dias"),
+];
 
 type ModuleSpec = {
   description: string;
@@ -89,33 +95,65 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
     emptyMessage: "Nenhum pagamento de sessão disponível para esta consulta.",
     metrics: [
       metric(
-        "pending-session-payments",
-        "Pendentes",
-        "Aguardando autoridade financeira.",
-        "session_payments?financial_status=eq.pending",
+        "total-payments-amount",
+        "Total de pagamentos",
+        "Valores registrados no período selecionado.",
         "session_payments",
-        "warning",
+        "session_payments",
+        "info",
       ),
       metric(
-        "paid-session-payments",
-        "Pagos",
-        "Pagamentos confirmados e conciliados.",
-        "session_payments?financial_status=in.(paid,partially_refunded)",
+        "gross-platform-commission-amount",
+        "Comissão bruta TES",
+        "Parte da plataforma nos pagamentos confirmados.",
+        "session_payments",
         "session_payments",
         "success",
       ),
       metric(
-        "failed-session-payments",
-        "Falhos",
-        "Tentativas ou pagamentos recusados.",
-        "session_payments?financial_status=eq.failed",
+        "stripe-fees-amount",
+        "Taxas Stripe",
+        "Taxas de processamento dos pagamentos confirmados.",
+        "session_payments",
+        "session_payments",
+        "warning",
+      ),
+      metric(
+        "net-platform-revenue-amount",
+        "Receita líquida TES",
+        "Comissão da plataforma após as taxas de processamento.",
+        "session_payments",
+        "session_payments",
+        "success",
+      ),
+      metric(
+        "pending-payment-amount",
+        "Pagamentos pendentes",
+        "Valores que aguardam confirmação financeira.",
+        "session_payments",
+        "session_payments",
+        "warning",
+      ),
+      metric(
+        "confirmed-payment-amount",
+        "Pagamentos confirmados",
+        "Valores com pagamento confirmado na plataforma.",
+        "session_payments",
+        "session_payments",
+        "success",
+      ),
+      metric(
+        "failed-payment-amount",
+        "Pagamentos com falha",
+        "Valores de pagamentos com falha no período.",
+        "session_payments",
         "session_payments",
         "danger",
       ),
       metric(
-        "pending-refunds",
+        "pending-refunds-amount",
         "Reembolsos pendentes",
-        "Reembolsos ainda não finalizados.",
+        "Valores de reembolsos ainda não concluídos.",
         "session_refunds?status=eq.pending",
         "session_refunds",
         "warning",
@@ -142,22 +180,6 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
         "Valores em preparação ou a caminho do banco.",
         "payout_batches?status=in.(draft,open,processing)",
         "payout_batches",
-        "info",
-      ),
-      metric(
-        "ledger-entries",
-        "Lançamentos",
-        "Registros financeiros auditáveis.",
-        "financial_ledger_entries",
-        "financial_ledger_entries",
-        "info",
-      ),
-      metric(
-        "stripe-transfers",
-        "Transferências",
-        "Transferências registradas com segurança.",
-        "stripe_transfers",
-        "stripe_transfers",
         "info",
       ),
     ],
@@ -343,7 +365,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
 }): Promise<AdminFinancePageResult> {
   const config = getSupabasePublicConfig();
   const spec = MODULES[module];
-  const query = parseAdminListQuery(searchParams);
+  const query = parseFinanceListQuery({ module, searchParams });
 
   if (!config) {
     return {
@@ -365,6 +387,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
         description: spec.description,
         emptyMessage: spec.emptyMessage,
         filterOptions: {
+          period: module === "payments" ? PAYMENT_PERIOD_OPTIONS : undefined,
           sort: SORT_OPTIONS,
           status: spec.statusOptions,
         },
@@ -402,6 +425,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
       description: spec.description,
       emptyMessage: spec.emptyMessage,
       filterOptions: {
+        period: module === "payments" ? PAYMENT_PERIOD_OPTIONS : undefined,
         sort: SORT_OPTIONS,
         status: spec.statusOptions,
       },
@@ -492,7 +516,7 @@ async function fetchAdminFinanceReadModel({
   accessToken: string;
   config: { apiKey: string; url: string };
   module: AdminFinanceModuleKey;
-  query: AdminListQuery;
+  query: AdminFinanceListQuery;
 }): Promise<AdminFinanceReadResult> {
   try {
     const response = await fetch(
@@ -500,7 +524,7 @@ async function fetchAdminFinanceReadModel({
       {
         body: JSON.stringify({
           p_module: module,
-          p_query: toAdminListRpcQuery(query),
+          p_query: toFinanceRpcQuery({ module, query }),
         }),
         cache: "no-store",
         headers: {
@@ -668,6 +692,45 @@ function option(value: string, label: string): AdminListOption {
   return { label, value };
 }
 
+function parseFinanceListQuery({
+  module,
+  searchParams,
+}: {
+  module: AdminFinanceModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
+}): AdminFinanceListQuery {
+  const baseQuery = parseAdminListQuery(searchParams);
+
+  if (module !== "payments") return baseQuery;
+
+  const rawPeriod = firstSearchParam(searchParams?.period);
+  const period: AdminFinancePeriod =
+    rawPeriod === "7d" || rawPeriod === "90d" ? rawPeriod : "30d";
+
+  return { ...baseQuery, period };
+}
+
+function toFinanceRpcQuery({
+  module,
+  query,
+}: {
+  module: AdminFinanceModuleKey;
+  query: AdminFinanceListQuery;
+}) {
+  return {
+    page: query.page,
+    pageSize: query.pageSize,
+    period: module === "payments" ? query.period ?? "30d" : undefined,
+    search: query.search || undefined,
+    sort: query.sort || undefined,
+    status: query.status || undefined,
+  };
+}
+
+function firstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function getFinanceListHref(module: AdminFinanceModuleKey) {
   if (module === "payments") return routes.admin.payments;
   if (module === "subscriptions") return routes.admin.subscriptions;
@@ -675,7 +738,7 @@ function getFinanceListHref(module: AdminFinanceModuleKey) {
   return routes.admin.reports;
 }
 
-function emptyPage(query: AdminListQuery): AdminListPageInfo {
+function emptyPage(query: AdminFinanceListQuery): AdminListPageInfo {
   return {
     hasNext: false,
     page: query.page,
@@ -684,7 +747,10 @@ function emptyPage(query: AdminListQuery): AdminListPageInfo {
   };
 }
 
-function mapPageInfo(value: unknown, query: AdminListQuery): AdminListPageInfo {
+function mapPageInfo(
+  value: unknown,
+  query: AdminFinanceListQuery,
+): AdminListPageInfo {
   if (!isRecord(value)) return emptyPage(query);
 
   return {

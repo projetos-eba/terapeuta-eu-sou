@@ -38,16 +38,50 @@ describe("TherapistMetricsPage", () => {
     expect(
       screen.getAllByText("Interessados em agendar").length,
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Sessões realizadas").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Taxa de retorno").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sessões concluídas").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Pessoas que retornaram").length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
     expect(screen.getAllByText("Ocupação da agenda").length).toBeGreaterThan(0);
-    expect(screen.getByText("Terapia mais realizada")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Terapias mais realizadas").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Agenda e horários")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Veja como as pessoas encontram seu perfil, agendam sessões e se aproximam do seu trabalho. Estas informações ajudam você a entender o que está acontecendo e decidir os próximos passos com mais clareza.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Em breve, você poderá acompanhar quantas pessoas demonstraram interesse em agendar com você.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "As terapias aparecerão aqui quando houver sessões concluídas suficientes para essa leitura.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "As informações desta página consideram somente períodos completos e dados agrupados do seu próprio trabalho.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Gerenciar agenda" }),
     ).toHaveAttribute("href", "/terapeuta/agenda");
-    expect(screen.getByText("Pessoas acompanhadas")).toBeInTheDocument();
-    expect(screen.getByText("Top terapias")).toBeInTheDocument();
+    expect(screen.getByText("Pessoas atendidas")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Terapias mais realizadas").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Caminho até a sessão")).toBeInTheDocument();
+    expect(screen.getByText("Como as sessões terminaram")).toBeInTheDocument();
     expect(
       screen.getByText("Comparativo com o período anterior"),
     ).toBeInTheDocument();
@@ -61,10 +95,10 @@ describe("TherapistMetricsPage", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
-      screen.getByText(
-        "A estrutura do funil está pronta. Os números de descoberta só aparecem após a ativação formal e segura dessa coleta.",
-      ),
-    ).toBeInTheDocument();
+      screen.getAllByText(
+        "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
+      ).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getAllByLabelText("Mapa de calor de sessões: ainda sem dados"),
     ).not.toHaveLength(0);
@@ -82,6 +116,17 @@ describe("TherapistMetricsPage", () => {
     expect(
       screen.getAllByLabelText("Mapa de calor de sessões: ainda sem dados"),
     ).toHaveLength(1);
+  });
+
+  it("uses the singular form when one person is attended", () => {
+    const data = dashboardFixture();
+    data.therapist.plan = "premium_plus";
+    data.overview.counters.peopleServed.value = 1;
+
+    render(<TherapistMetricsPage data={data} />);
+
+    expect(screen.getByText("1 pessoa")).toBeInTheDocument();
+    expect(screen.queryByText("1 pessoas")).not.toBeInTheDocument();
   });
 
   it("shows the initial private session reading and derives idle hours from offered capacity", () => {
@@ -129,12 +174,12 @@ describe("TherapistMetricsPage", () => {
 
     expect(
       screen.getByText(
-        "Leitura inicial — o padrão fica mais claro conforme novas sessões forem concluídas.",
+        "Essa leitura vai ficando mais clara conforme novas sessões forem concluídas.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Horários ociosos").parentElement).toHaveTextContent(
-      "10h – 12h",
-    );
+    expect(
+      screen.getByText("Horário com menos sessões").parentElement,
+    ).toHaveTextContent("10h – 12h");
   });
 
   it("uses the dedicated initial state without demo metrics", () => {
@@ -174,7 +219,7 @@ describe("TherapistMetricsPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Seus indicadores começam a ser preenchidos conforme o perfil recebe movimento, a agenda é utilizada e as sessões são concluídas.",
+        "Essa leitura vai ficando mais clara conforme novas sessões forem concluídas.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Demanda por abordagem")).not.toBeInTheDocument();
@@ -208,7 +253,7 @@ describe("TherapistMetricsPage", () => {
     expect(screen.queryByText("Valor")).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", {
-        name: /Total de pessoas acompanhadas no período: Pessoas acompanhadas, 8/,
+        name: /Total de pessoas atendidas no período: Pessoas atendidas, 8/,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Total único no período")).toBeInTheDocument();

@@ -69,6 +69,7 @@ const baseData: AdminOperationPageData = {
         { label: "Perfil público", value: "published" },
         { label: "Reservas", value: "Sim" },
         { label: "Serviços", value: "3" },
+        { label: "Cadastro", value: "12/08/2026" },
         { label: "Atualizado", value: "14/08/2026" },
       ],
       id: "professional-1",
@@ -97,6 +98,8 @@ describe("AdminProfessionalsPage", () => {
     expect(html).toContain("Revisão pendente");
     expect(html).toContain("Ver profissional");
     expect(html).toContain("Ver verificações");
+    expect(html).toContain("Cadastro");
+    expect(html).toContain("12/08/2026");
     expect(html).toContain("1</strong> profissional nesta página");
     expect(html).toContain("1 perfil pede acompanhamento");
     expect(html).not.toContain("Crescimento da base");

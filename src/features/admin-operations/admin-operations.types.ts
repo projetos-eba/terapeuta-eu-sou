@@ -34,6 +34,20 @@ export type AdminOperationRow = {
   title: string;
 };
 
+export type AdminPatientAnalytics = {
+  activityAge: Array<{
+    label: string;
+    value: number;
+  }>;
+  periodDays: 30 | 90;
+  series: Array<{
+    label: string;
+    newRegistrations: number;
+    totalClients: number;
+  }>;
+  status: "available" | "unavailable";
+};
+
 export type AdminOperationPageData = {
   description: string;
   emptyMessage: string;
@@ -45,6 +59,7 @@ export type AdminOperationPageData = {
   metrics: AdminOperationMetric[];
   listHref: string;
   page: AdminListPageInfo;
+  patientAnalytics?: AdminPatientAnalytics;
   query: AdminListQuery;
   rows: AdminOperationRow[];
   rowsStatus: "available" | "forbidden" | "unavailable";

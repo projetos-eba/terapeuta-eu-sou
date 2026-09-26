@@ -59,6 +59,7 @@ describe("admin finance queries", () => {
           p_query: {
             page: 1,
             pageSize: 12,
+            period: "30d",
             search: "paid",
             sort: undefined,
             status: "paid",

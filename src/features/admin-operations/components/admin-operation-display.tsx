@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronRight,
   ShieldCheck,
+  type LucideIcon,
 } from "lucide-react";
 
 import { buildAdminListHref } from "@/features/admin-shared/admin-list-query";
@@ -185,38 +186,52 @@ export function IdentityHero({
 export function StatsGrid({
   items,
 }: {
-  items: Array<{ description?: string; label: string; value: string }>;
+  items: Array<{
+    description?: string;
+    icon?: LucideIcon;
+    iconToneClass?: string;
+    label: string;
+    value: string;
+  }>;
 }) {
   if (items.length === 0) return null;
 
   return (
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => (
-        <article
-          className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]"
-          key={item.label}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <span className="grid size-12 place-items-center rounded-[18px] bg-brand-lavenderSoft text-brand-primary">
-              <CalendarDays aria-hidden="true" className="size-5" />
-            </span>
-            <span className="rounded-full bg-surface-soft px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">
-              Atual
-            </span>
-          </div>
-          <p className="mt-5 text-sm font-extrabold text-tesText-secondary">
-            {item.label}
-          </p>
-          <p className="mt-2 text-[2.2rem] font-extrabold leading-none text-brand-deep">
-            {item.value}
-          </p>
-          {item.description ? (
-            <p className="mt-3 text-sm font-semibold leading-6 text-tesText-muted">
-              {item.description}
+      {items.map((item) => {
+        const Icon = item.icon ?? CalendarDays;
+
+        return (
+          <article
+            className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]"
+            key={item.label}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <span
+                className={`grid size-12 place-items-center rounded-[18px] ${
+                  item.iconToneClass ?? "bg-brand-lavenderSoft text-brand-primary"
+                }`}
+              >
+                <Icon aria-hidden="true" className="size-5" />
+              </span>
+              <span className="rounded-full bg-surface-soft px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">
+                Atual
+              </span>
+            </div>
+            <p className="mt-5 text-sm font-extrabold text-tesText-secondary">
+              {item.label}
             </p>
-          ) : null}
-        </article>
-      ))}
+            <p className="mt-2 text-[2.2rem] font-extrabold leading-none text-brand-deep">
+              {item.value}
+            </p>
+            {item.description ? (
+              <p className="mt-3 text-sm font-semibold leading-6 text-tesText-muted">
+                {item.description}
+              </p>
+            ) : null}
+          </article>
+        );
+      })}
     </section>
   );
 }
@@ -224,22 +239,42 @@ export function StatsGrid({
 export function DetailSectionCard({
   description,
   fields,
+  icon: Icon,
   title,
 }: {
   description?: string;
   fields: AdminOperationField[];
+  icon?: LucideIcon;
   title: string;
 }) {
   if (fields.length === 0) return null;
 
   return (
     <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-6 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
-      <h2 className="text-2xl font-extrabold text-brand-deep">{title}</h2>
-      {description ? (
-        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          {description}
-        </p>
-      ) : null}
+      {Icon ? (
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary">
+            <Icon aria-hidden="true" className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-2xl font-extrabold text-brand-deep">{title}</h2>
+            {description ? (
+              <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                {description}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <>
+          <h2 className="text-2xl font-extrabold text-brand-deep">{title}</h2>
+          {description ? (
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              {description}
+            </p>
+          ) : null}
+        </>
+      )}
       <dl className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {fields.map((field) => (
           <div
@@ -261,14 +296,25 @@ export function DetailSectionCard({
 
 export function AsideCard({
   children,
+  icon: Icon,
   title,
 }: {
   children: ReactNode;
+  icon?: LucideIcon;
   title: string;
 }) {
   return (
     <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
-      <h2 className="text-lg font-extrabold text-brand-deep">{title}</h2>
+      {Icon ? (
+        <div className="flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[14px] bg-brand-lavenderSoft text-brand-primary">
+            <Icon aria-hidden="true" className="size-4" />
+          </span>
+          <h2 className="text-lg font-extrabold text-brand-deep">{title}</h2>
+        </div>
+      ) : (
+        <h2 className="text-lg font-extrabold text-brand-deep">{title}</h2>
+      )}
       <div className="mt-4">{children}</div>
     </section>
   );

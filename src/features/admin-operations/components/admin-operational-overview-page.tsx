@@ -2,11 +2,20 @@ import Link from "next/link";
 import type { Route } from "next";
 import {
   AlertCircle,
+  ArrowDownUp,
+  CalendarClock,
   CalendarDays,
+  CalendarX2,
+  CircleAlert,
+  CircleCheck,
+  CircleX,
   ChevronRight,
   Clock3,
+  CreditCard,
   Headphones,
+  RefreshCw,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { BookingReference } from "@/features/bookings";
@@ -193,13 +202,22 @@ export function AdminOperationalOverviewPage({
         <section className="overflow-hidden rounded-[26px] border border-brand-lavender/70 bg-white shadow-[0_24px_70px_rgba(20,16,90,0.11)]">
           <div className="border-b border-brand-lavender/60 px-5 py-5 lg:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold text-brand-deep">
-                  {config.listTitle}
-                </h2>
-                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  {config.listDescription}
-                </p>
+              <div className="flex items-start gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-[18px] bg-brand-lavenderSoft text-brand-primary">
+                  {module === "sessions" ? (
+                    <CalendarDays aria-hidden="true" className="size-5" />
+                  ) : (
+                    <Headphones aria-hidden="true" className="size-5" />
+                  )}
+                </span>
+                <div>
+                  <h2 className="text-2xl font-extrabold text-brand-deep">
+                    {config.listTitle}
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                    {config.listDescription}
+                  </p>
+                </div>
               </div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-tesText-muted">
                 {data.page.total} registro{data.page.total === 1 ? "" : "s"}
@@ -244,10 +262,14 @@ function ListFilters({
           type="search"
         />
       </label>
-      <label>
+      <label className="relative block">
         <span className="sr-only">Filtrar por status</span>
+        <SlidersHorizontal
+          aria-hidden="true"
+          className="pointer-events-none absolute left-4 top-1/2 z-[1] size-4 -translate-y-1/2 text-brand-primary"
+        />
         <select
-          className="min-h-12 w-full rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+          className="min-h-12 w-full rounded-full border border-brand-lavender bg-white py-2 pl-11 pr-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
           defaultValue={data.query.status}
           name="status"
         >
@@ -258,10 +280,14 @@ function ListFilters({
           ))}
         </select>
       </label>
-      <label>
+      <label className="relative block">
         <span className="sr-only">Ordenar resultados</span>
+        <ArrowDownUp
+          aria-hidden="true"
+          className="pointer-events-none absolute left-4 top-1/2 z-[1] size-4 -translate-y-1/2 text-brand-primary"
+        />
         <select
-          className="min-h-12 w-full rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+          className="min-h-12 w-full rounded-full border border-brand-lavender bg-white py-2 pl-11 pr-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
           defaultValue={data.query.sort || "recent"}
           name="sort"
         >
@@ -350,6 +376,9 @@ function RowsContent({
 function SessionsTable({ rows }: { rows: AdminOperationRow[] }) {
   return (
     <table className="w-full table-fixed border-collapse">
+      <caption className="sr-only">
+        Sessões registradas para acompanhamento administrativo
+      </caption>
       <thead>
         <tr className="bg-surface-soft text-left text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
           <th className="w-[25%] px-5 py-4">Sessão</th>
@@ -372,11 +401,14 @@ function SessionsTable({ rows }: { rows: AdminOperationRow[] }) {
                 <p className="break-words text-sm font-extrabold text-brand-deep">
                   {row.title}
                 </p>
-                <p className="mt-1 text-xs font-semibold text-tesText-muted">
-                  {fields.Pagamento
-                    ? `Pagamento: ${formatSessionPaymentStatusLabel(fields.Pagamento)}`
-                    : "Pagamento não informado"}
-                </p>
+                <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-tesText-muted">
+                  <CreditCard aria-hidden="true" className="size-3.5" />
+                  <span>
+                    {fields.Pagamento
+                      ? `Pagamento: ${formatSessionPaymentStatusLabel(fields.Pagamento)}`
+                      : "Pagamento não informado"}
+                  </span>
+                </div>
               </td>
               <td className="break-words px-4 py-4 text-sm font-semibold text-brand-deep">
                 {fields.Terapeuta || "Não informado"}
@@ -529,7 +561,7 @@ function MetricCard({
   metric: AdminOperationMetric;
   module: SupportedModule;
 }) {
-  const Icon = module === "sessions" ? CalendarDays : Headphones;
+  const Icon = metricIcon(metric, module);
   const accent = metricAccent(metric, index);
 
   return (
@@ -588,6 +620,7 @@ function StatusBadge({
     (session ? formatSessionStatusLabel(label) : formatStatusLabel(label)) ||
     "Não informado";
   const normalized = (label ?? "").toLowerCase();
+  const Icon = session ? sessionStatusIcon(normalized) : null;
   const tone =
     normalized.includes("confirm") ||
     normalized.includes("complete") ||
@@ -603,8 +636,9 @@ function StatusBadge({
 
   return (
     <span
-      className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-extrabold ${tone}`}
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold ${tone}`}
     >
+      {Icon ? <Icon aria-hidden="true" className="size-3.5" /> : null}
       {text}
     </span>
   );
@@ -729,6 +763,27 @@ function metricAccent(metric: AdminOperationMetric, index: number) {
   return index % 2 === 0
     ? "bg-brand-lavenderSoft text-brand-primary"
     : "bg-status-infoBg text-status-info";
+}
+
+function metricIcon(metric: AdminOperationMetric, module: SupportedModule) {
+  if (module === "support") return Headphones;
+  if (metric.key === "future-sessions") return CalendarClock;
+  if (metric.key === "attention-sessions") return CircleAlert;
+  return CalendarDays;
+}
+
+function sessionStatusIcon(status: string) {
+  if (status.includes("cancel")) return CalendarX2;
+  if (status.includes("refund")) return RefreshCw;
+  if (status.includes("resched") || status.includes("reagend")) {
+    return RefreshCw;
+  }
+  if (status.includes("complete") || status.includes("confirm")) {
+    return CircleCheck;
+  }
+  if (status.includes("no_show")) return CircleX;
+  if (status.includes("pending") || status.includes("draft")) return Clock3;
+  return null;
 }
 
 function productLabel(value?: string) {

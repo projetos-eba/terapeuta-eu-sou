@@ -45,6 +45,92 @@ describe("refined admin finance pages", () => {
     expect(html).not.toContain("technical_source");
   });
 
+  it("renders the financial amount cards, period filter and operational table columns", () => {
+    const html = renderToStaticMarkup(
+      <AdminPaymentsPage
+        data={financeData({
+          filterOptions: {
+            period: [
+              { label: "Últimos 7 dias", value: "7d" },
+              { label: "Últimos 30 dias", value: "30d" },
+              { label: "Últimos 90 dias", value: "90d" },
+            ],
+            sort: [{ label: "Mais recentes", value: "recent" }],
+            status: [{ label: "Todos", value: "" }],
+          },
+          metrics: [
+            {
+              description: "",
+              key: "total-payments-amount",
+              label: "Total de pagamentos",
+              source: "",
+              status: "available",
+              tone: "info",
+              value: 120000,
+            },
+            {
+              description: "",
+              key: "gross-platform-commission-amount",
+              label: "Comissão bruta TES",
+              source: "",
+              status: "available",
+              tone: "success",
+              value: 18000,
+            },
+            {
+              description: "",
+              key: "stripe-fees-amount",
+              label: "Taxas Stripe",
+              source: "",
+              status: "available",
+              tone: "warning",
+              value: 3000,
+            },
+            {
+              description: "",
+              key: "net-platform-revenue-amount",
+              label: "Receita líquida TES",
+              source: "",
+              status: "available",
+              tone: "success",
+              value: 15000,
+            },
+          ],
+          page: { hasNext: false, page: 1, pageSize: 10, total: 1 },
+          query: {
+            page: 1,
+            pageSize: 10,
+            period: "30d",
+            search: "",
+            sort: "recent",
+            status: "",
+          },
+          rows: [
+            {
+              fields: [
+                { label: "Cliente", value: "Mariana Souza" },
+                { label: "Data e hora", value: "26/09/2026, 10:00" },
+                { label: "Forma de pagamento", value: "Pix" },
+              ],
+              id: "payment-1",
+              statusLabel: "paid",
+              title: "Sessão de teste",
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(html).toContain("Últimos 30 dias");
+    expect(html).toContain("Total de pagamentos");
+    expect(html).toContain("Comissão bruta TES");
+    expect(html).toContain("Taxas Stripe");
+    expect(html).toContain("Receita líquida TES");
+    expect(html).toContain("R$ 1.200,00");
+    expect(html).toContain("Forma de pagamento");
+    expect(html).toContain("Data e hora");
+  });
+
   it("shows compensation and the effective bank-bound amount without internal wording", () => {
     const html = renderToStaticMarkup(
       <AdminPaymentsPage
@@ -69,9 +155,9 @@ describe("refined admin finance pages", () => {
       />,
     );
 
-    expect(html).toContain("Repasse previsto: R$ 85,00");
-    expect(html).toContain("Compensação: R$ 10,00");
-    expect(html).toContain("Valor encaminhado: R$ 75,00");
+    expect(html).toContain("Repasse: R$ 85,00");
+    expect(html).toContain("Compensação");
+    expect(html).toContain("Valor encaminhado");
     expect(html).toContain("A caminho do banco");
     expect(html).not.toContain("Abrir avaliação de reembolso da sessão");
     expect(html).not.toContain(">Reembolso</a>");

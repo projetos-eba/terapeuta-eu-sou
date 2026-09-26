@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(17);
 
 select set_config('tes.suppress_therapist_lifecycle_email', 'true', true);
 
@@ -229,6 +229,108 @@ select is(
   ) -> 'record' ->> 'id',
   'fa100000-0000-4000-8000-000000000001',
   'a historical review remains available to the detail read model'
+);
+
+select is(
+  (
+    select row_payload ->> 'therapist_email'
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('verifications', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'therapist_profile_id' =
+      'c1000000-0000-4000-8000-000000000001'
+  ),
+  (
+    select profile.email
+    from public.therapist_profiles as therapist
+    join public.profiles as profile on profile.id = therapist.user_id
+    where therapist.id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'the v1 queue includes the allowlisted professional email'
+);
+
+select is(
+  (
+    select row_payload ->> 'therapist_profile_id'
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('verifications', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'therapist_profile_id' =
+      'c1000000-0000-4000-8000-000000000001'
+  ),
+  'c1000000-0000-4000-8000-000000000001',
+  'the v1 queue retains the therapist identifier used by the review'
+);
+
+select ok(
+  (
+    select nullif(row_payload ->> 'therapist_created_at', '') is not null
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v1('verifications', 50, 0) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'therapist_profile_id' =
+      'c1000000-0000-4000-8000-000000000001'
+  ),
+  'the v1 queue includes the therapist registration date'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from jsonb_array_elements(
+      public.admin_get_operation_module_v2(
+        'verifications',
+        jsonb_build_object(
+          'page', 1,
+          'pageSize', 50,
+          'search', (
+            select profile.email
+            from public.therapist_profiles as therapist
+            join public.profiles as profile on profile.id = therapist.user_id
+            where therapist.id = 'c1000000-0000-4000-8000-000000000001'
+          )
+        )
+      ) -> 'rows'
+    ) as row_payload
+    where row_payload ->> 'therapist_profile_id' =
+      'c1000000-0000-4000-8000-000000000001'
+  ),
+  1,
+  'the paginated queue can find a verification by professional email'
+);
+
+select is(
+  public.admin_get_operation_detail_v1(
+    'verifications',
+    'fa100000-0000-4000-8000-000000000001'
+  ) -> 'record' -> 'admin_verification_professional' ->> 'email',
+  (
+    select profile.email
+    from public.therapist_profiles as therapist
+    join public.profiles as profile on profile.id = therapist.user_id
+    where therapist.id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'the verification detail includes the allowlisted professional email'
+);
+
+select is(
+  public.admin_get_operation_detail_v1(
+    'verifications',
+    'fa100000-0000-4000-8000-000000000001'
+  ) -> 'record' -> 'admin_verification_professional' ->> 'id',
+  'c1000000-0000-4000-8000-000000000001',
+  'the verification detail includes the therapist identifier'
+);
+
+select ok(
+  nullif(
+    public.admin_get_operation_detail_v1(
+      'verifications',
+      'fa100000-0000-4000-8000-000000000001'
+    ) -> 'record' -> 'admin_verification_professional' ->> 'created_at',
+    ''
+  ) is not null,
+  'the verification detail includes the therapist registration date'
 );
 
 select * from finish();

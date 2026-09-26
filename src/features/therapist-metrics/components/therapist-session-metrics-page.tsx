@@ -57,12 +57,12 @@ export function TherapistSessionMetricsPage({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <SummaryCounter
             icon={CalendarCheck2}
-            label="Sessões realizadas"
+            label="Sessões concluídas"
             metric={data.summary.sessionsCompleted}
           />
           <SampledSummary
             icon={UserCheck}
-            label="Presença operacional"
+            label="Comparecimento às sessões"
             metric={data.summary.operationalPresence}
           />
           <SummaryCounter
@@ -72,12 +72,12 @@ export function TherapistSessionMetricsPage({
           />
           <SummaryCounter
             icon={CalendarClock}
-            label="Reagendamentos aplicados"
+            label="Reagendamentos"
             metric={data.summary.sessionsRescheduled}
           />
           <SummaryCounter
             icon={Clock3}
-            label="Duração média reservada"
+            label="Duração média das sessões"
             metric={data.summary.reservedDurationAverage}
           />
         </div>
@@ -95,14 +95,14 @@ export function TherapistSessionMetricsPage({
           <PresenceRanking
             collection={data.presenceByDay}
             label={(item) => dayLabels[item.dayOfWeek]}
-            title="Presença por dia"
+            title="Comparecimento por dia"
           />
           <PresenceRanking
             collection={data.presenceByHour}
             label={(item) =>
               `${String(item.hourBucketStart).padStart(2, "0")}h – ${String(item.hourBucketStart + 2).padStart(2, "0")}h`
             }
-            title="Presença por horário"
+            title="Comparecimento por horário"
           />
           <UnavailableNotice />
         </AppPageAside>
@@ -234,8 +234,8 @@ function SessionEvolution({
         Evolução das sessões no período
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Compare sessões concluídas com o intervalo imediatamente anterior de
-        mesma duração. A linha tracejada representa o histórico anterior.
+        Compare as sessões concluídas com o período anterior de mesma duração. A
+        linha tracejada mostra o período anterior.
       </p>
 
       <div className="mt-5">
@@ -256,7 +256,7 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
     return (
       <AppPageSection>
         <h2 className="text-xl font-extrabold text-brand-deep">
-          Distribuição por dia e horário
+          Quando suas sessões mais acontecem
         </h2>
         <EmptyBlock text="A grade será preenchida após a primeira sessão concluída no período." />
       </AppPageSection>
@@ -272,11 +272,11 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
         className="text-xl font-extrabold text-brand-deep"
         id="session-heatmap-title"
       >
-        Distribuição por dia e horário
+        Quando suas sessões mais acontecem
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Volume de sessões realizadas no seu fuso. Tons mais intensos indicam
-        maior concentração no período selecionado.
+        Veja em quais dias e horários suas sessões mais aconteceram no período.
+        Tons mais intensos indicam maior frequência.
       </p>
       {data.heatmap.observedSample < 10 ? (
         <p className="mt-3 rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-semibold leading-5 text-tesText-secondary">
@@ -342,8 +342,11 @@ function OutcomeDistribution({ data }: { data: TherapistSessionMetrics }) {
   return (
     <AppPageSection>
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Comparecimento e resultados
+        Como as sessões terminaram
       </h2>
+      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+        Veja como as sessões do período foram finalizadas.
+      </p>
       {data.outcomeDistribution.status === "ready" ? (
         <DistributionDonut
           centerLabel={`${data.outcomeDistribution.observedSample} sessões`}
@@ -352,7 +355,7 @@ function OutcomeDistribution({ data }: { data: TherapistSessionMetrics }) {
             label: item.label,
             value: item.value,
           }))}
-          label="Distribuição dos resultados das sessões"
+          label="Como as sessões terminaram"
         />
       ) : (
         <ProtectedBlock collection={data.outcomeDistribution} />
@@ -365,7 +368,7 @@ function TherapyDistribution({ data }: { data: TherapistSessionMetrics }) {
   return (
     <AppPageSection>
       <h2 className="text-xl font-extrabold text-brand-deep">
-        Sessões realizadas por terapia
+        Sessões concluídas por terapia
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Esta leitura considera a terapia escolhida na reserva.
@@ -376,8 +379,8 @@ function TherapyDistribution({ data }: { data: TherapistSessionMetrics }) {
             name: item.therapyName,
             value: item.sessions,
           }))}
-          label="Sessões realizadas por terapia"
-          seriesLabel="Sessões realizadas"
+          label="Sessões concluídas por terapia"
+          seriesLabel="Sessões concluídas"
         />
       ) : (
         <ProtectedBlock collection={data.therapyDistribution} />
@@ -424,8 +427,8 @@ function UnavailableNotice() {
         Motivos de cancelamento
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ainda não conseguimos mostrar essas categorias com segurança. Por isso,
-        os motivos escritos livremente permanecem ocultos nesta visão.
+        Os motivos escritos livremente não aparecem neste painel. As categorias
+        serão exibidas quando houver informações suficientes para essa leitura.
       </p>
     </AppPageSection>
   );

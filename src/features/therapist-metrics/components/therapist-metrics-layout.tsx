@@ -53,9 +53,10 @@ function MetricsHero({
               Acompanhe seu trabalho
             </h1>
             <p className="mt-5 max-w-[610px] text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
-              Acompanhe como as pessoas encontram seu perfil, agendam sessões e
-              interagem com seu trabalho. Use estes dados para tomar decisões
-              com mais clareza.
+              Veja como as pessoas encontram seu perfil, agendam sessões e se
+              aproximam do seu trabalho. Estas informações ajudam você a
+              entender o que está acontecendo e decidir os próximos passos com
+              mais clareza.
             </p>
           </div>
         </div>

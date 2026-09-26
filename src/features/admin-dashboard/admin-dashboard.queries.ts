@@ -7,8 +7,10 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import type {
   AdminDashboard,
+  AdminDashboardActivity,
   AdminDashboardAlert,
   AdminDashboardEvent,
+  AdminDashboardFinancialOverview,
   AdminDashboardMetric,
   AdminDashboardModule,
   AdminDashboardTone,
@@ -28,7 +30,9 @@ type CountResult = CountSpec & {
 };
 
 type DashboardReadModel = {
+  activity?: unknown;
   events?: DashboardReadModelEvent[];
+  financial?: unknown;
   generatedAt?: string | null;
   metrics?: Record<string, number | null | undefined> | null;
 };
@@ -81,8 +85,10 @@ export const getAdminDashboardPage = cache(
 
     return {
       dashboard: {
+        activity: readModel.activity,
         alerts,
         events,
+        financial: readModel.financial,
         generatedAt: readModel.generatedAt ?? new Date().toISOString(),
         modules: [
           catalogModule,
@@ -116,6 +122,8 @@ async function fetchDashboardReadModel(
 ): Promise<{
   countResults: CountResult[];
   events: AdminDashboardEvent[];
+  activity: AdminDashboardActivity;
+  financial: AdminDashboardFinancialOverview;
   generatedAt: string | null;
 }> {
   const specs = getCountSpecs();
@@ -137,8 +145,10 @@ async function fetchDashboardReadModel(
 
     if (!response.ok) {
       return {
+        activity: unavailableActivity(),
         countResults: unavailableCountResults(specs),
         events: [],
+        financial: unavailableFinancialOverview(),
         generatedAt: null,
       };
     }
@@ -149,13 +159,16 @@ async function fetchDashboardReadModel(
 
     if (!payload || typeof payload !== "object") {
       return {
+        activity: unavailableActivity(),
         countResults: unavailableCountResults(specs),
         events: [],
+        financial: unavailableFinancialOverview(),
         generatedAt: null,
       };
     }
 
     return {
+      activity: mapDashboardActivity(payload.activity),
       countResults: specs.map((spec) => {
         const value = payload.metrics?.[spec.key];
 
@@ -166,12 +179,15 @@ async function fetchDashboardReadModel(
         };
       }),
       events: mapDashboardEvents(payload.events ?? []),
+      financial: mapFinancialOverview(payload.financial),
       generatedAt: payload.generatedAt ?? null,
     };
   } catch {
     return {
+      activity: unavailableActivity(),
       countResults: unavailableCountResults(specs),
       events: [],
+      financial: unavailableFinancialOverview(),
       generatedAt: null,
     };
   }
@@ -549,4 +565,140 @@ function mapDashboardEvents(
       reason: row.reason ?? null,
     }))
     .filter((event) => event.createdAt);
+}
+
+function mapDashboardActivity(value: unknown): AdminDashboardActivity {
+  if (!isRecord(value) || value.status !== "available") {
+    return unavailableActivity();
+  }
+
+  const metrics = record(value.metrics);
+  const series: unknown[] = Array.isArray(value.series) ? value.series : [];
+
+  return {
+    metrics: {
+      patients: activityMetric(metrics.patients),
+      professionals: activityMetric(metrics.professionals),
+      sessions: activityMetric(metrics.sessions),
+    },
+    periodLabel: stringValue(value.periodLabel) ?? "Últimos 30 dias",
+    series: series.flatMap((item) => {
+      const point = record(item);
+      const label = stringValue(point.label);
+
+      return label
+        ? [
+            {
+              label,
+              patients: nonNegativeInteger(point.patients),
+              professionals: nonNegativeInteger(point.professionals),
+              sessions: nonNegativeInteger(point.sessions),
+            },
+          ]
+        : [];
+    }),
+    status: "available",
+  };
+}
+
+function mapFinancialOverview(value: unknown): AdminDashboardFinancialOverview {
+  if (!isRecord(value) || value.status !== "available") {
+    return unavailableFinancialOverview();
+  }
+
+  const metrics = record(value.metrics);
+  const series: unknown[] = Array.isArray(value.series) ? value.series : [];
+
+  return {
+    currency: "BRL",
+    feesStatus: value.feesStatus === "pending" ? "pending" : "available",
+    metrics: {
+      grossCommission: financialMetric(metrics.grossCommission),
+      netRevenue: financialMetric(metrics.netRevenue),
+      stripeFees: financialMetric(metrics.stripeFees),
+    },
+    periodLabel: stringValue(value.periodLabel) ?? "Últimos 30 dias",
+    series: series.flatMap((item) => {
+      const point = record(item);
+      const label = stringValue(point.label);
+
+      return label
+        ? [
+            {
+              grossCommissionCents: integer(point.grossCommissionCents),
+              label,
+              netRevenueCents: integer(point.netRevenueCents),
+              stripeFeesCents: nonNegativeInteger(point.stripeFeesCents),
+            },
+          ]
+        : [];
+    }),
+    status: "available",
+  };
+}
+
+function unavailableActivity(): AdminDashboardActivity {
+  return {
+    metrics: {
+      patients: { current: 0, previous: 0 },
+      professionals: { current: 0, previous: 0 },
+      sessions: { current: 0, previous: 0 },
+    },
+    periodLabel: "Últimos 30 dias",
+    series: [],
+    status: "unavailable",
+  };
+}
+
+function unavailableFinancialOverview(): AdminDashboardFinancialOverview {
+  return {
+    currency: "BRL",
+    feesStatus: "available",
+    metrics: {
+      grossCommission: { currentCents: 0, previousCents: 0 },
+      netRevenue: { currentCents: 0, previousCents: 0 },
+      stripeFees: { currentCents: 0, previousCents: 0 },
+    },
+    periodLabel: "Últimos 30 dias",
+    series: [],
+    status: "unavailable",
+  };
+}
+
+function activityMetric(value: unknown) {
+  const metric = record(value);
+
+  return {
+    current: nonNegativeInteger(metric.current),
+    previous: nonNegativeInteger(metric.previous),
+  };
+}
+
+function financialMetric(value: unknown) {
+  const metric = record(value);
+
+  return {
+    currentCents: integer(metric.currentCents),
+    previousCents: integer(metric.previousCents),
+  };
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function integer(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value) ? value : 0;
+}
+
+function nonNegativeInteger(value: unknown) {
+  return Math.max(0, integer(value));
 }
