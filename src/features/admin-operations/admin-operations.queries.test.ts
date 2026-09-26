@@ -87,6 +87,41 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("forwards a valid rating filter only for the requested reviews query", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: { "total-reviews": 1 },
+        module: "reviews",
+        page: { hasNext: false, page: 1, pageSize: 12, total: 1 },
+        rows: [
+          {
+            booking_id: "booking-1",
+            id: "review-1",
+            rating: 5,
+            status: "published",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "reviews",
+      searchParams: { rating: "5" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_operation_module_v2",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_module: "reviews",
+          p_query: { page: 1, pageSize: 12, rating: "5" },
+        }),
+      }),
+    );
+  });
+
   it("maps global patient metrics including comparison and suspension independently of page rows", async () => {
     vi.stubGlobal(
       "fetch",

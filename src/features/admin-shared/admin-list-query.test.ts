@@ -45,4 +45,15 @@ describe("admin list query", () => {
       "/admin/profissionais?q=terapeuta&status=approved&page=3",
     );
   });
+
+  it("keeps only valid review ratings in the query and link", () => {
+    const query = parseAdminListQuery({ rating: "5", status: "published" });
+
+    expect(query.rating).toBe("5");
+    expect(toAdminListRpcQuery(query)).toMatchObject({ rating: "5" });
+    expect(buildAdminListHref("/admin/avaliacoes", query, { page: 2 })).toBe(
+      "/admin/avaliacoes?status=published&rating=5&page=2",
+    );
+    expect(parseAdminListQuery({ rating: "8" }).rating).toBeUndefined();
+  });
 });

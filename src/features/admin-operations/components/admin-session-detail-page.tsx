@@ -16,7 +16,6 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
-  Clock3,
   CreditCard,
   History,
   Info,
@@ -91,12 +90,6 @@ export function AdminSessionDetailPage({
       : [];
 
   const stats = [
-    statItem(
-      "Duração",
-      sessionFields.get("Duração"),
-      Clock3,
-      "bg-brand-lavenderSoft text-brand-primary",
-    ),
     statItem(
       "Pagamento",
       payment,

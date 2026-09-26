@@ -29,7 +29,10 @@ describe("admin finance queries", () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({
         generatedAt: "2026-08-09T14:00:00.000Z",
-        metrics: { "paid-session-payments": 1 },
+        metrics: {
+          "canceled-payment-amount": 4200,
+          "paid-session-payments": 1,
+        },
         module: "payments",
         page: { hasNext: true, page: 1, pageSize: 12, total: 13 },
         rows: [
@@ -70,6 +73,15 @@ describe("admin finance queries", () => {
     );
     if (result.status === "success") {
       expect(result.data.page.hasNext).toBe(true);
+      expect(result.data.metrics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            key: "canceled-payment-amount",
+            status: "available",
+            value: 4200,
+          }),
+        ]),
+      );
       expect(JSON.stringify(result.data)).not.toContain("pi_secret");
     }
   });

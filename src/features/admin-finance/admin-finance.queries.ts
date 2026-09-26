@@ -119,12 +119,12 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
         "warning",
       ),
       metric(
-        "net-platform-revenue-amount",
-        "Receita líquida TES",
-        "Comissão da plataforma após as taxas de processamento.",
+        "canceled-payment-amount",
+        "Pagamentos cancelados",
+        "Valores de pagamentos cancelados no período.",
         "session_payments",
         "session_payments",
-        "success",
+        "danger",
       ),
       metric(
         "pending-payment-amount",
