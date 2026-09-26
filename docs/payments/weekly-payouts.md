@@ -224,7 +224,11 @@ bem-sucedida para o Transfer. A cronologia decide a apresentação:
   para aquele Payout e não recebe alocação bancária;
 - quando ambos ocorreram somente depois de `payout.paid`, o Payout recebido e
   sua composição histórica são preservados. Apenas o débito posterior é
-  classificado separadamente na auditoria da conta conectada.
+  classificado separadamente na auditoria da conta conectada. Nesse caso, a
+  consulta histórica do Payout pode conter somente o `payment` positivo; o
+  `payment_refund` pertence a um ciclo posterior. A alocação só é restaurada
+  quando `payment.id`, `payment.source`, conta Connect, Transfer, pagamento da
+  sessão, reembolso integral e reversão integral formam um vínculo único.
 
 Reversão parcial, cronologia cruzada, Transfer ativo, múltiplos vínculos ou
 evidência incompleta permanecem incidentes críticos. O histórico do terapeuta
@@ -241,8 +245,9 @@ local de sucesso. Isso não altera `pending_source`: o depósito bancário conti
 dependendo de Payout `paid` e alocação integral.
 As notificações administrativas distinguem conciliação bancária de repasse de
 sessão; este último aviso aponta ao detalhe do pagamento quando houver vínculo
-válido. Quando o incidente é resolvido, o aviso histórico passa a informar a
-resolução; uma reabertura volta a sinalizar atenção sem criar outro registro.
+válido. Quando o incidente de conciliação é resolvido, o aviso histórico passa
+a informar a resolução e deixa de contar como atenção não lida; uma reabertura
+volta a sinalizar atenção sem criar outro registro.
 
 Eventos duplicados e reconciliações repetidas não duplicam alocações, ledger,
 e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,

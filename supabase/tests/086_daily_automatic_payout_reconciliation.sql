@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(44);
+select plan(45);
 
 select ok(
   exists (
@@ -597,9 +597,10 @@ select is(
   'replaying a neutral pair never duplicates Transfer allocations'
 );
 
--- The same provider pair has a different meaning when both reversal events
--- happened only after the bank Payout was paid. The bank history is immutable;
--- the connected-balance debit remains a later adjustment.
+-- A Refund/Reversal created only after the bank Payout was paid does not
+-- appear as a debit in that historical provider snapshot. The original
+-- positive payment remains bank history; the later balance debit belongs to a
+-- subsequent Stripe balance cycle.
 update public.stripe_payouts
 set amount_cents = 26100
 where stripe_payout_id = 'po_auto_many_1';
@@ -617,8 +618,7 @@ do $$ begin
     jsonb_build_array(
       jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
       jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
-      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
-      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10','created',extract(epoch from '2026-08-27 10:03:00+00'::timestamptz)::bigint)
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl')
     ), '2026-08-27 10:04:00+00'
   );
 end $$;
@@ -647,6 +647,17 @@ select is(
    where stripe_payout_id = 'po_auto_many_1'),
   0,
   'the recognized late debit does not leave the historical Payout under review'
+);
+select ok(
+  (select bool_and(notification.read_at is not null)
+   from public.notifications as notification
+   join public.payout_operational_incidents as incident
+     on notification.event_key = 'payout_incident:' || incident.id::text
+   join public.stripe_payouts as payout
+     on payout.id = incident.stripe_payout_id
+   where payout.stripe_payout_id = 'po_auto_many_1'
+     and notification.kind = 'payout_operational_alert_admin'),
+  'resolving the historical Payout also removes the stale admin attention badge'
 );
 
 select ok(

@@ -255,7 +255,12 @@ Edge Functions:
   debit separately; do not turn the received Payout into therapist-visible
   review and do not guess which future Payout will absorb the debit. A future
   composition may reflect it only after Stripe creates and reconciles that
-  Payout with exact provider evidence.
+  Payout with exact provider evidence. The historical Payout snapshot can
+  contain only the original positive `payment` because the later
+  `payment_refund` belongs to another balance cycle; restore that allocation
+  only through the exact payment Balance Transaction, destination payment,
+  Connect account and full local Refund/Reversal chronology. Resolving this
+  reconciliation must also clear the stale unread admin-attention state.
 - A V10 Transfer success may resolve its earlier operational attention incident
   while its job remains `pending_source`. That job advances to bank-paid only
   after a fully allocated paid Payout; never conflate alert resolution with
