@@ -1,8 +1,28 @@
 -- The Admin Clients page keeps the existing paginated list and command
 -- contracts. This layer adds global, allowlisted aggregates for its charts.
-alter function public.admin_get_operation_module_v2(text, jsonb)
-  rename to admin_get_operation_module_v2_before_patient_analytics;
+-- The timestamp originally collided with an unrelated webhook migration.
+-- A remote project may therefore already contain this exact wrapper. In that
+-- case, do not redefine it or replay the predecessor rename.
+do $migration$
+begin
+  if pg_catalog.to_regprocedure(
+    'public.admin_get_operation_module_v2_before_patient_analytics(text,jsonb)'
+  ) is not null then
+    return;
+  end if;
 
+  if pg_catalog.to_regprocedure(
+    'public.admin_get_operation_module_v2(text,jsonb)'
+  ) is null then
+    raise exception 'ADMIN_PATIENT_ANALYTICS_SCHEMA_DRIFT: missing %',
+      'public.admin_get_operation_module_v2(text,jsonb)' using errcode = 'P0001';
+  end if;
+
+  execute
+    'alter function public.admin_get_operation_module_v2(text, jsonb) '
+    'rename to admin_get_operation_module_v2_before_patient_analytics';
+
+  execute $definition$
 create function public.admin_get_operation_module_v2(
   p_module text,
   p_query jsonb default '{}'::jsonb
@@ -175,6 +195,9 @@ begin
   );
 end;
 $$;
+$definition$;
+end;
+$migration$;
 
 revoke all on function public.admin_get_operation_module_v2_before_patient_analytics(text, jsonb)
   from public, anon, authenticated, service_role;
