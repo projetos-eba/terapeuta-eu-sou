@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(21);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -367,6 +367,116 @@ select is(
      = 'b1480000-0000-4000-8000-000000000023'),
   1,
   'the paid-refunded session is not duplicated into an analysis group'
+);
+
+reset role;
+
+insert into public.stripe_payouts (
+  id, therapist_profile_id, connect_account_id, stripe_payout_id,
+  amount_cents, currency, status, provider_status, automatic,
+  provider_reconciliation_status, allocation_status, arrival_at, paid_at,
+  neutral_transaction_pairs, included_transaction_net_cents,
+  unmatched_transaction_count
+) values (
+  'b1480000-0000-4000-8000-000000000063',
+  'c1000000-0000-4000-8000-000000000001',
+  (select connect_account_id_snapshot from public.session_payments
+   where id = 'b1480000-0000-4000-8000-000000000021'),
+  'po_test_payout_history_148_post_reversal', 8500, 'BRL',
+  'paid', 'paid', true, 'completed', 'completed',
+  date_trunc('day', now()) - interval '1 day', now() - interval '3 days',
+  jsonb_build_array(jsonb_build_object(
+    'classification', 'tes_v10_post_payout_reversal',
+    'paymentBalanceTransactionId', 'txn_test_payout_history_148_1',
+    'paymentSourceId', 'py_test_payout_history_148_1',
+    'refundBalanceTransactionId', 'txn_test_payout_history_148_1_refund',
+    'refundSourceId', 'pyr_test_payout_history_148_1',
+    'amountCents', 8500,
+    'localTransferId', 'b1480000-0000-4000-8000-000000000031'
+  )),
+  8500, 0
+);
+
+insert into public.stripe_payout_transfer_allocations (
+  stripe_payout_id, stripe_transfer_id, connected_balance_transaction_id,
+  source_id, amount_cents, currency, allocation_origin, reconciled_at
+) values (
+  'b1480000-0000-4000-8000-000000000063',
+  'b1480000-0000-4000-8000-000000000031',
+  'txn_test_payout_history_148_1', 'py_test_payout_history_148_1',
+  8500, 'BRL', 'session_direct', now() - interval '3 days'
+);
+
+select is(
+  public.private_admin_session_payout_projection_v10(
+    'b1480000-0000-4000-8000-000000000021'
+  ) ->> 'payout_display_status',
+  'paid',
+  'Admin preserves the paid bank fact after a later V10 reversal'
+);
+
+set local role authenticated;
+select is(
+  (public.get_private_therapist_payouts_v9(
+    current_date - 10, current_date, 1, 20, 'America/Sao_Paulo', 15
+  ) ->> 'contractVersion')::integer,
+  9,
+  'the late-reversal payout projection publishes contract V9'
+);
+select is(
+  (select history.item ->> 'status'
+   from jsonb_array_elements(public.get_private_therapist_payouts_v9(
+     current_date - 10, current_date, 1, 20,
+     'America/Sao_Paulo', 15
+   ) -> 'historyItems') as history(item)
+   cross join jsonb_array_elements(history.item -> 'composition')
+     as row(composition_item)
+   where row.composition_item ->> 'sessionPaymentId'
+     = 'b1480000-0000-4000-8000-000000000021'),
+  'received',
+  'a post-Payout reversal keeps the original session in received history'
+);
+select is(
+  (select (row.composition_item ->> 'amountCents')::integer
+   from jsonb_array_elements(public.get_private_therapist_payouts_v9(
+     current_date - 10, current_date, 1, 20,
+     'America/Sao_Paulo', 15
+   ) -> 'historyItems') as history(item)
+   cross join jsonb_array_elements(history.item -> 'composition')
+     as row(composition_item)
+   where row.composition_item ->> 'sessionPaymentId'
+     = 'b1480000-0000-4000-8000-000000000021'),
+  8500,
+  'received history keeps the amount that had actually reached the bank'
+);
+select is(
+  (select count(*)::integer
+   from jsonb_array_elements(public.get_private_therapist_payouts_v9(
+     current_date - 10, current_date, 1, 20,
+     'America/Sao_Paulo', 15
+   ) -> 'historyItems') as history(item)
+   cross join jsonb_array_elements(history.item -> 'composition')
+     as row(composition_item)
+   where row.composition_item ->> 'sessionPaymentId'
+     = 'b1480000-0000-4000-8000-000000000021'),
+  1,
+  'the received session is not duplicated into an analysis group'
+);
+select ok(
+  (public.get_private_therapist_payouts_v9(
+    current_date - 10, current_date, 1, 20,
+    'America/Sao_Paulo', 15
+  ) -> 'agenda')::text not like
+    '%b1480000-0000-4000-8000-000000000021%',
+  'the late debit is not guessed into a future payout group'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.get_private_therapist_payouts_v9(date,date,integer,integer,text,integer)',
+    'EXECUTE'
+  ),
+  'the therapist browser role can execute V9'
 );
 
 reset role;
