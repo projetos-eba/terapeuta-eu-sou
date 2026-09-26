@@ -33,6 +33,7 @@ import { AdminPatientsPage } from "./admin-patients-page";
 import { AdminOperationalOverviewPage } from "./admin-operational-overview-page";
 import { AdminProfessionalDetailPage } from "./admin-professional-detail-page";
 import { AdminProfessionalsPage } from "./admin-professionals-page";
+import { AdminReviewsPage } from "./admin-reviews-page";
 import { AdminSessionDetailPage } from "./admin-session-detail-page";
 import { AdminSupportDetailPage } from "./admin-support-detail-page";
 import { AdminVerificationDetailPage } from "./admin-verification-detail-page";
@@ -55,6 +56,10 @@ export function AdminOperationPage({
 
   if (module === "verifications") {
     return <AdminVerificationsPage data={data} />;
+  }
+
+  if (module === "reviews") {
+    return <AdminReviewsPage data={data} />;
   }
 
   if (module === "sessions" || module === "support") {

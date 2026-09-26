@@ -581,10 +581,11 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Detalhes da sessão");
     expect(html).toContain("Ana Oliveira");
     expect(html).toContain("Online");
+    expect(html).toContain(">Pagamento</p>");
+    expect(html).not.toContain(">Duração</p>");
     expect(html).toContain("Em andamento");
     expect(html).toContain("Profissional presente agora");
     expect(html).toContain("Nova tentativa agendada");
-    expect(html).toContain("lucide-clock3");
     expect(html).toContain("lucide-credit-card");
     expect(html).toContain("lucide-users-round");
     expect(html).toContain("lucide-monitor");

@@ -88,11 +88,11 @@ describe("refined admin finance pages", () => {
             },
             {
               description: "",
-              key: "net-platform-revenue-amount",
-              label: "Receita líquida TES",
+              key: "canceled-payment-amount",
+              label: "Pagamentos cancelados",
               source: "",
               status: "available",
-              tone: "success",
+              tone: "danger",
               value: 15000,
             },
           ],
@@ -125,7 +125,10 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Total de pagamentos");
     expect(html).toContain("Comissão bruta TES");
     expect(html).toContain("Taxas Stripe");
-    expect(html).toContain("Receita líquida TES");
+    expect(html).toContain("Pagamentos cancelados");
+    expect(html).toContain("Entenda Pagamentos cancelados");
+    expect(html).toContain("Não inclui pagamentos com falha.");
+    expect(html).not.toContain("Receita líquida TES");
     expect(html).toContain("R$ 1.200,00");
     expect(html).toContain("Forma de pagamento");
     expect(html).toContain("Data e hora");

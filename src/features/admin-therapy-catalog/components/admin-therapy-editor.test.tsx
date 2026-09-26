@@ -62,7 +62,7 @@ describe("AdminTherapyEditor", () => {
       "/journey/emocoes-bem-estar.png",
     );
 
-    fireEvent.change(screen.getByLabelText("Nome canônico"), {
+    fireEvent.change(screen.getByLabelText("Nome da terapia"), {
       target: { value: "Reiki" },
     });
     fireEvent.change(screen.getByLabelText("Slug"), {
@@ -72,7 +72,7 @@ describe("AdminTherapyEditor", () => {
       target: { value: "Prática complementar de cuidado energético." },
     });
     fireEvent.change(
-      screen.getByRole("combobox", { name: /chave semântica de cor/i }),
+      screen.getByRole("combobox", { name: /cor de identificação/i }),
       {
         target: { value: "green" },
       },
@@ -133,6 +133,62 @@ describe("AdminTherapyEditor", () => {
     );
   });
 
+  it("explains the catalog fields in plain language and previews their use", () => {
+    render(
+      <AdminTherapyEditor
+        isSaving={false}
+        matchingThemes={[]}
+        onCancel={() => undefined}
+        onSave={async () => undefined}
+        therapy={null}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Entenda o campo Nome da terapia" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Entenda o campo Cor de identificação" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Entenda o campo Nomes alternativos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Entenda o campo O que é" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Entenda o campo Tema visual" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Entenda o campo Tipo de abordagem" }),
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "pequeno selo que aparece acima do nome na página pública",
+    );
+
+    fireEvent.change(screen.getByLabelText("Nome da terapia"), {
+      target: { value: "Reiki" },
+    });
+    fireEvent.change(
+      document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!,
+      { target: { value: "Cuidado complementar com presença e escuta." } },
+    );
+    fireEvent.change(
+      document.querySelector<HTMLTextAreaElement>('textarea[name="aliases"]')!,
+      { target: { value: "Reiki Usui\nTerapia Reiki" } },
+    );
+    fireEvent.change(
+      document.querySelector<HTMLTextAreaElement>('textarea[name="introduction"]')!,
+      { target: { value: "Uma explicação pública sobre a prática." } },
+    );
+
+    expect(screen.getByText("Como as informações aparecem")).toBeInTheDocument();
+    expect(screen.getByText("Cuidado complementar com presença e escuta.")).toBeInTheDocument();
+    expect(screen.getByText("Também encontrada por: Reiki Usui, Terapia Reiki.")).toBeInTheDocument();
+    expect(screen.getByText("Uma explicação pública sobre a prática.")).toBeInTheDocument();
+  });
+
   it("shows the configured limits and blocks an overlong field", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
 
@@ -153,7 +209,7 @@ describe("AdminTherapyEditor", () => {
     expect(document.querySelector('textarea[name="safetyNote"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('input[name="benefitDescription"]')).toHaveAttribute("maxLength", "100");
 
-    fireEvent.change(screen.getByLabelText("Nome canônico"), { target: { value: "Reiki" } });
+    fireEvent.change(screen.getByLabelText("Nome da terapia"), { target: { value: "Reiki" } });
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "reiki" } });
     fireEvent.change(screen.getByLabelText("Benefício 1"), { target: { value: "Pausa" } });
     fireEvent.change(screen.getByLabelText("Benefício 2"), { target: { value: "Cuidado" } });

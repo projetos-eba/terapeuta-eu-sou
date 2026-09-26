@@ -947,6 +947,7 @@ async function fetchAdminOperationReadModel({
   query: AdminListQuery;
 }): Promise<AdminOperationReadResult> {
   try {
+    const { rating, ...baseQuery } = toAdminListRpcQuery(query);
     const response = await fetch(
       `${config.url}/rest/v1/rpc/admin_get_operation_module_v2`,
       {
@@ -960,7 +961,8 @@ async function fetchAdminOperationReadModel({
         body: JSON.stringify({
           p_module: module,
           p_query: {
-            ...toAdminListRpcQuery(query),
+            ...baseQuery,
+            ...(module === "reviews" && rating ? { rating } : {}),
             ...(patientAnalyticsPeriod
               ? { analyticsPeriod: patientAnalyticsPeriod }
               : {}),

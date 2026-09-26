@@ -8,11 +8,11 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  CircleDollarSign,
   CircleX,
   Coins,
   Clock3,
   CreditCard,
+  Info,
   Landmark,
   ReceiptText,
   RefreshCw,
@@ -34,7 +34,7 @@ const FINANCIAL_KPI_KEYS = [
   "total-payments-amount",
   "gross-platform-commission-amount",
   "stripe-fees-amount",
-  "net-platform-revenue-amount",
+  "canceled-payment-amount",
   "pending-payment-amount",
   "confirmed-payment-amount",
   "failed-payment-amount",
@@ -328,7 +328,10 @@ function PaymentKpiCard({ metric }: { metric: AdminFinanceMetric }) {
         <StatusPill metric={metric} />
       </div>
       <p className="mt-5 text-sm font-extrabold text-tesText-secondary">
-        {paymentMetricLabel(metric)}
+        <span className="flex items-center gap-1.5">
+          {paymentMetricLabel(metric)}
+          <MetricInfo metric={metric} />
+        </span>
       </p>
       <strong className="mt-2 block text-[2.2rem] font-extrabold leading-none tracking-tight text-brand-deep">
         {formatMetricValue(metric)}
@@ -349,8 +352,9 @@ function PaymentIndicatorCard({ metric }: { metric: AdminFinanceMetric }) {
             <PaymentMetricIcon aria-hidden="true" metric={metric} />
           </span>
           <div>
-            <p className="text-sm font-extrabold text-brand-deep">
+            <p className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
               {paymentMetricLabel(metric)}
+              <MetricInfo metric={metric} />
             </p>
             <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
               Indicador operacional
@@ -366,6 +370,22 @@ function PaymentIndicatorCard({ metric }: { metric: AdminFinanceMetric }) {
         {paymentMetricDescription(metric)}
       </p>
     </article>
+  );
+}
+
+function MetricInfo({ metric }: { metric: AdminFinanceMetric }) {
+  return (
+    <details className="relative shrink-0">
+      <summary
+        aria-label={`Entenda ${paymentMetricLabel(metric)}`}
+        className="grid size-11 cursor-pointer list-none place-items-center rounded-full text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20 [&::-webkit-details-marker]:hidden"
+      >
+        <Info aria-hidden="true" className="size-4" />
+      </summary>
+      <p className="absolute right-0 top-12 z-20 w-64 rounded-xl border border-brand-lavender/70 bg-white p-3 text-sm font-semibold leading-5 text-tesText-secondary shadow-[0_14px_35px_rgba(20,16,90,0.16)]">
+        {paymentMetricInfo(metric)}
+      </p>
+    </details>
   );
 }
 
@@ -614,9 +634,9 @@ function fieldMap(fields: AdminFinanceField[]) {
 function paymentMetricLabel(metric: AdminFinanceMetric) {
   const labels: Record<string, string> = {
     "confirmed-payment-amount": "Pagamentos confirmados",
+    "canceled-payment-amount": "Pagamentos cancelados",
     "failed-payment-amount": "Pagamentos com falha",
     "gross-platform-commission-amount": "Comissão bruta TES",
-    "net-platform-revenue-amount": "Receita líquida TES",
     "open-disputes": "Contestações abertas",
     "open-payout-batches": "Repasses em andamento",
     "pending-payment-amount": "Pagamentos pendentes",
@@ -631,9 +651,9 @@ function paymentMetricLabel(metric: AdminFinanceMetric) {
 function paymentMetricDescription(metric: AdminFinanceMetric) {
   const descriptions: Record<string, string> = {
     "confirmed-payment-amount": "Valores com pagamento confirmado.",
+    "canceled-payment-amount": "Valores com pagamento cancelado no período.",
     "failed-payment-amount": "Valores que precisam de acompanhamento.",
     "gross-platform-commission-amount": "Parte da plataforma nas cobranças confirmadas.",
-    "net-platform-revenue-amount": "Após as taxas de processamento.",
     "open-disputes": "Contestações que ainda aguardam encerramento.",
     "open-payout-batches": "Valores em preparação ou a caminho do banco.",
     "pending-payment-amount": "Valores que aguardam confirmação.",
@@ -643,6 +663,32 @@ function paymentMetricDescription(metric: AdminFinanceMetric) {
   };
 
   return descriptions[metric.key] ?? metric.description;
+}
+
+function paymentMetricInfo(metric: AdminFinanceMetric) {
+  const descriptions: Record<string, string> = {
+    "canceled-payment-amount":
+      "Soma das cobranças cujo pagamento foi cancelado no período. Não inclui pagamentos com falha.",
+    "confirmed-payment-amount":
+      "Soma das cobranças que tiveram o pagamento confirmado no período, incluindo as parcialmente reembolsadas.",
+    "failed-payment-amount":
+      "Soma das cobranças que não foram concluídas por falha. Elas não entram como pagamentos cancelados.",
+    "gross-platform-commission-amount":
+      "Parte da TES nas cobranças confirmadas, antes de descontar as taxas de processamento.",
+    "pending-payment-amount":
+      "Soma das cobranças que ainda aguardam confirmação ou estão sendo processadas.",
+    "pending-refunds-amount":
+      "Soma dos reembolsos solicitados que ainda não foram concluídos.",
+    "stripe-fees-amount":
+      "Custos de processamento cobrados pela Stripe nas cobranças confirmadas.",
+    "total-payments-amount":
+      "Soma de todos os pagamentos registrados no período, independentemente da situação atual.",
+  };
+
+  return (
+    descriptions[metric.key] ??
+    "Este indicador mostra um resumo dos registros financeiros no período selecionado."
+  );
 }
 
 function formatOperationalValue(value: string | undefined) {
@@ -694,9 +740,9 @@ function PaymentMetricIcon({
 }: { metric: AdminFinanceMetric } & ComponentProps<"svg">) {
   const icons = {
     "confirmed-payment-amount": CheckCircle2,
+    "canceled-payment-amount": CircleX,
     "failed-payment-amount": CircleX,
     "gross-platform-commission-amount": Coins,
-    "net-platform-revenue-amount": CircleDollarSign,
     "open-disputes": ShieldAlert,
     "open-payout-batches": Landmark,
     "pending-payment-amount": Clock3,

@@ -1,7 +1,18 @@
 "use client";
 
-import { ImagePlus, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import {
+  CalendarDays,
+  Eye,
+  ImagePlus,
+  Info,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 
 import { TESButton } from "@/components/tes";
 import {
@@ -54,6 +65,22 @@ export function AdminTherapyEditor({
     null,
   );
   const [formError, setFormError] = useState<string | null>(null);
+  const [preview, setPreview] = useState(() => ({
+    aliases: therapy?.aliases ?? [],
+    approachIconKey: normalizeTherapyIconKey(
+      therapy?.publicContent.approachIconKey,
+      "sparkles",
+    ),
+    approachLabel: therapy?.publicContent.approachLabel ?? "",
+    calendarColorKey: normalizeColorKey(therapy?.calendarColorKey),
+    complementaryDescription:
+      therapy?.publicContent.complementaryDescription ?? "",
+    description: therapy?.description ?? "",
+    introduction: therapy?.publicContent.introduction ?? "",
+    name: therapy?.name ?? "",
+    shortDescription: therapy?.shortDescription ?? "",
+    subtitle: therapy?.publicContent.subtitle ?? "",
+  }));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,45 +157,78 @@ export function AdminTherapyEditor({
         <div className="grid gap-4 md:grid-cols-2">
           <Field
             defaultValue={therapy?.name}
-            label="Nome canônico"
+            help="É o nome principal que as pessoas veem na página da terapia e nos cartões. Use um nome claro, como “Reiki”."
+            label="Nome da terapia"
             name="name"
+            onChange={(name) =>
+              setPreview((current) => ({ ...current, name }))
+            }
+            placeholder="Ex.: Reiki"
             required
           />
           <Field
             defaultValue={therapy?.slug}
+            help="É o endereço curto usado no link da página. Use letras minúsculas e hífens, como “reiki”. Não aparece como texto para as pessoas."
             label="Slug"
             name="slug"
             required
           />
-          <ColorSelect defaultValue={therapy?.calendarColorKey} />
+          <ColorSelect
+            defaultValue={therapy?.calendarColorKey}
+            onChange={(calendarColorKey) =>
+              setPreview((current) => ({ ...current, calendarColorKey }))
+            }
+          />
         </div>
         <Textarea
           defaultValue={therapy?.shortDescription}
-          label="Resumo"
+          help="É uma frase curta para apresentar a terapia nos cartões do catálogo. Conte o que ela propõe, sem prometer resultados."
+          hint="Ex.: Prática complementar de cuidado energético, com presença e escuta."
+          label="Resumo curto"
           maxLength={contentLimits.shortDescription}
           name="shortDescription"
+          onChange={(shortDescription) =>
+            setPreview((current) => ({ ...current, shortDescription }))
+          }
           required
         />
         <Textarea
           defaultValue={therapy?.description}
-          label="Abordagem / descrição editorial"
+          help="Explique de forma simples como a terapia costuma ser apresentada. Este texto pode aparecer em “O que é” quando não houver uma explicação própria preenchida abaixo."
+          hint="Ex.: No Reiki, a prática é apresentada como um cuidado complementar, feito com atenção, presença e respeito ao ritmo de cada pessoa."
+          label="Como a terapia funciona"
           maxLength={contentLimits.description}
           name="description"
+          onChange={(description) =>
+            setPreview((current) => ({ ...current, description }))
+          }
         />
         <Textarea
           defaultValue={therapy?.aliases.join("\n")}
-          hint="Uma variação por linha."
-          label="Aliases"
+          help="Inclua nomes pelos quais a terapia também é conhecida. Eles ajudam a equipe a localizar e evitar cadastros duplicados, mas não aparecem na página pública."
+          hint="Um nome alternativo por linha. Ex.: Reiki Usui ou Terapia Reiki."
+          label="Nomes alternativos"
           name="aliases"
+          onChange={(value) =>
+            setPreview((current) => ({
+              ...current,
+              aliases: splitLines(value),
+            }))
+          }
         />
+
       </Section>
 
       <Section title="Conteúdo público">
         <div className="grid gap-4 md:grid-cols-2">
           <Field
             defaultValue={therapy?.publicContent.subtitle}
+            help="É a frase de apoio que aparece logo abaixo do nome, no topo da página pública. Use uma ideia acolhedora e objetiva, sem prometer resultados."
             label="Subtítulo"
             name="subtitle"
+            onChange={(subtitle) =>
+              setPreview((current) => ({ ...current, subtitle }))
+            }
           />
           <div className="md:col-span-2">
             <TherapyImageField
@@ -242,75 +302,100 @@ export function AdminTherapyEditor({
           </div>
           <Field
             defaultValue={therapy?.publicContent.approachLabel}
-            label="Rótulo de abordagem"
+            help="É o pequeno selo que aparece acima do nome na página pública. Use uma expressão breve que ajude a situar a pessoa, como “Prática energética complementar”."
+            label="Tipo de abordagem"
             name="approachLabel"
+            onChange={(approachLabel) =>
+              setPreview((current) => ({ ...current, approachLabel }))
+            }
+            placeholder="Ex.: Prática energética complementar"
           />
           <TherapyIconSelect
             defaultValue={therapy?.publicContent.approachIconKey}
             fallbackIconKey="sparkles"
-            label="Ícone semântico"
+            help="Escolha o ícone que acompanha o tipo de abordagem no selo público. Prefira um símbolo simples, relacionado à ideia principal da terapia."
+            label="Ícone do tipo de abordagem"
             name="approachIconKey"
+            onChange={(approachIconKey) =>
+              setPreview((current) => ({ ...current, approachIconKey }))
+            }
           />
-          <label>
-            <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-              Tema visual
-            </span>
-            <select
-              className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
-              defaultValue={therapy?.publicContent.visualThemeKey ?? "energy"}
-              name="visualThemeKey"
-            >
-              <option value="energy">Energia</option>
-              <option value="oracle">Oráculos</option>
-              <option value="systemic">Sistêmico</option>
-            </select>
-          </label>
-          <label>
-            <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-              Foco da imagem
-            </span>
-            <select
-              className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
-              defaultValue={therapy?.publicContent.heroFocalPoint ?? "center"}
-              name="heroFocalPoint"
-            >
-              <option value="left">Esquerda</option>
-              <option value="center">Centro</option>
-              <option value="right">Direita</option>
-            </select>
-          </label>
+          <SelectField
+            defaultValue={therapy?.publicContent.visualThemeKey ?? "energy"}
+            help="Define a atmosfera visual da página pública, como energia, oráculos ou sistêmico. Não muda o texto nem o funcionamento da terapia."
+            label="Tema visual"
+            name="visualThemeKey"
+          >
+            <option value="energy">Energia</option>
+            <option value="oracle">Oráculos</option>
+            <option value="systemic">Sistêmico</option>
+          </SelectField>
+          <SelectField
+            defaultValue={therapy?.publicContent.heroFocalPoint ?? "center"}
+            help="Escolha onde está a parte mais importante da imagem. Isso ajuda a manter o assunto visível no recorte do topo da página."
+            label="Foco da imagem"
+            name="heroFocalPoint"
+          >
+            <option value="left">Esquerda</option>
+            <option value="center">Centro</option>
+            <option value="right">Direita</option>
+          </SelectField>
         </div>
         <Textarea
           defaultValue={therapy?.publicContent.introduction}
+          help="É a explicação principal que aparece na seção “O que é” da página pública. Explique a prática em linguagem simples e responsável."
+          hint="Ex.: O Reiki é apresentado como uma prática complementar de cuidado energético, com acompanhamento online e respeito ao ritmo de cada pessoa."
           label="O que é"
           maxLength={contentLimits.introduction}
           name="introduction"
+          onChange={(introduction) =>
+            setPreview((current) => ({ ...current, introduction }))
+          }
         />
         <Textarea
           defaultValue={therapy?.publicContent.complementaryDescription}
+          help="É um segundo parágrafo para completar a explicação da página pública. Use para contextualizar limites, formato online ou cuidado complementar."
+          hint="Ex.: Dentro do TES, a prática é apresentada como um caminho complementar de autocuidado, sem substituir cuidados de saúde."
           label="Descrição complementar"
           maxLength={contentLimits.complementaryDescription}
           name="complementaryDescription"
+          onChange={(complementaryDescription) =>
+            setPreview((current) => ({
+              ...current,
+              complementaryDescription,
+            }))
+          }
         />
         <Textarea
           defaultValue={therapy?.publicContent.safetyNote}
+          help="Registre um cuidado importante sobre a linguagem da terapia, sem prometer cura, diagnóstico ou resultado. Nesta versão, esse texto orienta a curadoria do catálogo e não aparece na página pública."
+          hint="Ex.: Esta prática complementar não substitui acompanhamento médico, psicológico ou tratamento de saúde."
           label="Nota responsável"
           maxLength={contentLimits.safetyNote}
           name="safetyNote"
         />
+        <TherapyPublicPreview preview={preview} />
         <Textarea
           defaultValue={therapy?.publicContent.highlights
             .map((item) => item.title)
             .join("\n")}
-          hint="Um destaque por linha."
+          help="São frases curtas que aparecem no topo da página pública para destacar aspectos da experiência. Use um destaque por linha e evite promessas de resultado."
+          hint="Um destaque por linha. Ex.: Cuidado complementar com escuta e presença."
           label="Destaques"
           name="highlights"
         />
         <div className="space-y-3">
           <div>
-            <h4 className="text-sm font-extrabold text-brand-deep">
-              Benefícios / experiência esperada
-            </h4>
+            <div className="flex items-center gap-1">
+              <h4 className="text-sm font-extrabold text-brand-deep">
+                Benefícios / experiência esperada
+              </h4>
+              <FieldInfo label="Benefícios e experiência esperada">
+                Descreva possibilidades de experiência, como pausa, presença ou
+                organização interna. Evite afirmar cura, diagnóstico ou resultado
+                garantido.
+              </FieldInfo>
+            </div>
             <p className="mt-1 text-xs font-bold text-tesText-secondary">
               Cadastre pelo menos dois benefícios. Evite promessa de resultado.
             </p>
@@ -507,9 +592,16 @@ function TherapyImageField({
   return (
     <div className="space-y-4 rounded-2xl border border-brand-lavender bg-surface-soft p-4">
       <div>
-        <h4 className="text-base font-extrabold text-brand-deep">
-          Imagem da terapia
-        </h4>
+        <div className="flex items-center gap-1">
+          <h4 className="text-base font-extrabold text-brand-deep">
+            Imagem da terapia
+          </h4>
+          <FieldInfo label="Imagem da terapia">
+            Use uma imagem que ajude a apresentar a terapia sem prometer
+            resultados. A imagem fallback aparece nos cartões; a imagem hero
+            aparece no topo da página da terapia.
+          </FieldInfo>
+        </div>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           Envie uma imagem para preencher a imagem fallback e, quando ainda
           estiver vazio, a imagem hero.
@@ -621,6 +713,7 @@ function TherapyImageField({
         </div>
         <div className="grid gap-4">
           <Field
+            help="É a imagem usada nos cartões do catálogo quando não houver uma imagem principal específica."
             label="Imagem fallback"
             name="imageUrl"
             onChange={onImageChange}
@@ -628,6 +721,7 @@ function TherapyImageField({
             value={imageUrl}
           />
           <Field
+            help="É a imagem ampla do topo da página pública da terapia."
             label="Imagem hero"
             name="heroImageUrl"
             onChange={onHeroImageChange}
@@ -676,30 +770,37 @@ function ThemePreviewOption({
 function TherapyIconSelect({
   defaultValue,
   fallbackIconKey = "heart",
+  help,
   label,
   name,
+  onChange,
 }: {
   defaultValue?: string | null;
   fallbackIconKey?: string;
+  help?: string;
   label: string;
   name: string;
+  onChange?: (value: string) => void;
 }) {
   const normalizedDefault = normalizeTherapyIconKey(defaultValue, fallbackIconKey);
   const [selectedIconKey, setSelectedIconKey] = useState(normalizedDefault);
+  const selectId = useId();
 
   return (
-    <label>
-      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        {label}
-      </span>
+    <div>
+      <FormFieldLabel help={help} htmlFor={selectId} label={label} />
       <div className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender bg-white px-3 focus-within:ring-4 focus-within:ring-ring/20">
         <span className="text-brand-primary" aria-hidden="true">
           <DetailIcon iconKey={selectedIconKey} />
         </span>
         <select
           className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none"
+          id={selectId}
           name={name}
-          onChange={(event) => setSelectedIconKey(event.target.value)}
+          onChange={(event) => {
+            setSelectedIconKey(event.target.value);
+            onChange?.(event.target.value);
+          }}
           value={selectedIconKey}
         >
           {therapyDetailIconOptions.map((option) => (
@@ -709,7 +810,7 @@ function TherapyIconSelect({
           ))}
         </select>
       </div>
-    </label>
+    </div>
   );
 }
 
@@ -755,8 +856,202 @@ function Section({
   );
 }
 
+function TherapyPublicPreview({
+  preview,
+}: {
+  preview: {
+    aliases: string[];
+    approachIconKey: string;
+    approachLabel: string;
+    calendarColorKey: string;
+    complementaryDescription: string;
+    description: string;
+    introduction: string;
+    name: string;
+    shortDescription: string;
+    subtitle: string;
+  };
+}) {
+  const name = preview.name.trim() || "Nome da terapia";
+  const approachLabel = preview.approachLabel.trim() || "Tipo de abordagem";
+  const subtitle =
+    preview.subtitle.trim() ||
+    "Aqui aparecerá uma frase de apoio abaixo do nome da terapia.";
+  const shortDescription =
+    preview.shortDescription.trim() ||
+    "Aqui aparecerá o resumo curto que apresenta a terapia no catálogo.";
+  const introduction =
+    preview.introduction.trim() ||
+    preview.description.trim() ||
+    "Aqui aparecerá uma explicação simples sobre como a terapia é apresentada.";
+
+  return (
+    <section
+      aria-labelledby="therapy-public-preview-title"
+      className="rounded-2xl border border-brand-lavender bg-surface-soft p-4"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-brand-primary shadow-card">
+          <Eye aria-hidden="true" className="size-5" />
+        </span>
+        <div>
+          <h4
+            className="text-base font-extrabold text-brand-deep"
+            id="therapy-public-preview-title"
+          >
+            Como as informações aparecem
+          </h4>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Esta é uma prévia de orientação. Ela acompanha os campos acima e
+            não publica nem salva alterações.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <article className="rounded-xl border border-brand-lavender bg-white p-4">
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-sm font-extrabold text-brand-primary">
+            <DetailIcon iconKey={preview.approachIconKey} />
+            {approachLabel}
+          </span>
+          <h5 className="mt-4 text-2xl font-extrabold text-brand-deep">
+            {name}
+          </h5>
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            {subtitle}
+          </p>
+          <p className="mt-4 text-xs font-bold text-tesText-secondary">
+            No topo da página pública da terapia
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-brand-lavender bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-primary">
+            Cartão do catálogo
+          </p>
+          <h5 className="mt-2 text-lg font-extrabold text-brand-deep">{name}</h5>
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            {shortDescription}
+          </p>
+          <p className="mt-4 text-xs font-bold text-tesText-secondary">
+            Na lista pública de terapias
+          </p>
+        </article>
+      </div>
+
+      <article className="mt-4 rounded-xl border border-brand-lavender bg-white p-4">
+        <h5 className="text-lg font-extrabold text-brand-deep">
+          O que é {name}?
+        </h5>
+        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          {introduction}
+        </p>
+        {preview.complementaryDescription.trim() ? (
+          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+            {preview.complementaryDescription.trim()}
+          </p>
+        ) : null}
+        <p className="mt-4 text-xs font-bold text-tesText-secondary">
+          Na explicação da página pública da terapia
+        </p>
+      </article>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="flex gap-3 rounded-xl bg-white px-3 py-3">
+          <span
+            aria-hidden="true"
+            className={`mt-1 size-3 shrink-0 rounded-full ${calendarColorPreviewClass(preview.calendarColorKey)}`}
+          />
+          <div>
+            <p className="flex items-center gap-2 text-sm font-extrabold text-brand-deep">
+              <CalendarDays aria-hidden="true" className="size-4 text-brand-primary" />
+              Agenda do terapeuta
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
+              A cor escolhida ajuda a reconhecer esta terapia na agenda. Ela
+              não é exibida como conteúdo na página pública.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3 rounded-xl bg-white px-3 py-3">
+          <Search aria-hidden="true" className="mt-1 size-4 shrink-0 text-brand-primary" />
+          <div>
+            <p className="text-sm font-extrabold text-brand-deep">
+              Busca administrativa
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
+              {preview.aliases.length > 0
+                ? `Também encontrada por: ${preview.aliases.join(", ")}.`
+                : "Os nomes alternativos ajudam a localizar a terapia aqui no catálogo; eles não aparecem publicamente."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FormFieldLabel({
+  help,
+  htmlFor,
+  label,
+}: {
+  help?: string;
+  htmlFor: string;
+  label: string;
+}) {
+  return (
+    <div className="mb-2 flex items-center gap-1">
+      <label
+        className="text-sm font-extrabold text-brand-deep"
+        htmlFor={htmlFor}
+      >
+        {label}
+      </label>
+      {help ? <FieldInfo label={label}>{help}</FieldInfo> : null}
+    </div>
+  );
+}
+
+function FieldInfo({ children, label }: { children: ReactNode; label: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const tooltipId = useId();
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        aria-describedby={isOpen ? tooltipId : undefined}
+        aria-expanded={isOpen}
+        aria-label={`Entenda o campo ${label}`}
+        className="-my-2 inline-grid size-11 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+        onBlur={() => setIsOpen(false)}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setIsOpen(false);
+            event.currentTarget.blur();
+          }
+        }}
+        type="button"
+      >
+        <Info aria-hidden="true" className="size-4" />
+      </button>
+      {isOpen ? (
+        <span
+          className="absolute left-0 top-full z-30 mt-2 w-72 rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card"
+          id={tooltipId}
+          role="tooltip"
+        >
+          {children}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function Field({
   defaultValue,
+  help,
   label,
   name,
   onChange,
@@ -767,6 +1062,7 @@ function Field({
   value,
 }: {
   defaultValue?: string | null;
+  help?: string;
   label: string;
   name: string;
   onChange?: (value: string) => void;
@@ -776,14 +1072,15 @@ function Field({
   showCounter?: boolean;
   value?: string;
 }) {
+  const inputId = useId();
+
   return (
-    <label>
-      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        {label}
-      </span>
+    <div>
+      <FormFieldLabel help={help} htmlFor={inputId} label={label} />
       <input
         className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
         defaultValue={value === undefined ? defaultValue ?? "" : undefined}
+        id={inputId}
         name={name}
         onChange={
           onChange ? (event) => onChange(event.target.value) : undefined
@@ -798,7 +1095,7 @@ function Field({
           Limite de {maxLength} caracteres
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -814,16 +1111,73 @@ const colorOptions = [
   { label: "Neutro", value: "neutral" },
 ] as const;
 
-function ColorSelect({ defaultValue }: { defaultValue?: string | null }) {
+function calendarColorPreviewClass(colorKey: string) {
+  const previewClasses: Record<string, string> = {
+    blue: "bg-blue-500",
+    cyan: "bg-cyan-500",
+    green: "bg-emerald-500",
+    lavender: "bg-violet-300",
+    mint: "bg-teal-400",
+    orange: "bg-orange-400",
+    pink: "bg-pink-400",
+    purple: "bg-brand-primary",
+  };
+
+  return previewClasses[colorKey] ?? "bg-slate-400";
+}
+
+function SelectField({
+  children,
+  defaultValue,
+  help,
+  label,
+  name,
+}: {
+  children: ReactNode;
+  defaultValue: string;
+  help: string;
+  label: string;
+  name: string;
+}) {
+  const selectId = useId();
+
   return (
-    <label>
-      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        Chave semântica de cor
-      </span>
+    <div>
+      <FormFieldLabel help={help} htmlFor={selectId} label={label} />
+      <select
+        className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
+        defaultValue={defaultValue}
+        id={selectId}
+        name={name}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function ColorSelect({
+  defaultValue,
+  onChange,
+}: {
+  defaultValue?: string | null;
+  onChange?: (value: string) => void;
+}) {
+  const selectId = useId();
+
+  return (
+    <div>
+      <FormFieldLabel
+        help="É uma cor de identificação usada na agenda do terapeuta e em marcadores internos. Escolha a que ajuda a diferenciar esta terapia visualmente; ela não muda o conteúdo nem aparece como informação na página pública."
+        htmlFor={selectId}
+        label="Cor de identificação"
+      />
       <select
         className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
         defaultValue={normalizeColorKey(defaultValue)}
+        id={selectId}
         name="calendarColorKey"
+        onChange={(event) => onChange?.(event.target.value)}
       >
         {colorOptions.map((option) => (
           <option key={option.value} value={option.value}>
@@ -832,43 +1186,50 @@ function ColorSelect({ defaultValue }: { defaultValue?: string | null }) {
         ))}
       </select>
       <span className="mt-1 block text-xs font-bold text-tesText-secondary">
-        Essa chave não é uma cor livre: ela mapeia a terapia para tokens visuais
-        seguros do TES em calendários, badges e estados.
+        Ajuda a reconhecer a terapia na agenda. Não é uma cor livre nem muda a
+        aparência da página pública.
       </span>
-    </label>
+    </div>
   );
 }
 
 function Textarea({
   defaultValue,
+  help,
   hint,
   label,
   maxLength,
   name,
+  onChange,
   required,
   showCounter = true,
 }: {
   defaultValue?: string | null;
+  help?: string;
   hint?: string;
   label: string;
   maxLength?: number;
   name: string;
+  onChange?: (value: string) => void;
   required?: boolean;
   showCounter?: boolean;
 }) {
   const [length, setLength] = useState(() => (defaultValue ?? "").length);
+  const textareaId = useId();
 
   return (
-    <label>
-      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        {label}
-      </span>
+    <div>
+      <FormFieldLabel help={help} htmlFor={textareaId} label={label} />
       <textarea
         className="min-h-24 w-full rounded-xl border border-brand-lavender px-3 py-2 text-sm font-semibold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
         defaultValue={defaultValue ?? ""}
+        id={textareaId}
         maxLength={maxLength}
         name={name}
-        onChange={(event) => setLength(event.target.value.length)}
+        onChange={(event) => {
+          setLength(event.target.value.length);
+          onChange?.(event.target.value);
+        }}
         required={required}
       />
       {hint ? (
@@ -883,7 +1244,7 @@ function Textarea({
           {length}/{maxLength}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
