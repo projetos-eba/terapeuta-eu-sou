@@ -7,9 +7,26 @@ import {
 import { routes } from "@/lib/routes";
 import Link from "next/link";
 import type { Route } from "next";
+import type { LucideIcon } from "lucide-react";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
-import { AlertTriangle, CheckCircle2, Star } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  History,
+  Info,
+  Landmark,
+  MessageSquare,
+  Monitor,
+  Radio,
+  Star,
+  UsersRound,
+} from "lucide-react";
 
 import type {
   AdminSessionFeedbackData,
@@ -74,12 +91,42 @@ export function AdminSessionDetailPage({
       : [];
 
   const stats = [
-    statItem("Duração", sessionFields.get("Duração")),
-    statItem("Sala online", !isAbsenceMessage(roomStatus) ? roomStatus : ""),
-    statItem("Participantes ativos", participantCount),
-    statItem("Profissional na sala", therapistPresence),
-    statItem("Pagamento", payment),
-  ].filter(Boolean) as Array<{ label: string; value: string }>;
+    statItem(
+      "Duração",
+      sessionFields.get("Duração"),
+      Clock3,
+      "bg-brand-lavenderSoft text-brand-primary",
+    ),
+    statItem(
+      "Pagamento",
+      payment,
+      CreditCard,
+      "bg-status-successBg text-status-success",
+    ),
+    statItem(
+      "Sala online",
+      !isAbsenceMessage(roomStatus) ? roomStatus : "",
+      Monitor,
+      "bg-status-infoBg text-status-info",
+    ),
+    statItem(
+      "Participantes ativos",
+      participantCount,
+      UsersRound,
+      "bg-brand-lavenderSoft text-brand-primary",
+    ),
+    statItem(
+      "Profissional na sala",
+      therapistPresence,
+      Activity,
+      "bg-status-warningBg text-status-warning",
+    ),
+  ].filter(Boolean) as Array<{
+    icon?: LucideIcon;
+    iconToneClass?: string;
+    label: string;
+    value: string;
+  }>;
 
   const scheduleSummary = [
     productField("Início", scheduleFields.get("Início")),
@@ -213,26 +260,31 @@ export function AdminSessionDetailPage({
             <DetailSectionCard
               description="Horários registrados para o atendimento."
               fields={scheduleSummary}
+              icon={CalendarDays}
               title="Agenda da sessão"
             />
             <DetailSectionCard
               description="Pessoas vinculadas e formato disponível para o encontro."
               fields={participantSummary}
+              icon={UsersRound}
               title="Participantes"
             />
             <DetailSectionCard
               description="Situação atual da sala online, com horários reais, limite de segurança e último sinal recebido."
               fields={onlineRoomSummary}
+              icon={Monitor}
               title="Sala online"
             />
             <DetailSectionCard
               description="Resumo das entradas e saídas registradas para profissional e cliente."
               fields={participationSummary}
+              icon={Radio}
               title="Participação na sala"
             />
             <DetailSectionCard
               description="Acompanhamentos automáticos usados quando a sala precisa de confirmação ou encerramento."
               fields={followUpSummary}
+              icon={CalendarClock}
               title="Acompanhamento do encerramento"
             />
             {sessionFeedback?.status === "available" ? (
@@ -247,18 +299,20 @@ export function AdminSessionDetailPage({
                     value: "Feedback indisponível para consulta",
                   },
                 ]}
+                icon={MessageSquare}
                 title="Feedback pós-sessão"
               />
             ) : null}
             <DetailSectionCard
               description="Registro de criação e atualização desta sessão."
               fields={traceability?.fields ?? []}
+              icon={History}
               title="Rastreabilidade"
             />
           </AppPageMain>
 
           <AppPageAside className="space-y-5">
-            <AsideCard title="Situação atual">
+            <AsideCard icon={Activity} title="Situação atual">
               <dl className="grid gap-3">
                 {[
                   productField("Sessão", status),
@@ -289,7 +343,7 @@ export function AdminSessionDetailPage({
                   ))}
               </dl>
             </AsideCard>
-            <AsideCard title="Leitura desta visão">
+            <AsideCard icon={Info} title="Leitura desta visão">
               <div className="space-y-3">
                 <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
                   Esta tela reúne horários confirmados, presença e encerramento
@@ -301,7 +355,7 @@ export function AdminSessionDetailPage({
                 </p>
               </div>
             </AsideCard>
-            <AsideCard title="Histórico administrativo">
+            <AsideCard icon={History} title="Histórico administrativo">
               <ProductHistory events={data.auditEvents} />
             </AsideCard>
           </AppPageAside>
@@ -321,14 +375,19 @@ function SessionFeedbackAuditSection({
   return (
     <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-6 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold text-brand-deep">
-            Feedback pós-sessão
-          </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Respostas privadas registradas por cada participante. O Admin pode
-            auditar, mas não editar opiniões.
-          </p>
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary">
+            <MessageSquare aria-hidden="true" className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-2xl font-extrabold text-brand-deep">
+              Feedback pós-sessão
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Respostas privadas registradas por cada participante. O Admin
+              pode auditar, mas não editar opiniões.
+            </p>
+          </div>
         </div>
         {data.divergent ? (
           <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-status-warningBg px-3 text-xs font-extrabold text-status-warning">
@@ -437,9 +496,12 @@ function SessionFeedbackAuditSection({
       </div>
 
       <div className="mt-4 rounded-2xl border border-brand-lavender/70 bg-surface-soft p-4">
-        <p className="text-sm font-extrabold text-brand-deep">
-          Financeiro — independente da confirmação
-        </p>
+        <div className="flex items-center gap-2">
+          <Landmark aria-hidden="true" className="size-4 text-brand-primary" />
+          <p className="text-sm font-extrabold text-brand-deep">
+            Financeiro — independente da confirmação
+          </p>
+        </div>
         <dl className="mt-3 grid gap-3 sm:grid-cols-3">
           <AuditValue
             label="Elegibilidade financeira"
@@ -663,7 +725,8 @@ function FeedbackAuditCard({
         </div>
         {item.comment ? (
           <div>
-            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+            <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+              <MessageSquare aria-hidden="true" className="size-3.5" />
               Observações
             </dt>
             <dd className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-6 text-tesText-secondary">
@@ -732,9 +795,14 @@ function productField(label: string, value?: string) {
   return { label, value };
 }
 
-function statItem(label: string, value?: string) {
+function statItem(
+  label: string,
+  value?: string,
+  icon?: LucideIcon,
+  iconToneClass?: string,
+) {
   if (!value) return null;
-  return { label, value };
+  return { icon, iconToneClass, label, value };
 }
 
 function describeMeeting() {

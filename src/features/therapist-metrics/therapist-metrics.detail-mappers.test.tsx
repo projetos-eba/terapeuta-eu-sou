@@ -206,6 +206,10 @@ describe("therapist metric detail contracts", () => {
     expect(csv).toContain("America/Sao_Paulo");
     expect(csv).toContain("cancellation_taxonomy_not_versioned");
     expect(csv).toContain("day=1;hour_start=18");
+    expect(csv).toContain("sessions_completed");
+    expect(csv).toContain("Sessões concluídas");
+    expect(csv).toContain("Sessões concluídas por dia e faixa de horário");
+    expect(csv).not.toContain("Sessões realizadas");
     expect(csv).not.toMatch(/patient_profile_id|patientProfileId|public_name/i);
   });
 
@@ -227,14 +231,14 @@ describe("therapist metric detail contracts", () => {
     expect(
       screen.getByRole("heading", { name: "Movimento das sessões" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Presença operacional")).toBeInTheDocument();
+    expect(screen.getByText("Comparecimento às sessões")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Distribuição por dia e horário",
+        name: "Quando suas sessões mais acontecem",
       }),
     ).toBeInTheDocument();
     const outcomeDonut = screen.getByRole("img", {
-      name: /Distribuição dos resultados das sessões: Compareceram, 12/,
+      name: /Como as sessões terminaram: Compareceram, 12/,
     });
     expect(
       outcomeDonut.querySelector("[data-chart-graphics-layer]"),
@@ -243,7 +247,9 @@ describe("therapist metric detail contracts", () => {
       "z-0",
     );
     expect(
-      screen.getByText(/motivos escritos livremente permanecem ocultos/i),
+      screen.getByText(
+        /motivos escritos livremente não aparecem neste painel/i,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -301,10 +307,10 @@ describe("therapist metric detail contracts", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/mais dados são necessários/i).length).toBe(3);
     expect(
-      screen.getByText(/ainda não há temas estruturados para mostrar/i),
+      screen.getByText(/ainda não há temas registrados para mostrar/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Favoritos que viraram sessão"),
+      screen.getByText("Favoritos que levaram a uma sessão"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -316,7 +322,7 @@ describe("therapist metric detail contracts", () => {
       screen.getByRole("link", { name: /abrir histórico da jornada/i }),
     ).toHaveAttribute("href", "/terapeuta/pacientes");
     expect(
-      screen.getByText(/cada pessoa aparece uma única vez/i),
+      screen.getByText(/cada pessoa aparece uma vez/i),
     ).toBeInTheDocument();
     expect(
       container.querySelectorAll('[data-state="insufficient_sample"]'),
@@ -410,16 +416,20 @@ describe("therapist metric detail contracts", () => {
       "xl:grid-cols-5",
     );
     expect(
-      screen.getByRole("heading", { name: "Pessoas ativas" }),
+      screen.getByRole("heading", { name: "Pessoas em acompanhamento" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Pessoas inativas" }),
+      screen.getByRole("heading", { name: "Pessoas sem retorno recente" }),
     ).toBeInTheDocument();
     expect(
-      container.querySelector('[aria-label="75% da base acompanhada"]'),
+      container.querySelector(
+        '[aria-label="75% da base de pessoas atendidas"]',
+      ),
     ).toBeInTheDocument();
     expect(
-      container.querySelector('[aria-label="25% da base acompanhada"]'),
+      container.querySelector(
+        '[aria-label="25% da base de pessoas atendidas"]',
+      ),
     ).toBeInTheDocument();
     expect(
       container.querySelectorAll('article[data-state="ready"]'),
@@ -427,10 +437,10 @@ describe("therapist metric detail contracts", () => {
     expect(container.querySelectorAll('[data-point-count="2"]')).toHaveLength(
       3,
     );
-    expect(screen.getByText("Retorno no período")).toBeInTheDocument();
+    expect(screen.getByText("Pessoas que retornaram")).toBeInTheDocument();
     expect(screen.getByText("12 pessoas")).toBeInTheDocument();
     expect(
-      screen.getByText("60% da base voltou para uma nova sessão"),
+      screen.getByText("60% da base retornou para uma nova sessão no período"),
     ).toBeInTheDocument();
     expect(screen.queryByText("Pessoas que voltaram")).not.toBeInTheDocument();
     expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
@@ -441,10 +451,10 @@ describe("therapist metric detail contracts", () => {
     const csv = buildTherapistMetricsCsv({ data: mapped, tab: "interest" });
 
     expect(csv).toContain("profile_favorites");
-    expect(csv).toContain("Novos favoritos do perfil");
+    expect(csv).toContain("Novos favoritos");
     expect(csv).toContain("ready,3,favorites");
     expect(csv).toContain("return_summary");
-    expect(csv).toContain("Retorno no período");
+    expect(csv).toContain("Pessoas que retornaram");
     expect(csv).not.toContain("Pessoas que voltaram");
     expect(csv).not.toContain("Taxa de retorno");
   });

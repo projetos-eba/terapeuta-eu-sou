@@ -63,6 +63,16 @@ describe("admin operation detail pages", () => {
           sections: [
             {
               fields: [
+                { label: "ID do profissional", value: "private-profile-id" },
+                { label: "E-mail", value: "ana@example.test" },
+                { label: "Telefone", value: "+55 (11) 98765-4321" },
+                { label: "Data de nascimento", value: "14/03/1988" },
+                { label: "Data de cadastro", value: "11/08/2026" },
+              ],
+              title: "Dados principais",
+            },
+            {
+              fields: [
                 { label: "ID do perfil", value: "private-profile-id" },
                 { label: "Slug público", value: "ana-oliveira" },
                 { label: "Cidade", value: "São Paulo, SP" },
@@ -185,8 +195,12 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Disponível para agendamento");
     expect(html).toContain("Abrir fila de verificações");
     expect(html).toContain("Documentos");
+    expect(html).toContain("Dados principais");
+    expect(html).toContain("ID do profissional");
+    expect(html).toContain("private-profile-id");
+    expect(html).toContain("ana@example.test");
+    expect(html).toContain("14/03/1988");
     expect(html).not.toContain("ID do perfil");
-    expect(html).not.toContain("private-profile-id");
   });
 
   it("reveals the published profile through the Profile tab", () => {
@@ -570,6 +584,12 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Em andamento");
     expect(html).toContain("Profissional presente agora");
     expect(html).toContain("Nova tentativa agendada");
+    expect(html).toContain("lucide-clock3");
+    expect(html).toContain("lucide-credit-card");
+    expect(html).toContain("lucide-users-round");
+    expect(html).toContain("lucide-monitor");
+    expect(html).toContain("lucide-radio");
+    expect(html).toContain("lucide-calendar-clock");
     expect(html).not.toContain("Booking");
     expect(html).not.toContain("Provider online");
     expect(html).not.toContain("session.user_joined");
@@ -629,6 +649,7 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Acesso bloqueado — encerramento pendente");
     expect(html).toContain("Sessão não realizada — terapeuta não compareceu");
     expect(html).toContain("Financeiro — independente da confirmação");
+    expect(html).toContain("lucide-landmark");
     expect(html).toContain(">Pago</");
     expect(html).toContain("avaliação de qualidade indisponível");
     expect(html).toContain("Não se aplica — sessão não realizada.");
@@ -744,6 +765,40 @@ describe("admin operation detail pages", () => {
     expect(html).not.toContain("Aprovar verificação");
   });
 
+  it("shows the allowlisted professional identity in a verification detail", () => {
+    const html = renderToStaticMarkup(
+      <AdminVerificationDetailPage
+        data={detailData({
+          backHref: "/admin/profissionais/verificacoes",
+          module: "verifications",
+          sections: [
+            {
+              fields: [
+                { label: "E-mail", value: "ana.oliveira@example.test" },
+                { label: "ID do terapeuta", value: "#TER-0001" },
+                { label: "Data de cadastro", value: "12/09/2026" },
+              ],
+              title: "Dados do profissional",
+            },
+            {
+              fields: [
+                { label: "Status", value: "submitted" },
+                { label: "Terapeuta", value: "Ana Oliveira" },
+              ],
+              title: "Verificação",
+            },
+          ],
+          title: "Ana Oliveira",
+        })}
+      />,
+    );
+
+    expect(html).toContain("Dados do profissional");
+    expect(html).toContain("ana.oliveira@example.test");
+    expect(html).toContain("#TER-0001");
+    expect(html).toContain("12/09/2026");
+  });
+
   it("shows formatted private contact data in the professional verification", () => {
     const html = renderToStaticMarkup(
       <AdminVerificationDetailPage
@@ -810,4 +865,121 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("13060-240");
     expect(html).toContain("Avenida Ibirapuera, 537");
   });
+
+  it.runIf(process.env.ADMIN_SESSION_DETAIL_VISUAL_QA === "1")(
+    "keeps session details legible at desktop, tablet and mobile widths",
+    async () => {
+      const { existsSync, readFileSync } = await import("node:fs");
+      const { resolve } = await import("node:path");
+      const { chromium } = await import("@playwright/test");
+      const postcss = (await import("postcss")).default;
+      const tailwindcss = (await import("tailwindcss")).default;
+      const stylePath = resolve("src/app/globals.css");
+      const css = (
+        await postcss([tailwindcss()]).process(
+          readFileSync(stylePath, "utf8"),
+          { from: stylePath },
+        )
+      ).css.replace(
+        /url\("(\/fonts\/[^\"]+)"\)/g,
+        (_match, fontPath: string) =>
+          `url("data:font/otf;base64,${readFileSync(resolve(`public${fontPath}`)).toString("base64")}")`,
+      );
+      const browserExecutable = [
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      ].find((path) => existsSync(path));
+      const browser = await chromium.launch({
+        executablePath: browserExecutable,
+        headless: false,
+      });
+
+      try {
+        const browserPage = await browser.newPage();
+        const html = renderToStaticMarkup(
+          <AdminSessionDetailPage
+            data={detailData({
+              sections: [
+                {
+                  fields: [
+                    { label: "Pagamento", value: "paid" },
+                    { label: "Serviço", value: "Aromaterapia" },
+                    { label: "Duração", value: "50 min" },
+                  ],
+                  title: "Sessão",
+                },
+                {
+                  fields: [
+                    { label: "Início", value: "11/08/2026, 14:00" },
+                    { label: "Duração", value: "50 min" },
+                  ],
+                  title: "Agenda",
+                },
+                {
+                  fields: [
+                    { label: "Terapeuta", value: "Ana Oliveira" },
+                    { label: "Cliente", value: "Marina Rocha" },
+                    { label: "Formato", value: "Online" },
+                  ],
+                  title: "Participantes",
+                },
+                {
+                  fields: [
+                    { label: "Situação da sala", value: "Em andamento" },
+                    { label: "Início real", value: "11/08/2026, 14:03" },
+                    {
+                      label: "Profissional na sala",
+                      value: "Profissional presente agora",
+                    },
+                  ],
+                  title: "Sala online",
+                },
+                {
+                  fields: [{ label: "Movimentações recentes", value: "2" }],
+                  title: "Participação na sala",
+                },
+                {
+                  fields: [
+                    {
+                      label: "Situação do acompanhamento",
+                      value: "Nova tentativa agendada",
+                    },
+                  ],
+                  title: "Acompanhamento do encerramento",
+                },
+                {
+                  fields: [{ label: "Criado em", value: "11/08/2026, 13:55" }],
+                  title: "Rastreabilidade",
+                },
+              ],
+            })}
+          />,
+        );
+
+        for (const width of [1440, 1024, 390]) {
+          await browserPage.setViewportSize({ width, height: 900 });
+          await browserPage.setContent(
+            `<!doctype html><html lang="pt-BR"><head><style>${css}</style></head><body><div class="tes-authenticated-surface px-4 py-6">${html}</div></body></html>`,
+          );
+          await browserPage.evaluate(() => document.fonts.ready);
+          expect(
+            await browserPage.evaluate(
+              () =>
+                document.documentElement.scrollWidth <=
+                document.documentElement.clientWidth,
+            ),
+          ).toBe(true);
+          await browserPage.screenshot({
+            path: resolve(
+              `test-results/admin-session-detail-component-qa/detail-${width}.png`,
+            ),
+            fullPage: true,
+          });
+        }
+      } finally {
+        await browser.close();
+      }
+    },
+    60_000,
+  );
 });

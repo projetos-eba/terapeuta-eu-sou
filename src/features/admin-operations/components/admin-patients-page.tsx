@@ -1,14 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
   ExternalLink,
   Search,
-  ShieldCheck,
   ShieldAlert,
+  ShieldCheck,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -20,36 +23,28 @@ import type {
   AdminOperationMetric,
   AdminOperationPageData,
   AdminOperationRow,
+  AdminPatientAnalytics,
 } from "../admin-operations.types";
-
-type BreakdownItem = {
-  colorClass: string;
-  label: string;
-  value: number;
-};
+import {
+  AdminPatientActivityAgeChart,
+  AdminPatientGrowthChart,
+} from "./admin-patient-charts";
 
 type PatientMetricCard = AdminOperationMetric & {
   displayLabel: string;
   icon: "active" | "suspended" | "user" | "users";
 };
 
-const STATUS_COLORS = [
-  "bg-status-success",
-  "bg-status-warning",
-  "bg-status-info",
-  "bg-status-danger",
-  "bg-brand-primary",
-  "bg-tesText-muted",
-];
+const unavailableAnalytics: AdminPatientAnalytics = {
+  activityAge: [],
+  periodDays: 30,
+  series: [],
+  status: "unavailable",
+};
 
 export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
   const metrics = buildPatientMetrics(data.metrics);
-  const statusBreakdown = buildBreakdown(
-    data.rows.map((row) => translateStatus(getField(row, "Status"))),
-    STATUS_COLORS,
-  );
-  const activityBreakdown = buildActivityBreakdown(data.rows);
-  const activityAgeBreakdown = buildActivityAgeBreakdown(data.rows);
+  const analytics = data.patientAnalytics ?? unavailableAnalytics;
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -82,30 +77,11 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
         </section>
 
         <section
-          aria-label="Atividade dos clientes nesta página"
-          className="space-y-3"
+          aria-label="Análises da base de clientes"
+          className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.9fr)]"
         >
-          <p className="text-sm font-semibold text-tesText-secondary">
-            Os gráficos abaixo representam somente os clientes da página atual.
-          </p>
-          <div className="grid gap-5 xl:grid-cols-3">
-            <StatusDistributionCard
-              items={statusBreakdown}
-              rowsStatus={data.rowsStatus}
-            />
-            <CompactBarsCard
-              icon={<Clock3 aria-hidden="true" className="size-5" />}
-              items={activityBreakdown}
-              rowsStatus={data.rowsStatus}
-              title="Atividade nesta página"
-              subtitle="Sinais disponíveis"
-              unavailableMessage="Não há registros suficientes para resumir atividade nesta visão."
-            />
-            <LastActivityAgeCard
-              items={activityAgeBreakdown}
-              rowsStatus={data.rowsStatus}
-            />
-          </div>
+          <ClientEvolutionPanel analytics={analytics} data={data} />
+          <LastActivityPanel analytics={analytics} />
         </section>
 
         <section className="overflow-hidden rounded-[26px] border border-brand-lavender/70 bg-white shadow-[0_24px_70px_rgba(20,16,90,0.11)]">
@@ -133,6 +109,11 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
               className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px_auto]"
               method="get"
             >
+              <input
+                name="analyticsPeriod"
+                type="hidden"
+                value={analytics.periodDays}
+              />
               <label className="relative block">
                 <span className="sr-only">Buscar clientes</span>
                 <Search
@@ -143,14 +124,14 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
                   className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft py-2 pl-11 pr-4 text-sm font-semibold text-brand-deep outline-none transition placeholder:text-tesText-muted focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-ring/20"
                   defaultValue={data.query.search}
                   name="q"
-                  placeholder="Buscar por nome, status ou identificador"
+                  placeholder="Buscar por nome ou ID"
                   type="search"
                 />
               </label>
               <label>
                 <span className="sr-only">Filtrar por status</span>
                 <select
-                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-ring/20"
+                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:bg-white focus:ring-4 focus-visible:ring-ring/20"
                   defaultValue={data.query.status}
                   name="status"
                 >
@@ -164,7 +145,7 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
               <label>
                 <span className="sr-only">Ordenar clientes</span>
                 <select
-                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-ring/20"
+                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft px-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:bg-white focus:ring-4 focus-visible:ring-ring/20"
                   defaultValue={data.query.sort || "recent"}
                   name="sort"
                 >
@@ -189,7 +170,12 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
                 </button>
                 <Link
                   className="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-                  href={data.listHref as Route<string>}
+                  href={
+                    withAnalyticsPeriod(
+                      data.listHref,
+                      analytics.periodDays,
+                    ) as Route<string>
+                  }
                 >
                   Limpar
                 </Link>
@@ -198,7 +184,7 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
           </div>
 
           <PatientsList data={data} />
-          <Pagination data={data} />
+          <Pagination analyticsPeriod={analytics.periodDays} data={data} />
         </section>
       </div>
     </main>
@@ -220,9 +206,12 @@ function MetricCard({ metric }: { metric: PatientMetricCard }) {
           <p className="text-sm font-extrabold text-tesText-secondary">
             {metric.displayLabel}
           </p>
-          <p className="mt-1 text-3xl font-extrabold leading-tight tabular-nums text-brand-deep">
-            {formatMetricValue(metric)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-3xl font-extrabold leading-tight tabular-nums text-brand-deep">
+              {formatMetricValue(metric)}
+            </p>
+            <MetricChange metric={metric} />
+          </div>
           <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
             {metric.status === "available"
               ? metric.description
@@ -234,182 +223,178 @@ function MetricCard({ metric }: { metric: PatientMetricCard }) {
   );
 }
 
-function StatusDistributionCard({
-  items,
-  rowsStatus,
-}: {
-  items: BreakdownItem[];
-  rowsStatus: AdminOperationPageData["rowsStatus"];
-}) {
+function MetricChange({ metric }: { metric: PatientMetricCard }) {
+  if (
+    metric.status !== "available" ||
+    metric.value === null ||
+    metric.comparisonValue == null ||
+    metric.comparisonValue <= 0
+  ) {
+    return null;
+  }
+
+  const percent =
+    ((metric.value - metric.comparisonValue) / metric.comparisonValue) * 100;
+
   return (
-    <AnalyticsCard
-      icon={<ShieldCheck aria-hidden="true" className="size-5" />}
-      subtitle="Status dos clientes"
-      title="Distribuição por status"
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
+        percent >= 0
+          ? "bg-status-successBg text-status-success"
+          : "bg-status-dangerBg text-status-danger"
+      }`}
     >
-      {rowsStatus === "available" && items.length > 0 ? (
-        <div className="mt-6 grid gap-6 sm:grid-cols-[160px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[160px_minmax(0,1fr)]">
-          <div
-            aria-hidden="true"
-            className="mx-auto grid size-40 place-items-center rounded-full"
-            style={donutStyle(items)}
-          >
-            <div className="grid size-24 place-items-center rounded-full bg-white text-center shadow-inner">
-              <span className="text-2xl font-extrabold text-brand-deep">
-                {items.reduce((total, item) => total + item.value, 0)}
-              </span>
-            </div>
+      {percent >= 0 ? "+" : "−"}
+      {Math.abs(percent).toLocaleString("pt-BR", {
+        maximumFractionDigits: 1,
+      })}
+      %
+    </span>
+  );
+}
+
+function ClientEvolutionPanel({
+  analytics,
+  data,
+}: {
+  analytics: AdminPatientAnalytics;
+  data: AdminOperationPageData;
+}) {
+  return (
+    <AnalyticsPanel
+      icon={<UsersRound aria-hidden="true" className="size-5" />}
+      subtitle="Novos cadastros e total acumulado no período."
+      title="Evolução de clientes"
+      trailing={<AnalyticsPeriodSelect analytics={analytics} data={data} />}
+    >
+      {analytics.status === "available" && analytics.series.length > 0 ? (
+        <>
+          <ChartLegend
+            items={[
+              { colorClass: "bg-brand-primary", label: "Total acumulado" },
+              { colorClass: "bg-brand-lavender", label: "Novos cadastros" },
+            ]}
+          />
+          <div className="mt-3 rounded-[18px] bg-gradient-to-b from-surface-soft/80 to-transparent px-1">
+            <AdminPatientGrowthChart series={analytics.series} />
           </div>
-          <BreakdownLegend items={items} />
+        </>
+      ) : (
+        <UnavailableState>
+          Não foi possível carregar a evolução da base de clientes agora.
+        </UnavailableState>
+      )}
+    </AnalyticsPanel>
+  );
+}
+
+function AnalyticsPeriodSelect({
+  analytics,
+  data,
+}: {
+  analytics: AdminPatientAnalytics;
+  data: AdminOperationPageData;
+}) {
+  return (
+    <form action={data.listHref} method="get">
+      <input name="q" type="hidden" value={data.query.search} />
+      <input name="status" type="hidden" value={data.query.status} />
+      <input name="sort" type="hidden" value={data.query.sort} />
+      <input name="pageSize" type="hidden" value={data.query.pageSize} />
+      <label>
+        <span className="sr-only">Período da evolução de clientes</span>
+        <select
+          aria-label="Período da evolução de clientes"
+          className="min-h-11 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition focus:border-brand-primary focus:ring-4 focus-visible:ring-ring/20"
+          defaultValue={analytics.periodDays}
+          name="analyticsPeriod"
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+        >
+          <option value="30">Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+        </select>
+      </label>
+    </form>
+  );
+}
+
+function LastActivityPanel({
+  analytics,
+}: {
+  analytics: AdminPatientAnalytics;
+}) {
+  return (
+    <AnalyticsPanel
+      icon={<Clock3 aria-hidden="true" className="size-5" />}
+      subtitle="Distribuição dos clientes pelo tempo sem atividade."
+      title="Tempo desde a última atividade"
+    >
+      {analytics.status === "available" && analytics.activityAge.length > 0 ? (
+        <div className="mt-3 rounded-[18px] bg-gradient-to-b from-surface-soft/80 to-transparent px-1">
+          <AdminPatientActivityAgeChart activityAge={analytics.activityAge} />
         </div>
       ) : (
         <UnavailableState>
-          Não há registros disponíveis para calcular a distribuição por status.
+          Não foi possível carregar a distribuição de atividade agora.
         </UnavailableState>
       )}
-    </AnalyticsCard>
+    </AnalyticsPanel>
   );
 }
 
-function CompactBarsCard({
-  icon,
-  items,
-  rowsStatus,
-  subtitle,
-  title,
-  unavailableMessage,
-}: {
-  icon: ReactNode;
-  items: BreakdownItem[];
-  rowsStatus: AdminOperationPageData["rowsStatus"];
-  subtitle: string;
-  title: string;
-  unavailableMessage: string;
-}) {
-  return (
-    <AnalyticsCard icon={icon} subtitle={subtitle} title={title}>
-      {rowsStatus === "available" && items.length > 0 ? (
-        <div className="mt-6 space-y-4">
-          {items.map((item) => (
-            <div key={item.label}>
-              <div className="flex items-center justify-between gap-3 text-sm font-extrabold">
-                <span className="text-brand-deep">{item.label}</span>
-                <span className="text-tesText-secondary">{item.value}</span>
-              </div>
-              <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-lavenderSoft">
-                <span
-                  className={`block h-full rounded-full ${item.colorClass}`}
-                  style={{
-                    width: `${Math.max(
-                      8,
-                      (item.value /
-                        Math.max(...items.map((entry) => entry.value))) *
-                        100,
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <UnavailableState>{unavailableMessage}</UnavailableState>
-      )}
-    </AnalyticsCard>
-  );
-}
-
-function LastActivityAgeCard({
-  items,
-  rowsStatus,
-}: {
-  items: BreakdownItem[];
-  rowsStatus: AdminOperationPageData["rowsStatus"];
-}) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-  const max = Math.max(...items.map((item) => item.value), 1);
-
-  return (
-    <article className="min-h-[306px] rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_55px_rgba(20,16,90,0.09)]">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary">
-          <Clock3 aria-hidden="true" className="size-5" />
-        </span>
-        <h2 className="pt-1 text-lg font-extrabold leading-tight text-brand-deep">
-          Tempo desde a última atividade
-        </h2>
-      </div>
-
-      {rowsStatus === "available" && total > 0 ? (
-        <div className="mt-7 space-y-5">
-          {items.map((item) => {
-            const percent = Math.round((item.value / total) * 1000) / 10;
-
-            return (
-              <div
-                className="grid items-center gap-3 sm:grid-cols-[96px_minmax(92px,1fr)_86px]"
-                key={item.label}
-              >
-                <p className="text-sm font-extrabold leading-snug text-brand-deep">
-                  {item.label}
-                </p>
-                <div
-                  aria-hidden="true"
-                  className="h-4 overflow-hidden rounded-full bg-surface-mist"
-                >
-                  <span
-                    className="block h-full rounded-full bg-brand-primary"
-                    style={{
-                      width:
-                        item.value === 0
-                          ? "0%"
-                          : `${Math.max(12, (item.value / max) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <p className="text-right text-sm font-extrabold tabular-nums text-brand-deep">
-                  {item.value} ({formatPercent(percent)})
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <UnavailableState>
-          Ainda não há registros suficientes para resumir o tempo desde a última
-          atividade.
-        </UnavailableState>
-      )}
-    </article>
-  );
-}
-
-function AnalyticsCard({
+function AnalyticsPanel({
   children,
   icon,
   subtitle,
   title,
+  trailing,
 }: {
   children: ReactNode;
   icon: ReactNode;
   subtitle: string;
   title: string;
+  trailing?: ReactNode;
 }) {
   return (
-    <article className="min-h-[306px] rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_55px_rgba(20,16,90,0.09)]">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary">
-          {icon}
-        </span>
-        <div>
-          <h2 className="text-lg font-extrabold text-brand-deep">{title}</h2>
-          <p className="mt-1 text-sm font-bold text-tesText-muted">
-            {subtitle}
-          </p>
+    <article className="min-h-[356px] rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_55px_rgba(20,16,90,0.09)] sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary">
+            {icon}
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold leading-tight text-brand-deep">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm font-bold leading-6 text-tesText-muted">
+              {subtitle}
+            </p>
+          </div>
         </div>
+        {trailing}
       </div>
       {children}
     </article>
+  );
+}
+
+function ChartLegend({
+  items,
+}: {
+  items: Array<{ colorClass: string; label: string }>;
+}) {
+  return (
+    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+      {items.map((item) => (
+        <span
+          className="inline-flex items-center gap-2 text-sm font-bold text-tesText-secondary"
+          key={item.label}
+        >
+          <span className={`size-2.5 rounded-full ${item.colorClass}`} />
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -443,20 +428,20 @@ function PatientsList({ data }: { data: AdminOperationPageData }) {
   return (
     <>
       <div className="hidden overflow-x-auto xl:block">
-        <table className="min-w-[980px] w-full border-collapse text-left">
+        <table className="min-w-[1120px] w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-brand-lavender/60 bg-surface-soft">
               {[
                 "Nome",
+                "ID",
+                "Contato",
+                "Cadastro",
                 "Status",
-                "Reservas",
-                "Chamados",
                 "Última atividade",
-                "Criado",
                 "Ações",
               ].map((heading) => (
                 <th
-                  className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-[0.22em] text-tesText-muted"
+                  className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted"
                   key={heading}
                   scope="col"
                 >
@@ -490,39 +475,40 @@ function PatientsTableRow({ row }: { row: AdminOperationRow }) {
       <td className="px-5 py-5">
         <div className="flex items-center gap-3">
           <AvatarChip name={row.title} />
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-extrabold text-brand-deep">
               {row.title}
             </p>
             <p className="mt-1 text-xs font-bold text-tesText-muted">
-              Cliente cadastrado
+              {row.email || "E-mail não informado"}
             </p>
           </div>
         </div>
+      </td>
+      <td className="max-w-[172px] px-5 py-5 text-xs font-bold text-tesText-secondary">
+        <span className="block break-all font-mono" title={getField(row, "ID")}>
+          {getField(row, "ID") || "Não informado"}
+        </span>
+      </td>
+      <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
+        {getField(row, "Contato") || "Não informado"}
+      </td>
+      <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
+        {getField(row, "Cadastro") || "Não informado"}
       </td>
       <td className="px-5 py-5">
         <StatusPill status={getField(row, "Status")} />
       </td>
       <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
-        {getField(row, "Reservas") || "0"}
-      </td>
-      <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
-        {getField(row, "Chamados") || "0"}
-      </td>
-      <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
         {getField(row, "Última atividade") || "Sem registro"}
-      </td>
-      <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
-        {getField(row, "Criado") || "Não informado"}
       </td>
       <td className="px-5 py-5">
         {detailHref ? (
           <Link
-            aria-label={`Ver detalhes de ${row.title}`}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+            className="inline-flex min-h-10 items-center justify-center rounded-full bg-brand-lavenderSoft px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavender hover:text-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
             href={detailHref}
           >
-            <ExternalLink aria-hidden="true" className="size-4" />
+            Ver cliente
           </Link>
         ) : null}
       </td>
@@ -542,8 +528,8 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
             <h3 className="truncate text-base font-extrabold text-brand-deep">
               {row.title}
             </h3>
-            <p className="mt-1 text-sm font-bold text-tesText-muted">
-              Cliente cadastrado
+            <p className="mt-1 truncate text-sm font-bold text-tesText-muted">
+              {row.email || "E-mail não informado"}
             </p>
           </div>
         </div>
@@ -551,7 +537,7 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
       </div>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-        {["Reservas", "Chamados", "Última atividade", "Criado"].map((label) => (
+        {["ID", "Contato", "Cadastro", "Última atividade"].map((label) => (
           <div
             className="rounded-[18px] border border-brand-lavender/70 bg-surface-soft p-3"
             key={label}
@@ -559,7 +545,7 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
             <dt className="text-xs font-extrabold uppercase tracking-[0.14em] text-tesText-muted">
               {label}
             </dt>
-            <dd className="mt-1 text-sm font-extrabold text-brand-deep">
+            <dd className="mt-1 break-words text-sm font-extrabold text-brand-deep">
               {getField(row, label) || "Não informado"}
             </dd>
           </div>
@@ -571,7 +557,7 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
           className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
           href={detailHref}
         >
-          Ver detalhes
+          Ver cliente
           <ExternalLink aria-hidden="true" className="size-4" />
         </Link>
       ) : null}
@@ -579,16 +565,28 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
   );
 }
 
-function Pagination({ data }: { data: AdminOperationPageData }) {
+function Pagination({
+  analyticsPeriod,
+  data,
+}: {
+  analyticsPeriod: 30 | 90;
+  data: AdminOperationPageData;
+}) {
   const start =
     data.page.total === 0 ? 0 : (data.page.page - 1) * data.page.pageSize + 1;
   const end = Math.min(data.page.page * data.page.pageSize, data.page.total);
-  const previousHref = buildAdminListHref(data.listHref, data.query, {
-    page: Math.max(data.page.page - 1, 1),
-  });
-  const nextHref = buildAdminListHref(data.listHref, data.query, {
-    page: data.page.page + 1,
-  });
+  const previousHref = withAnalyticsPeriod(
+    buildAdminListHref(data.listHref, data.query, {
+      page: Math.max(data.page.page - 1, 1),
+    }),
+    analyticsPeriod,
+  );
+  const nextHref = withAnalyticsPeriod(
+    buildAdminListHref(data.listHref, data.query, {
+      page: data.page.page + 1,
+    }),
+    analyticsPeriod,
+  );
 
   return (
     <div className="flex flex-col gap-3 border-t border-brand-lavender/60 bg-white px-5 py-4 text-sm font-bold text-tesText-secondary sm:flex-row sm:items-center sm:justify-between lg:px-6">
@@ -627,35 +625,12 @@ function AvatarChip({ name }: { name: string }) {
   );
 }
 
-function BreakdownLegend({ items }: { items: BreakdownItem[] }) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-
-  return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div
-          className="flex items-center justify-between gap-3 rounded-[16px] bg-surface-soft px-3 py-2"
-          key={item.label}
-        >
-          <span className="flex items-center gap-2 text-sm font-extrabold text-brand-deep">
-            <span className={`size-2.5 rounded-full ${item.colorClass}`} />
-            {item.label}
-          </span>
-          <span className="text-sm font-bold text-tesText-secondary">
-            {item.value} ({Math.round((item.value / total) * 100)}%)
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function StateMessage({ message }: { message: string }) {
   return (
     <div className="grid min-h-[260px] place-items-center px-5 py-12 text-center">
       <div className="max-w-md">
         <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-brand-lavenderSoft text-brand-primary">
-          <Clock3 aria-hidden="true" className="size-5" />
+          <CalendarDays aria-hidden="true" className="size-5" />
         </span>
         <p className="mt-4 text-base font-extrabold text-brand-deep">
           {message}
@@ -732,11 +707,13 @@ function toPatientMetric(
   icon: PatientMetricCard["icon"],
 ): PatientMetricCard {
   return {
+    comparisonValue: metric?.comparisonValue,
     description,
     displayLabel,
     icon,
     key,
     label: metric?.label ?? displayLabel,
+    percentage: metric?.percentage,
     source: metric?.source ?? "patients",
     status: metric?.status ?? "unavailable",
     tone: metric?.tone ?? "info",
@@ -767,126 +744,6 @@ function activeAccountDescription(metric?: AdminOperationMetric) {
     : "Clientes sem bloqueio de novos agendamentos.";
 }
 
-function buildBreakdown(values: string[], colors: string[]): BreakdownItem[] {
-  const counts = new Map<string, number>();
-
-  values
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
-
-  return Array.from(counts.entries())
-    .sort(([, left], [, right]) => right - left)
-    .map(([label, value], index) => ({
-      colorClass: colors[index % colors.length],
-      label,
-      value,
-    }));
-}
-
-function buildActivityBreakdown(rows: AdminOperationRow[]) {
-  const withActivity = rows.filter((row) => getField(row, "Última atividade"));
-  const withBookings = rows.filter(
-    (row) => parseCount(getField(row, "Reservas")) > 0,
-  );
-
-  return [
-    {
-      colorClass: "bg-status-info",
-      label: "Com atividade",
-      value: withActivity.length,
-    },
-    {
-      colorClass: "bg-brand-primary",
-      label: "Com reservas",
-      value: withBookings.length,
-    },
-    {
-      colorClass: "bg-brand-lavender",
-      label: "Sem atividade",
-      value: Math.max(rows.length - withActivity.length, 0),
-    },
-  ].filter((item) => item.value > 0);
-}
-
-function buildActivityAgeBreakdown(rows: AdminOperationRow[]) {
-  const buckets = [
-    {
-      colorClass: "bg-brand-primary",
-      label: "Até 7 dias",
-      maxDays: 7,
-      value: 0,
-    },
-    {
-      colorClass: "bg-brand-primary",
-      label: "8 a 15 dias",
-      maxDays: 15,
-      value: 0,
-    },
-    {
-      colorClass: "bg-brand-primary",
-      label: "16 a 30 dias",
-      maxDays: 30,
-      value: 0,
-    },
-    {
-      colorClass: "bg-brand-primary",
-      label: "31 a 60 dias",
-      maxDays: 60,
-      value: 0,
-    },
-    {
-      colorClass: "bg-brand-primary",
-      label: "Mais de 60 dias",
-      maxDays: Number.POSITIVE_INFINITY,
-      value: 0,
-    },
-  ];
-  const now = Date.now();
-
-  for (const row of rows) {
-    const activityDate = parseFormattedDate(getField(row, "Última atividade"));
-    if (!activityDate) continue;
-
-    const days = Math.max(
-      0,
-      Math.floor((now - activityDate.getTime()) / 86_400_000),
-    );
-    const bucket = buckets.find((item) => days <= item.maxDays);
-    if (bucket) bucket.value += 1;
-  }
-
-  return buckets;
-}
-
-function donutStyle(items: BreakdownItem[]) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-  let accumulated = 0;
-  const colorMap: Record<string, string> = {
-    "bg-brand-lavender": "var(--tes-color-brand-lavender)",
-    "bg-brand-primary": "var(--tes-color-brand-primary)",
-    "bg-status-danger": "var(--tes-color-status-danger)",
-    "bg-status-info": "var(--tes-color-status-info)",
-    "bg-status-success": "var(--tes-color-status-success)",
-    "bg-status-warning": "var(--tes-color-status-warning)",
-    "bg-tesText-muted": "var(--tes-color-text-muted)",
-  };
-
-  const stops = items
-    .map((item) => {
-      const start = (accumulated / total) * 100;
-      accumulated += item.value;
-      const end = (accumulated / total) * 100;
-      const color =
-        colorMap[item.colorClass] ?? "var(--tes-color-brand-primary)";
-
-      return `${color} ${start}% ${end}%`;
-    })
-    .join(", ");
-
-  return { background: `conic-gradient(${stops})` };
-}
-
 function getField(row: AdminOperationRow, label: string) {
   return row.fields.find((field) => field.label === label)?.value ?? "";
 }
@@ -903,26 +760,20 @@ function getInitials(name: string) {
 function translateStatus(status?: string) {
   const labels: Record<string, string> = {
     active: "Ativo",
-    suspended: "Suspenso",
     anonymized: "Anonimizado",
     deleted: "Excluído",
+    suspended: "Suspenso",
   };
 
   return status ? (labels[status] ?? status) : "Sem status";
 }
 
 function statusPillClass(status?: string) {
-  if (status === "active") {
-    return "bg-status-successBg text-status-success";
-  }
-
+  if (status === "active") return "bg-status-successBg text-status-success";
   if (status === "deleted" || status === "suspended") {
     return "bg-status-dangerBg text-status-danger";
   }
-
-  if (status === "anonymized") {
-    return "bg-status-warningBg text-status-warning";
-  }
+  if (status === "anonymized") return "bg-status-warningBg text-status-warning";
 
   return "bg-surface-muted text-tesText-secondary";
 }
@@ -938,18 +789,11 @@ function metricIconClass(metric: PatientMetricCard) {
   if (metric.status !== "available") {
     return "bg-status-warningBg text-status-warning";
   }
-
-  if (metric.tone === "success") {
+  if (metric.tone === "success")
     return "bg-status-successBg text-status-success";
-  }
-
-  if (metric.tone === "warning") {
+  if (metric.tone === "warning")
     return "bg-status-warningBg text-status-warning";
-  }
-
-  if (metric.tone === "danger") {
-    return "bg-status-dangerBg text-status-danger";
-  }
+  if (metric.tone === "danger") return "bg-status-dangerBg text-status-danger";
 
   return "bg-brand-lavenderSoft text-brand-primary";
 }
@@ -963,36 +807,12 @@ function paginationLinkClass(disabled: boolean) {
     : `${base} border-brand-lavender bg-white text-brand-primary hover:bg-brand-lavenderSoft`;
 }
 
-function parseCount(value: string) {
-  const parsed = Number.parseInt(value.replace(/\D/g, ""), 10);
+function withAnalyticsPeriod(href: string, period: 30 | 90) {
+  const [path, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  params.set("analyticsPeriod", String(period));
 
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function parseFormattedDate(value: string) {
-  const match = value.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:,?\s+(\d{1,2}):(\d{2}))?/,
-  );
-  if (!match) return null;
-
-  const [, day, month, year, hour, minute] = match;
-  const fullYear = year.length === 2 ? `20${year}` : year;
-  const date = new Date(
-    Number(fullYear),
-    Number(month) - 1,
-    Number(day),
-    Number(hour ?? "0"),
-    Number(minute ?? "0"),
-  );
-
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatPercent(value: number) {
-  return `${new Intl.NumberFormat("pt-BR", {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 1,
-  }).format(value)}%`;
+  return `${path}?${params.toString()}`;
 }
 
 function formatMetricValue(metric: AdminOperationMetric) {

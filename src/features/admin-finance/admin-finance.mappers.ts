@@ -31,7 +31,9 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
   return {
     detailHref: getAdminFinanceDetailHref("payments", id),
     fields: compactFields([
+      field("Cliente", asText(row.patient_name)),
       field("Profissional", asText(row.therapist_name)),
+      field("Forma de pagamento", formatPaymentMethod(row.payment_method_type)),
       field(
         "Atendimento",
         formatServiceStatus(
@@ -55,13 +57,17 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
       ),
       field("Valor encaminhado", formatEffectiveTransferAmount(row)),
       field(
-        "Custos da plataforma",
+        "Comissão TES",
         formatCurrency(row.platform_gross_commission_cents, row.currency),
+      ),
+      field(
+        "Taxas Stripe",
+        formatCurrency(row.stripe_fee_amount_cents, row.currency),
       ),
       field("Reembolso pendente", asBooleanLabel(row.refund_pending)),
       field("Revisão TES", formatFinancialReview(row.financial_review_status)),
       field("Disputa", formatDate(row.disputed_at)),
-      field("Atualizado", formatDate(row.updated_at)),
+      field("Data e hora", formatDate(row.updated_at)),
     ]),
     id,
     statusLabel: asText(row.financial_status),
@@ -465,6 +471,18 @@ function formatPlan(value: unknown) {
   if (value === "free") return "Free";
 
   return asText(value);
+}
+
+function formatPaymentMethod(value: unknown) {
+  const normalized = asText(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    boleto: "Boleto",
+    card: "Cartão",
+    card_present: "Cartão",
+    pix: "Pix",
+  };
+
+  return labels[normalized] ?? "";
 }
 
 function formatCurrency(amount: unknown, currency: unknown) {

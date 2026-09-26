@@ -59,7 +59,7 @@ export function buildTherapistMetricsCsv({
       rows,
       "overview",
       "sessions_completed",
-      "Sessões realizadas",
+      "Sessões concluídas",
       data.counters.sessionsCompleted,
     );
     appendCounter(
@@ -72,7 +72,7 @@ export function buildTherapistMetricsCsv({
     data.activity.points.forEach((point) => {
       rows.push({
         key: point.date,
-        label: "Sessões realizadas no dia",
+        label: "Sessões concluídas no dia",
         section: "activity",
         status: data.activity.status,
         unit: "sessions",
@@ -82,7 +82,7 @@ export function buildTherapistMetricsCsv({
     rows.push({
       detail: data.discovery.reason,
       key: "discovery",
-      label: "Sinais de descoberta",
+      label: "Como as pessoas encontram seu perfil",
       section: "discovery",
       status: data.discovery.status,
     });
@@ -90,7 +90,7 @@ export function buildTherapistMetricsCsv({
       rows,
       "overview",
       "profile_favorites",
-      "Novos favoritos do perfil",
+      "Novos favoritos",
       data.profileFavorites,
     );
     appendProtectedItems(
@@ -119,14 +119,14 @@ export function buildTherapistMetricsCsv({
       rows,
       "sessions",
       "sessions_completed",
-      "Sessões realizadas",
+      "Sessões concluídas",
       data.summary.sessionsCompleted,
     );
     appendSampled(
       rows,
       "sessions",
       "operational_presence",
-      "Presença operacional",
+      "Comparecimento às sessões",
       data.summary.operationalPresence,
     );
     appendCounter(
@@ -140,14 +140,14 @@ export function buildTherapistMetricsCsv({
       rows,
       "sessions",
       "sessions_rescheduled",
-      "Reagendamentos aplicados",
+      "Reagendamentos",
       data.summary.sessionsRescheduled,
     );
     appendCounter(
       rows,
       "sessions",
       "reserved_duration_average",
-      "Duração média reservada",
+      "Duração média das sessões",
       data.summary.reservedDurationAverage,
     );
 
@@ -167,7 +167,7 @@ export function buildTherapistMetricsCsv({
       rows.push(
         {
           key: `${point.date}:completed`,
-          label: "Sessões realizadas",
+          label: "Sessões concluídas",
           section: "session_evolution",
           status: data.evolution.status,
           unit: "sessions",
@@ -191,7 +191,7 @@ export function buildTherapistMetricsCsv({
         },
         {
           key: `${point.date}:rescheduled`,
-          label: "Reagendamentos aplicados",
+          label: "Reagendamentos",
           section: "session_evolution",
           status: data.evolution.status,
           unit: "sessions",
@@ -202,7 +202,7 @@ export function buildTherapistMetricsCsv({
     appendOwnHistoryItems(rows, "heatmap", data.heatmap, (item) => ({
       detail: `day=${item.dayOfWeek};hour_start=${item.hourBucketStart}`,
       key: `${item.dayOfWeek}:${item.hourBucketStart}`,
-      label: "Sessões por dia e faixa de horário",
+      label: "Sessões concluídas por dia e faixa de horário",
       unit: "sessions",
       value: item.sessions,
     }));
@@ -238,20 +238,20 @@ export function buildTherapistMetricsCsv({
       rows,
       "interest",
       "sessions_per_person",
-      "Sessões por pessoa",
+      "Frequência de sessões por pessoa",
       data.summary.sessionsPerPerson,
     );
     appendFavoriteActivity(
       rows,
       "interest",
       "profile_favorites",
-      "Novos favoritos do perfil",
+      "Novos favoritos",
       data.summary.profileFavorites,
     );
     appendProtectedItems(rows, "segments", data.segments, (item) => ({
       detail: `share=${item.percentage}%`,
       key: item.key,
-      label: item.key,
+      label: exportSegmentLabel(item.key),
       unit: "people",
       value: item.value,
     }));
@@ -262,7 +262,7 @@ export function buildTherapistMetricsCsv({
       (item) => ({
         detail: `new_people=${item.newPeople}`,
         key: item.date,
-        label: "Base atendida",
+        label: "Pessoas atendidas",
         unit: "people",
         value: item.totalPeople,
       }),
@@ -289,12 +289,20 @@ export function buildTherapistMetricsCsv({
     [
       [
         "favorite_conversion",
-        "Favoritos que viraram sessão",
+        "Favoritos que levaram a uma sessão",
         data.favoriteConversion,
       ],
-      ["sentiment", "Sentimento pós-sessão", data.sentiment],
-      ["availability_gap", "Lacuna da agenda", data.availabilityGap],
-      ["journey_themes", "Temas da jornada", data.journeyThemes],
+      ["sentiment", "Sentimento depois da sessão", data.sentiment],
+      [
+        "availability_gap",
+        "Procura sem horário disponível",
+        data.availabilityGap,
+      ],
+      [
+        "journey_themes",
+        "Temas mais recorrentes na jornada",
+        data.journeyThemes,
+      ],
       ["exit_reasons", "Motivos de saída", data.exitReasons],
     ].forEach(([key, label, block]) => {
       const unavailable = block as { reason: string; status: "unavailable" };
@@ -323,7 +331,7 @@ function appendReturnSummary(
   rows.push({
     detail: `minimum_sample=${returnRate.minimumSample};observed_sample=${returnRate.observedSample};returned_people=${ready ? peopleReturned.value : ""};copy_key=${returnRate.directionCopyKey ?? ""}`,
     key: "return_summary",
-    label: "Retorno no período",
+    label: "Pessoas que retornaram",
     section,
     status: ready ? "ready" : "insufficient_sample",
     unit: "percent",
@@ -413,7 +421,7 @@ function appendProtectedItems<T>(
     rows.push({
       detail: `minimum_sample=${collection.minimumSample};observed_sample=${collection.observedSample}`,
       key: section,
-      label: section,
+      label: humanExportLabel(section),
       section,
       status: collection.status,
     });
@@ -443,7 +451,7 @@ function appendOwnHistoryItems<T>(
     rows.push({
       detail: `observed_sample=${collection.observedSample}`,
       key: section,
-      label: section,
+      label: humanExportLabel(section),
       section,
       status: collection.status,
     });
@@ -467,6 +475,35 @@ function metadata(key: string, label: string, value: string | number): CsvRow {
     status: "ready",
     value,
   };
+}
+
+function humanExportLabel(section: string) {
+  const labels: Record<string, string> = {
+    base_evolution: "Pessoas atendidas",
+    cancellation_reasons: "Motivos de cancelamento",
+    cohorts: "Grupos mensais",
+    heatmap: "Sessões concluídas por dia e faixa de horário",
+    journey_themes: "Temas mais recorrentes na jornada",
+    outcome_distribution: "Como as sessões terminaram",
+    segments: "Como está a continuidade",
+    therapy_distribution: "Sessões concluídas por terapia",
+    therapy_ranking: "Terapias mais realizadas",
+    therapy_return: "Pessoas que retornaram por terapia",
+  };
+
+  return labels[section] ?? section;
+}
+
+function exportSegmentLabel(key: string) {
+  const labels: Record<string, string> = {
+    active: "Pessoas em acompanhamento",
+    inactive: "Pessoas sem retorno recente",
+    new: "Pessoas novas",
+    paused: "Pessoas em pausa",
+    recurring: "Pessoas que retornaram",
+  };
+
+  return labels[key] ?? key;
 }
 
 function serializeCsv(rows: CsvRow[]) {

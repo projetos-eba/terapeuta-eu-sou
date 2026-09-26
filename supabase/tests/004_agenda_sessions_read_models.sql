@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(24);
 
 insert into public.booking_intake_responses (
   booking_id,
@@ -160,6 +160,67 @@ select isnt(
   (select payload #>> '{items,0,bookingId}' from first_page),
   (select payload #>> '{items,0,bookingId}' from second_page),
   'the next cursor page does not repeat the previous booking'
+);
+
+select ok(
+  not exists (
+    select 1
+    from (
+      select
+        (item ->> 'startsAt')::timestamptz as starts_at,
+        lag((item ->> 'startsAt')::timestamptz) over (order by ordinal) as previous_starts_at
+      from jsonb_array_elements(
+        public.get_therapist_sessions_v1(
+          p_limit => 100,
+          p_period_start => '-infinity'::timestamptz
+        ) -> 'items'
+      ) with ordinality as rows(item, ordinal)
+    ) as ordered_items
+    where starts_at < previous_starts_at
+  ),
+  'an open-ended start window returns sessions in chronological order'
+);
+
+with first_page as (
+  select public.get_therapist_sessions_v1(
+    p_limit => 1,
+    p_period_start => '-infinity'::timestamptz
+  ) as payload
+),
+second_page as (
+  select public.get_therapist_sessions_v1(
+    p_limit => 1,
+    p_period_start => '-infinity'::timestamptz,
+    p_cursor_starts_at =>
+      (payload #>> '{page,nextCursor,startsAt}')::timestamptz,
+    p_cursor_booking_id =>
+      (payload #>> '{page,nextCursor,bookingId}')::uuid
+  ) as payload
+  from first_page
+)
+select ok(
+  (select (payload #>> '{items,0,startsAt}')::timestamptz from second_page)
+    > (select (payload #>> '{items,0,startsAt}')::timestamptz from first_page),
+  'an open-ended start cursor continues toward later sessions'
+);
+
+select ok(
+  not exists (
+    select 1
+    from (
+      select
+        (item ->> 'startsAt')::timestamptz as starts_at,
+        lag((item ->> 'startsAt')::timestamptz) over (order by ordinal) as previous_starts_at
+      from jsonb_array_elements(
+        public.get_therapist_sessions_v1(
+          p_limit => 100,
+          p_period_end => 'infinity'::timestamptz
+        ) -> 'items'
+      ) with ordinality as rows(item, ordinal)
+    ) as ordered_items
+    where starts_at > previous_starts_at
+  ),
+  'bounded historical windows remain reverse-chronological'
 );
 
 select ok(

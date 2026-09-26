@@ -370,10 +370,37 @@ describe("TherapistFinancePage", () => {
     renderPage("receipts");
 
     expect(
-      screen.getByRole("heading", { name: "Cobranças das suas sessões" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Cobranças dos seus encontros",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Acompanhe os valores de seus encontros e veja o que já foi cobrado, o que ainda está programado e eventuais reembolsos.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Esta página mostra as cobranças feitas às pessoas pelos seus encontros.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Taxa de serviço").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sua parte").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cobranças realizadas").length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText("Cobranças programadas").length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText("Status da cobrança")).toBeInTheDocument();
+    expect(screen.getAllByText("Pessoa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Financeiro completo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Cobranças das suas sessões"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Comissão TES")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pagamento aprovado")).not.toBeInTheDocument();
     expect(screen.getAllByText("Lucas").length).toBeGreaterThan(0);
     expect(screen.queryByText("Recebimento por mês")).not.toBeInTheDocument();
     expect(
@@ -406,11 +433,11 @@ describe("TherapistFinancePage", () => {
       },
     });
 
-    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cobrança realizada").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Compensado").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(
-        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+        "Sua parte foi usada para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
       ).length,
     ).toBeGreaterThan(0);
     expect(
@@ -428,7 +455,7 @@ describe("TherapistFinancePage", () => {
     ).toBeGreaterThan(0);
     expect(
       screen.queryByText(
-        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+        "Sua parte foi usada para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
       ),
     ).not.toBeInTheDocument();
   });
@@ -441,7 +468,7 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Confira o valor da sessão, a Comissão TES, seu valor e a próxima etapa da cobrança.",
+        "Confira o valor da sessão, a Taxa de serviço, sua parte e a próxima etapa da cobrança.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -452,9 +479,9 @@ describe("TherapistFinancePage", () => {
   it.each([
     [
       "approved",
-      "Sessões com pagamento aprovado",
+      "Sessões com cobrança realizada",
       "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
-      "Não há sessões com pagamento aprovado neste período.",
+      "Não há sessões com cobrança realizada neste período.",
     ],
     [
       "processing",
@@ -464,14 +491,14 @@ describe("TherapistFinancePage", () => {
     ],
     [
       "scheduled",
-      "Sessões com cobrança agendada",
+      "Sessões com cobrança programada",
       "Confira as sessões com cobrança prevista antes do atendimento.",
-      "Não há sessões com cobrança agendada neste período.",
+      "Não há sessões com cobrança programada neste período.",
     ],
     [
       "refunded",
       "Sessões reembolsadas",
-      "Confira as sessões cujo valor foi devolvido ao paciente.",
+      "Confira as sessões cujo valor foi devolvido à pessoa.",
       "Não há sessões reembolsadas neste período.",
     ],
     [

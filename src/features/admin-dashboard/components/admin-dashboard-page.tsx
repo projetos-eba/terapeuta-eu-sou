@@ -12,6 +12,10 @@ import {
 
 import { routes } from "@/lib/routes";
 
+import {
+  AdminActivityChart,
+  AdminFinancialChart,
+} from "./admin-dashboard-charts";
 import type {
   AdminDashboard,
   AdminDashboardMetric,
@@ -19,6 +23,7 @@ import type {
 } from "../admin-dashboard.types";
 
 type DashboardMetricWithFallback = AdminDashboardMetric & {
+  href: Route<string>;
   icon: "calendar" | "heart" | "payments" | "therapist" | "users";
 };
 
@@ -59,7 +64,6 @@ type AdminDashboardPageProps = {
 export function AdminDashboardPage({ dashboard }: AdminDashboardPageProps) {
   const allMetrics = dashboard.modules.flatMap((module) => module.metrics);
   const kpis = buildDashboardKpis(allMetrics);
-  const chartMetrics = buildChartMetrics(allMetrics);
   const moduleBreakdown = buildModuleBreakdown(dashboard.modules);
   const funnelSteps = buildFunnelSteps(allMetrics);
 
@@ -93,7 +97,7 @@ export function AdminDashboardPage({ dashboard }: AdminDashboardPageProps) {
 
         <section
           aria-label="Indicadores principais"
-          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
         >
           {kpis.map((metric) => (
             <SummaryMetricCard key={metric.key} metric={metric} />
@@ -101,12 +105,13 @@ export function AdminDashboardPage({ dashboard }: AdminDashboardPageProps) {
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.88fr)]">
-          <EvolutionPanel metrics={chartMetrics} />
+          <EvolutionPanel activity={dashboard.activity} />
           <DistributionPanel items={moduleBreakdown} />
         </section>
 
-        <section className="max-w-[390px]">
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
           <OperationalFunnelPanel steps={funnelSteps} />
+          <FinancialResultPanel financial={dashboard.financial} />
         </section>
       </div>
     </main>
@@ -145,27 +150,122 @@ function SummaryMetricCard({
           <p className="mt-3 text-xs font-bold leading-5 text-tesText-muted">
             {metric.description}
           </p>
+          <Link
+            className="group mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-brand-primary outline-none transition hover:text-brand-deep focus-visible:rounded-md focus-visible:ring-4 focus-visible:ring-ring/20"
+            href={metric.href}
+          >
+            Ver detalhes
+            <ArrowRight
+              aria-hidden="true"
+              className="size-4 transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
         </div>
       </div>
     </article>
   );
 }
 
-function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
-  const max = Math.max(...metrics.map((metric) => metric.value), 1);
-  const points = metrics.map((metric, index) => {
-    const x =
-      metrics.length === 1 ? 260 : 60 + index * (420 / (metrics.length - 1));
-    const y = 185 - (metric.value / max) * 132;
+function FinancialResultPanel({
+  financial,
+}: {
+  financial: AdminDashboard["financial"];
+}) {
+  return (
+    <article className="min-h-[408px] rounded-[20px] border border-brand-lavender/80 bg-white p-6 shadow-[0_18px_42px_rgba(108,61,145,0.08)]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-extrabold leading-tight text-brand-deep">
+            Resultado financeiro
+          </h2>
+          <p className="mt-2 text-sm font-bold leading-6 text-tesText-muted">
+            Evolução das receitas e custos das sessões na plataforma.
+          </p>
+        </div>
+        <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-extrabold text-brand-primary shadow-[0_8px_24px_rgba(20,16,90,0.07)]">
+          {financial.periodLabel}
+        </span>
+      </div>
 
-    return { ...metric, x, y };
-  });
-  const path = buildLinePath(points);
-  const areaPath =
-    points.length > 1
-      ? `${path} L ${points[points.length - 1].x} 190 L ${points[0].x} 190 Z`
-      : "";
+      {financial.status === "available" ? (
+        <>
+          <ChartLegend
+            items={[
+              { colorClass: "bg-brand-primary", label: "Receita líquida" },
+              { colorClass: "bg-brand-lavender", label: "Comissão bruta" },
+              { colorClass: "bg-tesText-subtle", label: "Taxas Stripe" },
+            ]}
+          />
+          <div className="mt-4 rounded-[18px] bg-gradient-to-b from-surface-soft/80 to-transparent px-1">
+            <AdminFinancialChart financial={financial} />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <FinancialMetricTile
+              label="Receita líquida"
+              metric={financial.metrics.netRevenue}
+            />
+            <FinancialMetricTile
+              label="Comissão bruta"
+              metric={financial.metrics.grossCommission}
+            />
+            <FinancialMetricTile
+              label="Taxas Stripe"
+              metric={financial.metrics.stripeFees}
+            />
+          </div>
+          {financial.feesStatus === "pending" ? (
+            <p className="mt-4 text-xs font-bold leading-5 text-tesText-muted">
+              Parte das taxas ainda está em conciliação. Os valores podem ser
+              atualizados quando esse processo for concluído.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <UnavailableState>
+          Ainda não há pagamentos confirmados no período para montar este
+          resultado. Consulte Financeiro para acompanhar os pagamentos.
+        </UnavailableState>
+      )}
 
+      <Link
+        className="group mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-brand-primary outline-none transition hover:text-brand-deep focus-visible:rounded-md focus-visible:ring-4 focus-visible:ring-ring/20"
+        href={routes.admin.payments}
+      >
+        Ver detalhes
+        <ArrowRight
+          aria-hidden="true"
+          className="size-4 transition-transform group-hover:translate-x-0.5"
+        />
+      </Link>
+    </article>
+  );
+}
+
+function FinancialMetricTile({
+  label,
+  metric,
+}: {
+  label: string;
+  metric: AdminDashboard["financial"]["metrics"]["netRevenue"];
+}) {
+  return (
+    <div className="rounded-[16px] border border-brand-lavender/80 bg-surface-soft px-4 py-4">
+      <p className="text-sm font-extrabold leading-tight text-tesText-secondary">
+        {label}
+      </p>
+      <p className="mt-3 text-2xl font-extrabold leading-none text-brand-deep">
+        {formatCurrency(metric.currentCents)}
+      </p>
+      <MetricChange metric={metric} />
+    </div>
+  );
+}
+
+function EvolutionPanel({
+  activity,
+}: {
+  activity: AdminDashboard["activity"];
+}) {
   return (
     <article className="min-h-[437px] rounded-[20px] border border-brand-lavender/80 bg-white p-6 shadow-[0_18px_42px_rgba(108,61,145,0.08)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -173,220 +273,133 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
           <h2 className="text-2xl font-extrabold leading-tight text-brand-deep">
             Evolução da plataforma
           </h2>
-          <div className="mt-5 flex flex-wrap gap-5">
-            {metrics.slice(0, 3).map((metric) => (
-              <span
-                className="inline-flex items-center gap-2 text-xs font-extrabold text-tesText-secondary"
-                key={metric.key}
-              >
-                <span
-                  className={`size-2.5 rounded-full ${dotClass(metric.tone)}`}
-                />
-                {metric.label}
-              </span>
-            ))}
-          </div>
+          <ChartLegend
+            items={[
+              { colorClass: "bg-brand-cyan", label: "Pacientes cadastrados" },
+              {
+                colorClass: "bg-status-success",
+                label: "Profissionais cadastrados",
+              },
+              { colorClass: "bg-brand-primary", label: "Sessões criadas" },
+            ]}
+          />
         </div>
         <span className="w-fit rounded-full bg-white px-4 py-2 text-xs font-extrabold text-brand-primary shadow-[0_8px_24px_rgba(20,16,90,0.07)]">
-          Indicadores atuais
+          {activity.periodLabel}
         </span>
       </div>
 
-      {points.length > 0 ? (
+      {activity.status === "available" ? (
         <>
           <div
-            className="relative z-0 mt-7 overflow-visible rounded-[18px]"
+            className="relative z-0 mt-5 rounded-[18px]"
             style={{
               background:
                 "linear-gradient(180deg, color-mix(in srgb, var(--tes-color-surface-soft) 72%, transparent), transparent)",
             }}
           >
-            <svg
-              aria-label="Comparativo visual dos indicadores atuais da plataforma"
-              className="h-[220px] w-full overflow-visible"
-              role="img"
-              viewBox="0 0 520 220"
-            >
-              <defs>
-                <linearGradient
-                  id="admin-dashboard-line"
-                  x1="0"
-                  x2="1"
-                  y1="0"
-                  y2="0"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor="var(--tes-color-brand-primary)"
-                  />
-                  <stop offset="52%" stopColor="var(--tes-color-status-info)" />
-                  <stop
-                    offset="100%"
-                    stopColor="var(--tes-color-status-success)"
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="admin-dashboard-area"
-                  x1="0"
-                  x2="0"
-                  y1="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor="var(--tes-color-brand-lavender)"
-                    stopOpacity="0.42"
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="var(--tes-color-brand-lavender)"
-                    stopOpacity="0"
-                  />
-                </linearGradient>
-              </defs>
-              {[0, 1, 2, 3, 4].map((line) => (
-                <line
-                  key={line}
-                  stroke="var(--tes-color-brand-lavender)"
-                  strokeOpacity="0.58"
-                  strokeWidth="1.2"
-                  x1="42"
-                  x2="492"
-                  y1={52 + line * 34}
-                  y2={52 + line * 34}
-                />
-              ))}
-              {areaPath ? (
-                <path d={areaPath} fill="url(#admin-dashboard-area)" />
-              ) : null}
-              {path ? (
-                <path
-                  d={path}
-                  fill="none"
-                  stroke="url(#admin-dashboard-line)"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="5"
-                />
-              ) : null}
-              {points.map((point) => (
-                <LineChartPoint key={point.key} point={point} />
-              ))}
-              <text
-                fill="var(--tes-color-brand-primary)"
-                fontSize="12"
-                fontWeight="600"
-                x="10"
-                y="57"
-              >
-                {formatNumber(max)}
-              </text>
-              <text
-                fill="var(--tes-color-brand-primary)"
-                fontSize="12"
-                fontWeight="600"
-                x="24"
-                y="193"
-              >
-                0
-              </text>
-              <g className="admin-dashboard-chart-tooltips">
-                {points.map((point) => (
-                  <LineChartTooltip
-                    key={`${point.key}-tooltip`}
-                    point={point}
-                  />
-                ))}
-              </g>
-            </svg>
+            <AdminActivityChart activity={activity} />
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            {metrics.slice(0, 3).map((metric) => (
-              <MiniMetricTile key={metric.key} metric={metric} />
-            ))}
+            <ActivityMetricTile
+              label="Pacientes cadastrados"
+              metric={activity.metrics.patients}
+            />
+            <ActivityMetricTile
+              label="Profissionais cadastrados"
+              metric={activity.metrics.professionals}
+            />
+            <ActivityMetricTile
+              label="Sessões criadas"
+              metric={activity.metrics.sessions}
+            />
           </div>
         </>
       ) : (
         <UnavailableState>
-          Ainda não há indicadores suficientes para montar esta visão.
+          Ainda não há movimentação suficiente no período para montar esta
+          visão.
         </UnavailableState>
       )}
     </article>
   );
 }
 
-function MiniMetricTile({ metric }: { metric: AvailableMetric }) {
+function ActivityMetricTile({
+  label,
+  metric,
+}: {
+  label: string;
+  metric: AdminDashboard["activity"]["metrics"]["patients"];
+}) {
   return (
     <div className="rounded-[14px] border border-brand-lavender/80 bg-white px-4 py-3 shadow-[0_12px_22px_rgba(108,61,145,0.04)]">
       <p className="text-xs font-extrabold text-tesText-secondary">
-        {metric.label}
+        {label}
       </p>
       <p className="mt-2 text-lg font-extrabold leading-none text-brand-deep">
-        {formatNumber(metric.value)}
+        {formatNumber(metric.current)}
       </p>
+      <MetricChange metric={metric} />
     </div>
   );
 }
 
-function LineChartPoint({
-  point,
+function ChartLegend({
+  items,
 }: {
-  point: AvailableMetric & { x: number; y: number };
+  items: Array<{ colorClass: string; label: string }>;
 }) {
   return (
-    <g>
-      <circle
-        cx={point.x}
-        cy={point.y}
-        fill="white"
-        r="8"
-        stroke="url(#admin-dashboard-line)"
-        strokeWidth="4"
-      />
-      <text
-        fill="var(--tes-color-text-muted)"
-        fontSize="11"
-        fontWeight="600"
-        textAnchor="middle"
-        x={point.x}
-        y="213"
-      >
-        {shortMetricLabel(point)}
-      </text>
-    </g>
+    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+      {items.map((item) => (
+        <span
+          className="inline-flex items-center gap-2 text-xs font-extrabold text-tesText-secondary"
+          key={item.label}
+        >
+          <span className={`size-2.5 rounded-full ${item.colorClass}`} />
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
-function LineChartTooltip({
-  point,
+function MetricChange({
+  metric,
 }: {
-  point: AvailableMetric & { x: number; y: number };
+  metric:
+    | AdminDashboard["activity"]["metrics"]["patients"]
+    | AdminDashboard["financial"]["metrics"]["netRevenue"];
 }) {
+  const current = "current" in metric ? metric.current : metric.currentCents;
+  const previous = "previous" in metric ? metric.previous : metric.previousCents;
+
+  if (previous <= 0) {
+    return (
+      <p className="mt-3 text-xs font-bold text-tesText-muted">
+        {current > 0 ? "Novo no período" : "Sem comparação"}
+      </p>
+    );
+  }
+
+  const percent = ((current - previous) / Math.abs(previous)) * 100;
+  const isPositive = percent >= 0;
+
   return (
-    <g
-      aria-label={`Detalhes de ${point.label}: ${formatNumber(point.value)}`}
-      className="group outline-none"
-      role="img"
-      tabIndex={0}
+    <p
+      className={`mt-3 text-xs font-extrabold ${
+        isPositive ? "text-status-success" : "text-status-danger"
+      }`}
     >
-      <circle
-        aria-hidden="true"
-        className="cursor-help"
-        cx={point.x}
-        cy={point.y}
-        fill="transparent"
-        pointerEvents="all"
-        r="19"
-      />
-      <SvgTooltip
-        accentColor={chartColorForTone(point.tone)}
-        lines={buildMetricTooltipLines(point)}
-        viewBoxWidth={520}
-        x={point.x}
-        y={point.y}
-      />
-    </g>
+      {isPositive ? "+" : ""}
+      {new Intl.NumberFormat("pt-BR", {
+        maximumFractionDigits: 0,
+      }).format(percent)}
+      %
+      <span className="ml-1 font-bold text-tesText-muted">vs. período anterior</span>
+    </p>
   );
 }
 
@@ -466,7 +479,7 @@ function OperationalFunnelPanel({ steps }: { steps: FunnelStep[] }) {
                   </span>
                   <span className="text-right text-sm font-extrabold text-brand-deep">
                     {formatNumber(step.value)}
-                    <span className="mt-1 block rounded-full bg-brand-lavenderSoft px-2 py-1 text-[0.65rem] font-extrabold text-brand-primary">
+                    <span className="mt-1 block rounded-full bg-brand-lavenderSoft px-2 py-1 text-xs font-extrabold text-brand-primary">
                       {formatPercent(step.value, steps[0].value)}
                     </span>
                   </span>
@@ -667,7 +680,7 @@ function StatusPill({
 }) {
   return (
     <span
-      className={`inline-flex min-h-6 items-center justify-center rounded-full px-3 text-[0.68rem] font-extrabold ${statusPillClass(
+      className={`inline-flex min-h-7 items-center justify-center rounded-full px-3 text-sm font-extrabold ${statusPillClass(
         tone,
       )} ${className}`}
     >
@@ -688,22 +701,19 @@ function buildDashboardKpis(
   metrics: AdminDashboardMetric[],
 ): DashboardMetricWithFallback[] {
   return [
-    withIcon(findMetric(metrics, "active-therapists"), "therapist"),
-    withIcon(findMetric(metrics, "active-patients"), "users"),
-    withIcon(findMetric(metrics, "future-sessions"), "calendar"),
-    withIcon(findMetric(metrics, "paid-session-payments"), "payments"),
-    withIcon(findMetric(metrics, "active-subscriptions"), "heart"),
+    withIcon(
+      findMetric(metrics, "active-therapists"),
+      "therapist",
+      routes.admin.professionals,
+    ),
+    withIcon(findMetric(metrics, "active-patients"), "users", routes.admin.patients),
+    withIcon(findMetric(metrics, "future-sessions"), "calendar", routes.admin.sessions),
+    withIcon(
+      findMetric(metrics, "paid-session-payments"),
+      "payments",
+      routes.admin.payments,
+    ),
   ].filter(Boolean) as DashboardMetricWithFallback[];
-}
-
-function buildChartMetrics(metrics: AdminDashboardMetric[]) {
-  return [
-    findMetric(metrics, "active-patients"),
-    findMetric(metrics, "active-therapists"),
-    findMetric(metrics, "future-sessions"),
-    findMetric(metrics, "paid-session-payments"),
-    findMetric(metrics, "active-subscriptions"),
-  ].filter(isAvailableMetric);
 }
 
 function buildFunnelSteps(metrics: AdminDashboardMetric[]) {
@@ -752,8 +762,9 @@ function findMetric(metrics: AdminDashboardMetric[], key: string) {
 function withIcon(
   metric: AdminDashboardMetric | undefined,
   icon: DashboardMetricWithFallback["icon"],
+  href: Route<string>,
 ) {
-  return metric ? { ...metric, icon } : null;
+  return metric ? { ...metric, href, icon } : null;
 }
 
 function isAvailableMetric(
@@ -762,30 +773,6 @@ function isAvailableMetric(
   return Boolean(
     metric && metric.status === "available" && metric.value !== null,
   );
-}
-
-function buildLinePath(
-  points: Array<AvailableMetric & { x: number; y: number }>,
-) {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-
-  return points.reduce((path, point, index) => {
-    if (index === 0) return `M ${point.x} ${point.y}`;
-
-    const previous = points[index - 1];
-    const controlX = previous.x + (point.x - previous.x) / 2;
-
-    return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
-  }, "");
-}
-
-function buildMetricTooltipLines(metric: AvailableMetric) {
-  return [
-    metric.label,
-    `Valor atual: ${formatNumber(metric.value)}`,
-    shortenTooltipText(metric.description),
-  ];
 }
 
 function buildDonutSegments(items: BreakdownItem[], total: number) {
@@ -870,14 +857,6 @@ function chartColor(colorClass: string) {
   return colorMap[colorClass] ?? "var(--tes-color-brand-primary)";
 }
 
-function chartColorForTone(tone: AdminDashboardMetric["tone"]) {
-  if (tone === "danger") return "var(--tes-color-status-danger)";
-  if (tone === "info") return "var(--tes-color-status-info)";
-  if (tone === "success") return "var(--tes-color-status-success)";
-  if (tone === "warning") return "var(--tes-color-status-warning)";
-  return "var(--tes-color-brand-lavender)";
-}
-
 function iconForMetric(icon: DashboardMetricWithFallback["icon"]) {
   if (icon === "calendar") return CalendarDays;
   if (icon === "heart") return HeartPulse;
@@ -901,15 +880,6 @@ function metricIconClass(metric: AdminDashboardMetric) {
   return "bg-brand-lavenderSoft text-brand-primary";
 }
 
-function dotClass(tone: AdminDashboardMetric["tone"]) {
-  if (tone === "success") return "bg-status-success";
-  if (tone === "warning") return "bg-status-warning";
-  if (tone === "danger") return "bg-status-danger";
-  if (tone === "info") return "bg-status-info";
-
-  return "bg-brand-primary";
-}
-
 function statusPillClass(
   tone: AdminDashboardMetric["tone"],
 ) {
@@ -921,22 +891,6 @@ function statusPillClass(
   if (tone === "info") return "bg-status-infoBg text-status-info";
 
   return "bg-brand-lavenderSoft text-brand-primary";
-}
-
-function shortMetricLabel(metric: AdminDashboardMetric) {
-  const map: Record<string, string> = {
-    "active-patients": "Clientes",
-    "active-subscriptions": "Assin.",
-    "active-therapists": "Prof.",
-    "future-sessions": "Sessões",
-    "paid-session-payments": "Pagas",
-  };
-
-  return map[metric.key] ?? metric.label;
-}
-
-function shortenTooltipText(value: string) {
-  return value.length > 34 ? `${value.slice(0, 31)}…` : value;
 }
 
 function funnelTooltip(step: FunnelStep, firstValue: number) {
@@ -960,6 +914,13 @@ function formatMetricValue(metric: AdminDashboardMetric | undefined) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+function formatCurrency(valueInCents: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency",
+  }).format(valueInCents / 100);
 }
 
 function formatPercent(value: number, total: number) {

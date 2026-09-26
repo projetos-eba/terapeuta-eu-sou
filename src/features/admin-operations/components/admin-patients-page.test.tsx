@@ -78,6 +78,22 @@ function page(
       status: [{ label: "Suspensos", value: "suspended" }],
     },
     page: { hasNext: false, page: 1, pageSize: 12, total: 0 },
+    patientAnalytics: {
+      activityAge: [
+        { label: "Até 7 dias", value: 32 },
+        { label: "8 a 30 dias", value: 18 },
+        { label: "31 a 60 dias", value: 9 },
+        { label: "61 a 90 dias", value: 4 },
+        { label: "Mais de 90 dias", value: 2 },
+      ],
+      periodDays: 30,
+      series: [
+        { label: "01/09", newRegistrations: 3, totalClients: 83 },
+        { label: "15/09", newRegistrations: 5, totalClients: 91 },
+        { label: "30/09", newRegistrations: 2, totalClients: 100 },
+      ],
+      status: "available",
+    },
     query: { page: 1, pageSize: 12, search: "", sort: "recent", status: "" },
     rows: [],
     rowsStatus: "available",
@@ -111,7 +127,7 @@ describe("Clientes ADM", () => {
   it.runIf(process.env.ADMIN_CLIENTS_VISUAL_QA === "1")(
     "checks the real components with isolated fixtures and TES CSS at three viewports",
     async () => {
-      const { readFileSync } = await import("node:fs");
+      const { existsSync, readFileSync } = await import("node:fs");
       const { resolve } = await import("node:path");
       const { chromium } = await import("@playwright/test");
       const postcss = (await import("postcss")).default;
@@ -127,8 +143,12 @@ describe("Clientes ADM", () => {
         (_match, fontPath: string) =>
           `url("data:font/otf;base64,${readFileSync(resolve(`public${fontPath}`)).toString("base64")}")`,
       );
+      const browserExecutable = [
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      ].find((path) => existsSync(path));
       const browser = await chromium.launch({
-        channel: "msedge",
+        executablePath: browserExecutable,
         headless: false,
       });
       try {
@@ -211,7 +231,7 @@ describe("Clientes ADM", () => {
     },
     60_000,
   );
-  it("renders four authoritative compact indicators, growth and share", () => {
+  it("renders four authoritative compact indicators, growth and activity charts", () => {
     const html = renderToStaticMarkup(<AdminPatientsPage data={page()} />);
     for (const title of [
       "Total de clientes",
@@ -224,6 +244,49 @@ describe("Clientes ADM", () => {
     expect(html).toContain("80% do total");
     expect(html).not.toContain("Recorrência");
     expect(html).not.toContain("Média por cliente");
+  });
+  it("shows global client analytics, preserves the period selector and omits page-only charts", () => {
+    const html = renderToStaticMarkup(
+      <AdminPatientsPage
+        data={page({
+          rows: [
+            {
+              detailHref: "/admin/pacientes/client-1",
+              email: "cliente@example.test",
+              fields: [
+                { label: "ID", value: "#CL-4587" },
+                { label: "Contato", value: "+55 (11) 98765-4321" },
+                { label: "Cadastro", value: "12/03/2026" },
+                { label: "Status", value: "active" },
+                { label: "Última atividade", value: "25/09/2026, 15:40" },
+              ],
+              id: "client-1",
+              title: "Mariana Souza",
+            },
+          ],
+        })}
+      />,
+    );
+
+    for (const text of [
+      "Evolução de clientes",
+      "Total acumulado",
+      "Novos cadastros",
+      "Tempo desde a última atividade",
+      "Até 7 dias",
+      "Mais de 90 dias",
+      "Últimos 30 dias",
+      "Últimos 90 dias",
+      "Base de clientes",
+      "Contato",
+      "Ver cliente",
+    ]) {
+      expect(html).toContain(text);
+    }
+    expect(html).not.toContain("Atividade nesta página");
+    expect(html).not.toContain("Distribuição por status");
+    expect(html).not.toContain("Histórico de sessões");
+    expect(html).not.toContain("Chamados");
   });
   it("does not invent a growth comparison when the previous period is empty", () => {
     const data = page();

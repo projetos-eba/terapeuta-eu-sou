@@ -1,29 +1,67 @@
 import Link from "next/link";
 import type { Route } from "next";
+import type { ComponentProps } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  CircleDollarSign,
+  CircleX,
+  Coins,
   Clock3,
+  CreditCard,
+  Landmark,
+  ReceiptText,
+  RefreshCw,
+  RotateCcw,
   Search,
+  ShieldAlert,
   Wallet,
 } from "lucide-react";
 
-import { buildAdminListHref } from "@/features/admin-shared/admin-list-query";
-
 import type {
   AdminFinanceField,
+  AdminFinanceListQuery,
   AdminFinanceMetric,
   AdminFinancePageData,
   AdminFinanceRow,
 } from "../admin-finance.types";
 
-const KPI_COUNT = 4;
+const FINANCIAL_KPI_KEYS = [
+  "total-payments-amount",
+  "gross-platform-commission-amount",
+  "stripe-fees-amount",
+  "net-platform-revenue-amount",
+  "pending-payment-amount",
+  "confirmed-payment-amount",
+  "failed-payment-amount",
+  "pending-refunds-amount",
+];
+
+const OPERATIONAL_INDICATOR_KEYS = [
+  "therapist-change-refund-reviews",
+  "open-disputes",
+  "open-payout-batches",
+];
+
+const DEFAULT_PERIOD_OPTIONS = [
+  { label: "Últimos 7 dias", value: "7d" },
+  { label: "Últimos 30 dias", value: "30d" },
+  { label: "Últimos 90 dias", value: "90d" },
+];
 
 export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
-  const kpis = data.metrics.slice(0, KPI_COUNT);
-  const indicators = data.metrics.slice(KPI_COUNT);
+  const kpis = data.metrics.filter((metric) =>
+    FINANCIAL_KPI_KEYS.includes(metric.key),
+  );
+  const indicators = data.metrics.filter((metric) =>
+    OPERATIONAL_INDICATOR_KEYS.includes(metric.key),
+  );
+  const periodOptions = data.filterOptions.period ?? DEFAULT_PERIOD_OPTIONS;
+  const activePeriod = data.query.period ?? "30d";
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -41,9 +79,48 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
               fluxo financeiro da plataforma.
             </p>
           </div>
-          <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
-            Atualizado em {formatDateTime(data.generatedAt)}
-          </p>
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center lg:justify-end">
+            <form
+              action={data.listHref}
+              className="flex items-center gap-2 rounded-[18px] border border-brand-lavender/70 bg-white p-1.5 shadow-[0_18px_45px_rgba(20,16,90,0.08)]"
+              method="get"
+            >
+              <input name="q" type="hidden" value={data.query.search} />
+              <input name="status" type="hidden" value={data.query.status} />
+              <input name="sort" type="hidden" value={data.query.sort} />
+              <input name="pageSize" type="hidden" value={data.query.pageSize} />
+              <CalendarDays
+                aria-hidden="true"
+                className="ml-2 size-4 text-brand-primary"
+              />
+              <label className="sr-only" htmlFor="finance-top-period">
+                Período dos indicadores financeiros
+              </label>
+              <select
+                className="min-h-10 bg-transparent pr-1 text-sm font-extrabold text-brand-deep outline-none"
+                defaultValue={activePeriod}
+                id="finance-top-period"
+                name="period"
+              >
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                aria-label="Atualizar período"
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
+                type="submit"
+              >
+                <RefreshCw aria-hidden="true" className="size-4" />
+                Atualizar
+              </button>
+            </form>
+            <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
+              Atualizado em {formatDateTime(data.generatedAt)}
+            </p>
+          </div>
         </header>
 
         <section
@@ -67,7 +144,7 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
             {indicators.map((metric) => (
               <PaymentIndicatorCard key={metric.key} metric={metric} />
             ))}
@@ -93,7 +170,7 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
 
             <form
               action={data.listHref}
-              className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px_auto]"
+              className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px_auto]"
               method="get"
             >
               <label className="relative block">
@@ -141,6 +218,25 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                 </select>
               </label>
 
+              <label className="relative block">
+                <span className="sr-only">Filtrar por período</span>
+                <CalendarDays
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-brand-primary"
+                />
+                <select
+                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-white py-2 pl-10 pr-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+                  defaultValue={activePeriod}
+                  name="period"
+                >
+                  {periodOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <div className="flex gap-2">
                 <input
                   name="pageSize"
@@ -155,7 +251,13 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                 </button>
                 <Link
                   className="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-                  href={data.listHref as Route<string>}
+                  href={buildPaymentListHref(data.listHref, data.query, {
+                    page: 1,
+                    period: "30d",
+                    search: "",
+                    sort: "",
+                    status: "",
+                  }) as Route<string>}
                 >
                   Limpar
                 </Link>
@@ -178,16 +280,18 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
               <StateMessage icon="empty" message={data.emptyMessage} />
             ) : (
               <>
-                <div className="hidden overflow-x-auto lg:block">
-                  <table className="w-full table-fixed border-collapse">
+                <div className="hidden overflow-x-auto xl:block">
+                  <table className="min-w-[1120px] w-full border-collapse">
                     <thead>
                       <tr className="bg-surface-soft text-left text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
-                        <th className="w-[25%] px-5 py-4">Referência</th>
-                        <th className="w-[18%] px-4 py-4">Profissional</th>
-                        <th className="w-[20%] px-4 py-4">Valores</th>
-                        <th className="w-[14%] px-4 py-4">Repasse</th>
-                        <th className="w-[13%] px-4 py-4">Status</th>
-                        <th className="w-[10%] px-5 py-4 text-right">Ação</th>
+                        <th className="px-5 py-4">Data e hora</th>
+                        <th className="px-4 py-4">Transação</th>
+                        <th className="px-4 py-4">Cliente</th>
+                        <th className="px-4 py-4">Profissional</th>
+                        <th className="px-4 py-4">Forma de pagamento</th>
+                        <th className="px-4 py-4">Valores</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-5 py-4 text-right">Ação</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -198,7 +302,7 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                   </table>
                 </div>
 
-                <div className="divide-y divide-brand-lavender/60 lg:hidden">
+                <div className="divide-y divide-brand-lavender/60 xl:hidden">
                   {data.rows.map((row) => (
                     <MobilePaymentRow key={row.id} row={row} />
                   ))}
@@ -219,7 +323,7 @@ function PaymentKpiCard({ metric }: { metric: AdminFinanceMetric }) {
     <article className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]">
       <div className="flex items-start justify-between gap-3">
         <span className={metricIconWrapClass(metric)}>
-          <Wallet aria-hidden="true" className="size-5" />
+          <PaymentMetricIcon aria-hidden="true" metric={metric} />
         </span>
         <StatusPill metric={metric} />
       </div>
@@ -240,13 +344,18 @@ function PaymentIndicatorCard({ metric }: { metric: AdminFinanceMetric }) {
   return (
     <article className="rounded-[18px] border border-brand-lavender/60 bg-surface-soft p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-extrabold text-brand-deep">
-            {paymentMetricLabel(metric)}
-          </p>
-          <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
-            Indicador operacional
-          </p>
+        <div className="flex items-start gap-3">
+          <span className={metricIconWrapClass(metric)}>
+            <PaymentMetricIcon aria-hidden="true" metric={metric} />
+          </span>
+          <div>
+            <p className="text-sm font-extrabold text-brand-deep">
+              {paymentMetricLabel(metric)}
+            </p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+              Indicador operacional
+            </p>
+          </div>
         </div>
         <StatusPill metric={metric} compact />
       </div>
@@ -266,46 +375,37 @@ function DesktopPaymentRow({ row }: { row: AdminFinanceRow }) {
   return (
     <tr className="border-t border-brand-lavender/60 align-top transition hover:bg-surface-soft/70">
       <td className="px-5 py-4">
-        <div>
-          <p className="break-words text-sm font-extrabold text-brand-deep">
-            {row.title}
-          </p>
-          <p className="mt-1 break-words text-xs font-semibold text-tesText-secondary">
-            {row.subtitle ?? "Sem referência adicional"}
-          </p>
-          {fields["Atualizado"] ? (
-            <p className="mt-2 text-xs font-semibold text-tesText-muted">
-              {fields["Atualizado"]}
-            </p>
-          ) : null}
-        </div>
+        <p className="whitespace-nowrap text-sm font-extrabold text-brand-deep">
+          {fields["Data e hora"] || "—"}
+        </p>
+      </td>
+      <td className="px-4 py-4">
+        <p className="max-w-[160px] break-words text-sm font-extrabold text-brand-deep">
+          {row.title}
+        </p>
+        <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+          {row.subtitle ?? "Sem referência adicional"}
+        </p>
+      </td>
+      <td className="break-words px-4 py-4 text-sm font-semibold text-brand-deep">
+        {fields["Cliente"] || "Não identificado"}
       </td>
       <td className="break-words px-4 py-4 text-sm font-semibold text-brand-deep">
         {fields["Profissional"] || "Não identificado"}
+      </td>
+      <td className="px-4 py-4 text-sm font-semibold text-brand-deep">
+        {fields["Forma de pagamento"] || "Não informado"}
       </td>
       <td className="px-4 py-4">
         <p className="text-sm font-extrabold text-brand-deep">
           {fields["Valor bruto"] || "—"}
         </p>
         <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-          Repasse previsto: {fields["Repasse terapeuta"] || "—"}
+          Comissão TES: {fields["Comissão TES"] || "—"}
         </p>
-        {fields["Compensação"] ? (
-          <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-            Compensação: {fields["Compensação"]}
-          </p>
-        ) : null}
-        {fields["Valor encaminhado"] ? (
-          <p className="mt-1 text-xs font-semibold text-brand-primary">
-            Valor encaminhado: {fields["Valor encaminhado"]}
-          </p>
-        ) : null}
         <p className="mt-1 text-xs font-semibold text-tesText-muted">
-          Custos da plataforma: {fields["Custos da plataforma"] || "—"}
+          Repasse: {fields["Repasse terapeuta"] || "—"}
         </p>
-      </td>
-      <td className="px-4 py-4 text-sm font-semibold text-brand-deep">
-        {formatOperationalValue(fields["Repasse"]) || "Não informado"}
       </td>
       <td className="px-4 py-4">
         <div className="flex flex-col items-start gap-2">
@@ -383,10 +483,10 @@ function Pagination({ data }: { data: AdminFinancePageData }) {
   const start =
     data.page.total === 0 ? 0 : (data.page.page - 1) * data.page.pageSize + 1;
   const end = Math.min(data.page.page * data.page.pageSize, data.page.total);
-  const previousHref = buildAdminListHref(data.listHref, data.query, {
+  const previousHref = buildPaymentListHref(data.listHref, data.query, {
     page: Math.max(data.page.page - 1, 1),
   });
-  const nextHref = buildAdminListHref(data.listHref, data.query, {
+  const nextHref = buildPaymentListHref(data.listHref, data.query, {
     page: data.page.page + 1,
   });
 
@@ -513,14 +613,16 @@ function fieldMap(fields: AdminFinanceField[]) {
 
 function paymentMetricLabel(metric: AdminFinanceMetric) {
   const labels: Record<string, string> = {
-    "failed-session-payments": "Pagamentos com falha",
-    "ledger-entries": "Movimentações registradas",
+    "confirmed-payment-amount": "Pagamentos confirmados",
+    "failed-payment-amount": "Pagamentos com falha",
+    "gross-platform-commission-amount": "Comissão bruta TES",
+    "net-platform-revenue-amount": "Receita líquida TES",
     "open-disputes": "Contestações abertas",
     "open-payout-batches": "Repasses em andamento",
-    "paid-session-payments": "Pagamentos confirmados",
-    "pending-refunds": "Reembolsos pendentes",
-    "pending-session-payments": "Pagamentos pendentes",
-    "stripe-transfers": "Transferências registradas",
+    "pending-payment-amount": "Pagamentos pendentes",
+    "pending-refunds-amount": "Reembolsos pendentes",
+    "stripe-fees-amount": "Taxas Stripe",
+    "total-payments-amount": "Total de pagamentos",
   };
 
   return labels[metric.key] ?? metric.label;
@@ -528,14 +630,16 @@ function paymentMetricLabel(metric: AdminFinanceMetric) {
 
 function paymentMetricDescription(metric: AdminFinanceMetric) {
   const descriptions: Record<string, string> = {
-    "failed-session-payments": "Pagamentos que precisam de acompanhamento.",
-    "ledger-entries": "Movimentações preservadas no histórico financeiro.",
+    "confirmed-payment-amount": "Valores com pagamento confirmado.",
+    "failed-payment-amount": "Valores que precisam de acompanhamento.",
+    "gross-platform-commission-amount": "Parte da plataforma nas cobranças confirmadas.",
+    "net-platform-revenue-amount": "Após as taxas de processamento.",
     "open-disputes": "Contestações que ainda aguardam encerramento.",
     "open-payout-batches": "Valores em preparação ou a caminho do banco.",
-    "paid-session-payments": "Pagamentos confirmados com segurança.",
-    "pending-refunds": "Reembolsos que ainda aguardam conclusão.",
-    "pending-session-payments": "Pagamentos que aguardam confirmação.",
-    "stripe-transfers": "Transferências registradas para acompanhamento.",
+    "pending-payment-amount": "Valores que aguardam confirmação.",
+    "pending-refunds-amount": "Valores que aguardam conclusão.",
+    "stripe-fees-amount": "Processamento das cobranças confirmadas.",
+    "total-payments-amount": "Valores registrados no período.",
   };
 
   return descriptions[metric.key] ?? metric.description;
@@ -565,10 +669,64 @@ function formatOperationalValue(value: string | undefined) {
 }
 
 function formatMetricValue(metric: AdminFinanceMetric) {
-  if (metric.status === "available") return metric.value;
+  if (metric.status === "available") {
+    return FINANCIAL_KPI_KEYS.includes(metric.key)
+      ? formatBRLCents(metric.value)
+      : metric.value;
+  }
   if (metric.status === "forbidden") return "Acesso restrito";
 
   return "Indisponível";
+}
+
+function formatBRLCents(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency",
+  }).format(value / 100);
+}
+
+function PaymentMetricIcon({
+  metric,
+  ...props
+}: { metric: AdminFinanceMetric } & ComponentProps<"svg">) {
+  const icons = {
+    "confirmed-payment-amount": CheckCircle2,
+    "failed-payment-amount": CircleX,
+    "gross-platform-commission-amount": Coins,
+    "net-platform-revenue-amount": CircleDollarSign,
+    "open-disputes": ShieldAlert,
+    "open-payout-batches": Landmark,
+    "pending-payment-amount": Clock3,
+    "pending-refunds-amount": RotateCcw,
+    "stripe-fees-amount": ReceiptText,
+    "therapist-change-refund-reviews": AlertTriangle,
+    "total-payments-amount": CreditCard,
+  } as const;
+  const Icon = icons[metric.key as keyof typeof icons] ?? Wallet;
+
+  return <Icon className="size-5" {...props} />;
+}
+
+function buildPaymentListHref(
+  baseHref: string,
+  current: AdminFinanceListQuery,
+  patch: Partial<AdminFinanceListQuery>,
+) {
+  const next = { ...current, ...patch };
+  const params = new URLSearchParams();
+
+  if (next.search) params.set("q", next.search);
+  if (next.status) params.set("status", next.status);
+  if (next.sort) params.set("sort", next.sort);
+  if (next.period && next.period !== "30d") params.set("period", next.period);
+  if (next.page > 1) params.set("page", String(next.page));
+  if (next.pageSize !== 12) params.set("pageSize", String(next.pageSize));
+
+  const query = params.toString();
+  return query ? `${baseHref}?${query}` : baseHref;
 }
 
 function formatDateTime(value: string) {

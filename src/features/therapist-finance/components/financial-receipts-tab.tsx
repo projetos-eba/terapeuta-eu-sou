@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   CalendarClock,
   CheckCircle2,
+  Info,
   RotateCcw,
   type LucideIcon,
 } from "lucide-react";
@@ -26,7 +27,7 @@ const chargeStatusContent: Record<
   { label: string; tone: string }
 > = {
   approved: {
-    label: "Pagamento aprovado",
+    label: "Cobrança realizada",
     tone: "bg-status-successBg text-status-success",
   },
   canceled: {
@@ -46,7 +47,7 @@ const chargeStatusContent: Record<
     tone: "bg-status-dangerBg text-status-danger",
   },
   scheduled: {
-    label: "Cobrança agendada",
+    label: "Cobrança programada",
     tone: "bg-brand-lavenderSoft text-brand-primary",
   },
   under_review: {
@@ -69,16 +70,16 @@ const defaultReceiptListCopy: ReceiptListCopy = {
     "Tente outro período ou ajuste os filtros para consultar suas sessões.",
   emptyTitle: "Ainda não há cobranças neste período",
   subtitle:
-    "Confira o valor da sessão, a Comissão TES, seu valor e a próxima etapa da cobrança.",
+    "Confira o valor da sessão, a Taxa de serviço, sua parte e a próxima etapa da cobrança.",
   title: "Movimentações por sessão",
 };
 
 const receiptListCopyByStatus: Record<TherapistChargeStatus, ReceiptListCopy> =
   {
     approved: receiptListCopy(
-      "Sessões com pagamento aprovado",
+      "Sessões com cobrança realizada",
       "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
-      "Não há sessões com pagamento aprovado neste período.",
+      "Não há sessões com cobrança realizada neste período.",
     ),
     canceled: receiptListCopy(
       "Sessões canceladas",
@@ -97,13 +98,13 @@ const receiptListCopyByStatus: Record<TherapistChargeStatus, ReceiptListCopy> =
     ),
     refunded: receiptListCopy(
       "Sessões reembolsadas",
-      "Confira as sessões cujo valor foi devolvido ao paciente.",
+      "Confira as sessões cujo valor foi devolvido à pessoa.",
       "Não há sessões reembolsadas neste período.",
     ),
     scheduled: receiptListCopy(
-      "Sessões com cobrança agendada",
+      "Sessões com cobrança programada",
       "Confira as sessões com cobrança prevista antes do atendimento.",
-      "Não há sessões com cobrança agendada neste período.",
+      "Não há sessões com cobrança programada neste período.",
     ),
     under_review: receiptListCopy(
       "Sessões com cobrança em análise",
@@ -127,26 +128,38 @@ export function FinancialReceiptsTab({
 
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
-      <AppPageSection className="grid gap-2">
-        <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
-          Cobranças das suas sessões
-        </h2>
-        <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-          Entenda o valor de cada sessão e o que aconteceu com o pagamento. A
-          chegada do dinheiro à sua conta fica em Repasses.
-        </p>
-        <Link
-          className="mt-1 inline-flex min-h-11 w-fit items-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={buildFinanceHref({
-            end: dateRange.end,
-            filters: { agendaDays: filters.agendaDays },
-            period: dateRange.key,
-            start: dateRange.start,
-            tab: "payouts",
-          })}
-        >
-          Veja quando os valores devem chegar à sua conta
-        </Link>
+      <AppPageSection className="flex items-start gap-3 bg-brand-lavenderSoft/60">
+        <Info
+          aria-hidden="true"
+          className="mt-1 shrink-0 text-brand-primary"
+          size={20}
+        />
+        <div>
+          <h2 className="text-base font-extrabold text-brand-deep">
+            Esta página mostra as cobranças feitas às pessoas pelos seus
+            encontros.
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Aqui você acompanha os valores que já foram cobrados, os que ainda
+            serão cobrados e eventuais reembolsos.
+          </p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Para acompanhar quando o dinheiro será enviado à sua conta, acesse{" "}
+            <Link
+              className="font-extrabold text-brand-primary hover:underline"
+              href={buildFinanceHref({
+                end: dateRange.end,
+                filters: { agendaDays: filters.agendaDays },
+                period: dateRange.key,
+                start: dateRange.start,
+                tab: "payouts",
+              })}
+            >
+              Repasses
+            </Link>
+            .
+          </p>
+        </div>
       </AppPageSection>
 
       <section
@@ -154,21 +167,21 @@ export function FinancialReceiptsTab({
         className="grid gap-4 md:grid-cols-3"
       >
         <ReceiptMetricCard
-          description="Seu valor nas sessões cuja cobrança foi concluída."
+          description="Sua parte nos encontros que já tiveram o pagamento confirmado."
           href={statusHref("approved", dateRange, filters)}
           icon={CheckCircle2}
-          label="Pagamentos aprovados"
+          label="Cobranças realizadas"
           value={receipts.summary.approvedCents}
         />
         <ReceiptMetricCard
-          description="Seu valor previsto em sessões cuja cobrança ainda ocorrerá."
+          description="Sua parte nos encontros que ainda serão cobrados. A cobrança acontece 24h antes de cada encontro."
           href={statusHref("scheduled", dateRange, filters)}
           icon={CalendarClock}
-          label="Cobranças agendadas"
+          label="Cobranças programadas"
           value={receipts.summary.scheduledCents}
         />
         <ReceiptMetricCard
-          description="Valores devolvidos aos pacientes no período."
+          description="Valores devolvidos às pessoas no período selecionado."
           href={statusHref("refunded", dateRange, filters)}
           icon={RotateCcw}
           label="Reembolsos"
@@ -184,7 +197,7 @@ export function FinancialReceiptsTab({
           </div>
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,280px)_minmax(180px,240px)_minmax(320px,1fr)]">
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-              Situação da cobrança
+              Status da cobrança
               <select
                 className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                 defaultValue={filters.status ?? ""}
@@ -218,7 +231,7 @@ export function FinancialReceiptsTab({
               </select>
             </label>
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep sm:col-span-2 lg:col-span-1">
-              Paciente
+              Pessoa
               <input
                 className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
                 defaultValue={filters.search ?? ""}
@@ -277,12 +290,12 @@ export function FinancialReceiptsTab({
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs font-extrabold uppercase text-tesText-muted">
-                    <TableHead>Paciente</TableHead>
+                    <TableHead>Pessoa</TableHead>
                     <TableHead>Terapia</TableHead>
                     <TableHead>Sessão</TableHead>
                     <TableHead>Valor da sessão</TableHead>
-                    <TableHead>Comissão TES</TableHead>
-                    <TableHead>Seu valor</TableHead>
+                    <TableHead>Taxa de serviço</TableHead>
+                    <TableHead>Sua parte</TableHead>
                     <TableHead>Situação</TableHead>
                     <TableHead>Próxima etapa</TableHead>
                     <th className="border-b border-brand-lavender py-3">
@@ -355,11 +368,11 @@ export function FinancialReceiptsTab({
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <ReceiptDetail
-                      label="Comissão TES"
+                      label="Taxa de serviço"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <ReceiptDetail
-                      label="Seu valor"
+                      label="Sua parte"
                       value={formatCurrency(item.therapistNetAmountCents)}
                     />
                   </dl>
@@ -478,7 +491,7 @@ function nextStep(
   timezone: string,
 ) {
   if (item.receiptStatus === "compensated") {
-    return "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.";
+    return "Sua parte foi usada para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.";
   }
 
   if (
@@ -502,7 +515,7 @@ function nextStep(
     case "failed":
       return "A cobrança não foi concluída.";
     case "refunded":
-      return "O valor foi devolvido ao paciente.";
+      return "O valor foi devolvido à pessoa.";
     case "under_review":
       return "A movimentação está em análise.";
     case "canceled":

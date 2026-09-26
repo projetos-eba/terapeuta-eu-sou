@@ -73,7 +73,15 @@ select is((select payload #>> '{record,private_contact,phone}' from patient_deta
 select is(public.admin_get_operation_detail_v1('patients','b1400000-0000-4000-8000-000000000058') #>> '{record,private_contact,phoneCountryCode}',null::text,'missing patient DDI is not inferred from another profile or a default');
 select is((select payload #>> '{record,private_contact,postalCode}' from patient_detail_140),'01001000','address comes from the canonical account metadata');
 select ok((select payload::text not like '%must-not-leak%' from patient_detail_140),'raw metadata is never projected');
-select ok((select payload::text not like '%11987654321%' from suspended_list_140),'phone is not projected in list payloads');
+select is((select payload #>> '{rows,0,email}' from suspended_list_140),'admin-client-fixture-60@example.test','list projects the allowlisted account email for administrative contact');
+select is((select payload #>> '{rows,0,phone}' from suspended_list_140),'11987654321','list projects the allowlisted registration phone for administrative contact');
+select is((select payload #>> '{rows,0,phone_country_code}' from suspended_list_140),'55','list projects the registration DDI without account metadata');
+select ok((select payload::text not like '%must-not-leak%' from suspended_list_140),'list payload keeps raw metadata private');
+select is((public.admin_get_operation_module_v2('patients') #>> '{patientAnalytics,periodDays}'),'30','client analytics defaults to the last 30 complete calendar days');
+select is(jsonb_array_length(public.admin_get_operation_module_v2('patients')->'patientAnalytics'->'series'),30,'client growth returns one global aggregate per day in the selected period');
+select is((public.admin_get_operation_module_v2('patients','{"analyticsPeriod":90}') #>> '{patientAnalytics,periodDays}'),'90','client analytics accepts the 90-day period');
+select is(jsonb_array_length(public.admin_get_operation_module_v2('patients','{"analyticsPeriod":90}')->'patientAnalytics'->'series'),90,'client growth returns ninety global daily aggregates for the selected period');
+select is((public.admin_get_operation_module_v2('patients') #>> '{patientAnalytics,series,29,totalClients}')::integer,(select count(*)::integer from public.patient_profiles),'client growth cumulative total uses the full client base');
 reset role;
 select is((select count(*)::integer from public.admin_audit_events where source='admin-patient-booking-command' and request_id='client-suspend-request-140'),1,'suspension has a single audit event');
 select is((public.admin_get_operation_module_v2('patients') #>> '{metrics,recent-patients}')::integer,(select count(*)::integer from public.patient_profiles where created_at>=now()-interval '30 days'),'recent registrations use the full rolling period');

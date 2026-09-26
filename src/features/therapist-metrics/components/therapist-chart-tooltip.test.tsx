@@ -74,12 +74,14 @@ describe("TherapistChartTooltip", () => {
       <TherapistChartTooltip
         active
         label="Terapia cognitiva"
-        payload={[{ name: "Taxa de retorno", value: 62.5 }]}
+        payload={[{ name: "Proporção de pessoas que voltaram", value: 62.5 }]}
         valueFormatter={(value) => `${String(value).replace(".", ",")}%`}
       />,
     );
 
-    expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
+    expect(
+      screen.getByText("Proporção de pessoas que voltaram"),
+    ).toBeInTheDocument();
     expect(screen.getByText("62,5%")).toBeInTheDocument();
   });
 });

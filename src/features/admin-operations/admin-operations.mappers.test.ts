@@ -6,27 +6,61 @@ import {
 } from "./admin-operations.mappers";
 
 describe("admin operation mappers", () => {
+  it("maps allowlisted client list data for contact, registration and direct detail access", () => {
+    const [row] = mapAdminOperationRows({
+      module: "patients",
+      rows: [
+        {
+          account_status: "active",
+          created_at: "2026-09-12T10:00:00.000Z",
+          display_name: "Mariana Souza",
+          email: "mariana@example.test",
+          id: "client-1",
+          phone: "11987654321",
+          phone_country_code: "55",
+          ticket_count: 8,
+        },
+      ],
+    });
+
+    expect(row).toMatchObject({
+      detailHref: "/admin/pacientes/client-1",
+      email: "mariana@example.test",
+      id: "client-1",
+      title: "Mariana Souza",
+    });
+    expect(row?.fields).toEqual(
+      expect.arrayContaining([
+        { label: "ID", value: "client-1" },
+        { label: "Contato", value: "+55 (11) 98765-4321" },
+        { label: "Cadastro", value: "12/09/2026" },
+      ]),
+    );
+    expect(JSON.stringify(row)).not.toContain("ticket_count");
+  });
+
   it("maps professionals with public and operational fields", () => {
-    expect(
-      mapAdminOperationRows({
-        module: "professionals",
-        rows: [
-          {
-            id: "therapist-1",
-            is_accepting_bookings: true,
-            is_public: false,
-            email: "ana.oliveira@example.test",
-            plan: "premium_plus",
-            photo_url: "/images/avatar-terapeuta.jpeg",
-            public_name: "Ana Oliveira",
-            public_status: "draft",
-            slug: "ana-oliveira",
-            status: "approved",
-            updated_at: "2026-08-08T10:00:00.000Z",
-          },
-        ],
-      })[0],
-    ).toEqual(
+    const [row] = mapAdminOperationRows({
+      module: "professionals",
+      rows: [
+        {
+          id: "therapist-1",
+          is_accepting_bookings: true,
+          is_public: false,
+          email: "ana.oliveira@example.test",
+          plan: "premium_plus",
+          photo_url: "/images/avatar-terapeuta.jpeg",
+          public_name: "Ana Oliveira",
+          public_status: "draft",
+          slug: "ana-oliveira",
+          status: "approved",
+          created_at: "2026-08-06T10:00:00.000Z",
+          updated_at: "2026-08-08T10:00:00.000Z",
+        },
+      ],
+    });
+
+    expect(row).toEqual(
       expect.objectContaining({
         avatarUrl: "/images/avatar-terapeuta.jpeg",
         detailHref: "/admin/profissionais/therapist-1",
@@ -37,6 +71,10 @@ describe("admin operation mappers", () => {
         title: "Ana Oliveira",
       }),
     );
+    expect(row?.fields).toContainEqual({
+      label: "Cadastro",
+      value: "06/08/2026",
+    });
   });
 
   it("opens the current verification for a professional awaiting approval", () => {
@@ -58,6 +96,97 @@ describe("admin operation mappers", () => {
     );
   });
 
+  it("maps allowlisted professional registration data for the detail screen", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-26T10:00:00.000Z",
+      module: "professionals",
+      record: {
+        admin_main_data: {
+          birth_date: "1988-03-14",
+          email: "mariana.silva@example.test",
+          phone: "11987654321",
+          phone_country_code: "55",
+        },
+        created_at: "2026-08-12T10:00:00.000Z",
+        id: "therapist-1",
+        public_name: "Mariana Silva",
+      },
+    });
+
+    expect(detail.sections).toContainEqual({
+      fields: [
+        { label: "ID do profissional", value: "therapist-1" },
+        { label: "E-mail", value: "mariana.silva@example.test" },
+        { label: "Telefone", value: "+55 (11) 98765-4321" },
+        { label: "Data de nascimento", value: "14/03/1988" },
+        { label: "Data de cadastro", value: "12/08/2026" },
+      ],
+      title: "Dados principais",
+    });
+  });
+
+  it("keeps the professional email visible when the read model returns it directly", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-26T10:00:00.000Z",
+      module: "professionals",
+      record: {
+        created_at: "2026-08-12T10:00:00.000Z",
+        email: "mariana.silva@example.test",
+        id: "therapist-1",
+        public_name: "Mariana Silva",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "E-mail", value: "mariana.silva@example.test" },
+        ]),
+        title: "Dados principais",
+      }),
+    );
+  });
+
+  it("maps allowlisted identity and review fields for the verification queue", () => {
+    const [row] = mapAdminOperationRows({
+      module: "verifications",
+      rows: [
+        {
+          id: "verification-1",
+          publication_blockers: ["profile_incomplete"],
+          status: "changes_requested",
+          therapist_created_at: "2026-09-12T10:00:00.000Z",
+          therapist_email: "ana.oliveira@example.test",
+          therapist_name: "Ana Oliveira",
+          therapist_photo_url: "/images/ana.jpeg",
+          therapist_profile_id: "#TER-0001",
+          updated_at: "2026-09-16T09:20:00.000Z",
+        },
+      ],
+    });
+
+    expect(row).toMatchObject({
+      avatarUrl: "/images/ana.jpeg",
+      detailHref: "/admin/profissionais/verificacoes/verification-1",
+      email: "ana.oliveira@example.test",
+      statusLabel: "changes_requested",
+      title: "Ana Oliveira",
+    });
+    expect(row?.fields).toEqual(
+      expect.arrayContaining([
+        { label: "E-mail", value: "ana.oliveira@example.test" },
+        { label: "ID do terapeuta", value: "#TER-0001" },
+        { label: "Data de cadastro", value: "12/09/2026" },
+        {
+          label: "Pendência",
+          value: "Ajustes solicitados · perfil ainda não está 100% completo",
+        },
+      ]),
+    );
+  });
+
   it("opens the professional detail from an approved verification", () => {
     const [row] = mapAdminOperationRows({
       module: "verifications",
@@ -73,11 +202,10 @@ describe("admin operation mappers", () => {
 
     expect(row?.detailHref).toBe("/admin/profissionais/therapist-1");
     expect(row?.statusLabel).toBe("Aprovado · falta publicar");
-    expect(row?.fields).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ value: "therapist-1" }),
-      ]),
-    );
+    expect(row?.fields).toContainEqual({
+      label: "ID do terapeuta",
+      value: "therapist-1",
+    });
   });
 
   it("shows publication eligibility as success only after the profile is public", () => {
@@ -97,7 +225,7 @@ describe("admin operation mappers", () => {
     expect(row?.statusLabel).toBe("Publicado e elegível");
   });
 
-  it("keeps internal professional relationships out of verification detail fields", () => {
+  it("allowlists the professional identity needed in verification details", () => {
     const detail = mapAdminOperationDetail({
       auditEvents: [],
       generatedAt: "2026-08-15T02:00:00.000Z",
@@ -111,11 +239,37 @@ describe("admin operation mappers", () => {
     });
 
     expect(detail.relatedProfessionalId).toBe("therapist-1");
-    expect(detail.sections.flatMap((section) => section.fields)).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ value: "therapist-1" }),
-      ]),
-    );
+    expect(detail.sections).toContainEqual({
+      fields: [{ label: "ID do terapeuta", value: "therapist-1" }],
+      title: "Dados do profissional",
+    });
+  });
+
+  it("maps email and registration date in the allowlisted verification detail", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-26T10:00:00.000Z",
+      module: "verifications",
+      record: {
+        admin_verification_professional: {
+          created_at: "2026-09-12T10:00:00.000Z",
+          email: "ana.oliveira@example.test",
+          id: "#TER-0001",
+        },
+        id: "verification-1",
+        status: "submitted",
+        therapist_name: "Ana Oliveira",
+      },
+    });
+
+    expect(detail.sections).toContainEqual({
+      fields: [
+        { label: "E-mail", value: "ana.oliveira@example.test" },
+        { label: "ID do terapeuta", value: "#TER-0001" },
+        { label: "Data de cadastro", value: "12/09/2026" },
+      ],
+      title: "Dados do profissional",
+    });
   });
 
   it("does not expose review comments in admin moderation list rows", () => {
