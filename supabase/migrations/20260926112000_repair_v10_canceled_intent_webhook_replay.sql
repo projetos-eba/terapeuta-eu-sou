@@ -1,18 +1,15 @@
--- A Stripe cancellation performed by the session-closure worker emits a
--- payment_intent.canceled webhook after the same worker has already closed the
--- booking locally. Accept only that exact, fully terminal replay as a no-op.
--- Every non-terminal or divergent binding continues through the original
--- fail-closed validation.
-
+-- Repair the delayed payment_intent.canceled webhook patch for projects where
+-- the original migration version was recorded before its textual replacement
+-- could be applied. This is deliberately idempotent: a function that already
+-- contains the terminal replay guard is left untouched.
 do $migration$
 declare
   v_signature constant text :=
     'public.record_session_payment_intent_v10(uuid,uuid,uuid,bigint,text,text,text,integer,text,text,text,text,text,timestamptz)';
   v_procedure regprocedure;
   v_definition text;
-  -- Keep the anchor intentionally small. pg_get_functiondef() can normalize
-  -- surrounding whitespace, while this statement is the unique boundary
-  -- between the locked records and the fail-closed binding validation.
+  v_marker constant text :=
+    'The session-start closure owns the terminal transition.';
   v_anchor constant text :=
     'select * into v_booking from public.bookings where id = v_schedule.booking_id;';
   v_replacement constant text := $replacement$select * into v_booking from public.bookings where id = v_schedule.booking_id;
@@ -82,13 +79,15 @@ begin
   select pg_catalog.pg_get_functiondef(v_procedure::oid)
   into v_definition;
 
+  if position(v_marker in v_definition) > 0 then
+    return;
+  end if;
+
   v_hit_count := (
     length(v_definition) - length(replace(v_definition, v_anchor, ''))
   ) / length(v_anchor);
 
-  if v_hit_count <> 1
-    or position('The session-start closure owns the terminal transition.' in v_definition) > 0
-  then
+  if v_hit_count <> 1 then
     raise exception 'SESSION_PAYMENT_INTENT_V10_CANCELED_REPLAY_SCHEMA_DRIFT: %',
       v_signature using errcode = 'P0001';
   end if;
@@ -96,9 +95,3 @@ begin
   execute replace(v_definition, v_anchor, v_replacement);
 end;
 $migration$;
-
-comment on function public.record_session_payment_intent_v10(
-  uuid, uuid, uuid, bigint, text, text, text, integer, text, text, text,
-  text, text, timestamptz
-) is
-  'Registra o PaymentIntent V10 e aceita como no-op somente o cancelamento Stripe exatamente vinculado que ja foi encerrado localmente no inicio da sessao.';

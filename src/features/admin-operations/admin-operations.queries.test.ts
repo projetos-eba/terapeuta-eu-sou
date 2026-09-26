@@ -129,6 +129,83 @@ describe("admin operation queries", () => {
         label: "Suspensos",
         value: "suspended",
       });
+      expect(result.data.patientAnalytics).toMatchObject({
+        activityAge: [],
+        periodDays: 30,
+        series: [],
+        status: "unavailable",
+      });
+    }
+  });
+
+  it("requests and maps the global client analytics for the selected period", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: {},
+        page: { page: 1, pageSize: 12, total: 1, hasNext: false },
+        patientAnalytics: {
+          activityAge: [{ label: "Até 7 dias", value: 1 }],
+          periodDays: 90,
+          series: [
+            {
+              label: "01/09",
+              newRegistrations: 2,
+              totalClients: 100,
+            },
+          ],
+          status: "available",
+        },
+        rows: [
+          {
+            account_status: "active",
+            created_at: "2026-09-01T10:00:00.000Z",
+            display_name: "Cliente Analytics",
+            email: "cliente.analytics@example.test",
+            id: "patient-analytics",
+            phone: "11987654321",
+            phone_country_code: "55",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "patients",
+      searchParams: { analyticsPeriod: "90" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_operation_module_v2",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_module: "patients",
+          p_query: {
+            page: 1,
+            pageSize: 12,
+            analyticsPeriod: 90,
+          },
+        }),
+      }),
+    );
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.patientAnalytics).toEqual({
+        activityAge: [{ label: "Até 7 dias", value: 1 }],
+        periodDays: 90,
+        series: [
+          { label: "01/09", newRegistrations: 2, totalClients: 100 },
+        ],
+        status: "available",
+      });
+      expect(result.data.rows[0]).toMatchObject({
+        email: "cliente.analytics@example.test",
+        fields: expect.arrayContaining([
+          { label: "Contato", value: "+55 (11) 98765-4321" },
+          { label: "Cadastro", value: "01/09/2026" },
+        ]),
+      });
     }
   });
 

@@ -7,6 +7,12 @@ import type {
 
 export type AdminFinanceModuleKey = "payments" | "reports" | "subscriptions";
 
+export type AdminFinancePeriod = "7d" | "30d" | "90d";
+
+export type AdminFinanceListQuery = AdminListQuery & {
+  period?: AdminFinancePeriod;
+};
+
 export type AdminFinanceMetric = {
   description: string;
   key: string;
@@ -35,6 +41,7 @@ export type AdminFinancePageData = {
   description: string;
   emptyMessage: string;
   filterOptions: {
+    period?: AdminListOption[];
     sort: AdminListOption[];
     status: AdminListOption[];
   };
@@ -42,7 +49,7 @@ export type AdminFinancePageData = {
   metrics: AdminFinanceMetric[];
   listHref: string;
   page: AdminListPageInfo;
-  query: AdminListQuery;
+  query: AdminFinanceListQuery;
   rows: AdminFinanceRow[];
   rowsStatus: "available" | "forbidden" | "unavailable";
   rowsTitle: string;

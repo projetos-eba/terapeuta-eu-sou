@@ -89,20 +89,22 @@ export function TherapistMetricsPage({
   const profileViews = discoveryKpi(
     overview.discovery.status,
     overview.discovery.stages.profileViews,
+    "profileViews",
   );
   const bookingStarts = discoveryKpi(
     overview.discovery.status,
     overview.discovery.stages.bookingFlowStarts,
+    "bookingFlowStarts",
   );
   const returnRateKpi =
     returnRate?.status === "ready" && returnRate.value !== null
       ? {
-          copy: "Pessoas que realizaram mais de uma sessão",
+          copy: "Pessoas que retornaram para uma nova sessão",
           state: "ready" as const,
           value: `${formatNumber(returnRate.value)}%`,
         }
       : {
-          copy: "Disponível no Premium Plus quando houver dados suficientes",
+          copy: "Quando houver histórico suficiente, você poderá acompanhar quantas pessoas voltaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus.",
           state: "unavailable" as const,
           value: "-",
         };
@@ -138,7 +140,7 @@ export function TherapistMetricsPage({
           value: topTherapy.therapyName,
         }
       : {
-          copy: "Aparece quando houver dados suficientes para preservar a privacidade",
+          copy: "As terapias aparecerão aqui quando houver sessões concluídas suficientes para essa leitura.",
           state: "unavailable" as const,
           value: "-",
         };
@@ -148,29 +150,29 @@ export function TherapistMetricsPage({
       overview.discovery.status === "ready"
         ? overview.discovery.stages.profileViews
         : null,
-      "Coleta pública ainda não está ativa",
+      "Essa leitura aparecerá quando os dados estiverem disponíveis.",
     ),
     comparisonReference(
       "Interessados em agendar",
       overview.discovery.status === "ready"
         ? overview.discovery.stages.bookingFlowStarts
         : null,
-      "Coleta pública ainda não está ativa",
+      "Essa leitura aparecerá quando os dados estiverem disponíveis.",
     ),
     comparisonCounter(
-      "Sessões realizadas",
+      "Sessões concluídas",
       overview.counters.sessionsCompleted,
     ),
     returnRate?.status === "ready" && returnRate.value !== null
       ? comparisonSampled(
-          "Taxa de retorno",
+          "Pessoas que retornaram",
           returnRate.value,
           returnRate.previousValue,
         )
       : comparisonReference(
-          "Taxa de retorno",
+          "Pessoas que retornaram",
           null,
-          "Disponível com dados suficientes no Premium Plus",
+          "Quando houver histórico suficiente, você poderá acompanhar quantas pessoas retornaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus.",
         ),
     occupancy.status === "ready" && occupancy.current.percentage !== null
       ? comparisonSampled(
@@ -218,7 +220,7 @@ export function TherapistMetricsPage({
               overview.counters.sessionsCompleted.directionCopyKey,
             )}
             icon={CalendarCheck2}
-            label="Sessões realizadas"
+            label="Sessões concluídas"
             sparkline={sparkline}
             tone="cyan"
             value={formatMetricValue(
@@ -229,16 +231,16 @@ export function TherapistMetricsPage({
           />
           {data.therapist.plan === TherapistPlan.Premium ? (
             <TherapistLockedCard
-              description="Acompanhe a continuidade do cuidado e os sinais de retorno quando essa leitura fizer sentido para você."
+              description="Quando houver histórico suficiente, você poderá acompanhar quantas pessoas voltaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus."
               requiredPlan={TherapistPlan.PremiumPlus}
-              title="Taxa de retorno"
+              title="Pessoas que retornaram"
               variant="compact"
             />
           ) : (
             <MetricsKpiCard
               copy={returnRateKpi.copy}
               icon={RefreshCw}
-              label="Taxa de retorno"
+              label="Pessoas que retornaram"
               sparkline={[]}
               state={returnRateKpi.state}
               tone="warning"
@@ -257,7 +259,7 @@ export function TherapistMetricsPage({
           <MetricsKpiCard
             copy={therapyKpi.copy}
             icon={Sparkles}
-            label="Terapia mais realizada"
+            label="Terapias mais realizadas"
             sparkline={sparkline}
             state={therapyKpi.state}
             tone="danger"
@@ -266,8 +268,8 @@ export function TherapistMetricsPage({
         </div>
         <p className="mt-3 rounded-card border border-brand-cyan/20 bg-gradient-to-r from-brand-cyanSoft via-white to-status-successBg/60 px-4 py-3 text-sm font-semibold leading-5 text-tesText-secondary">
           {hasAnyActivity
-            ? "Os indicadores usam somente períodos completos e dados agregados do seu próprio trabalho."
-            : "Seus indicadores começam a ser preenchidos conforme o perfil recebe movimento, a agenda é utilizada e as sessões são concluídas."}
+            ? "As informações desta página consideram somente períodos completos e dados agrupados do seu próprio trabalho."
+            : "Essa leitura vai ficando mais clara conforme novas sessões forem concluídas."}
         </p>
       </section>
 
@@ -275,9 +277,9 @@ export function TherapistMetricsPage({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <MetricPanel
-          description="A jornada agregada desde a visualização do perfil até a sessão concluída."
+          description="Veja como as pessoas passam do encontro com seu perfil até uma sessão concluída."
           icon={Eye}
-          title="Funil de conversão"
+          title="Caminho até a sessão"
           tone="primary"
         >
           <MetricsFunnel
@@ -307,8 +309,8 @@ export function TherapistMetricsPage({
           />
           {overview.discovery.status !== "ready" ? (
             <MetricsVisualFootnote>
-              A estrutura do funil está pronta. Os números de descoberta só
-              aparecem após a ativação formal e segura dessa coleta.
+              Em breve, você poderá acompanhar como as pessoas encontram seu
+              perfil.
             </MetricsVisualFootnote>
           ) : null}
         </MetricPanel>
@@ -331,9 +333,9 @@ export function TherapistMetricsPage({
       {hasAnyActivity ? (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
           <MetricPanel
-            description="Grupos de continuidade são mostrados separadamente e não formam uma distribuição única."
+            description="Acompanhe as pessoas atendidas no período e veja quem está começando, retornando ou sem retorno recente."
             icon={UsersRound}
-            title="Pessoas acompanhadas"
+            title="Pessoas atendidas"
             tone="mint"
           >
             <PatientContinuityCards
@@ -344,9 +346,9 @@ export function TherapistMetricsPage({
           </MetricPanel>
 
           <MetricPanel
-            description="Terapias com mais sessões concluídas no período. Esta leitura não representa procura."
+            description="Terapias com mais sessões concluídas no período. Isso não indica quais são as mais procuradas."
             icon={Star}
-            title="Top terapias"
+            title="Terapias mais realizadas"
             tone="warning"
           >
             <TherapyRankingTable
@@ -380,20 +382,20 @@ export function TherapistMetricsPage({
           </MetricPanel>
 
           <MetricPanel
-            description="Situação final registrada para as sessões do período."
+            description="Veja como as sessões do período foram finalizadas."
             icon={CalendarCheck2}
-            title="Resultados das sessões"
+            title="Como as sessões terminaram"
             tone="danger"
           >
             <DistributionDonut
               centerLabel={`${sessions.outcomeDistribution.observedSample} sessões`}
               empty={sessions.outcomeDistribution.status !== "ready"}
-              emptyMessage="A composição aparece quando houver base suficiente para preservar a privacidade."
+              emptyMessage="A distribuição aparecerá quando houver sessões suficientes para essa leitura."
               items={sessions.outcomeDistribution.items.map((item) => ({
                 label: item.label,
                 value: item.value,
               }))}
-              label="Distribuição dos resultados das sessões"
+              label="Como as sessões terminaram"
             />
           </MetricPanel>
         </div>
@@ -406,14 +408,14 @@ export function TherapistMetricsPage({
             Como interpretar este painel
           </h2>
           <p className="mt-2 max-w-4xl text-sm font-semibold leading-6 text-tesText-secondary">
-            Observe tendências ao longo do tempo, use a ocupação para organizar
-            sua disponibilidade e acompanhe a continuidade sem comparar seu
-            trabalho ao de outros profissionais.
+            Acompanhe as mudanças ao longo do tempo, observe como sua agenda
+            está sendo utilizada e entenda a continuidade das sessões sem
+            comparar seu trabalho ao de outros profissionais.
           </p>
           <p className="mt-2 max-w-4xl text-sm font-semibold leading-6 text-tesText-secondary">
-            O dia atual fica de fora para evitar comparações incompletas. Alguns
-            dados só aparecem com pelo menos dez registros e a ocupação exige
-            histórico completo da agenda.
+            O dia de hoje não entra na comparação porque ainda está em
+            andamento. Alguns dados aparecem a partir de 10 registros, e a
+            leitura da agenda precisa de um período completo.
           </p>
         </div>
       </AppPageSection>
@@ -630,8 +632,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
   const highlights = agendaHighlights(heatmapPoints);
   const idleAvailability = idleAvailabilityLabel(occupancy);
   const isInitialSessionReading =
-    sessions.heatmap.status === "ready" &&
-    sessions.heatmap.observedSample < 10;
+    sessions.heatmap.status === "ready" && sessions.heatmap.observedSample < 10;
   const occupancyPercentage =
     occupancy.status === "ready" &&
     occupancy.current.percentage !== null &&
@@ -652,8 +653,8 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
               Agenda e horários
             </h2>
             <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-              Entenda como sua disponibilidade está sendo utilizada e em quais
-              horários as sessões se concentram.
+              Veja como sua disponibilidade está sendo aproveitada e em quais
+              dias e horários suas sessões acontecem com mais frequência.
             </p>
           </div>
         </div>
@@ -699,7 +700,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
 
         <div className="min-w-0 py-5 lg:px-6 lg:py-0">
           <p className="mb-3 text-sm font-extrabold text-brand-deep">
-            Intensidade das sessões por dia e horário
+            Quando suas sessões mais acontecem
           </p>
           <MetricsHeatmap
             emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período."
@@ -708,8 +709,8 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
           />
           {isInitialSessionReading ? (
             <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
-              Leitura inicial — o padrão fica mais claro conforme novas sessões
-              forem concluídas.
+              Essa leitura vai ficando mais clara conforme novas sessões forem
+              concluídas.
             </p>
           ) : null}
         </div>
@@ -728,17 +729,17 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
               )}
             />
             <AgendaStat
-              label="Melhores dias"
+              label="Dia com mais sessões"
               tone="mint"
               value={highlights.bestDays}
             />
             <AgendaStat
-              label="Horários de pico"
+              label="Horário com mais sessões"
               tone="warning"
               value={highlights.peakHour}
             />
             <AgendaStat
-              label="Horários ociosos"
+              label="Horário com menos sessões"
               tone="primary"
               value={idleAvailability}
             />
@@ -787,7 +788,7 @@ function MetricsPreviewGrid() {
     {
       copy: "Veja quais terapias concentram as sessões concluídas.",
       icon: Star,
-      title: "Top terapias",
+      title: "Terapias mais realizadas",
       tone: "warning" as const,
     },
     {
@@ -799,7 +800,7 @@ function MetricsPreviewGrid() {
     {
       copy: "Entenda a composição dos resultados registrados.",
       icon: UsersRound,
-      title: "Resultados das sessões",
+      title: "Como as sessões terminaram",
       tone: "mint" as const,
     },
   ];
@@ -870,7 +871,10 @@ function TherapyRankingTable({
           percentage: 0,
           sessions: 0,
           therapyId: `reference-${index + 1}`,
-          therapyName: index === 0 ? "Aguardando sessões" : "Sem dados ainda",
+          therapyName:
+            index === 0
+              ? "Ainda sem sessões suficientes"
+              : "Aguardando mais dados",
         }))
       : items.slice(0, 6);
   const rankingTones = [
@@ -897,7 +901,7 @@ function TherapyRankingTable({
   ];
   return (
     <div className="grid gap-3">
-      <ol aria-label="Ranking de terapias realizadas" className="grid gap-3">
+      <ol aria-label="Terapias mais realizadas" className="grid gap-3">
         {visualItems.map((item, index) => {
           const tone = rankingTones[index % rankingTones.length];
           return (
@@ -942,8 +946,8 @@ function TherapyRankingTable({
       </ol>
       {empty ? (
         <MetricsVisualFootnote>
-          As terapias aparecem aqui quando houver sessões concluídas suficientes
-          para preservar a privacidade.
+          As terapias aparecerão aqui quando houver sessões concluídas
+          suficientes para essa leitura.
         </MetricsVisualFootnote>
       ) : null}
     </div>
@@ -1111,17 +1115,17 @@ function PatientContinuityCards({
       <div className="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
         <div className="rounded-card bg-gradient-to-b from-status-successBg/70 to-white p-2">
           <DistributionDonut
-            centerLabel={`${formatNumber(peopleServed.value)} pessoas`}
+            centerLabel={formatPeopleCount(peopleServed.value)}
             compact
             empty={peopleServed.status !== "ready"}
-            emptyMessage="O total aparecerá quando houver pessoas acompanhadas no período."
+            emptyMessage="O total aparecerá quando houver pessoas atendidas no período."
             items={[
               {
-                label: "Pessoas acompanhadas",
+                label: "Pessoas atendidas",
                 value: peopleServed.value,
               },
             ]}
-            label="Total de pessoas acompanhadas no período"
+            label="Total de pessoas atendidas no período"
             palette="continuity"
             showLegend={false}
           />
@@ -1275,12 +1279,16 @@ function agendaHighlights(
     );
   }
   const bestDays = [...totalsByDay.entries()]
-    .sort(([leftDay, left], [rightDay, right]) => right - left || leftDay - rightDay)
+    .sort(
+      ([leftDay, left], [rightDay, right]) =>
+        right - left || leftDay - rightDay,
+    )
     .slice(0, 2)
     .map(([day]) => dayNames[day])
     .join(", ");
   const hours = [...totalsByHour.entries()].sort(
-    ([leftHour, left], [rightHour, right]) => right - left || leftHour - rightHour,
+    ([leftHour, left], [rightHour, right]) =>
+      right - left || leftHour - rightHour,
   );
   const peak = hours[0]?.[0];
 
@@ -1303,7 +1311,11 @@ function idleAvailabilityLabel(
 
   const byHour = new Map<
     number,
-    { availableMinutes: number; occupiedMinutes: number; offeredMinutes: number }
+    {
+      availableMinutes: number;
+      occupiedMinutes: number;
+      offeredMinutes: number;
+    }
   >();
 
   for (const point of occupancy.heatmap) {
@@ -1335,16 +1347,22 @@ function idleAvailabilityLabel(
       );
     })[0]?.[0];
 
-  return idle === undefined ? "Sem horários disponíveis" : `${idle}h – ${idle + 2}h`;
+  return idle === undefined
+    ? "Sem horários disponíveis"
+    : `${idle}h – ${idle + 2}h`;
 }
 
 function discoveryKpi(
   discoveryStatus: TherapistMetricsOverview["discovery"]["status"],
   metric: TherapistMetricsOverview["discovery"]["stages"]["profileViews"],
+  kind: "bookingFlowStarts" | "profileViews",
 ) {
   if (discoveryStatus !== "ready") {
     return {
-      copy: "Coleta pública indisponível nesta versão",
+      copy:
+        kind === "profileViews"
+          ? "Em breve, você poderá acompanhar como as pessoas encontram seu perfil."
+          : "Em breve, você poderá acompanhar quantas pessoas demonstraram interesse em agendar com você.",
       state: "unavailable" as const,
       value: "-",
     };
@@ -1395,6 +1413,10 @@ function formatNumber(value: number) {
   );
 }
 
+function formatPeopleCount(value: number) {
+  return `${formatNumber(value)} ${value === 1 ? "pessoa" : "pessoas"}`;
+}
+
 function formatPeriodRange(start: string, endExclusive: string) {
   const startDate = new Date(start);
   const endDate = new Date(endExclusive);
@@ -1411,11 +1433,11 @@ function segmentLabel(key: string) {
   return (
     (
       {
-        active: "Ativas",
-        inactive: "Inativas",
-        new: "Novas",
+        active: "Em acompanhamento",
+        inactive: "Sem retorno recente",
+        new: "Pessoas novas",
         paused: "Pausadas",
-        recurring: "Recorrentes",
+        recurring: "Pessoas que retornaram",
       } as Record<string, string>
     )[key] ?? key
   );

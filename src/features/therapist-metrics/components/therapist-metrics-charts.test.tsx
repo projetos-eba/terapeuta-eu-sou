@@ -19,15 +19,15 @@ describe("therapist metrics charts", () => {
           name: `Terapia ${index + 1}`,
           value: 60 + index,
         }))}
-        label="Taxa de retorno por terapia"
-        seriesLabel="Taxa de retorno"
+        label="Pessoas que retornaram por terapia"
+        seriesLabel="Proporção de pessoas que voltaram"
         valueSuffix="%"
       />,
     );
 
     expect(
       screen.getByRole("img", {
-        name: /Taxa de retorno por terapia: Terapia 1, 60%/,
+        name: /Pessoas que retornaram por terapia: Terapia 1, 60%/,
       }),
     ).toBeInTheDocument();
     expect(container.querySelector('[role="img"]')).toHaveStyle({

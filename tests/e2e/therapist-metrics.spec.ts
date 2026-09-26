@@ -34,15 +34,17 @@ test.describe("therapist metrics and reports", () => {
       page.getByRole("heading", { name: "Interessados em agendar" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Sessões realizadas" }),
+      page.getByRole("heading", { name: "Sessões concluídas" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Taxa de retorno" }),
+      page.getByRole("heading", { name: "Pessoas que retornaram" }),
     ).toBeVisible();
     await expect(
-      page.getByText(
-        "A estrutura do funil está pronta. Os números de descoberta só aparecem após a ativação formal e segura dessa coleta.",
-      ),
+      page
+        .getByText(
+          "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
+        )
+        .first(),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Ocupação da agenda" }),
@@ -74,10 +76,10 @@ test.describe("therapist metrics and reports", () => {
     await expect(
       page.getByRole("heading", { name: "Movimento das sessões" }),
     ).toBeVisible();
-    await expect(page.getByText("Presença operacional")).toBeVisible();
+    await expect(page.getByText("Comparecimento às sessões")).toBeVisible();
     await expect(
       page.getByRole("heading", {
-        name: "Distribuição por dia e horário",
+        name: "Quando suas sessões mais acontecem",
       }),
     ).toBeVisible();
 
@@ -93,7 +95,9 @@ test.describe("therapist metrics and reports", () => {
         name: "Continuidade do acompanhamento",
       }),
     ).toBeVisible();
-    await expect(page.getByText("Favoritos que viraram sessão")).toBeVisible();
+    await expect(
+      page.getByText("Favoritos que levaram a uma sessão"),
+    ).toBeVisible();
   });
 
   test("shows point details in the sessions chart tooltip", async ({
@@ -212,7 +216,7 @@ test.describe("therapist metrics visual states", () => {
 
     const sessionsCard = page
       .getByRole("article")
-      .filter({ hasText: "Sessões realizadas" });
+      .filter({ hasText: "Sessões concluídas" });
     await expect(sessionsCard.getByText("12", { exact: true })).toBeVisible();
     await expect(sessionsCard.locator(".recharts-tooltip-wrapper")).toHaveCount(
       0,
@@ -228,7 +232,7 @@ test.describe("therapist metrics visual states", () => {
       expect.arrayContaining(["primary", "mint", "cyan", "warning", "danger"]),
     );
     await expect(
-      page.getByRole("heading", { name: "Top terapias" }),
+      page.getByRole("heading", { name: "Terapias mais realizadas" }),
     ).toBeVisible();
     await expect(
       page.getByLabel("Mapa de calor de sessões por dia e horário"),
@@ -251,24 +255,28 @@ test.describe("therapist metrics visual states", () => {
     await expect(
       page
         .getByRole("article")
-        .filter({ hasText: "Sessões realizadas" })
+        .filter({ hasText: "Sessões concluídas" })
         .getByText("22", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Avaliações recebidas")).toHaveCount(0);
     await expect(page.getByText("Insights & oportunidades")).toHaveCount(0);
 
     await page.goto("/terapeuta/insights?tab=sessions&period=90");
-    await expect(page.getByText(/Atual · 27 de mai\. – 24 de ago\./)).toBeVisible();
-    await expect(page.getByText(/Anterior · 26 de fev\. – 26 de mai\./)).toBeVisible();
+    await expect(
+      page.getByText(/Atual · 27 de mai\. – 24 de ago\./),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Anterior · 26 de fev\. – 26 de mai\./),
+    ).toBeVisible();
 
     await page.goto("/terapeuta/insights?tab=interest&period=30");
     const peopleChart = page.getByLabel(
-      "Evolução da base acompanhada no período",
+      "Evolução das pessoas atendidas no período",
     );
     await expect(peopleChart).toBeVisible();
     await peopleChart.locator(".recharts-area-dot").first().hover();
     await expect(
-      page.getByRole("tooltip").filter({ hasText: "Base acompanhada" }),
+      page.getByRole("tooltip").filter({ hasText: "Pessoas atendidas" }),
     ).toBeVisible();
     await expect(page.getByRole("tooltip")).toContainText("Novas pessoas");
   });

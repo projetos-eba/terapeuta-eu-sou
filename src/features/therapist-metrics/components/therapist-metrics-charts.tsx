@@ -345,8 +345,8 @@ export function PeopleEvolutionChart({
       <div
         aria-label={
           empty
-            ? "Evolução da base acompanhada: ainda sem dados"
-            : "Evolução da base acompanhada no período"
+            ? "Evolução das pessoas atendidas: ainda sem dados"
+            : "Evolução das pessoas atendidas no período"
         }
         className="h-[250px] w-full"
         role="img"
@@ -419,7 +419,7 @@ export function PeopleEvolutionChart({
               }}
               fill="url(#peopleArea)"
               isAnimationActive={false}
-              name="Base acompanhada"
+              name="Pessoas atendidas"
               stroke={colors.primary}
               strokeWidth={3}
               type="monotone"
@@ -451,7 +451,7 @@ export function PeopleEvolutionChart({
 
 export function TherapyBarsChart({
   items,
-  label = "Ranking de terapias por sessões",
+  label = "Terapias mais realizadas",
   seriesLabel = "Sessões",
   valueSuffix = "",
 }: {
@@ -794,7 +794,7 @@ export function MetricsFunnel({
     .join("; ");
   return (
     <ol
-      aria-label={`Funil de conversão. ${accessibleSummary}`}
+      aria-label={`Caminho até a sessão. ${accessibleSummary}`}
       className="grid gap-3"
     >
       {stages.map((stage, index) => (

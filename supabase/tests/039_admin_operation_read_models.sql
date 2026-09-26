@@ -1,6 +1,6 @@
 begin;
 
-select plan(39);
+select plan(42);
 
 select ok(
   to_regprocedure(
@@ -448,6 +448,40 @@ select is(
   ) ? 'legal_name',
   false,
   'professional detail does not expose legal name'
+);
+
+select ok(
+  (
+    public.admin_get_operation_detail_v1(
+      'professionals',
+      (select id from public.therapist_profiles limit 1)
+    ) -> 'record'
+  ) ? 'admin_main_data',
+  'professional detail returns the allowlisted registration-data container'
+);
+
+select ok(
+  (
+    public.admin_get_operation_detail_v1(
+      'professionals',
+      (select id from public.therapist_profiles limit 1)
+    ) -> 'record' -> 'admin_main_data'
+  ) ?& array['email', 'phone', 'phone_country_code', 'birth_date'],
+  'professional detail exposes only the required registration-data keys'
+);
+
+select is(
+  coalesce(
+    (
+      public.admin_get_operation_detail_v1(
+        'professionals',
+        (select id from public.therapist_profiles limit 1)
+      ) -> 'record' -> 'admin_main_data'
+    ) ? 'metadata',
+    false
+  ),
+  false,
+  'professional detail does not expose raw registration metadata'
 );
 
 select is(
