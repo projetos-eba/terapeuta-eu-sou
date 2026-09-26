@@ -1,6 +1,6 @@
 begin;
 
-select plan(118);
+select plan(134);
 
 insert into public.availability_exceptions (
   id, therapist_profile_id, service_id, starts_at, ends_at, is_available,
@@ -131,6 +131,14 @@ values
     'c1000000-0000-4000-8000-000000000001',
     'd1000000-0000-4000-8000-000000000001',
     '2099-09-25 13:00:00+00', '2099-09-25 13:50:00+00',
+    'America/Sao_Paulo', 'draft', 'not_started', now()
+  ),
+  (
+    'b1150000-0000-4000-8000-000000000017',
+    'b1000000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    '2099-09-26 13:00:00+00', '2099-09-26 13:50:00+00',
     'America/Sao_Paulo', 'draft', 'not_started', now()
   );
 
@@ -1030,6 +1038,156 @@ select is(
   ) ->> 'reason',
   'booking_not_retryable',
   'the setup-backed payment stays outside the expired Checkout retry path'
+);
+
+select lives_ok(
+  $$select public.prepare_session_payment_v10(
+    'b1150000-0000-4000-8000-000000000017',
+    (select id from public.stripe_customers where profile_id = 'bbbbbbbb-0000-4000-8000-000000000010' and role = 'patient' and environment = 'test')
+  )$$,
+  'the terminal-cancellation fixture starts with an isolated V10 payment'
+);
+select is(
+  public.swap_session_payment_checkout_v10(
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select version from public.bookings where id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', null, 'cs_test_v10_115_terminal_cancel',
+    17000, 0, 17000, 'scheduled',
+    null, null, null, null, null, 'tes:v10:promo:115:terminal-cancel'
+  ) ->> 'totalAmountCents',
+  '17000',
+  'the terminal-cancellation fixture preserves the frozen amount'
+);
+select lives_ok(
+  $$insert into public.session_payment_attempts(
+    session_payment_id, attempt_kind, idempotency_key, status,
+    stripe_checkout_session_id
+  ) values (
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'initial_hold', 'tes:v10:attempt:115:terminal-cancel', 'checkout_created',
+    'cs_test_v10_115_terminal_cancel'
+  )$$,
+  'the terminal-cancellation fixture records its signed checkout attempt'
+);
+select is(
+  public.complete_session_payment_setup_v10(
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select version from public.bookings where id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'cs_test_v10_115_terminal_cancel', 'cus_test_v10_115_1',
+    'seti_test_v10_115_terminal_cancel', 'pm_test_v10_115_terminal_cancel',
+    'tes-session-off-session-consent-v1',
+    'evt_test_v10_115_terminal_cancel_setup', '2099-09-01 10:00:00+00'
+  ) ->> 'status',
+  'scheduled',
+  'the terminal-cancellation fixture creates its immutable schedule'
+);
+select is(
+  jsonb_array_length((public.claim_due_session_payment_schedules_v10(
+    '2099-09-25 13:01:00+00',
+    'b1150000-0000-4000-8000-000000000094', 10, 5
+  )) -> 'claims'),
+  1,
+  'the terminal-cancellation fixture is claimed once at T-24'
+);
+select is(
+  public.record_session_payment_intent_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    (select booking_version from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'pi_test_v10_115_terminal_cancel', 'requires_action', 17000, 'brl',
+    'cus_test_v10_115_1', 'pm_test_v10_115_terminal_cancel', null, null, null
+  ) ->> 'scheduleStatus',
+  'requires_customer_action',
+  'the terminal-cancellation fixture binds the Stripe PaymentIntent before closure'
+);
+select is(
+  public.close_unpaid_session_payment_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    'canceled', '2099-09-26 13:00:00+00'
+  ) ->> 'applied',
+  'true',
+  'the session-start worker closes the Stripe-canceled payment first'
+);
+select is(
+  (select financial_status::text from public.session_payments
+   where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+  'canceled',
+  'the canonical payment is terminal before the delayed webhook arrives'
+);
+select is(
+  (select status::text from public.bookings
+   where id = 'b1150000-0000-4000-8000-000000000017'),
+  'cancelled_by_payment',
+  'the terminal cancellation releases the booking before webhook replay'
+);
+select is(
+  public.record_session_payment_intent_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    (select booking_version from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'pi_test_v10_115_terminal_cancel', 'canceled', 17000, 'brl',
+    'cus_test_v10_115_1', 'pm_test_v10_115_terminal_cancel', null, null, null
+  ) ->> 'scheduleStatus',
+  'canceled',
+  'the delayed cancellation webhook is accepted as the same terminal state'
+);
+select is(
+  public.record_session_payment_intent_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    (select booking_version from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'pi_test_v10_115_terminal_cancel', 'canceled', 17000, 'brl',
+    'cus_test_v10_115_1', 'pm_test_v10_115_terminal_cancel', null, null, null
+  ) ->> 'applied',
+  'false',
+  'replaying the same cancellation webhook is an idempotent no-op'
+);
+select is(
+  (select status from public.session_payment_schedules
+   where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+  'canceled',
+  'the webhook replay cannot reopen the charge schedule'
+);
+select is(
+  (select count(*)::integer from public.session_transfer_jobs
+   where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+  0,
+  'the terminal replay cannot create a therapist Transfer obligation'
+);
+select is(
+  (select count(*)::integer from public.notifications
+   where event_key like 'session-payment-closure:%'
+     and href like '%b1150000-0000-4000-8000-000000000017'),
+  2,
+  'the terminal replay cannot duplicate closure notifications'
+);
+select throws_ok(
+  $$select public.record_session_payment_intent_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    (select booking_version from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'pi_test_v10_115_terminal_cancel_other', 'canceled', 17000, 'brl',
+    'cus_test_v10_115_1', 'pm_test_v10_115_terminal_cancel', null, null, null
+  )$$,
+  '23514', 'SESSION_PAYMENT_INTENT_V10_BINDING_MISMATCH',
+  'a different canceled PaymentIntent remains fail-closed after terminal closure'
+);
+select throws_ok(
+  $$select public.record_session_payment_intent_v10(
+    (select id from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    (select id from public.session_payments where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'b1150000-0000-4000-8000-000000000017',
+    (select booking_version from public.session_payment_schedules where booking_id = 'b1150000-0000-4000-8000-000000000017'),
+    'test', 'pi_test_v10_115_terminal_cancel', 'canceled', 17001, 'brl',
+    'cus_test_v10_115_1', 'pm_test_v10_115_terminal_cancel', null, null, null
+  )$$,
+  '23514', 'SESSION_PAYMENT_INTENT_V10_BINDING_MISMATCH',
+  'a canceled PaymentIntent with a different amount remains fail-closed'
 );
 
 select lives_ok(
