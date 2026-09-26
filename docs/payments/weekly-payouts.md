@@ -215,13 +215,24 @@ pode ser retirada da contagem de itens sem associação quando a consulta do
 Refund à Stripe comprovar a Charge de origem, a Balance Transaction exata do
 estorno, status concluído, moeda BRL e valor integral oposto. A reconciliação
 confere novamente a unicidade do par. Sem vínculo TES, essa prova é suficiente.
-Se o crédito pertence a um Transfer TES, a exclusão exige um Transfer direto
-V10 em estado `reversed`, os dois identificadores conectados exatos, um único
-reembolso integral conciliado para a sessão e uma única reversão integral
-bem-sucedida para o Transfer. Reversão parcial, Transfer ativo, múltiplos
-vínculos ou evidência incompleta permanecem incidentes críticos. Os IDs e a
-classificação do par ficam no Payout para auditoria. A exclusão não cria
-alocação, lançamento no ledger nem comunicação de repasse.
+Se o crédito pertence a um Transfer TES, a classificação exige um Transfer
+direto V10 em estado `reversed`, os dois identificadores conectados exatos, um
+único reembolso integral conciliado para a sessão e uma única reversão integral
+bem-sucedida para o Transfer. A cronologia decide a apresentação:
+
+- quando reembolso e reversão ocorreram antes de `payout.paid`, o par é neutro
+  para aquele Payout e não recebe alocação bancária;
+- quando ambos ocorreram somente depois de `payout.paid`, o Payout recebido e
+  sua composição histórica são preservados. Apenas o débito posterior é
+  classificado separadamente na auditoria da conta conectada.
+
+Reversão parcial, cronologia cruzada, Transfer ativo, múltiplos vínculos ou
+evidência incompleta permanecem incidentes críticos. O histórico do terapeuta
+não recebe um grupo “Em análise” para o segundo caso, nem atribui o débito a um
+próximo repasse antes de a Stripe criar e reconciliar um novo Payout. Isso evita
+previsão fictícia e dupla contabilização. Os IDs e a classificação ficam no
+Payout para auditoria; a correção de atribuição não cria movimento Stripe nem
+novo lançamento no ledger.
 
 Um incidente `session_direct_transfer_attention` anterior ao sucesso do
 Transfer V10 pode ser resolvido quando o mesmo job possui pagamento pago,

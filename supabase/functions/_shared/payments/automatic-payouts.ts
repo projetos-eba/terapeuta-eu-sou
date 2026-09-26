@@ -48,6 +48,7 @@ export function sanitizePayoutBalanceTransaction(
   return {
     amount: transaction.amount,
     available_on: transaction.available_on,
+    created: transaction.created,
     currency: transaction.currency,
     id: transaction.id,
     net: transaction.net,

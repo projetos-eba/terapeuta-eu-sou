@@ -763,6 +763,10 @@ Todas as métricas devem ler a política e a origem do pagamento.
   obrigação, Transfer ou taxa de cartão.
 - Dívida e compensação devem aparecer separadamente do valor bruto da sessão.
 - Reembolso e Reversal não podem ser somados duas vezes.
+- Uma reversão integral posterior a um Payout já pago não apaga o recebimento
+  bancário histórico. O débito da conta conectada permanece separado e só pode
+  compor um Payout futuro quando houver vínculo Stripe reconciliado; a projeção
+  não cria antecipadamente um grupo de repasse “Em análise”.
 - Confirmação e avaliação continuam em métricas de atendimento, sem alterar
   métricas financeiras.
 - Forecasts, resumo, recebimentos, repasses e admin devem suportar V9/V10 na

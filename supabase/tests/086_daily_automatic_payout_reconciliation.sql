@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(40);
+select plan(44);
 
 select ok(
   exists (
@@ -399,8 +399,15 @@ insert into public.stripe_transfer_reversals (
 ) values (
   'fb200000-0000-4000-8000-000000000010',
   'trr_auto_reversed_v10', 8500, 'BRL', 'refund', 'succeeded',
-  '{"paymentFlowVersion":"v10"}'::jsonb
-);
+   '{"paymentFlowVersion":"v10"}'::jsonb
+ );
+
+do $$ begin
+  perform public.reconcile_session_transfer_reversal_v10(
+    'tr_auto_reversed_v10', 'trr_auto_reversed_v10', 8500, 'BRL',
+    'evt_auto_reversed_v10_before_payout', '2026-08-25 05:20:00+00'
+  );
+end $$;
 
 do $$ begin
   perform public.reconcile_automatic_stripe_payout_v2(
@@ -588,6 +595,58 @@ select is(
     where payout.stripe_payout_id='po_auto_many_1'),
   2,
   'replaying a neutral pair never duplicates Transfer allocations'
+);
+
+-- The same provider pair has a different meaning when both reversal events
+-- happened only after the bank Payout was paid. The bank history is immutable;
+-- the connected-balance debit remains a later adjustment.
+update public.stripe_payouts
+set amount_cents = 26100
+where stripe_payout_id = 'po_auto_many_1';
+update public.session_refunds
+set processed_at = '2026-08-27 10:03:00+00'
+where stripe_refund_id = 're_auto_reversed_v10';
+update public.financial_ledger_entries
+set occurred_at = '2026-08-27 10:03:00+00'
+where entry_type = 'transfer_reversal'
+  and source_external_id = 'trr_auto_reversed_v10';
+
+do $$ begin
+  perform public.reconcile_automatic_stripe_payout_v2(
+    'po_auto_many_1', 'acct_tes_local_weekly_payout_fixture',
+    jsonb_build_array(
+      jsonb_build_object('id','txn_auto_many_a','source','py_auto_many_a','type','payment','amount',9600,'net',9600,'currency','brl'),
+      jsonb_build_object('id','txn_auto_many_b1','source','py_auto_many_b1','type','payment','amount',8000,'net',8000,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10','source','py_auto_reversed_v10','type','payment','amount',8500,'net',8500,'currency','brl'),
+      jsonb_build_object('id','txn_auto_reversed_v10_refund','source','pyr_auto_reversed_v10','type','payment_refund','amount',-8500,'net',-8500,'currency','brl','verified_refund_charge','py_auto_reversed_v10','created',extract(epoch from '2026-08-27 10:03:00+00'::timestamptz)::bigint)
+    ), '2026-08-27 10:04:00+00'
+  );
+end $$;
+
+select is(
+  (select allocation_status from public.stripe_payouts
+   where stripe_payout_id = 'po_auto_many_1'),
+  'completed',
+  'a late reversal preserves the already paid Payout as fully allocated'
+);
+select is(
+  (select neutral_transaction_pairs -> 0 ->> 'classification'
+   from public.stripe_payouts where stripe_payout_id = 'po_auto_many_1'),
+  'tes_v10_post_payout_reversal',
+  'the late balance debit remains explicitly classified for audit'
+);
+select is(
+  (select count(*)::integer
+   from public.stripe_payout_transfer_allocations
+   where stripe_transfer_id = 'fb200000-0000-4000-8000-000000000010'),
+  1,
+  'the original Transfer keeps exactly one historical bank allocation'
+);
+select is(
+  (select unmatched_transaction_count from public.stripe_payouts
+   where stripe_payout_id = 'po_auto_many_1'),
+  0,
+  'the recognized late debit does not leave the historical Payout under review'
 );
 
 select ok(

@@ -249,6 +249,13 @@ Edge Functions:
   active, partial or ambiguous reversals remain unmatched. Persist pair
   identifiers and classification for audit. Unrelated zero-sum movements
   without provider proof remain unmatched and block bank completion.
+- Chronology is part of that proof. If the full Refund and Transfer Reversal
+  occurred only after a reconciled Payout was already `paid`, preserve the
+  original Transfer allocation and bank history. Classify the later balance
+  debit separately; do not turn the received Payout into therapist-visible
+  review and do not guess which future Payout will absorb the debit. A future
+  composition may reflect it only after Stripe creates and reconciles that
+  Payout with exact provider evidence.
 - A V10 Transfer success may resolve its earlier operational attention incident
   while its job remains `pending_source`. That job advances to bank-paid only
   after a fully allocated paid Payout; never conflate alert resolution with
