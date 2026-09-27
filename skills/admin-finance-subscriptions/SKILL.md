@@ -73,6 +73,10 @@ Do not send generic `select *` payloads to React.
 - Commission amounts are snapshot values: new session payments use the active
   15% TES policy while historical 20% records remain immutable and visible as
   their original financial evidence.
+- O filtro administrativo expõe todos os estados canônicos do V10:
+  `pending`, `processing`, `paid`, `partially_refunded`, `refunded`,
+  `disputed`, `failed` e `canceled`. Reembolso parcial permanece um estado
+  válido e separado de reembolso integral.
 - Frontend copy for `/admin/pagamentos` must avoid technical labels such as
   read model, Stripe payloads, ledger, DTOs, internal guardrails or
   configuration failures.
@@ -88,6 +92,9 @@ Do not send generic `select *` payloads to React.
 - `/admin/assinaturas` uses `AdminSubscriptionsPage`, with four primary KPIs,
   complementary indicators, plan distribution for the visible page and
   responsive desktop/mobile records.
+- O filtro de Assinaturas acompanha integralmente o enum canônico, incluindo
+  `incomplete_expired` e `paused`; a ausência de registros não remove a opção
+  nem transforma um estado válido em legado.
 - Plan distribution is derived only from `data.rows`; label it as the current
   page rather than a platform-wide total.
 - Payment, transfer, subscription and invoice statuses must be translated to

@@ -15950,6 +15950,10 @@ export type Database = {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
+      admin_get_sessions_module_v1: {
+        Args: { p_query?: Json }
+        Returns: Json
+      }
       admin_get_operation_module_v2_before_patient_restrictions: {
         Args: { p_module: string; p_query?: Json }
         Returns: Json

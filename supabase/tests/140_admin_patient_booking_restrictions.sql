@@ -81,7 +81,11 @@ select is((public.admin_get_operation_module_v2('patients') #>> '{patientAnalyti
 select is(jsonb_array_length(public.admin_get_operation_module_v2('patients')->'patientAnalytics'->'series'),30,'client growth returns one global aggregate per day in the selected period');
 select is((public.admin_get_operation_module_v2('patients','{"analyticsPeriod":90}') #>> '{patientAnalytics,periodDays}'),'90','client analytics accepts the 90-day period');
 select is(jsonb_array_length(public.admin_get_operation_module_v2('patients','{"analyticsPeriod":90}')->'patientAnalytics'->'series'),90,'client growth returns ninety global daily aggregates for the selected period');
-select is((public.admin_get_operation_module_v2('patients') #>> '{patientAnalytics,series,29,totalClients}')::integer,(select count(*)::integer from public.patient_profiles),'client growth cumulative total uses the full client base');
+select is(
+  (public.admin_get_operation_module_v2('patients') #>> '{patientAnalytics,series,29,totalClients}')::integer,
+  (select (payload->>'total-patients')::integer from metrics_before_140),
+  'client growth cumulative total uses the full client base'
+);
 reset role;
 select is((select count(*)::integer from public.admin_audit_events where source='admin-patient-booking-command' and request_id='client-suspend-request-140'),1,'suspension has a single audit event');
 select is((public.admin_get_operation_module_v2('patients') #>> '{metrics,recent-patients}')::integer,(select count(*)::integer from public.patient_profiles where created_at>=now()-interval '30 days'),'recent registrations use the full rolling period');
