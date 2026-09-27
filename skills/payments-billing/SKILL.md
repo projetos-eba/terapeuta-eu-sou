@@ -161,7 +161,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   authorization. On `payment_intent.amount_capturable_updated`, the
   service-role claim RPC locks therapist then patient, revalidates the current
   attempt and slot, and only the winner captures. A loser cancels the
-  authorization and records `slot_conflict`.
+  authorization and records `slot_conflict`. Signed paid events for a
+  `payment_retry` must repeat that same claim before financial confirmation so
+  a missing or out-of-order capturable event can recover a still-free session.
+  The replay is idempotent after a successful claim and must fail closed,
+  without Transfer, when another booking already occupies the interval.
 - A signed session dispute blocks new releases immediately but never rewrites
   completed Transfer/payout history. Therapist recovery is V10-only and starts
   only after a definitive `lost`: reconcile one exact proportional Transfer
