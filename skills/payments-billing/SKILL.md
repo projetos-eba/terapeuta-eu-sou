@@ -154,12 +154,20 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
-- Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
-  database deadline is five minutes; for `payment_retry`, no slot is occupied
-  before authorization. On `payment_intent.amount_capturable_updated`, the
+- Legacy V9 Session Checkout and every `payment_retry` use
+  `capture_method=manual`; initial V10 Checkout remains automatic because its
+  five-minute hold still owns the slot. For `initial_hold`, the database
+  deadline is five minutes; for `payment_retry`, no slot is occupied before
+  authorization. On `payment_intent.amount_capturable_updated`, the
   service-role claim RPC locks therapist then patient, revalidates the current
   attempt and slot, and only the winner captures. A loser cancels the
   authorization and records `slot_conflict`.
+- A signed session dispute blocks new releases immediately but never rewrites
+  completed Transfer/payout history. Therapist recovery is V10-only and starts
+  only after a definitive `lost`: reconcile one exact proportional Transfer
+  Reversal, then create debt only for the residual exposure. `won` restores the
+  prior/refund-compatible financial state. Ambiguous provider writes are
+  terminally quarantined for reconciliation and must never be retried blindly.
 - A consumed initial hold without persisted Stripe Checkout must be released by
   `cancel_unstarted_initial_checkout_v1`; maintenance also sweeps expired
   bootstrap orphans. Never cancel when a Checkout Session is already persisted.

@@ -32,6 +32,20 @@ export function requiresLegacyRetryPreflight(input: {
   return input.mode === "payment_retry" && input.paymentFlowVersion !== "v10";
 }
 
+export function resolveSessionCaptureMethod(input: {
+  mode: ReservationCheckoutMode;
+  paymentFlowVersion?: string | null;
+}): "manual" | undefined {
+  // A retry is created only after the original hold released the slot. Stripe
+  // must authorize first so the signed webhook can atomically reclaim the
+  // therapist and patient calendars before capturing any money.
+  if (input.mode === "payment_retry") return "manual";
+
+  // Preserve the established V10 initial-checkout behavior. Legacy V9 keeps
+  // its existing manual-capture contract for every checkout mode.
+  return input.paymentFlowVersion === "v10" ? undefined : "manual";
+}
+
 export function shouldReusePersistedPaymentRetryCheckout(input: {
   checkoutSessionId?: string | null;
   mode: ReservationCheckoutMode;
