@@ -1,5 +1,5 @@
 begin;
-select plan(21);
+select plan(22);
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -461,6 +461,13 @@ select is(
      = 'b1480000-0000-4000-8000-000000000021'),
   1,
   'the received session is not duplicated into an analysis group'
+);
+select is(
+  (public.get_private_therapist_payouts_v9(
+    current_date - 10, current_date, 1, 1, 'America/Sao_Paulo', 15
+  ) #>> '{summary,receivedCents}')::integer,
+  21000,
+  'received summary includes every bank allocation regardless of history pagination'
 );
 select ok(
   (public.get_private_therapist_payouts_v9(
