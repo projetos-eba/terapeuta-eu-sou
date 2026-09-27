@@ -365,7 +365,13 @@ o SetupIntent e criar a agenda T-24. Falha entre provedor e persistência expira
 a nova Checkout e não reabre a reserva. Recarregar uma retomada já aberta
 recupera e reutiliza a mesma Checkout Session persistida, sem criar uma tentativa
 irmã nem substituir sua autoridade. Repetição usa a mesma chave
-idempotente. O
+idempotente. Como proteção contra entrega ausente ou fora de ordem do evento
+capturável, os eventos assinados de pagamento aprovado de uma `payment_retry`
+repetem o mesmo claim canônico antes de confirmar o pagamento. O replay é
+idempotente quando o slot já foi reivindicado. Se o horário tiver sido ocupado
+por outra reserva, o claim falha fechado: o webhook não confirma a reserva, não
+cria obrigação de Transfer e exige conciliação do pagamento capturado, sem
+reabrir uma sessão sobreposta. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
