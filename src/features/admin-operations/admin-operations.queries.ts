@@ -948,28 +948,31 @@ async function fetchAdminOperationReadModel({
 }): Promise<AdminOperationReadResult> {
   try {
     const { rating, ...baseQuery } = toAdminListRpcQuery(query);
-    const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_operation_module_v2`,
-      {
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-          p_module: module,
-          p_query: {
-            ...baseQuery,
-            ...(module === "reviews" && rating ? { rating } : {}),
-            ...(patientAnalyticsPeriod
-              ? { analyticsPeriod: patientAnalyticsPeriod }
-              : {}),
-          },
-        }),
+    const rpcName =
+      module === "sessions"
+        ? "admin_get_sessions_module_v1"
+        : "admin_get_operation_module_v2";
+    const rpcQuery = {
+      ...baseQuery,
+      ...(module === "reviews" && rating ? { rating } : {}),
+      ...(patientAnalyticsPeriod
+        ? { analyticsPeriod: patientAnalyticsPeriod }
+        : {}),
+    };
+    const response = await fetch(`${config.url}/rest/v1/rpc/${rpcName}`, {
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    );
+      method: "POST",
+      body: JSON.stringify(
+        module === "sessions"
+          ? { p_query: rpcQuery }
+          : { p_module: module, p_query: rpcQuery },
+      ),
+    });
 
     if (response.status === 401 || response.status === 403) {
       logAdminOperationReadFailure({

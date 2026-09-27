@@ -41,8 +41,11 @@ profissionais, verificações, clientes/pacientes, sessões, suporte e avaliaç�
 - Detalhe dedicado de suporte: `AdminSupportDetailPage`
 - Consulta compartilhada: `getAdminOperationPage`
 - Mapeadores: `mapAdminOperationRows`
-- Read model: `admin_get_operation_module_v2(p_module, p_query)` para listas
-  com `search`, `status`, `sort`, `page` e `pageSize`.
+- Read model geral: `admin_get_operation_module_v2(p_module, p_query)` para
+  listas com `search`, `status`, `sort`, `page` e `pageSize`.
+- Sessões usam o contrato dedicado e somente de leitura
+  `admin_get_sessions_module_v1(p_query)`, que filtra e pagina a base completa
+  de `bookings` antes do `limit`, preservando o mesmo DTO sanitizado da tela.
 - Detalhe: `admin_get_operation_detail_v1(p_module, p_id)`.
 - Comandos: `admin_execute_operation_command_v2(...)`, delegando comandos
   legados para v1 e cobrindo `verification.pause_review` e
@@ -97,6 +100,10 @@ refresh, cópia de link e QA com Playwright.
 - `/admin/sessoes` usa `AdminOperationalOverviewPage` com agenda em tabela no
   desktop e cards no mobile. Exibe somente sessão, profissional, cliente,
   horário, duração, pagamento, status e link de detalhe já existentes no DTO.
+- Busca, status, ordenação, total e paginação de Sessões operam sobre toda a
+  base canônica; não podem ser calculados a partir de uma janela prévia de
+  cinquenta registros. O limite de 50 vale somente como tamanho máximo da
+  página retornada.
 - A lista mantém os enums canônicos de reserva e pagamento no DTO e os traduz
   somente na apresentação Admin. `cancelled_by_payment` e todos os estados
   `no_show_*` devem aparecer em português na tabela, no resumo, nos cards
@@ -285,8 +292,8 @@ métricas, status e paginação antes do Benchmark C e da Calibration.
 ## Pendências conhecidas
 
 - Evoluir a implementação interna da v2 para busca em toda a base nos demais
-  módulos quando ultrapassarem a janela de 50 registros; Clientes já pagina a
-  base completa pelo contrato de restrições descrito acima.
+  módulos quando ultrapassarem a janela de 50 registros; Clientes e Sessões já
+  paginam suas bases completas por contratos dedicados.
 - Abas em detalhes continuam pendentes até existirem contratos funcionais para
   conteúdo e ações adicionais.
 - Validar Supabase Advisor em HML/remoto antes de declarar fase homologada.
