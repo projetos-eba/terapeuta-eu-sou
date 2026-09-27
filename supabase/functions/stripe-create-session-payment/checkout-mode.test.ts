@@ -7,6 +7,7 @@ import { DomainError } from "../_shared/payments/http.ts";
 import {
   requiresLegacyRetryPreflight,
   resolveReservationCheckoutMode,
+  resolveSessionCaptureMethod,
   shouldReusePersistedPaymentRetryCheckout,
 } from "./checkout-mode.ts";
 
@@ -92,5 +93,35 @@ Deno.test("an open persisted payment retry is reused on page reload", () => {
       retryReason: "retry_ready",
     }),
     false,
+  );
+});
+
+Deno.test("V10 payment retry authorizes before reclaiming the released slot", () => {
+  assertEquals(
+    resolveSessionCaptureMethod({
+      mode: "payment_retry",
+      paymentFlowVersion: "v10",
+    }),
+    "manual",
+  );
+});
+
+Deno.test("V10 initial checkout preserves automatic capture", () => {
+  assertEquals(
+    resolveSessionCaptureMethod({
+      mode: "initial_hold",
+      paymentFlowVersion: "v10",
+    }),
+    undefined,
+  );
+});
+
+Deno.test("legacy checkout keeps manual capture", () => {
+  assertEquals(
+    resolveSessionCaptureMethod({
+      mode: "initial_hold",
+      paymentFlowVersion: "v9",
+    }),
+    "manual",
   );
 });
