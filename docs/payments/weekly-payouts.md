@@ -238,6 +238,11 @@ previsão fictícia e dupla contabilização. Os IDs e a classificação ficam n
 Payout para auditoria; a correção de atribuição não cria movimento Stripe nem
 novo lançamento no ledger.
 
+O total “Recebido no período” usa exatamente as mesmas alocações bancárias
+aceitas na composição recebida, inclusive quando a reversão integral ocorreu
+somente depois do Payout pago. A paginação do histórico não limita esse total.
+Reversões anteriores ao Payout e evidências incompletas continuam excluídas.
+
 Um incidente `session_direct_transfer_attention` anterior ao sucesso do
 Transfer V10 pode ser resolvido quando o mesmo job possui pagamento pago,
 Transfer de origem e conta congelada comprovados, valor íntegro e registro
