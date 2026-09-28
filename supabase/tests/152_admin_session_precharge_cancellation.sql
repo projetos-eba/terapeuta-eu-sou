@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(21);
 
 select ok(to_regprocedure('public.admin_cancel_uncharged_session_v10(uuid,text,uuid)') is not null,
   'the dedicated administrative pre-charge cancellation command exists');
@@ -11,6 +11,21 @@ select ok(not has_function_privilege('anon',
   'anonymous users cannot reach the cancellation command');
 select ok(enum_has_labels('public.booking_status', array['cancelled_by_admin']),
   'the administrative terminal cancellation status is registered');
+select is(
+  regexp_count(
+    pg_get_functiondef('public.get_therapist_session_metrics_v1(integer)'::regprocedure),
+    $pattern$'cancelled_by_patient',\s*'cancelled_by_therapist',\s*'cancelled_by_admin'$pattern$
+  ),
+  4,
+  'the private therapist metrics count administrative cancellations in every aggregate'
+);
+select ok(
+  position(
+    $$('cancelled_by_admin', 'Canceladas pela administração', 6)$$
+    in pg_get_functiondef('public.get_therapist_session_metrics_v1(integer)'::regprocedure)
+  ) > 0,
+  'the private therapist outcome distribution includes administrative cancellations'
+);
 
 insert into public.therapist_connect_accounts (
   id, therapist_profile_id, stripe_account_id, onboarding_status,

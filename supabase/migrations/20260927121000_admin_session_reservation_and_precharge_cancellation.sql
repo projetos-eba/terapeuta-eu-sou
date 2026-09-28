@@ -612,7 +612,11 @@ begin
       using errcode = 'P0001';
   end if;
   select pg_catalog.pg_get_functiondef(v_procedure::oid) into v_definition;
-  if regexp_count(v_definition, v_cancelled_pair_pattern) <> 3
+  -- The metrics contract contains this pair in four aggregate-only contexts:
+  -- current-period summary, previous-period summary, outcome distribution and
+  -- the daily series. Keep the guard exact so an unexpected predecessor still
+  -- fails closed, but do not omit the daily aggregate from the verified shape.
+  if regexp_count(v_definition, v_cancelled_pair_pattern) <> 4
     or (length(v_definition) - length(replace(v_definition, v_outcome_anchor, '')))
       / length(v_outcome_anchor) <> 1
   then
