@@ -124,28 +124,26 @@ provisionado inativo e não recebe transações ou eventos de teste.
 
 - código público exato: `TERAPEUTAFUNDADOR`;
 - oferta: Premium Plus mensal;
-- período para novos resgates: de 01/09/2026 00:00 até 10/09/2026 23:59:59,
-  no horário de Brasília;
-- expiração técnica: 11/09/2026 00:00 em Brasília;
+- vigência: controlada pelo status e pelas datas configuradas no Promotion Code
+  na Stripe; esta documentação não altera a sua disponibilidade;
 - restrição: primeira transação do Customer;
 - benefício: Coupon de 100%, `duration=repeating` e
   `duration_in_months=3`;
 - forma de pagamento: obrigatoriamente coletada no Checkout, mesmo com total
   inicial igual a zero;
-- após as três cobranças integralmente descontadas: R$ 79,90 por mês no
+- após as três cobranças integralmente descontadas: R$ 119,90 por mês no
   Premium Plus enquanto a assinatura permanecer ativa e sem mudança de plano.
 
 O preço público normal do Premium Plus é R$ 119,90 por mês. Para a
 campanha, o backend resolve `offer_key=therapist_founder` a partir da metadata
-da Stripe e troca para um Price mensal oculto de R$ 79,90 antes de criar o
+da Stripe e troca para um Price mensal oculto de R$ 119,90 antes de criar o
 Checkout. O navegador nunca envia esse Price nem escolhe o valor promocional.
 O Coupon é limitado ao mesmo Product Premium Plus, portanto o código não pode
 ser aplicado ao Premium.
 
 O bootstrap idempotente de Test Mode mantém o Promotion Code ativo para
-homologação. O bootstrap Live cria o código inativo; a ativação é manual no
-Dashboard em 01/09/2026 00:00 America/Sao_Paulo. A expiração nativa é
-11/09/2026 00:00 no mesmo fuso.
+homologação. Em Live Mode, a ativação e as datas de expiração são configuradas
+na Stripe e precisam ser confirmadas antes de uma operação comercial.
 
 ```bash
 npm run payments:bootstrap:test

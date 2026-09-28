@@ -346,7 +346,7 @@ describe("therapist finance mappers", () => {
 
   it("maps the charge-focused receipt contract", () => {
     const receipts = mapTherapistReceiptsContract({
-      contractVersion: 5,
+      contractVersion: 6,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -389,6 +389,12 @@ describe("therapist finance mappers", () => {
         processingCents: 0,
         refundedCents: 1000,
         scheduledCents: 0,
+        upcomingScheduled: {
+          amountCents: 18700,
+          periodEnd: "2026-08-26",
+          periodStart: "2026-07-28",
+          sessionCount: 2,
+        },
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],
@@ -401,6 +407,12 @@ describe("therapist finance mappers", () => {
       receiptStatus: "refunded",
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
+    });
+    expect(receipts.summary.upcomingScheduled).toEqual({
+      amountCents: 18700,
+      periodEnd: "2026-08-26",
+      periodStart: "2026-07-28",
+      sessionCount: 2,
     });
   });
 

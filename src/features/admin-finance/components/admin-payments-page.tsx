@@ -38,7 +38,16 @@ const FINANCIAL_KPI_KEYS = [
   "pending-payment-amount",
   "confirmed-payment-amount",
   "failed-payment-amount",
+];
+
+const REFUND_METRIC_KEYS = [
   "pending-refunds-amount",
+  "completed-refunds-amount",
+];
+
+const FINANCIAL_AMOUNT_METRIC_KEYS = [
+  ...FINANCIAL_KPI_KEYS,
+  ...REFUND_METRIC_KEYS,
 ];
 
 const OPERATIONAL_INDICATOR_KEYS = [
@@ -56,6 +65,12 @@ const DEFAULT_PERIOD_OPTIONS = [
 export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
   const kpis = data.metrics.filter((metric) =>
     FINANCIAL_KPI_KEYS.includes(metric.key),
+  );
+  const pendingRefundMetric = data.metrics.find(
+    (metric) => metric.key === "pending-refunds-amount",
+  );
+  const completedRefundMetric = data.metrics.find(
+    (metric) => metric.key === "completed-refunds-amount",
   );
   const indicators = data.metrics.filter((metric) =>
     OPERATIONAL_INDICATOR_KEYS.includes(metric.key),
@@ -130,6 +145,12 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
           {kpis.map((metric) => (
             <PaymentKpiCard key={metric.key} metric={metric} />
           ))}
+          {pendingRefundMetric && completedRefundMetric ? (
+            <RefundsKpiCard
+              completed={completedRefundMetric}
+              pending={pendingRefundMetric}
+            />
+          ) : null}
         </section>
 
         <section className="rounded-[26px] border border-brand-lavender/70 bg-white p-5 shadow-[0_24px_70px_rgba(20,16,90,0.09)] sm:p-6">
@@ -340,6 +361,61 @@ function PaymentKpiCard({ metric }: { metric: AdminFinanceMetric }) {
         {paymentMetricDescription(metric)}
       </p>
     </article>
+  );
+}
+
+function RefundsKpiCard({
+  completed,
+  pending,
+}: {
+  completed: AdminFinanceMetric;
+  pending: AdminFinanceMetric;
+}) {
+  return (
+    <article className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]">
+      <div className="flex items-start gap-3">
+        <span className={metricIconWrapClass(pending)}>
+          <PaymentMetricIcon aria-hidden="true" metric={pending} />
+        </span>
+        <div>
+          <h3 className="text-sm font-extrabold text-tesText-secondary">
+            Reembolsos
+          </h3>
+          <p className="mt-1 text-xs font-semibold text-tesText-muted">
+            Valores devolvidos às pessoas.
+          </p>
+        </div>
+      </div>
+
+      <RefundMetricValue metric={pending} />
+      <RefundMetricValue metric={completed} separated />
+    </article>
+  );
+}
+
+function RefundMetricValue({
+  metric,
+  separated = false,
+}: {
+  metric: AdminFinanceMetric;
+  separated?: boolean;
+}) {
+  return (
+    <div className={separated ? "mt-4 border-t border-brand-lavender/60 pt-4" : "mt-5"}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
+          {paymentMetricLabel(metric)}
+          <MetricInfo metric={metric} />
+        </div>
+        <StatusPill compact metric={metric} />
+      </div>
+      <strong className="mt-2 block text-2xl font-extrabold leading-none tracking-tight text-brand-deep">
+        {formatMetricValue(metric)}
+      </strong>
+      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+        {paymentMetricDescription(metric)}
+      </p>
+    </div>
   );
 }
 
@@ -633,6 +709,7 @@ function fieldMap(fields: AdminFinanceField[]) {
 
 function paymentMetricLabel(metric: AdminFinanceMetric) {
   const labels: Record<string, string> = {
+    "completed-refunds-amount": "Concluídos",
     "confirmed-payment-amount": "Pagamentos confirmados",
     "canceled-payment-amount": "Pagamentos cancelados",
     "failed-payment-amount": "Pagamentos com falha",
@@ -640,7 +717,7 @@ function paymentMetricLabel(metric: AdminFinanceMetric) {
     "open-disputes": "Contestações abertas",
     "open-payout-batches": "Repasses em andamento",
     "pending-payment-amount": "Pagamentos pendentes",
-    "pending-refunds-amount": "Reembolsos pendentes",
+    "pending-refunds-amount": "Pendentes",
     "stripe-fees-amount": "Taxas Stripe",
     "total-payments-amount": "Total de pagamentos",
   };
@@ -650,6 +727,7 @@ function paymentMetricLabel(metric: AdminFinanceMetric) {
 
 function paymentMetricDescription(metric: AdminFinanceMetric) {
   const descriptions: Record<string, string> = {
+    "completed-refunds-amount": "Valores efetivamente devolvidos no período.",
     "confirmed-payment-amount": "Valores com pagamento confirmado.",
     "canceled-payment-amount": "Valores com pagamento cancelado no período.",
     "failed-payment-amount": "Valores que precisam de acompanhamento.",
@@ -667,6 +745,8 @@ function paymentMetricDescription(metric: AdminFinanceMetric) {
 
 function paymentMetricInfo(metric: AdminFinanceMetric) {
   const descriptions: Record<string, string> = {
+    "completed-refunds-amount":
+      "Soma dos reembolsos que foram processados e concluídos no período.",
     "canceled-payment-amount":
       "Soma das cobranças cujo pagamento foi cancelado no período. Não inclui pagamentos com falha.",
     "confirmed-payment-amount":
@@ -716,7 +796,7 @@ function formatOperationalValue(value: string | undefined) {
 
 function formatMetricValue(metric: AdminFinanceMetric) {
   if (metric.status === "available") {
-    return FINANCIAL_KPI_KEYS.includes(metric.key)
+    return FINANCIAL_AMOUNT_METRIC_KEYS.includes(metric.key)
       ? formatBRLCents(metric.value)
       : metric.value;
   }
@@ -739,6 +819,7 @@ function PaymentMetricIcon({
   ...props
 }: { metric: AdminFinanceMetric } & ComponentProps<"svg">) {
   const icons = {
+    "completed-refunds-amount": CheckCircle2,
     "confirmed-payment-amount": CheckCircle2,
     "canceled-payment-amount": CircleX,
     "failed-payment-amount": CircleX,

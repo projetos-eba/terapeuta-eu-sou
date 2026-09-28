@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { routes } from "@/lib/routes";
+
 export function PrepareForm({
   acceptedTerms,
   canContinueToPayment,
@@ -94,28 +96,30 @@ export function PrepareForm({
               type="checkbox"
             />
             <span id="reservation-terms-description">
-              Aceito os{" "}
+              Li e aceito os{" "}
               <Link
                 className="font-extrabold text-brand-primary underline-offset-4 hover:underline"
-                href="/termos"
+                href={routes.public.terms}
                 target="_blank"
               >
                 Termos de Uso
-              </Link>{" "}
-              e a{" "}
+              </Link>, a{" "}
               <Link
                 className="font-extrabold text-brand-primary underline-offset-4 hover:underline"
-                href="/privacidade"
+                href={routes.public.privacy}
                 target="_blank"
               >
                 Política de Privacidade
+              </Link>{" "}e a{" "}
+              <Link
+                className="font-extrabold text-brand-primary underline-offset-4 hover:underline"
+                href={routes.public.cancellationPolicy}
+                target="_blank"
+              >
+                Política de Cancelamento, Reagendamento e Reembolso
               </Link>{" "}
-              do Terapeuta Eu Sou. Compreendo que cancelamentos próximos ao
-              horário seguem as políticas vigentes da plataforma. Também
-              autorizo o TES a salvar esta forma de pagamento e, quando indicado
-              no resumo, realizar a cobrança 24 horas antes do encontro sem uma
-              nova ação minha. O banco ainda poderá solicitar uma confirmação
-              adicional.
+              do TES. Autorizo o uso da forma de pagamento cadastrada para esta
+              reserva e sua cobrança automática no momento informado.
             </span>
           </label>
           <label className="flex items-start gap-4 text-sm font-semibold leading-7 text-tesText-secondary">

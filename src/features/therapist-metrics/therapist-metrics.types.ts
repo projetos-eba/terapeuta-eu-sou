@@ -76,7 +76,7 @@ export type TherapistMetricsOverview = {
     points: TherapistMetricActivityPoint[];
     status: "empty" | "ready";
   };
-  contractVersion: 1;
+  contractVersion: 1 | 2;
   counters: TherapistMetricsFoundation["counters"];
   discovery: {
     freshThrough: string | null;
@@ -95,7 +95,7 @@ export type TherapistMetricsOverview = {
   meta: Omit<TherapistMetricsFoundation["meta"], "periodDays"> & {
     periodDays: 30 | 60 | 90 | 120;
   };
-  metricDefinitionVersion: 1;
+  metricDefinitionVersion: 1 | 2;
   occupancy: {
     reason: "historical_availability_not_versioned";
     status: "unavailable";
@@ -140,12 +140,16 @@ export type TherapistMetricsFoundation = {
 
 export type TherapistMetricKey = keyof TherapistMetricsFoundation["counters"];
 
-export type TherapistMetricsPeriodDays =
-  TherapistMetricsOverview["meta"]["periodDays"];
+export type TherapistMetricsPeriodDays = 30 | 60;
 
 export type TherapistMetricsTab = "interest" | "overview" | "sessions";
 
-export type TherapistMetricsCommonMeta = TherapistMetricsOverview["meta"];
+export type TherapistMetricsCommonMeta = Omit<
+  TherapistMetricsOverview["meta"],
+  "periodDays"
+> & {
+  periodDays: TherapistMetricsPeriodDays;
+};
 
 export type TherapistMetricProtectedCollection<TItem> = {
   items: TItem[];
@@ -176,6 +180,7 @@ export type TherapistSessionEvolutionPoint = {
 export type TherapistSessionOutcomeKey =
   | "cancelled_by_patient"
   | "cancelled_by_therapist"
+  | "cancelled_by_admin"
   | "completed"
   | "not_performed"
   | "no_show_patient"
@@ -408,10 +413,10 @@ export type TherapistMetricsOccupancy =
     };
 
 export type TherapistMetricsDashboard = {
-  contractVersion: 2;
+  contractVersion: 2 | 3;
   interest: TherapistInterestMetrics;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 2;
+  metricDefinitionVersion: 2 | 3;
   occupancy: TherapistMetricsOccupancy;
   overview: TherapistMetricsOverview;
   sessions: TherapistSessionMetrics;

@@ -782,7 +782,13 @@ function sessionStatusIcon(status: string) {
     return CircleCheck;
   }
   if (status.includes("no_show")) return CircleX;
-  if (status.includes("pending") || status.includes("draft")) return Clock3;
+  if (
+    status.includes("pending") ||
+    status.includes("reserved") ||
+    status.includes("draft")
+  ) {
+    return Clock3;
+  }
   return null;
 }
 
@@ -791,6 +797,7 @@ function productLabel(value?: string) {
   const labels: Record<string, string> = {
     admin: "Administração",
     cancelled_by_patient: "Cancelada pelo cliente",
+    cancelled_by_admin: "Cancelada pela administração",
     cancelled_by_therapist: "Cancelada pelo profissional",
     closed: "Fechado",
     completed: "Concluída",
@@ -802,6 +809,8 @@ function productLabel(value?: string) {
     medium: "Média",
     open: "Aberto",
     paid: "Confirmado",
+    processing: "Em processamento",
+    reserved: "Reservada",
     patient: "Cliente",
     payment: "Financeiro",
     pending: "Pendente",

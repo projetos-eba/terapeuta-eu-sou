@@ -289,7 +289,7 @@ export function SessionsEvolutionChart({
           </div>
           <div className="rounded-card bg-status-successBg px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Pico diário
+              Dia com mais sessões
             </dt>
             <dd className="mt-1 flex flex-wrap items-baseline gap-x-2 text-lg font-extrabold text-status-success">
               <span>{bestPoint?.sessionsCompleted ?? 0}</span>
@@ -305,7 +305,7 @@ export function SessionsEvolutionChart({
       <figcaption className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         {empty
           ? "O gráfico será preenchido conforme as sessões forem concluídas no período."
-          : "Cada ponto representa sessões concluídas em um dia completo, no fuso horário da sua agenda."}
+          : "Cada ponto mostra quantas sessões foram concluídas em um dia completo"}
       </figcaption>
     </figure>
   );

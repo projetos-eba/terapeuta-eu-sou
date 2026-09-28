@@ -327,7 +327,7 @@ function commonMeta(input: unknown): TherapistMetricsCommonMeta {
   return {
     computedAt: dateTime(value.computedAt),
     freshThrough: dateTime(value.freshThrough),
-    periodDays: oneOf(value.periodDays, 30, 60, 90, 120),
+    periodDays: oneOf(value.periodDays, 30, 60),
     periodEnd: dateTime(value.periodEnd),
     periodStart: dateTime(value.periodStart),
     previousPeriodEnd: dateTime(value.previousPeriodEnd),
@@ -485,6 +485,7 @@ function outcomeKey(value: unknown): TherapistSessionOutcomeKey {
     value,
     "cancelled_by_patient",
     "cancelled_by_therapist",
+    "cancelled_by_admin",
     "completed",
     "not_performed",
     "no_show_patient",

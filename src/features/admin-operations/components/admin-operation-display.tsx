@@ -462,6 +462,7 @@ export function formatStatusLabel(value?: string) {
     active: "Ativo",
     approved: "Aprovado",
     anonymized: "Anonimizado",
+    cancelled_by_admin: "Cancelada pela administração",
     cancelled_by_patient: "Cancelada pelo cliente",
     cancelled_by_payment: "Cancelada por falha no pagamento",
     cancelled_by_therapist: "Cancelada pelo terapeuta",
@@ -505,6 +506,7 @@ export function formatSessionPaymentStatusLabel(value?: string) {
     paid: "Confirmado",
     partially_refunded: "Reembolso parcial",
     pending: "Pendente",
+    processing: "Em processamento",
     refunded: "Reembolsado",
   };
 
@@ -515,6 +517,7 @@ export function formatSessionStatusLabel(value?: string) {
   const key = (value ?? "").trim().toLowerCase();
 
   if (key === "draft") return "Rascunho";
+  if (key === "reserved") return "Reservada";
 
   return formatStatusLabel(value);
 }

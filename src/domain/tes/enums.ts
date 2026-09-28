@@ -57,6 +57,7 @@ export const BookingStatus = {
   Completed: "completed",
   CancelledByPatient: "cancelled_by_patient",
   CancelledByTherapist: "cancelled_by_therapist",
+  CancelledByAdmin: "cancelled_by_admin",
   NoShowPatient: "no_show_patient",
   NoShowTherapist: "no_show_therapist",
   NoShowBoth: "no_show_both",

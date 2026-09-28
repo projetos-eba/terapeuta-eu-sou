@@ -390,9 +390,9 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Cobranças realizadas").length).toBeGreaterThan(
       0,
     );
-    expect(screen.getAllByText("Cobranças programadas").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getByText("Cobranças programadas — Próximos 30 dias"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Status da cobrança")).toBeInTheDocument();
     expect(screen.getAllByText("Pessoa").length).toBeGreaterThan(0);
     expect(screen.queryByText("Financeiro completo")).not.toBeInTheDocument();
@@ -415,6 +415,38 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("option", { name: "Processando" }),
     ).toBeInTheDocument();
+  });
+
+  it("links upcoming scheduled charges to the matching future period", () => {
+    const base = fixture();
+
+    renderPage("receipts", {
+      receipts: {
+        ...base.receipts,
+        summary: {
+          ...base.receipts.summary,
+          upcomingScheduled: {
+            amountCents: 18700,
+            periodEnd: "2026-08-26",
+            periodStart: "2026-07-28",
+            sessionCount: 2,
+          },
+        },
+      },
+    });
+
+    const scheduledCard = screen.getByRole("link", {
+      name: /Cobranças programadas — Próximos 30 dias/i,
+    });
+
+    expect(scheduledCard).toHaveTextContent("R$ 187,00");
+    expect(scheduledCard).toHaveTextContent(
+      "2 sessões com cobrança já agendada para os próximos 30 dias.",
+    );
+    expect(scheduledCard).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&period=custom&start=2026-07-28&end=2026-08-26&status=scheduled",
+    );
   });
 
   it("shows a fully offset payment as compensated without losing its approved charge", () => {
@@ -1080,7 +1112,7 @@ function fixture(): TherapistFinancePageData {
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 5,
+      contractVersion: 6,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -1123,6 +1155,12 @@ function fixture(): TherapistFinancePageData {
         processingCents: 0,
         refundedCents: 0,
         scheduledCents: 0,
+        upcomingScheduled: {
+          amountCents: 0,
+          periodEnd: "2026-08-26",
+          periodStart: "2026-07-28",
+          sessionCount: 0,
+        },
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],

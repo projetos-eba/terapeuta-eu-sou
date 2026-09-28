@@ -197,6 +197,7 @@ const bookingTransitions: Record<BookingStatus, BookingStatus[]> = {
     BookingStatusValue.Completed,
     BookingStatusValue.CancelledByPatient,
     BookingStatusValue.CancelledByTherapist,
+    BookingStatusValue.CancelledByAdmin,
     BookingStatusValue.NoShowPatient,
     BookingStatusValue.NoShowTherapist,
     BookingStatusValue.NoShowBoth,
@@ -205,6 +206,7 @@ const bookingTransitions: Record<BookingStatus, BookingStatus[]> = {
   [BookingStatusValue.Completed]: [BookingStatusValue.Refunded],
   [BookingStatusValue.CancelledByPatient]: [BookingStatusValue.Refunded],
   [BookingStatusValue.CancelledByTherapist]: [BookingStatusValue.Refunded],
+  [BookingStatusValue.CancelledByAdmin]: [],
   [BookingStatusValue.NoShowPatient]: [BookingStatusValue.Refunded],
   [BookingStatusValue.NoShowTherapist]: [BookingStatusValue.Refunded],
   [BookingStatusValue.NoShowBoth]: [

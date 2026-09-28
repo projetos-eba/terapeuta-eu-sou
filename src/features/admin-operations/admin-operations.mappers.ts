@@ -127,13 +127,15 @@ function mapPatientRow(row: UnknownRecord, index: number) {
 
 function mapSessionRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `session-${index}`;
+  const financialStatus =
+    asText(row.financial_status) || asText(row.payment_status);
 
   return {
     detailHref: getAdminOperationDetailHref("sessions", id),
     fields: compactFields([
       field("Terapeuta", asText(row.therapist_name)),
       field("Cliente", asText(row.patient_name)),
-      field("Pagamento", asText(row.payment_status)),
+      field("Pagamento", financialStatus),
       field("Início", formatDate(row.starts_at)),
       field("Término", formatDate(row.ends_at)),
       field("Fuso", asText(row.timezone)),
@@ -141,10 +143,27 @@ function mapSessionRow(row: UnknownRecord, index: number) {
       field("Atualizada", formatDate(row.updated_at)),
     ]),
     id,
-    statusLabel: asText(row.status),
+    statusLabel: isFutureUnconfirmedReservation(row, financialStatus)
+      ? "reserved"
+      : asText(row.status),
     subtitle: `Booking ${shortId(asText(row.id))}`,
     title: asText(row.service_title_snapshot) || "Sessão sem título",
   } satisfies AdminOperationRow;
+}
+
+function isFutureUnconfirmedReservation(
+  row: UnknownRecord,
+  financialStatus: string,
+) {
+  if (
+    asText(row.status) !== "confirmed" ||
+    !["pending", "processing"].includes(financialStatus)
+  ) {
+    return false;
+  }
+
+  const startsAt = new Date(asText(row.starts_at));
+  return !Number.isNaN(startsAt.getTime()) && startsAt.getTime() > Date.now();
 }
 
 function mapSupportRow(row: UnknownRecord, index: number) {
@@ -225,6 +244,10 @@ export function mapAdminOperationDetail({
     relatedProfessionalId,
     canManagePatientBookings:
       module === "patients" ? record.booking_management_available === true : undefined,
+    canCancelSessionBeforeCharge:
+      module === "sessions"
+        ? record.can_cancel_before_charge === true
+        : undefined,
     relatedVerificationId,
     canApprove: canApproveVerification(record),
     canPublish: canPublishAdministratively(record),
@@ -478,7 +501,10 @@ function getDetailSections(
     return [
       section("Sessão", [
         field("Status", asText(record.status)),
-        field("Pagamento", asText(record.payment_status)),
+        field(
+          "Pagamento",
+          asText(record.financial_status) || asText(record.payment_status),
+        ),
         field("Serviço", asText(record.service_title_snapshot)),
         field(
           "Duração",

@@ -28,6 +28,18 @@ describe("booking contracts", () => {
         BookingStatus.Confirmed,
       ),
     ).toBe(false);
+    expect(
+      canTransitionBookingStatus(
+        BookingStatus.Confirmed,
+        BookingStatus.CancelledByAdmin,
+      ),
+    ).toBe(true);
+    expect(
+      canTransitionBookingStatus(
+        BookingStatus.CancelledByAdmin,
+        BookingStatus.Refunded,
+      ),
+    ).toBe(false);
   });
 
   it("keeps reschedule terminal states outside BookingStatus", () => {

@@ -206,6 +206,11 @@ export type AdminOperationDetailPageData = {
   patientContact?: AdminPatientContact | null;
   canManagePatientBookings?: boolean;
   /**
+   * Disponível apenas para uma reserva futura cuja cobrança V10 ainda não
+   * começou. A autorização definitiva continua no comando transacional.
+   */
+  canCancelSessionBeforeCharge?: boolean;
+  /**
    * Relacionamento usado exclusivamente para navegação e comandos entre
    * Profissionais e Verificações. Nunca é apresentado como dado de interface.
    */

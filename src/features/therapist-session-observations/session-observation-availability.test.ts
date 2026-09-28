@@ -15,7 +15,12 @@ describe("isSessionObservationEligible", () => {
     ).toBe(true);
   });
 
-  it.each(["cancelled_by_patient", "cancelled_by_therapist", "refunded"])(
+  it.each([
+    "cancelled_by_patient",
+    "cancelled_by_therapist",
+    "cancelled_by_admin",
+    "refunded",
+  ])(
     "keeps %s unavailable",
     (bookingStatus) => {
       expect(

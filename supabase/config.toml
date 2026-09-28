@@ -164,6 +164,12 @@ verify_jwt = false
 [functions.stripe-cancel-therapist-subscription]
 verify_jwt = false
 
+[functions.admin-cancel-therapist-subscription]
+verify_jwt = false
+
+[functions.admin-therapist-metrics-command]
+verify_jwt = false
+
 [functions.stripe-create-billing-portal]
 verify_jwt = false
 

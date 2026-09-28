@@ -145,25 +145,35 @@ export default async function TherapistCheckoutPage({
           </div>
 
           {!hasActivePaidPlan ? (
-            <div
-              id="checkout-availability"
-              className="rounded-card border border-border bg-surface-soft px-5 py-4"
-            >
-              <div className="flex gap-3">
-                <LockKeyhole
-                  className="mt-0.5 size-5 shrink-0 text-brand-primary"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-sm font-extrabold text-brand-deep">
-                    {getCheckoutStatusCopy(params?.checkout).title}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    {getCheckoutStatusCopy(params?.checkout).description}
-                  </p>
+            <>
+              <div
+                id="checkout-availability"
+                className="rounded-card border border-border bg-surface-soft px-5 py-4"
+              >
+                <div className="flex gap-3">
+                  <LockKeyhole
+                    className="mt-0.5 size-5 shrink-0 text-brand-primary"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="text-sm font-extrabold text-brand-deep">
+                      {getCheckoutStatusCopy(params?.checkout).title}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                      {getCheckoutStatusCopy(params?.checkout).description}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+              <TESButton
+                href={routes.therapist.home}
+                size="lg"
+                variant="secondary"
+                className="min-h-12 w-full rounded-2xl border-brand-primary/30 text-base shadow-soft hover:bg-brand-lavenderSoft"
+              >
+                Acessar o plano Free
+              </TESButton>
+            </>
           ) : null}
         </div>
 
@@ -203,19 +213,6 @@ export default async function TherapistCheckoutPage({
           )}
         </div>
       </div>
-
-      {!hasActivePaidPlan ? (
-        <div className="border-t border-border px-6 py-6 sm:px-8 lg:px-10">
-          <TESButton
-            href={routes.therapist.home}
-            size="lg"
-            variant="secondary"
-            className="min-h-12 w-full rounded-2xl text-base"
-          >
-            Acessar o plano Free
-          </TESButton>
-        </div>
-      ) : null}
 
       <p className="flex items-center justify-center gap-2 border-t border-border px-6 py-5 text-center text-xs font-bold text-tesText-muted sm:px-8 lg:px-10">
         <ShieldCheck className="size-4" aria-hidden="true" />O pagamento da

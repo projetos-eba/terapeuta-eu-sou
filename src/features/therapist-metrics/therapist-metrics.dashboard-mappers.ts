@@ -19,10 +19,12 @@ export function mapTherapistMetricsDashboard(
     const overview = mapTherapistMetricsOverview(value.overview);
     const sessions = mapTherapistSessionMetrics(value.sessions);
     const interest = mapTherapistInterestMetrics(value.interest);
+    const periodDays = metricsPeriod(overview.meta.periodDays);
 
     if (
-      value.contractVersion !== 2 ||
-      value.metricDefinitionVersion !== 2 ||
+      (value.contractVersion !== 2 && value.contractVersion !== 3) ||
+      (value.metricDefinitionVersion !== 2 &&
+        value.metricDefinitionVersion !== 3) ||
       overview.therapist.profileId !== sessions.therapist.profileId ||
       overview.therapist.profileId !== interest.therapist.profileId
     ) {
@@ -30,11 +32,11 @@ export function mapTherapistMetricsDashboard(
     }
 
     return {
-      contractVersion: 2,
+      contractVersion: value.contractVersion,
       interest,
-      meta: overview.meta,
-      metricDefinitionVersion: 2,
-      occupancy: mapOccupancy(value.occupancy, overview.meta.periodDays),
+      meta: { ...overview.meta, periodDays },
+      metricDefinitionVersion: value.metricDefinitionVersion,
+      occupancy: mapOccupancy(value.occupancy, periodDays),
       overview,
       sessions,
       therapist: overview.therapist,
@@ -47,7 +49,7 @@ export function mapTherapistMetricsDashboard(
 
 function mapOccupancy(
   input: unknown,
-  requiredCoverageDays: 30 | 60 | 90 | 120,
+  requiredCoverageDays: 30 | 60,
 ): TherapistMetricsOccupancy {
   const value = record(input);
   const status = value.status;
@@ -85,6 +87,13 @@ function mapOccupancy(
     series: array(value.series).map(occupancyPoint),
     status,
   };
+}
+
+function metricsPeriod(value: number): 30 | 60 {
+  if (value !== 30 && value !== 60) {
+    throw new Error("Invalid dashboard period.");
+  }
+  return value;
 }
 
 function occupancySummary(input: unknown) {

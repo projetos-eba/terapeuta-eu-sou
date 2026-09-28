@@ -62,6 +62,7 @@ describe("mapSessionPresentation", () => {
   it.each([
     BookingStatus.CancelledByPatient,
     BookingStatus.CancelledByTherapist,
+    BookingStatus.CancelledByAdmin,
     BookingStatus.CancelledByPayment,
   ])(
     "does not describe a cancelled session as awaiting payment for %s",

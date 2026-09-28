@@ -13,9 +13,28 @@ import type {
   AdminSettingsSignal,
 } from "./admin-settings.types";
 
+type TelemetryHealth = {
+  counters: {
+    acceptedEvents: number;
+    duplicateEvents: number;
+    failedRequests: number;
+    invalidRequests: number;
+    rateLimitedRequests: number;
+  };
+  lastActivityAt: string | null;
+  lastCheckedAt: string | null;
+  retentionDays: 120;
+  state: "attention" | "disabled" | "no_activity" | "ready";
+};
+
 export const getAdminSettingsPage = cache(
-  async function getAdminSettingsPage(): Promise<AdminSettingsPageResult> {
+  async function getAdminSettingsPage(
+    accessToken?: string,
+  ): Promise<AdminSettingsPageResult> {
     const supabasePublicConfig = getSupabasePublicConfig();
+    const telemetryHealth = accessToken
+      ? await queryTelemetryHealth(accessToken).catch(() => null)
+      : null;
     const enabledModules = adminModuleRegistry.filter(
       (module) => module.status === "enabled",
     );
@@ -29,7 +48,7 @@ export const getAdminSettingsPage = cache(
         groups: [
           buildProductGroup(),
           buildOperationalGroup({ enabledModules: enabledModules.length }),
-          buildFeatureFlagGroup(),
+          buildFeatureFlagGroup(telemetryHealth),
           buildIntegrationGroup({
             hasSupabasePublicConfig: Boolean(supabasePublicConfig),
           }),
@@ -174,7 +193,9 @@ function buildOperationalGroup({
   };
 }
 
-function buildFeatureFlagGroup(): AdminSettingsGroup {
+function buildFeatureFlagGroup(
+  telemetryHealth: TelemetryHealth | null,
+): AdminSettingsGroup {
   const demoEnabled = process.env.TES_ENABLE_DEMO_DATA === "true";
 
   return {
@@ -191,14 +212,7 @@ function buildFeatureFlagGroup(): AdminSettingsGroup {
         demoEnabled ? "manual_review" : "healthy",
         demoEnabled ? "warning" : "success",
       ),
-      signal(
-        "public-metrics-telemetry",
-        "Telemetria pública",
-        "Permanece condicionada à validação de privacidade, aviso e retenção.",
-        "Política de privacidade",
-        "manual_review",
-        "warning",
-      ),
+      telemetrySignal(telemetryHealth),
       signal(
         "report-exports",
         "Relatórios administrativos",
@@ -211,6 +225,148 @@ function buildFeatureFlagGroup(): AdminSettingsGroup {
     key: "feature-flags",
     title: "Recursos monitorados",
   };
+}
+
+async function queryTelemetryHealth(accessToken: string): Promise<TelemetryHealth> {
+  const config = getSupabasePublicConfig();
+  if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
+
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/admin_get_therapist_metrics_telemetry_health_v1`,
+    {
+      body: "{}",
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  if (!response.ok) throw new Error("TELEMETRY_HEALTH_UNAVAILABLE");
+
+  return parseTelemetryHealth((await response.json()) as unknown);
+}
+
+function telemetrySignal(health: TelemetryHealth | null): AdminSettingsSignal {
+  if (!health) {
+    return signal(
+      "public-metrics-telemetry",
+      "Descoberta e funil",
+      "Não foi possível atualizar esta leitura agora. Nenhuma configuração é alterada nesta área.",
+      "Acompanhamento interno",
+      "unavailable",
+      "neutral",
+    );
+  }
+
+  const state = {
+    attention: {
+      description:
+        "A coleta precisa de conferência antes de seguir. Os registros expiram em 120 dias.",
+      status: "degraded" as const,
+      tone: "warning" as const,
+    },
+    disabled: {
+      description:
+        "A coleta está preparada e permanece desligada neste ambiente. A ativação é feita somente por operação interna registrada.",
+      status: "manual_review" as const,
+      tone: "info" as const,
+    },
+    no_activity: {
+      description:
+        "A coleta está ativa e ainda não recebeu registros. Os dados aparecem após períodos completos e expiram em 120 dias.",
+      status: "manual_review" as const,
+      tone: "info" as const,
+    },
+    ready: {
+      description:
+        "A coleta está ativa e a leitura agregada está dentro do esperado. Os registros expiram em 120 dias.",
+      status: "healthy" as const,
+      tone: "success" as const,
+    },
+  }[health.state];
+
+  return {
+    ...signal(
+      "public-metrics-telemetry",
+      "Descoberta e funil",
+      health.lastActivityAt
+        ? `${state.description} Última atividade em ${formatDateTime(health.lastActivityAt)}.`
+        : state.description,
+      "Acompanhamento interno",
+      state.status,
+      state.tone,
+    ),
+    metrics: [
+      { label: "Recebidos", value: health.counters.acceptedEvents },
+      { label: "Repetições evitadas", value: health.counters.duplicateEvents },
+      { label: "Envios inválidos", value: health.counters.invalidRequests },
+      { label: "Limites aplicados", value: health.counters.rateLimitedRequests },
+      { label: "Falhas", value: health.counters.failedRequests },
+    ],
+  };
+}
+
+function parseTelemetryHealth(input: unknown): TelemetryHealth {
+  if (!isRecord(input) || input.contractVersion !== 1 || !isRecord(input.counters)) {
+    throw new Error("INVALID_TELEMETRY_HEALTH_CONTRACT");
+  }
+
+  const state = input.state;
+  if (
+    state !== "attention" &&
+    state !== "disabled" &&
+    state !== "no_activity" &&
+    state !== "ready"
+  ) {
+    throw new Error("INVALID_TELEMETRY_HEALTH_STATE");
+  }
+  if (input.retentionDays !== 120) {
+    throw new Error("INVALID_TELEMETRY_RETENTION");
+  }
+
+  return {
+    counters: {
+      acceptedEvents: nonNegativeInteger(input.counters.acceptedEvents),
+      duplicateEvents: nonNegativeInteger(input.counters.duplicateEvents),
+      failedRequests: nonNegativeInteger(input.counters.failedRequests),
+      invalidRequests: nonNegativeInteger(input.counters.invalidRequests),
+      rateLimitedRequests: nonNegativeInteger(input.counters.rateLimitedRequests),
+    },
+    lastActivityAt: nullableDateTime(input.lastActivityAt),
+    lastCheckedAt: nullableDateTime(input.lastCheckedAt),
+    retentionDays: 120,
+    state,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function nonNegativeInteger(value: unknown) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error("INVALID_TELEMETRY_COUNTER");
+  }
+  return value;
+}
+
+function nullableDateTime(value: unknown) {
+  if (value === null) return null;
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+    throw new Error("INVALID_TELEMETRY_DATE");
+  }
+  return value;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }
 
 function buildIntegrationGroup({

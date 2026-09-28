@@ -174,11 +174,16 @@ export function FinancialReceiptsTab({
           value={receipts.summary.approvedCents}
         />
         <ReceiptMetricCard
-          description="Sua parte nos encontros que ainda serão cobrados. A cobrança acontece 24h antes de cada encontro."
-          href={statusHref("scheduled", dateRange, filters)}
+          description={upcomingScheduledDescription(
+            receipts.summary.upcomingScheduled.sessionCount,
+          )}
+          href={upcomingScheduledHref(
+            receipts.summary.upcomingScheduled,
+            filters,
+          )}
           icon={CalendarClock}
-          label="Cobranças programadas"
-          value={receipts.summary.scheduledCents}
+          label="Cobranças programadas — Próximos 30 dias"
+          value={receipts.summary.upcomingScheduled.amountCents}
         />
         <ReceiptMetricCard
           description="Valores devolvidos às pessoas no período selecionado."
@@ -604,6 +609,30 @@ function statusHref(
     start: dateRange.start,
     tab: "receipts",
   });
+}
+
+function upcomingScheduledHref(
+  upcomingScheduled: TherapistReceiptsContract["summary"]["upcomingScheduled"],
+  filters: TherapistFinanceFilters,
+) {
+  return buildFinanceHref({
+    end: upcomingScheduled.periodEnd,
+    filters: {
+      agendaDays: filters.agendaDays,
+      status: "scheduled",
+    },
+    period: "custom",
+    start: upcomingScheduled.periodStart,
+    tab: "receipts",
+  });
+}
+
+function upcomingScheduledDescription(sessionCount: number) {
+  if (sessionCount === 0) {
+    return "Não há cobranças agendadas para os próximos 30 dias. A cobrança acontece 24h antes de cada sessão.";
+  }
+
+  return `${sessionCount} ${sessionCount === 1 ? "sessão com cobrança já agendada" : "sessões com cobrança já agendada"} para os próximos 30 dias. A cobrança acontece 24h antes de cada sessão.`;
 }
 
 function Pagination({

@@ -265,6 +265,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       option("pending_payment", "Pagamento pendente"),
       option("confirmed", "Confirmadas"),
       option("completed", "Concluídas"),
+      option("cancelled_by_admin", "Canceladas pela administração"),
       option("cancelled_by_patient", "Canceladas pelo cliente"),
       option("cancelled_by_therapist", "Canceladas pelo terapeuta"),
       option("cancelled_by_payment", "Canceladas por falha no pagamento"),

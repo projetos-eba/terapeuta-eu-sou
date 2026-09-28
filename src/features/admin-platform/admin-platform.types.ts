@@ -54,6 +54,12 @@ export type AdminSecurityPageData = {
     total: number;
   };
   auditEventsStatus: "available" | "unavailable";
+  telemetry: {
+    enabled: boolean;
+    retentionDays: 120;
+    updatedAt: string | null;
+  } | null;
+  canManageTelemetry: boolean;
 };
 
 export type AdminPlatformPageResult<T> =

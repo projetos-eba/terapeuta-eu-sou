@@ -18,11 +18,11 @@ let subscription = null;
 
 try {
   const pricePage = await stripe.prices.list({
-    lookup_keys: ["tes_premium_plus_founder_brl_monthly_v1"],
+    lookup_keys: ["tes_premium_plus_founder_brl_monthly_v2"],
     limit: 1,
   });
   const price = pricePage.data[0];
-  if (!price?.active || price.unit_amount !== 7_990) {
+  if (!price?.active || price.unit_amount !== 11_990) {
     throw new Error("Founder Price is unavailable.");
   }
 
@@ -35,6 +35,25 @@ try {
     (item) => item.metadata?.offer_key === "therapist_founder",
   );
   if (!promotionCode) throw new Error("Founder Promotion Code is unavailable.");
+  const couponReference = promotionCode.promotion.coupon;
+  const coupon =
+    typeof couponReference === "string"
+      ? await stripe.coupons.retrieve(couponReference, {
+          expand: ["applies_to"],
+        })
+      : couponReference;
+  const priceProductId =
+    typeof price.product === "string" ? price.product : price.product?.id;
+
+  if (
+    !priceProductId ||
+    coupon.percent_off !== 100 ||
+    coupon.duration !== "repeating" ||
+    coupon.duration_in_months !== 3 ||
+    !coupon.applies_to?.products?.includes(priceProductId)
+  ) {
+    throw new Error("Founder Promotion Code does not match the new Price.");
+  }
 
   clock = await stripe.testHelpers.testClocks.create({
     frozen_time: frozenAt,
@@ -88,7 +107,7 @@ try {
   const amounts = invoices.data
     .sort((left, right) => left.created - right.created)
     .map((invoice) => invoice.amount_due);
-  const expected = [0, 0, 0, 7_990];
+  const expected = [0, 0, 0, 11_990];
 
   if (JSON.stringify(amounts.slice(0, 4)) !== JSON.stringify(expected)) {
     throw new Error(`Founder invoice sequence diverges: ${amounts.join(",")}.`);
@@ -100,8 +119,8 @@ try {
   const finalPrice = finalSubscription.items.data[0]?.price;
   if (
     finalSubscription.status !== "active" ||
-    finalPrice?.lookup_key !== "tes_premium_plus_founder_brl_monthly_v1" ||
-    finalPrice.unit_amount !== 7_990
+    finalPrice?.lookup_key !== "tes_premium_plus_founder_brl_monthly_v2" ||
+    finalPrice.unit_amount !== 11_990
   ) {
     throw new Error("Founder subscription did not remain active on its Price.");
   }
@@ -110,7 +129,7 @@ try {
     JSON.stringify({
       finalPlan: "premium_plus",
       invoiceAmountsCents: expected,
-      recurringAmountCents: 7990,
+      recurringAmountCents: 11990,
       status: "active",
       verified: true,
     }),

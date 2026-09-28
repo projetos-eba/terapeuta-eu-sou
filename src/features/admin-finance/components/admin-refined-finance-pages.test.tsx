@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   AdminFinanceDetailPageData,
@@ -7,7 +7,10 @@ import type {
 } from "../admin-finance.types";
 import { AdminPaymentDetailPage } from "./admin-payment-detail-page";
 import { AdminPaymentsPage } from "./admin-payments-page";
+import { AdminSubscriptionDetailPage } from "./admin-subscription-detail-page";
 import { AdminSubscriptionsPage } from "./admin-subscriptions-page";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 function financeData(
   overrides: Partial<AdminFinancePageData> = {},
@@ -95,6 +98,24 @@ describe("refined admin finance pages", () => {
               tone: "danger",
               value: 15000,
             },
+            {
+              description: "",
+              key: "pending-refunds-amount",
+              label: "Reembolsos pendentes",
+              source: "",
+              status: "available",
+              tone: "warning",
+              value: 2000,
+            },
+            {
+              description: "",
+              key: "completed-refunds-amount",
+              label: "Reembolsos concluídos",
+              source: "",
+              status: "available",
+              tone: "success",
+              value: 3000,
+            },
           ],
           page: { hasNext: false, page: 1, pageSize: 10, total: 1 },
           query: {
@@ -128,6 +149,14 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Pagamentos cancelados");
     expect(html).toContain("Entenda Pagamentos cancelados");
     expect(html).toContain("Não inclui pagamentos com falha.");
+    expect(html).toContain("Reembolsos");
+    expect(html).toContain("Pendentes");
+    expect(html).toContain("Concluídos");
+    expect(html).toContain("Entenda Pendentes");
+    expect(html).toContain("Entenda Concluídos");
+    expect(html).toContain("R$ 20,00");
+    expect(html).toContain("R$ 30,00");
+    expect(html).not.toContain("Reembolsos pendentes");
     expect(html).not.toMatch(/<p\b[^>]*>(?:(?!<\/p>).)*<details\b/s);
     expect(html).not.toContain("Receita líquida TES");
     expect(html).toContain("R$ 1.200,00");
@@ -185,6 +214,76 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Nenhuma assinatura encontrada");
     expect(html).not.toContain("technical_source");
     expect(html).not.toContain("server-side");
+  });
+
+  it("renders the subscription cards, filters and complete operational columns", () => {
+    const html = renderToStaticMarkup(
+      <AdminSubscriptionsPage
+        data={financeData({
+          description: "Acompanhe planos e cobranças.",
+          filterOptions: {
+            plan: [
+              { label: "Todos os planos", value: "" },
+              { label: "Premium", value: "premium" },
+            ],
+            period: [{ label: "Últimos 30 dias", value: "30d" }],
+            sort: [{ label: "Mais recentes", value: "recent" }],
+            status: [
+              { label: "Todas as situações", value: "" },
+              { label: "Ativas", value: "active" },
+            ],
+          },
+          listHref: "/admin/assinaturas",
+          metrics: [
+            metric("paid-subscriptions", "Total de assinaturas pagas", 18),
+            metric("free-therapists", "Free", 6),
+            metric("premium-therapists", "Premium", 8),
+            metric("premium-plus-therapists", "Premium Plus", 10),
+            metric("canceled-subscriptions", "Assinaturas canceladas", 2),
+          ],
+          page: { hasNext: false, page: 1, pageSize: 12, total: 1 },
+          query: {
+            page: 1,
+            pageSize: 12,
+            period: "30d",
+            plan: "premium",
+            search: "",
+            sort: "recent",
+            status: "active",
+          },
+          rows: [
+            {
+              detailHref: "/admin/assinaturas/subscription-1",
+              fields: [
+                { label: "Terapeuta", value: "Mariana Silva" },
+                { label: "Plano atual", value: "Premium" },
+                { label: "Início do ciclo", value: "01/09/2026, 10:00" },
+                { label: "Próxima cobrança", value: "01/10/2026, 10:00" },
+                { label: "Última cobrança", value: "01/09/2026, 10:00 · Paga" },
+              ],
+              id: "subscription-1",
+              statusLabel: "active",
+              title: "Assinatura Premium",
+            },
+          ],
+          title: "Assinaturas",
+        })}
+      />,
+    );
+
+    expect(html).toContain("Total de assinaturas pagas");
+    expect(html).toContain("Premium Plus");
+    expect(html).toContain("Assinaturas canceladas");
+    expect(html).toContain("Buscar por profissional");
+    expect(html).toContain("Todos os planos");
+    expect(html).toContain("Últimos 30 dias");
+    expect(html).toContain("Plano atual");
+    expect(html).toContain("Próxima cobrança / renovação");
+    expect(html).toContain("Última cobrança");
+    expect(html).toContain("Mariana Silva");
+    expect(html).toContain("Ver detalhes");
+    expect(html).not.toContain("Planos nesta página");
+    expect(html).not.toContain("Indicadores complementares");
   });
 
   it("renders payment details without internal reconciliation labels", () => {
@@ -255,4 +354,83 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("Cancelado");
     expect(html).not.toContain("Em análise");
   });
+
+  it("renders the subscription detail with the operational sections and scheduled cancellation action", () => {
+    const html = renderToStaticMarkup(
+      <AdminSubscriptionDetailPage
+        data={{
+          backHref: "/admin/assinaturas",
+          events: [
+            {
+              createdAt: "2026-09-27T12:00:00.000Z",
+              id: "event-1",
+              kind: "subscription_event",
+              subtitle: "Ativa → Cancelada",
+              title: "Cancelamento programado",
+            },
+          ],
+          generatedAt: "2026-09-27T12:00:00.000Z",
+          id: "00000000-0000-4000-8000-000000000001",
+          module: "subscriptions",
+          safetyNotes: [],
+          sections: [
+            {
+              fields: [
+                { label: "Terapeuta", value: "Mariana Silva" },
+                { label: "Plano atual", value: "Premium" },
+                { label: "Situação da assinatura", value: "Ativa" },
+              ],
+              title: "Assinatura",
+            },
+            {
+              fields: [
+                { label: "Início do ciclo", value: "01/09/2026, 09:00" },
+                { label: "Próxima cobrança", value: "01/10/2026, 09:00" },
+                { label: "Valor do ciclo", value: "R$ 79,90" },
+              ],
+              title: "Ciclo e preço",
+            },
+            {
+              fields: [{ label: "Assinatura registrada", value: "Sim" }],
+              title: "Conciliação segura",
+            },
+            {
+              fields: [{ label: "Cobranças pagas", value: "2" }],
+              title: "Últimas cobranças",
+            },
+            {
+              fields: [{ label: "Atualizado em", value: "27/09/2026, 09:00" }],
+              title: "Rastreabilidade",
+            },
+          ],
+          statusLabel: "active",
+          subscriptionManagement: {
+            available: true,
+            cancelAtPeriodEnd: false,
+          },
+          title: "Assinatura Premium",
+        }}
+      />,
+    );
+
+    expect(html).toContain("Detalhes da assinatura");
+    expect(html).toContain("Conciliação segura");
+    expect(html).toContain("Últimas cobranças");
+    expect(html).toContain("Rastreabilidade");
+    expect(html).toContain("Cancelar assinatura");
+    expect(html).toContain("Cancelamento programado");
+    expect(html).not.toContain("stripe_subscription_id");
+  });
 });
+
+function metric(key: string, label: string, value: number) {
+  return {
+    description: "Leitura atual da plataforma.",
+    key,
+    label,
+    source: "",
+    status: "available" as const,
+    tone: "info" as const,
+    value,
+  };
+}

@@ -276,6 +276,10 @@ describe("admin operation queries", () => {
             label: "Canceladas por falha no pagamento",
             value: "cancelled_by_payment",
           },
+          {
+            label: "Canceladas pela administração",
+            value: "cancelled_by_admin",
+          },
           { label: "Cliente ausente", value: "no_show_patient" },
           { label: "Terapeuta ausente", value: "no_show_therapist" },
           { label: "Ambos ausentes", value: "no_show_both" },

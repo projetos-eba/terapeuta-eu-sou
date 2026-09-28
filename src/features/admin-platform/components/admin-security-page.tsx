@@ -10,6 +10,7 @@ import {
 
 import { getAdminAuditEventLabel } from "../admin-audit-catalog";
 import type { AdminSecurityPageData } from "../admin-platform.types";
+import { AdminMetricsTelemetryControl } from "./admin-metrics-telemetry-control";
 
 export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
   return (
@@ -17,6 +18,13 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
       <AppPageHeader eyebrow="Admin" title="Auditoria">
         Consulte os registros recentes das ações administrativas.
       </AppPageHeader>
+
+      <div className="mx-auto mb-6 w-full max-w-4xl">
+        <AdminMetricsTelemetryControl
+          canManage={data.canManageTelemetry}
+          telemetry={data.telemetry}
+        />
+      </div>
 
       <AppPageSection className="mx-auto w-full max-w-4xl">
         <h2 className="text-xl font-extrabold text-brand-deep">

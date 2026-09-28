@@ -4,11 +4,16 @@ import { useEffect } from "react";
 
 import { emitPublicMetricEvents } from "../public-metric-events.client";
 
-export function PublicSearchMetricsTracker({ enabled }: { enabled: boolean }) {
+export function PublicSearchMetricsTracker({
+  enabled,
+  resultSetId,
+}: {
+  enabled: boolean;
+  resultSetId: string;
+}) {
   useEffect(() => {
     if (!enabled || typeof IntersectionObserver === "undefined") return;
 
-    const resultSetId = crypto.randomUUID();
     const observer = new IntersectionObserver(
       (entries) => {
         const visibleEvents = entries.flatMap((entry) => {
@@ -49,7 +54,7 @@ export function PublicSearchMetricsTracker({ enabled }: { enabled: boolean }) {
     cards.forEach((card) => observer.observe(card));
 
     return () => observer.disconnect();
-  }, [enabled]);
+  }, [enabled, resultSetId]);
 
   return null;
 }

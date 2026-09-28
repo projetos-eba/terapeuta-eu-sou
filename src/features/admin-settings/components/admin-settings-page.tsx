@@ -193,6 +193,23 @@ function SettingsSignal({ item }: { item: AdminSettingsSignal }) {
           <ArrowRight aria-hidden="true" className="size-4" />
         </TESButton>
       ) : null}
+      {item.metrics?.length ? (
+        <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {item.metrics.map((metric) => (
+            <div
+              className="rounded-[14px] border border-brand-lavender/60 bg-white px-3 py-2"
+              key={metric.label}
+            >
+              <dt className="text-[11px] font-extrabold leading-4 text-tesText-muted">
+                {metric.label}
+              </dt>
+              <dd className="mt-1 text-lg font-extrabold leading-none text-brand-deep">
+                {metric.value.toLocaleString("pt-BR")}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </article>
   );
 }

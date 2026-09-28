@@ -1,6 +1,7 @@
 const observationBlockedStatuses = new Set([
   "cancelled_by_patient",
   "cancelled_by_therapist",
+  "cancelled_by_admin",
   "refunded",
 ]);
 
