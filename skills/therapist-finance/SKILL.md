@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v9` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v10` (current UI consumer; V9 and earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -101,6 +101,13 @@ All derive the therapist from `auth.uid()`. Do not accept
   Payout remains in both the received composition and this total when the exact
   provider-linked neutral pair proves the chronology. History pagination must
   not limit the summary.
+- If Stripe later includes the exact connected-account Refund debit in another
+  fully reconciled Payout, V10 presents it as one negative `Ajuste de reembolso`
+  composition item. Subtract it from that Payout group and summary, keep
+  `sessionCount` restricted to positive sessions, preserve the original paid
+  Payout and do not create an `Em análise` history group. Never infer the
+  adjustment from value or chronology alone; ambiguous evidence stays
+  fail-closed and invisible as a bank fact.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.

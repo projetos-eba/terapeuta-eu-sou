@@ -78,7 +78,7 @@ describe("therapist metrics charts", () => {
       />,
     );
 
-    expect(screen.getByText("Pico diário")).toBeInTheDocument();
+    expect(screen.getByText("Dia com mais sessões")).toBeInTheDocument();
     expect(screen.getByText("em 02/09")).toBeInTheDocument();
   });
 

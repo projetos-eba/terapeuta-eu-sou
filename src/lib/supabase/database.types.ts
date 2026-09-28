@@ -6199,10 +6199,21 @@ export type Database = {
           id: string
           metadata: Json
           opened_at: string
+          previous_financial_status:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null
+          provider_event_created_at: string
+          provider_event_id: string | null
+          provider_reversal_amount_cents: number
+          recovered_amount_cents: number
+          recovery_amount_cents: number
+          recovery_state: string
           session_payment_id: string
           status: string
           stripe_charge_id: string | null
           stripe_dispute_id: string
+          stripe_transfer_id: string | null
+          stripe_transfer_reversal_id: string | null
           updated_at: string
         }
         Insert: {
@@ -6214,10 +6225,21 @@ export type Database = {
           id?: string
           metadata?: Json
           opened_at?: string
+          previous_financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null
+          provider_event_created_at: string
+          provider_event_id?: string | null
+          provider_reversal_amount_cents?: number
+          recovered_amount_cents?: number
+          recovery_amount_cents?: number
+          recovery_state?: string
           session_payment_id: string
           status: string
           stripe_charge_id?: string | null
           stripe_dispute_id: string
+          stripe_transfer_id?: string | null
+          stripe_transfer_reversal_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -6229,10 +6251,21 @@ export type Database = {
           id?: string
           metadata?: Json
           opened_at?: string
+          previous_financial_status?:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null
+          provider_event_created_at?: string
+          provider_event_id?: string | null
+          provider_reversal_amount_cents?: number
+          recovered_amount_cents?: number
+          recovery_amount_cents?: number
+          recovery_state?: string
           session_payment_id?: string
           status?: string
           stripe_charge_id?: string | null
           stripe_dispute_id?: string
+          stripe_transfer_id?: string | null
+          stripe_transfer_reversal_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -6262,6 +6295,13 @@ export type Database = {
             columns: ["session_payment_id"]
             isOneToOne: false
             referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_disputes_stripe_transfer_id_fkey"
+            columns: ["stripe_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_transfers"
             referencedColumns: ["id"]
           },
         ]
@@ -7928,6 +7968,117 @@ export type Database = {
           },
         ]
       }
+      stripe_payout_balance_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount_cents: number
+          connected_balance_transaction_id: string
+          created_at: string
+          currency: string
+          id: string
+          occurred_at: string
+          original_stripe_payout_id: string
+          reconciled_at: string
+          session_payment_id: string
+          source_id: string
+          stripe_payout_id: string
+          stripe_transfer_id: string
+          stripe_transfer_reversal_id: string
+          verified_refund_charge_id: string
+        }
+        Insert: {
+          adjustment_type?: string
+          amount_cents: number
+          connected_balance_transaction_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          occurred_at: string
+          original_stripe_payout_id: string
+          reconciled_at: string
+          session_payment_id: string
+          source_id: string
+          stripe_payout_id: string
+          stripe_transfer_id: string
+          stripe_transfer_reversal_id: string
+          verified_refund_charge_id: string
+        }
+        Update: {
+          adjustment_type?: string
+          amount_cents?: number
+          connected_balance_transaction_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          occurred_at?: string
+          original_stripe_payout_id?: string
+          reconciled_at?: string
+          session_payment_id?: string
+          source_id?: string
+          stripe_payout_id?: string
+          stripe_transfer_id?: string
+          stripe_transfer_reversal_id?: string
+          verified_refund_charge_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_payout_balance_adjustme_stripe_transfer_reversal_id_fkey"
+            columns: ["stripe_transfer_reversal_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_transfer_reversals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustment_original_stripe_payout_id_fkey"
+            columns: ["original_stripe_payout_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "private_direct_transfer_session_payments_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "private_session_financial_flow_v10_v1"
+            referencedColumns: ["session_payment_id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "private_weekly_payout_session_payments_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_stripe_payout_id_fkey"
+            columns: ["stripe_payout_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payout_balance_adjustments_stripe_transfer_id_fkey"
+            columns: ["stripe_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_payout_transfer_allocations: {
         Row: {
           allocation_origin: string
@@ -9371,6 +9522,7 @@ export type Database = {
           reason_code: string
           recovered_amount_cents: number
           session_confirmation_incident_id: string | null
+          session_dispute_id: string | null
           session_payment_id: string | null
           status: string
           stripe_transfer_id: string | null
@@ -9390,6 +9542,7 @@ export type Database = {
           reason_code: string
           recovered_amount_cents?: number
           session_confirmation_incident_id?: string | null
+          session_dispute_id?: string | null
           session_payment_id?: string | null
           status?: string
           stripe_transfer_id?: string | null
@@ -9409,6 +9562,7 @@ export type Database = {
           reason_code?: string
           recovered_amount_cents?: number
           session_confirmation_incident_id?: string | null
+          session_dispute_id?: string | null
           session_payment_id?: string | null
           status?: string
           stripe_transfer_id?: string | null
@@ -9429,6 +9583,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapist_session_read_model_v1"
             referencedColumns: ["attendanceIncidentId"]
+          },
+          {
+            foreignKeyName: "therapist_financial_debts_session_dispute_id_fkey"
+            columns: ["session_dispute_id"]
+            isOneToOne: false
+            referencedRelation: "session_disputes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "therapist_financial_debts_session_payment_id_fkey"
@@ -9837,6 +9998,84 @@ export type Database = {
             referencedColumns: ["therapy_id"]
           },
         ]
+      }
+      therapist_metric_ingestion_daily_health: {
+        Row: {
+          accepted_events: number
+          created_at: string
+          duplicate_events: number
+          failed_requests: number
+          invalid_requests: number
+          latest_event_at: string | null
+          metric_date: string
+          rate_limited_requests: number
+          updated_at: string
+        }
+        Insert: {
+          accepted_events?: number
+          created_at?: string
+          duplicate_events?: number
+          failed_requests?: number
+          invalid_requests?: number
+          latest_event_at?: string | null
+          metric_date: string
+          rate_limited_requests?: number
+          updated_at?: string
+        }
+        Update: {
+          accepted_events?: number
+          created_at?: string
+          duplicate_events?: number
+          failed_requests?: number
+          invalid_requests?: number
+          latest_event_at?: string | null
+          metric_date?: string
+          rate_limited_requests?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      therapist_metric_telemetry_health_runs: {
+        Row: {
+          aggregate_mismatch_count: number
+          aggregates_purged: number
+          checked_at: string
+          created_at: string
+          events_purged: number
+          funnel_violation_count: number
+          ingestion_health_rows_purged: number
+          last_event_at: string | null
+          metric_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aggregate_mismatch_count?: number
+          aggregates_purged?: number
+          checked_at?: string
+          created_at?: string
+          events_purged?: number
+          funnel_violation_count?: number
+          ingestion_health_rows_purged?: number
+          last_event_at?: string | null
+          metric_date: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          aggregate_mismatch_count?: number
+          aggregates_purged?: number
+          checked_at?: string
+          created_at?: string
+          events_purged?: number
+          funnel_violation_count?: number
+          ingestion_health_rows_purged?: number
+          last_event_at?: string | null
+          metric_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       therapist_metrics_runtime_config: {
         Row: {
@@ -12038,6 +12277,113 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapist_service_allowed_catalog_v1"
             referencedColumns: ["therapy_id"]
+          },
+        ]
+      }
+      therapist_session_observations: {
+        Row: {
+          booking_id: string
+          content: string
+          created_at: string
+          id: string
+          patient_profile_id: string
+          payload_hash: string
+          request_id: string
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          content: string
+          created_at?: string
+          id?: string
+          patient_profile_id: string
+          payload_hash: string
+          request_id: string
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          patient_profile_id?: string
+          payload_hash?: string
+          request_id?: string
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_session_observations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists_internal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v_internal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search_internal"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_session_observations_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -15763,6 +16109,10 @@ export type Database = {
         Returns: undefined
       }
       admin_audit_json_object_v1: { Args: { p_value: Json }; Returns: Json }
+      admin_cancel_uncharged_session_v10: {
+        Args: { p_booking_id: string; p_reason: string; p_request_id: string }
+        Returns: Json
+      }
       admin_decide_therapy_catalog_request_v1: {
         Args: {
           p_actor_user_id: string
@@ -15926,11 +16276,31 @@ export type Database = {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
+      admin_get_operation_detail_v1_before_professional_main_data: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
+      admin_get_operation_detail_v1_before_session_reservation: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
+      admin_get_operation_detail_v1_before_verification_identity: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
       admin_get_operation_detail_v1_internal: {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
       admin_get_operation_module_v1: {
+        Args: { p_limit?: number; p_module: string; p_offset?: number }
+        Returns: Json
+      }
+      admin_get_operation_module_v1_before_session_reservation: {
+        Args: { p_limit?: number; p_module: string; p_offset?: number }
+        Returns: Json
+      }
+      admin_get_operation_module_v1_before_verification_identity: {
         Args: { p_limit?: number; p_module: string; p_offset?: number }
         Returns: Json
       }
@@ -15950,11 +16320,15 @@ export type Database = {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
-      admin_get_sessions_module_v1: {
-        Args: { p_query?: Json }
+      admin_get_operation_module_v2_before_patient_analytics: {
+        Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
       admin_get_operation_module_v2_before_patient_restrictions: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      admin_get_operation_module_v2_before_review_rating_filter: {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
@@ -15966,6 +16340,7 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: Json
       }
+      admin_get_sessions_module_v1: { Args: { p_query?: Json }; Returns: Json }
       admin_get_support_inbox_v1: { Args: { p_query?: Json }; Returns: Json }
       admin_get_support_ticket_management_v1: {
         Args: { p_ticket_id: string }
@@ -15991,6 +16366,10 @@ export type Database = {
           id: string
           visibility: string
         }[]
+      }
+      admin_get_therapist_metrics_telemetry_health_v1: {
+        Args: never
+        Returns: Json
       }
       admin_get_therapist_profile_review_v1: {
         Args: { p_therapist_profile_id: string }
@@ -16409,6 +16788,10 @@ export type Database = {
         Args: { p_booking_id: string; p_source?: string }
         Returns: string
       }
+      check_therapist_metrics_telemetry_health_v1: {
+        Args: { p_now?: string }
+        Returns: Json
+      }
       check_therapist_public_slug_availability_v1: {
         Args: { p_actor_user_id: string; p_slug: string }
         Returns: Json
@@ -16573,6 +16956,10 @@ export type Database = {
           therapist_retained_cents: number
         }[]
       }
+      claim_session_dispute_recovery_v10: {
+        Args: { p_stripe_dispute_id: string }
+        Returns: boolean
+      }
       claim_session_payment_authorization_v1: {
         Args: {
           p_event_created_at: string
@@ -16698,6 +17085,13 @@ export type Database = {
           p_worker_id: string
         }
         Returns: boolean
+      }
+      complete_session_dispute_recovery_v10: {
+        Args: {
+          p_definitive_provider_shortfall?: boolean
+          p_stripe_dispute_id: string
+        }
+        Returns: Json
       }
       complete_session_payment_setup_v10: {
         Args: {
@@ -17374,6 +17768,17 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_payouts_v10: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_payouts_v2: {
         Args: {
           p_page?: number
@@ -17520,6 +17925,19 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_receipts_v5: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_search?: string
+          p_status?: string
+          p_therapy_id?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_receipts_v6: {
         Args: {
           p_page?: number
           p_page_size?: number
@@ -17705,8 +18123,16 @@ export type Database = {
         Args: { p_period_days?: number }
         Returns: Json
       }
+      get_therapist_metrics_dashboard_v3: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
       get_therapist_metrics_foundation_v1: { Args: never; Returns: Json }
       get_therapist_metrics_overview_v1: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
+      get_therapist_metrics_overview_v2: {
         Args: { p_period_days?: number }
         Returns: Json
       }
@@ -17967,6 +18393,10 @@ export type Database = {
         Args: { p_now: string; p_run_id: string }
         Returns: boolean
       }
+      mark_session_dispute_recovery_review_v10: {
+        Args: { p_state: string; p_stripe_dispute_id: string }
+        Returns: undefined
+      }
       mark_structured_participant_messages_read_v1: {
         Args: { p_conversation_id: string }
         Returns: number
@@ -18068,6 +18498,30 @@ export type Database = {
         }
         Returns: Json
       }
+      private_admin_finance_v2_before_canceled_amount_20260926: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_finance_v2_before_completed_refunds_20260927: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_finance_v2_before_period_amounts_20260926: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_finance_v2_before_subscription_dashboard_20260927: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_finance_v2_pre_failed_metric_20260924: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
+      private_admin_get_dashboard_v1_before_financial_results_v1: {
+        Args: never
+        Returns: Json
+      }
       private_admin_get_finance_detail_v1_v9_legacy: {
         Args: { p_id: string; p_module: string }
         Returns: Json
@@ -18162,6 +18616,15 @@ export type Database = {
         Args: { p_session_payment_id: string }
         Returns: number
       }
+      private_therapist_payout_groups_v10: {
+        Args: {
+          p_groups: Json
+          p_stage: string
+          p_therapist_profile_id: string
+          p_timezone: string
+        }
+        Returns: Json
+      }
       private_therapist_payouts_v2_legacy_blocked_card: {
         Args: {
           p_page?: number
@@ -18191,6 +18654,17 @@ export type Database = {
           p_period_end?: string
           p_period_start?: string
           p_status?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      private_therapist_payouts_v9_before_received_summary_20260926: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
           p_timezone?: string
         }
         Returns: Json
@@ -18247,6 +18721,10 @@ export type Database = {
         Returns: Json
       }
       purge_temporary_data_v1: { Args: { p_now?: string }; Returns: Json }
+      purge_therapist_metrics_telemetry_v1: {
+        Args: { p_now?: string }
+        Returns: Json
+      }
       queue_therapist_profile_review_v1: {
         Args: { p_therapist_profile_id: string }
         Returns: undefined
@@ -18269,6 +18747,15 @@ export type Database = {
         Returns: Json
       }
       reconcile_automatic_stripe_payout_v2: {
+        Args: {
+          p_balance_transactions: Json
+          p_observed_at?: string
+          p_stripe_account_id: string
+          p_stripe_payout_id: string
+        }
+        Returns: Json
+      }
+      reconcile_automatic_stripe_payout_v3: {
         Args: {
           p_balance_transactions: Json
           p_observed_at?: string
@@ -18309,6 +18796,32 @@ export type Database = {
           p_transfer_id: string
         }
         Returns: string
+      }
+      reconcile_session_dispute_event_v10: {
+        Args: {
+          p_amount_cents: number
+          p_currency: string
+          p_event_created_at: string
+          p_event_id: string
+          p_event_type: string
+          p_evidence_due_by?: string
+          p_status: string
+          p_stripe_charge_id: string
+          p_stripe_dispute_id: string
+        }
+        Returns: Json
+      }
+      reconcile_session_dispute_transfer_reversal_v10: {
+        Args: {
+          p_amount_cents: number
+          p_currency: string
+          p_occurred_at: string
+          p_stripe_dispute_id: string
+          p_stripe_event_id: string
+          p_stripe_reversal_id: string
+          p_stripe_transfer_id: string
+        }
+        Returns: Json
       }
       reconcile_session_payment_amount_v1: {
         Args: {
@@ -18429,6 +18942,10 @@ export type Database = {
         Args: { p_events: Json; p_session_id: string }
         Returns: Json
       }
+      record_public_therapist_metric_events_v2: {
+        Args: { p_events: Json; p_session_id: string }
+        Returns: Json
+      }
       record_session_participant_confirmation_v1: {
         Args: {
           p_actor_user_id: string
@@ -18501,6 +19018,10 @@ export type Database = {
           p_stripe_net_amount_cents?: number
         }
         Returns: Json
+      }
+      record_therapist_metric_ingestion_health_v1: {
+        Args: { p_occurred_at?: string; p_outcome: string; p_quantity?: number }
+        Returns: undefined
       }
       record_zoom_waiting_room_arrival_v2: {
         Args: {
@@ -19012,6 +19533,15 @@ export type Database = {
         }
         Returns: Json
       }
+      save_therapist_session_observation_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_booking_id: string
+          p_content: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       schedule_booking_reminder_jobs_v1: {
         Args: { p_booking_id: string; p_now?: string }
         Returns: number
@@ -19155,6 +19685,16 @@ export type Database = {
       }
       session_quality_review_state_v1: {
         Args: { p_attempt_id: string; p_now?: string }
+        Returns: Json
+      }
+      set_therapist_metrics_runtime_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_correlation_id?: string
+          p_enabled: boolean
+          p_reason: string
+          p_request_id: string
+        }
         Returns: Json
       }
       set_weekly_payout_scheduler_active_v1: {
@@ -19417,6 +19957,12 @@ export type Database = {
         Args: { p_plan: Database["public"]["Enums"]["therapist_plan"] }
         Returns: number
       }
+      therapist_session_observation_payload: {
+        Args: {
+          p_observation: Database["public"]["Tables"]["therapist_session_observations"]["Row"]
+        }
+        Returns: Json
+      }
       therapy_has_active_matching_theme_v1: {
         Args: { p_therapy_id: string }
         Returns: boolean
@@ -19612,12 +20158,12 @@ export type Database = {
         | "completed"
         | "cancelled_by_patient"
         | "cancelled_by_therapist"
-        | "cancelled_by_admin"
         | "no_show_patient"
         | "no_show_therapist"
         | "refunded"
         | "cancelled_by_payment"
         | "no_show_both"
+        | "cancelled_by_admin"
       connect_onboarding_status:
         | "not_started"
         | "account_created"
@@ -19947,12 +20493,12 @@ export const Constants = {
         "completed",
         "cancelled_by_patient",
         "cancelled_by_therapist",
-        "cancelled_by_admin",
         "no_show_patient",
         "no_show_therapist",
         "refunded",
         "cancelled_by_payment",
         "no_show_both",
+        "cancelled_by_admin",
       ],
       connect_onboarding_status: [
         "not_started",

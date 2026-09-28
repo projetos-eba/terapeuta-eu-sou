@@ -809,6 +809,34 @@ describe("TherapistFinancePage", () => {
     );
   });
 
+  it("explains a provider-confirmed post-payout refund debit without inflating sessions", () => {
+    const payouts = fixture().payouts;
+    payouts.agenda.inTransit[0] = {
+      ...payouts.agenda.inTransit[0],
+      amountCents: 6955,
+      composition: [
+        ...payouts.agenda.inTransit[0].composition,
+        {
+          adjustmentId: "adjustment-1",
+          amountCents: -1045,
+          label: "Ajuste de reembolso",
+          occurredAt: "2026-07-29T14:00:00.000Z",
+          type: "adjustment",
+        },
+      ],
+      sessionCount: 1,
+    };
+
+    renderPage("payouts", { payouts });
+
+    fireEvent.click(screen.getAllByText("Ver composição")[0]);
+    expect(screen.getByText("Ajuste de reembolso")).toBeInTheDocument();
+    expect(screen.getByText(/Descontado do saldo em/)).toBeInTheDocument();
+    expect(screen.getByText("-R$ 10,45")).toBeInTheDocument();
+    expect(screen.getAllByText("1 sessão").length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/transfer reversal|conciliação/i);
+  });
+
   it("offers 7, 15 and 30 days and keeps 15 days selected by default", () => {
     renderPage("payouts");
 
@@ -1051,6 +1079,7 @@ function fixture(): TherapistFinancePageData {
                 sessionDate: "2026-07-28T13:00:00.000Z",
                 sessionPaymentId: "payment-1",
                 therapyNameSnapshot: "Reiki",
+                type: "session",
               },
             ],
             date: "2026-07-30",
@@ -1072,6 +1101,7 @@ function fixture(): TherapistFinancePageData {
                 sessionDate: "2026-07-29T13:00:00.000Z",
                 sessionPaymentId: "payment-2",
                 therapyNameSnapshot: "Reiki",
+                type: "session",
               },
             ],
             date: "2026-08-01",
@@ -1081,7 +1111,7 @@ function fixture(): TherapistFinancePageData {
           },
         ],
       },
-      contractVersion: 9,
+      contractVersion: 10,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",
@@ -1100,6 +1130,7 @@ function fixture(): TherapistFinancePageData {
               sessionDate: "2026-07-28T13:00:00.000Z",
               sessionPaymentId: "payment-1",
               therapyNameSnapshot: "Reiki",
+              type: "session",
             },
           ],
           date: "2026-07-27",

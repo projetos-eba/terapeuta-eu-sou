@@ -238,6 +238,25 @@ previsão fictícia e dupla contabilização. Os IDs e a classificação ficam n
 Payout para auditoria; a correção de atribuição não cria movimento Stripe nem
 novo lançamento no ledger.
 
+Quando um Payout posterior efetivamente contém esse `payment_refund`, o contrato
+V3 de conciliação aceita o débito somente se a Stripe confirmar o Refund exato
+e o banco provar, de forma única, toda a cadeia V10: sessão integralmente
+reembolsada, Transfer direto integralmente revertido, reversão e ledger
+imutáveis, Payout original já pago antes do estorno, ausência de dívida aberta
+e ausência de incidente de reembolso. As entradas positivas do novo Payout
+continuam em `stripe_payout_transfer_allocations`; o débito fica na tabela
+restrita `stripe_payout_balance_adjustments`. A igualdade obrigatória é:
+
+`soma dos Transfers positivos - soma dos ajustes = valor líquido do Payout`.
+
+Somente essa igualdade com todos os movimentos explicados conclui a alocação.
+O read model privado `get_private_therapist_payouts_v10` mantém a quantidade de
+sessões positivas, mostra o ajuste negativo na composição e usa o valor líquido
+real do Payout em `A caminho`/`Recebido`. O reprocessamento horário de
+`reconcile-stripe-transfers` recupera Payouts já importados; não é necessário
+nem permitido criar outro Refund, Reversal, Transfer, Payout ou lançamento de
+ledger. Evidência incompleta delega ao reconciliador V2 e continua fail-closed.
+
 O total “Recebido no período” usa exatamente as mesmas alocações bancárias
 aceitas na composição recebida, inclusive quando a reversão integral ocorreu
 somente depois do Payout pago. A paginação do histórico não limita esse total.
@@ -254,8 +273,8 @@ válido. Quando o incidente de conciliação é resolvido, o aviso histórico pa
 a informar a resolução e deixa de contar como atenção não lida; uma reabertura
 volta a sinalizar atenção sem criar outro registro.
 
-Eventos duplicados e reconciliações repetidas não duplicam alocações, ledger,
-e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,
+Eventos duplicados e reconciliações repetidas não duplicam alocações, ajustes,
+ledger, e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,
 gera incidente e comunicação corretiva.
 
 ## Encerramento de conta de recebimento

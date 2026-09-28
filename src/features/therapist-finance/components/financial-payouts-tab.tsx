@@ -361,21 +361,35 @@ function PayoutRowDetails({
       </summary>
       <div className="mb-3 rounded-lg bg-surface-soft p-4 text-left">
         <ul className="grid gap-3">
-          {composition.map((session) => (
+          {composition.map((item) => (
             <li
               className="grid gap-1 border-b border-brand-lavender/70 pb-3 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4"
-              key={session.sessionPaymentId}
+              key={
+                item.type === "session"
+                  ? item.sessionPaymentId
+                  : item.adjustmentId
+              }
             >
               <div>
                 <p className="text-sm font-extrabold text-brand-deep">
-                  {session.patientDisplayName} · {session.therapyNameSnapshot}
+                  {item.type === "session"
+                    ? `${item.patientDisplayName} · ${item.therapyNameSnapshot}`
+                    : item.label}
                 </p>
                 <p className="mt-1 text-xs font-bold text-tesText-secondary">
-                  Sessão em {formatDateTime(session.sessionDate, timezone)}
+                  {item.type === "session"
+                    ? `Sessão em ${formatDateTime(item.sessionDate, timezone)}`
+                    : `Descontado do saldo em ${formatDateTime(item.occurredAt, timezone)}`}
                 </p>
               </div>
-              <strong className="text-sm text-brand-deep">
-                {formatCurrency(session.amountCents)}
+              <strong
+                className={`text-sm ${
+                  item.type === "adjustment"
+                    ? "text-status-danger"
+                    : "text-brand-deep"
+                }`}
+              >
+                {formatCurrency(item.amountCents)}
               </strong>
             </li>
           ))}

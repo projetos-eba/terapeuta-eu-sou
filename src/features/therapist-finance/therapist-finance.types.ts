@@ -151,14 +151,27 @@ export type TherapistReceiptsContract = {
   therapyOptions: TherapistReceiptTherapyOption[];
 };
 
-export type TherapistPayoutCompositionItem = {
+export type TherapistPayoutSessionCompositionItem = {
   amountCents: number;
   bookingId: string;
   patientDisplayName: string;
   sessionDate: string;
   sessionPaymentId: string;
   therapyNameSnapshot: string;
+  type: "session";
 };
+
+export type TherapistPayoutAdjustmentCompositionItem = {
+  adjustmentId: string;
+  amountCents: number;
+  label: string;
+  occurredAt: string;
+  type: "adjustment";
+};
+
+export type TherapistPayoutCompositionItem =
+  | TherapistPayoutSessionCompositionItem
+  | TherapistPayoutAdjustmentCompositionItem;
 
 export type TherapistPayoutAgendaGroup = {
   amountCents: number;
@@ -192,7 +205,7 @@ export type TherapistPayoutsContract = {
     periodStart: string;
     predicted: TherapistPayoutAgendaGroup[];
   };
-  contractVersion: 9;
+  contractVersion: 10;
   filters: TherapistFinancePeriod & {
     agendaDays: 7 | 15 | 30;
   };
