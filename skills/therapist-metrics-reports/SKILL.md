@@ -61,7 +61,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Agregado: `therapist_metric_daily_aggregates`, com RLS pelo proprietário.
 - Ingestão: `record_public_therapist_metric_events_v1`.
 - Read model: `get_therapist_metrics_overview_v1`.
-- Períodos: 30, 60, 90 ou 120 dias locais completos.
+- Períodos da interface e da exportação atuais: 30 ou 60 dias locais
+  completos. O read model `v1` preserva compatibilidade técnica com 90 e 120
+  dias, sem expor essas opções na rota ativa.
 - Telemetria pública: desativada por padrão em
   `therapist_metrics_runtime_config`; ativação exige validação formal externa.
 - Eventos de navegador: impressão de busca, abertura do perfil e início do
@@ -86,8 +88,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
   menos exceções históricas indisponíveis.
 - Capacidade ocupada: buckets ofertados sobrepostos por reservas confirmadas,
   concluídas ou com ausência registrada.
-- 30, 60, 90 e 120 dias só saem de `Histórico em formação` após cobertura integral do
-  período solicitado.
+- O período solicitado só sai de `Histórico em formação` após cobertura
+  integral. A interface atual solicita 30 ou 60 dias; 90 e 120 permanecem
+  apenas como compatibilidade dos contratos `v1`.
 
 ## Autoridades MTR-4, MTR-5 E MTR-7
 
@@ -95,7 +98,7 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Sessões: `get_therapist_session_metrics_v1`.
 - Interesse: `get_therapist_interest_metrics_v1`, exclusivo do Premium Plus.
 - Exportação: `/api/therapist/metrics/export`, CSV privado e agregado.
-- Períodos: 30, 60, 90 ou 120 dias locais completos.
+- Períodos da rota ativa de exportação: 30 ou 60 dias locais completos.
 - Presença: completed dividido por completed + no-show; cancelamentos ficam
   fora do denominador.
 - Continuidade: segmentos exclusivos e coortes sem IDs de pacientes.
@@ -165,7 +168,8 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
   rolável nomeada em vez de reduzir texto funcional.
 - A Visão geral inclui série de atividade, descoberta discriminada, ranking
   das próprias terapias, favoritos do perfil e aviso de ocupação.
-- O filtro de período usa URL e aceita somente 30/60/90/120 dias.
+- O filtro de período usa URL e aceita somente 30/60 dias. Os períodos 90/120
+  permanecem restritos à compatibilidade técnica dos read models `v1`.
 - Texto funcional mínimo de 14px.
 - Touch targets mínimos de 44px.
 - Zero legítimo, indisponibilidade e capability negada são estados distintos.
