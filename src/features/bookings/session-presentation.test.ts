@@ -183,6 +183,34 @@ describe("mapSessionPresentation", () => {
     expect(result.actions.canCancel).toBe(false);
   });
 
+  it.each([
+    [
+      BookingStatus.CancelledByPatient,
+      "A pessoa atendida cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+    ],
+    [
+      BookingStatus.CancelledByAdmin,
+      "A administração cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+    ],
+  ])(
+    "explains a %s cancellation to the therapist without exposing internal detail",
+    (bookingStatus, description) => {
+      const result = mapSessionPresentation(
+        sessionFixture({
+          bookingStatus,
+          financialStatus: SessionFinancialStatus.Canceled,
+        }),
+        now,
+      );
+
+      expect(result).toMatchObject({
+        description,
+        label: "Cancelada",
+        state: "cancelled",
+      });
+    },
+  );
+
   it("keeps a future cancelled session out of the upcoming group", () => {
     expect(
       isSessionUpcoming(

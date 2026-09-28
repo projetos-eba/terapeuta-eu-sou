@@ -110,6 +110,7 @@ export function resolveReservationContext(input: {
     priceLabel: formatCurrency(priceCents),
     reservationUnavailable: params.has("service") && !serviceId,
     retryBookingId: parseUuid(params.get("booking")),
+    retryCheckoutAction: null,
     patientScheduleIntervals: [],
     patientScheduleCheckStatus: input.isPatientAuthenticated
       ? "unavailable"

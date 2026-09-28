@@ -115,6 +115,19 @@ export function mapSessionPresentation(
     }),
   };
 
+  const cancellationNotice = getTherapistSessionCancellationNotice(session);
+
+  if (cancellationNotice) {
+    return presentation(
+      "cancelled",
+      "Cancelada",
+      cancellationNotice.description,
+      "medium",
+      "danger",
+      actions,
+    );
+  }
+
   if (session.financialStatus === SessionFinancialStatus.Refunded) {
     return presentation(
       "refunded",
@@ -516,6 +529,39 @@ function presentation(
   actions: SessionPresentation["actions"],
 ): SessionPresentation {
   return { actions, description, label, priority, state, tone };
+}
+
+export function getTherapistSessionCancellationNotice(
+  session: Pick<SessionReadModelItem, "bookingStatus">,
+) {
+  switch (session.bookingStatus) {
+    case BookingStatus.CancelledByPatient:
+      return {
+        description:
+          "A pessoa atendida cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+        summary: "Cancelada pela pessoa atendida",
+      };
+    case BookingStatus.CancelledByAdmin:
+      return {
+        description:
+          "A administração cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+        summary: "Cancelada pela administração",
+      };
+    case BookingStatus.CancelledByPayment:
+      return {
+        description:
+          "Esta sessão foi cancelada porque o pagamento não foi confirmado. Se tiver dúvidas, fale com o Suporte TES.",
+        summary: "Cancelada por falta de pagamento",
+      };
+    case BookingStatus.CancelledByTherapist:
+      return {
+        description:
+          "Esta sessão foi cancelada. Se tiver dúvidas, fale com o Suporte TES.",
+        summary: "Sessão cancelada",
+      };
+    default:
+      return null;
+  }
 }
 
 function getCancellationDescription(session: SessionReadModelItem) {

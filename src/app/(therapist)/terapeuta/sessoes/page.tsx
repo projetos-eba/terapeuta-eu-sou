@@ -28,6 +28,7 @@ import {
   BookingReference,
   formatSessionDateTime,
   formatSessionMoney,
+  getTherapistSessionCancellationNotice,
   isSessionUpcoming,
   mapSessionPresentation,
   type SessionPresentation,
@@ -101,6 +102,7 @@ export default async function TherapistSessionsPage({
   const historyFilters = {
     ...parsedFilters.filters,
     cursor: pastCursor,
+    includeFutureTerminal: true,
     limit: listLimits.limits.past,
     periodEnd: now,
   };
@@ -231,8 +233,8 @@ export default async function TherapistSessionsPage({
                   title="Sessões que irão acontecer"
                 />
                 <SessionGroup
-                  description="Sessões encerradas, canceladas ou com horário já ultrapassado."
-                  emptyMessage="Não há sessões passadas neste recorte."
+                  description="Sessões encerradas, com horário já passado ou canceladas — inclusive quando o horário original ainda seria futuro."
+                  emptyMessage="Não há sessões encerradas ou canceladas neste recorte."
                   items={pastItems}
                   nextHref={buildScopedLoadMoreSessionsHref(
                     parsedFilters.filters,
@@ -242,7 +244,7 @@ export default async function TherapistSessionsPage({
                   )}
                   page={historyData?.page ?? null}
                   actorSessionStates={actorSessionStates}
-                  title="Sessões que já passaram"
+                  title="Histórico e canceladas"
                   id="pending-confirmations"
                 />
                 <footer className="flex flex-col gap-2 rounded-card border border-brand-lavender/60 bg-surface-soft/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
@@ -505,6 +507,8 @@ function SessionsTable({
         <tbody className="divide-y divide-brand-lavender/50">
           {items.map((booking) => {
             const presentation = mapSessionPresentation(booking);
+            const cancellationNotice =
+              getTherapistSessionCancellationNotice(booking);
             const detailHref = routes.therapist.sessionDetail(
               booking.bookingId,
             ) as Route;
@@ -556,6 +560,11 @@ function SessionsTable({
                     )}
                     presentation={presentation}
                   />
+                  {cancellationNotice ? (
+                    <p className="mt-1 text-[11px] font-semibold leading-4 text-tesText-secondary">
+                      {cancellationNotice.summary}
+                    </p>
+                  ) : null}
                 </td>
                 <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
@@ -589,6 +598,8 @@ function SessionsMobileList({
     <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {items.map((booking) => {
         const presentation = mapSessionPresentation(booking);
+        const cancellationNotice =
+          getTherapistSessionCancellationNotice(booking);
         return (
           <Link
             className="grid min-w-0 content-start gap-4 rounded-card border border-brand-lavender/60 bg-white p-4 shadow-card transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
@@ -618,15 +629,22 @@ function SessionsMobileList({
                   {formatSessionDateTime(booking.startsAt, booking.timezone)}
                 </span>
               </span>
-              <StatusBadge
-                actorRealized={actorSessionStates.realizedIds.has(
-                  booking.bookingId,
-                )}
-                feedbackPending={actorSessionStates.pendingFeedbackIds.has(
-                  booking.bookingId,
-                )}
-                presentation={presentation}
-              />
+              <span className="shrink-0 text-right">
+                <StatusBadge
+                  actorRealized={actorSessionStates.realizedIds.has(
+                    booking.bookingId,
+                  )}
+                  feedbackPending={actorSessionStates.pendingFeedbackIds.has(
+                    booking.bookingId,
+                  )}
+                  presentation={presentation}
+                />
+                {cancellationNotice ? (
+                  <span className="mt-1 block text-[11px] font-semibold leading-4 text-tesText-secondary">
+                    {cancellationNotice.summary}
+                  </span>
+                ) : null}
+              </span>
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
               <span>Atendimento online</span>
@@ -974,6 +992,10 @@ const bookingStatusOptions = [
   {
     label: "Canceladas pelo terapeuta",
     value: BookingStatus.CancelledByTherapist,
+  },
+  {
+    label: "Canceladas pela administração",
+    value: BookingStatus.CancelledByAdmin,
   },
   { label: "Reembolsadas", value: BookingStatus.Refunded },
 ];

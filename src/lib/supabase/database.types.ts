@@ -17805,6 +17805,22 @@ export type Database = {
         }
         Returns: Json
       }
+      get_therapist_sessions_v2: {
+        Args: {
+          p_booking_status?: Database["public"]["Enums"]["booking_status"]
+          p_cursor_booking_id?: string
+          p_cursor_starts_at?: string
+          p_financial_status?: Database["public"]["Enums"]["session_financial_status"]
+          p_include_future_terminal?: boolean
+          p_limit?: number
+          p_modality?: string
+          p_patient_profile_id?: string
+          p_period_end?: string
+          p_period_start?: string
+          p_service_id?: string
+        }
+        Returns: Json
+      }
       get_therapist_shell_counters_v1: { Args: never; Returns: Json }
       increment_therapist_metric_daily_v1: {
         Args: {

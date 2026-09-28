@@ -50,7 +50,7 @@ export function FinancialPayoutsTab({
         className="grid gap-3 md:grid-cols-3"
       >
         <PayoutMetricCard
-          description="Valores previstos para os próximos dias."
+          description="Valores previstos para os próximos repasses."
           icon={CalendarDays}
           label="A receber"
           value={payouts.summary.expectedCents}
@@ -76,7 +76,7 @@ export function FinancialPayoutsTab({
               Próximos repasses
             </h2>
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Veja o que está mais perto de chegar à sua conta.
+              Veja os próximos valores previstos para chegar à sua conta.
             </p>
           </div>
           <nav
@@ -110,7 +110,7 @@ export function FinancialPayoutsTab({
             />
             <AgendaGroup
               items={futurePayouts}
-              label="Próximos previstos"
+              label="Próximos repasses previstos"
               timezone={payouts.filters.timezone}
               tone="predicted"
             />
@@ -262,10 +262,10 @@ function AgendaRow({
       date={item.date}
       dateLabel={
         item.status === "balance_schedule"
-          ? "Saldo disponível em"
+          ? "Recebimento previsto em"
           : item.status === "awaiting_bank_date"
             ? "Chegada à conta"
-            : "Chegada prevista em"
+            : "Previsão de recebimento"
       }
       sessionCount={item.sessionCount}
       statusLabel={statusLabel}

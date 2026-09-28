@@ -65,13 +65,13 @@ type ReceiptListCopy = {
 };
 
 const defaultReceiptListCopy: ReceiptListCopy = {
-  ariaLabel: "Movimentações das cobranças por sessão",
+  ariaLabel: "Pagamentos por sessão",
   emptyDescription:
     "Tente outro período ou ajuste os filtros para consultar suas sessões.",
   emptyTitle: "Ainda não há cobranças neste período",
   subtitle:
-    "Confira o valor da sessão, a Taxa de serviço, sua parte e a próxima etapa da cobrança.",
-  title: "Movimentações por sessão",
+    "Veja o valor de cada sessão, os custos da plataforma, o valor líquido e a próxima etapa do pagamento.",
+  title: "Pagamentos por sessão",
 };
 
 const receiptListCopyByStatus: Record<TherapistChargeStatus, ReceiptListCopy> =
@@ -202,7 +202,7 @@ export function FinancialReceiptsTab({
           </div>
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,280px)_minmax(180px,240px)_minmax(320px,1fr)]">
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-              Status da cobrança
+              Status do pagamento
               <select
                 className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                 defaultValue={filters.status ?? ""}
@@ -236,7 +236,7 @@ export function FinancialReceiptsTab({
               </select>
             </label>
             <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep sm:col-span-2 lg:col-span-1">
-              Pessoa
+              Pessoa atendida
               <input
                 className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
                 defaultValue={filters.search ?? ""}
@@ -295,13 +295,13 @@ export function FinancialReceiptsTab({
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs font-extrabold uppercase text-tesText-muted">
-                    <TableHead>Pessoa</TableHead>
+                    <TableHead>Pessoa atendida</TableHead>
                     <TableHead>Terapia</TableHead>
                     <TableHead>Sessão</TableHead>
                     <TableHead>Valor da sessão</TableHead>
-                    <TableHead>Taxa de serviço</TableHead>
-                    <TableHead>Sua parte</TableHead>
-                    <TableHead>Situação</TableHead>
+                    <TableHead>Custos da plataforma</TableHead>
+                    <TableHead>Receita líquida</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Próxima etapa</TableHead>
                     <th className="border-b border-brand-lavender py-3">
                       Ação
@@ -373,11 +373,11 @@ export function FinancialReceiptsTab({
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <ReceiptDetail
-                      label="Taxa de serviço"
+                      label="Custos da plataforma"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <ReceiptDetail
-                      label="Sua parte"
+                      label="Receita líquida"
                       value={formatCurrency(item.therapistNetAmountCents)}
                     />
                   </dl>

@@ -41,7 +41,7 @@ import {
 } from "./checkout-mode.ts";
 
 type Body = {
-  attemptKind?: "initial_hold" | "payment_retry";
+  attemptKind?: "initial_hold" | "payment_retry" | "resume_existing_checkout";
   bookingId?: string;
   bookingHoldId?: string;
   checkoutAttemptId?: string;
@@ -145,6 +145,89 @@ runtime.serve(async (request) => {
         409,
         "Esta reserva nao pode ser paga agora.",
       );
+    }
+
+    if (body.attemptKind === "resume_existing_checkout") {
+      if (!existingPayment) {
+        throw new DomainError(
+          "booking_not_payable",
+          409,
+          "Este pagamento não pode mais ser retomado agora.",
+        );
+      }
+
+      const resume = await client.rpc<{
+        allowed?: boolean;
+        paymentFlowVersion?: string;
+        reservationExpiresAt?: string;
+        sessionPaymentId?: string;
+        stripeCheckoutSessionId?: string;
+      }>("get_session_payment_checkout_resume_v1", {
+        p_booking_id: booking.id,
+      });
+      if (
+        !resume?.allowed ||
+        !resume.sessionPaymentId ||
+        !resume.stripeCheckoutSessionId ||
+        !resume.reservationExpiresAt ||
+        resume.sessionPaymentId !== existingPayment.id ||
+        resume.stripeCheckoutSessionId !==
+          existingPayment.stripe_checkout_session_id ||
+        resume.paymentFlowVersion !== existingPayment.payment_flow_version
+      ) {
+        throw new DomainError(
+          "booking_not_payable",
+          409,
+          "Este pagamento não pode mais ser retomado agora.",
+        );
+      }
+
+      const customer = await getExistingPatientCustomer({
+        client,
+        environment: config.environment,
+        patientProfileId: patient.id,
+      });
+      if (!customer) {
+        throw new DomainError(
+          "booking_not_payable",
+          409,
+          "Este pagamento não pode mais ser retomado agora.",
+        );
+      }
+
+      const checkout = await validateReplacementCheckout({
+        booking,
+        checkoutSessionId: resume.stripeCheckoutSessionId,
+        customerId: customer.stripe_customer_id,
+        environment: config.environment,
+        sessionPayment: existingPayment,
+        stripe,
+        stripeMode: config.stripeMode,
+        expectedMode: undefined,
+      });
+      const paymentTiming = getSessionChargeTiming(booking.starts_at);
+      const amounts =
+        checkout.mode === "setup"
+          ? getSessionPaymentFinancials(
+              existingPayment,
+              booking.service_price_cents_snapshot,
+            )
+          : checkoutAmounts(checkout);
+
+      return success({
+        bookingId: booking.id,
+        clientSecret: checkout.client_secret ?? null,
+        checkoutSessionId: checkout.id,
+        ...amounts,
+        mode: "initial_hold",
+        paymentFlowVersion: existingPayment.payment_flow_version,
+        paymentTiming,
+        promotion: null,
+        reservationExpiresAt: resume.reservationExpiresAt,
+        serverNow: new Date().toISOString(),
+        sessionPaymentId: existingPayment.id,
+        url: checkout.url,
+      });
     }
 
     const replacedAttempt = replaceCheckoutSessionId
@@ -861,15 +944,13 @@ async function getOrCreatePatientCustomer(input: {
   stripe: ReturnType<typeof createStripeClient>;
   userId: string;
 }) {
-  const existing = await input.client.get<
-    Array<{ id: string; stripe_customer_id: string }>
-  >(
-    `/rest/v1/stripe_customers?select=id,stripe_customer_id&patient_profile_id=eq.${encodeURIComponent(
-      input.patient.id,
-    )}&role=eq.patient&environment=eq.${encodeURIComponent(input.environment)}&limit=1`,
-  );
+  const existing = await getExistingPatientCustomer({
+    client: input.client,
+    environment: input.environment,
+    patientProfileId: input.patient.id,
+  });
 
-  if (existing[0]) return existing[0];
+  if (existing) return existing;
 
   const profileRows = await input.client.get<Array<{ email: string | null }>>(
     `/rest/v1/profiles?select=email&id=eq.${encodeURIComponent(input.userId)}&limit=1`,
@@ -903,6 +984,22 @@ async function getOrCreatePatientCustomer(input: {
   );
 
   return inserted[0];
+}
+
+async function getExistingPatientCustomer(input: {
+  client: SupabaseRestClient;
+  environment: string;
+  patientProfileId: string;
+}) {
+  const rows = await input.client.get<
+    Array<{ id: string; stripe_customer_id: string }>
+  >(
+    `/rest/v1/stripe_customers?select=id,stripe_customer_id&patient_profile_id=eq.${encodeURIComponent(
+      input.patientProfileId,
+    )}&role=eq.patient&environment=eq.${encodeURIComponent(input.environment)}&limit=1`,
+  );
+
+  return rows[0] ?? null;
 }
 
 async function getSessionPaymentByBooking(

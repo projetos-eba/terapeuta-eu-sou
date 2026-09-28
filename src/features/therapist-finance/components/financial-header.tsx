@@ -29,12 +29,13 @@ export function FinancialHeader({
     tab === "receipts"
       ? {
           description:
-            "Acompanhe os valores de seus encontros e veja o que já foi cobrado, o que ainda está programado e eventuais reembolsos.",
+            "Acompanhe o valor de cada sessão e o status do pagamento. A previsão de recebimento fica em Repasses.",
           title: "Cobranças dos seus encontros",
         }
       : {
-          description: "Mais clareza para acompanhar o crescimento do seu cuidado.",
-          title: "Financeiro completo",
+          description:
+            "Acompanhe seus recebimentos, repasses e resultados financeiros com mais clareza.",
+          title: "Financeiro",
         };
 
   return (

@@ -89,7 +89,7 @@ export function formatComparison(
   }
 
   if (comparison.comparisonStatus === "no_previous_data") {
-    return "Sem período anterior";
+    return "Ainda não há período anterior para comparação.";
   }
 
   if (comparison.comparisonStatus === "division_by_zero") {

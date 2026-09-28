@@ -54,17 +54,18 @@ describe("TherapistMetricsPage", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText("Estamos preparando esta leitura do seu perfil.")
-        .length,
+      screen.getAllByText(
+        "Estamos preparando esta leitura do seu perfil. Uma nova visualização pode levar até um dia para aparecer aqui.",
+      ).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Estamos preparando esta leitura de interesse em agendar.",
+        "Estamos preparando esta leitura de interesse em agendar. Um novo interesse pode levar até um dia para aparecer aqui.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.getAllByText(
-        "As terapias aparecerão aqui quando houver sessões concluídas suficientes para essa leitura.",
+        "Até agora, houve 3 sessões concluídas no período. A terapia mais realizada aparece a partir de 10 sessões.",
       ).length,
     ).toBeGreaterThan(0);
     expect(
@@ -94,8 +95,9 @@ describe("TherapistMetricsPage", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
-      screen.getAllByText("Estamos preparando esta leitura do seu perfil.")
-        .length,
+      screen.getAllByText(
+        "Estamos preparando esta leitura do seu perfil. Uma nova visualização pode levar até um dia para aparecer aqui.",
+      ).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByLabelText("Mapa de calor de sessões: ainda sem dados"),
@@ -164,7 +166,9 @@ describe("TherapistMetricsPage", () => {
     expect(screen.getAllByText("14").length).toBeGreaterThan(0);
     expect(screen.getAllByText("7").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("Eventos agregados do período completo").length,
+      screen.getAllByText(
+        "Visualizações em dias concluídos. Uma nova visualização pode levar até um dia para aparecer aqui.",
+      ).length,
     ).toBeGreaterThan(0);
   });
 
