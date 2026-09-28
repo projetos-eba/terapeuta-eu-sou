@@ -653,7 +653,8 @@ Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
 - `get_private_therapist_receipts_v5`;
-- `get_private_therapist_payouts_v8`;
+- `get_private_therapist_payouts_v10` (consumidor atual; V9 e anteriores
+  permanecem contratos de compatibilidade);
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
@@ -666,6 +667,16 @@ Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não
 expõem linhas cruas. O frontend formata valores, mas não calcula saldos
 autoritativos. Conta de recebimento usa Stripe Connect hospedado; retorno da
 Stripe pede sincronização e nunca marca onboarding como concluído.
+
+O Payout bancário preserva fatos históricos. Se um Transfer direto V10 foi
+incluído em Payout já pago e depois sofreu Refund/Reversal integral, o depósito
+original não é removido. O débito só aparece em outro Payout quando as Balance
+Transactions desse Payout, o Refund Stripe e os vínculos locais formam uma
+cadeia única. `stripe_payout_balance_adjustments` guarda essa evidência negativa
+sem escrever ledger nem comandar movimentação financeira. A projeção V10
+subtrai o ajuste do grupo posterior, preserva a contagem das sessões positivas
+e elimina o alerta administrativo apenas depois da reconciliação integral.
+Qualquer ambiguidade permanece em atenção pelo contrato anterior.
 
 Documentos de contrato:
 

@@ -783,6 +783,14 @@ Todas as métricas devem ler a política e a origem do pagamento.
   posterior pertence a outro ciclo de saldo, o Payout histórico pode expor
   somente o `payment` positivo; a restauração da composição exige IDs exatos e
   cronologia integral de Refund/Reversal, nunca inferência por valor.
+- Quando a Stripe posteriormente inclui esse débito em outro Payout, a
+  conciliação V3 exige duas igualdades: todos os movimentos possuem vínculo
+  local único e `Transfers positivos - ajustes = valor líquido do Payout`.
+  O ajuste negativo é evidência imutável separada das alocações positivas; não
+  cria ledger nem nova operação Stripe. O read model de repasses V10 apresenta
+  o líquido real, mantém a quantidade de sessões positivas e resolve o alerta
+  administrativo somente após convergência integral. Casos ambíguos continuam
+  no reconciliador V2 e permanecem fail-closed.
 - Confirmação e avaliação continuam em métricas de atendimento, sem alterar
   métricas financeiras.
 - Forecasts, resumo, recebimentos, repasses e admin devem suportar V9/V10 na
