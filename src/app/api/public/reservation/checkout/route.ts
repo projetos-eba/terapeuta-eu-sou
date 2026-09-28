@@ -78,6 +78,9 @@ export async function POST(request: Request) {
   if (input.action === "retry") {
     return retryCheckout(input, returnUrlBase);
   }
+  if (input.action === "resume") {
+    return resumeCheckout(input, returnUrlBase);
+  }
 
   if (
     !UUID.test(input.checkoutAttemptId) ||
@@ -229,6 +232,8 @@ function toCheckoutInput(value: unknown) {
         ? "replace"
         : record.action === "retry"
           ? "retry"
+          : record.action === "resume"
+            ? "resume"
           : "create",
     bookingId: asString(record.bookingId),
     checkoutAttemptId: asString(record.checkoutAttemptId ?? record.requestId),
@@ -312,6 +317,62 @@ async function retryCheckout(
       accessToken,
       body: {
         attemptKind: "payment_retry",
+        bookingId: input.bookingId,
+        checkoutAttemptId: input.checkoutAttemptId,
+        returnUrlBase,
+      },
+    });
+    if (!response.data.clientSecret) {
+      throw new SupabaseFunctionError(
+        "stripe-create-session-payment",
+        502,
+        "checkout_client_secret_missing",
+      );
+    }
+    return NextResponse.json({ checkout: response.data, ok: true });
+  } catch (error) {
+    if (error instanceof SupabaseFunctionError) {
+      const mapped = mapCheckoutError(error);
+      return NextResponse.json(
+        { code: mapped.code, message: mapped.message, ok: false },
+        { status: error.status },
+      );
+    }
+    return NextResponse.json(
+      { ok: false, message: "Não foi possível retomar o pagamento agora." },
+      { status: 500 },
+    );
+  }
+}
+
+async function resumeCheckout(
+  input: CheckoutInput,
+  returnUrlBase: string | null,
+) {
+  if (!UUID.test(input.bookingId) || !UUID.test(input.checkoutAttemptId)) {
+    return NextResponse.json(
+      { ok: false, message: "Revise os dados do pagamento." },
+      { status: 422 },
+    );
+  }
+
+  const config = getSupabasePublicConfig();
+  const accessToken = (await cookies()).get("tes_patient_access_token")?.value;
+  if (!config || !accessToken) {
+    return NextResponse.json(
+      { ok: false, message: "Entre na sua conta de cliente para continuar." },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const response = await invokeSupabaseFunction<{
+      data: Omit<CheckoutPayload["data"], "holdExpiresAt" | "holdId">;
+      ok: true;
+    }>(config, "stripe-create-session-payment", {
+      accessToken,
+      body: {
+        attemptKind: "resume_existing_checkout",
         bookingId: input.bookingId,
         checkoutAttemptId: input.checkoutAttemptId,
         returnUrlBase,

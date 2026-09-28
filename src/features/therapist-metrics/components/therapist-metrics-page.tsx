@@ -99,13 +99,14 @@ export function TherapistMetricsPage({
   const returnRateKpi =
     returnRate?.status === "ready" && returnRate.value !== null
       ? {
-          copy: "Pessoas que retornaram para uma nova sessão",
+          copy: "Pessoas que fizeram uma sessão neste período e já tinham feito outra antes.",
           state: "ready" as const,
           value: `${formatNumber(returnRate.value)}%`,
         }
       : {
-          copy: "Quando houver histórico suficiente, você poderá acompanhar quantas pessoas voltaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus.",
-          state: "unavailable" as const,
+          copy:
+            "Mostra pessoas que voltaram para uma nova sessão após já terem sido atendidas. Aparece quando pelo menos 10 pessoas são atendidas no período.",
+          state: "forming" as const,
           value: "-",
         };
   const occupancyKpi =
@@ -140,8 +141,12 @@ export function TherapistMetricsPage({
           value: topTherapy.therapyName,
         }
       : {
-          copy: "As terapias aparecerão aqui quando houver sessões concluídas suficientes para essa leitura.",
-          state: "unavailable" as const,
+          copy: `Até agora, houve ${formatNumber(overview.therapyRanking.observedSample)} ${
+            overview.therapyRanking.observedSample === 1
+              ? "sessão concluída"
+              : "sessões concluídas"
+          } no período. A terapia mais realizada aparece a partir de 10 sessões.`,
+          state: "forming" as const,
           value: "-",
         };
   const comparisonItems = [
@@ -172,7 +177,7 @@ export function TherapistMetricsPage({
       : comparisonReference(
           "Pessoas que retornaram",
           null,
-          "Quando houver histórico suficiente, você poderá acompanhar quantas pessoas retornaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus.",
+          "Mostra pessoas que voltaram para uma nova sessão após já terem sido atendidas. A leitura aparece com pelo menos 10 pessoas atendidas no período.",
         ),
     occupancy.status === "ready" && occupancy.current.percentage !== null
       ? comparisonSampled(
@@ -231,7 +236,7 @@ export function TherapistMetricsPage({
           />
           {data.therapist.plan === TherapistPlan.Premium ? (
             <TherapistLockedCard
-              description="Quando houver histórico suficiente, você poderá acompanhar quantas pessoas voltaram para uma nova sessão. Este acompanhamento faz parte do Premium Plus."
+              description="Veja quantas pessoas voltaram para uma nova sessão após já terem sido atendidas. Esta leitura faz parte do Premium Plus."
               requiredPlan={TherapistPlan.PremiumPlus}
               title="Pessoas que retornaram"
               variant="compact"
@@ -1360,21 +1365,27 @@ function discoveryKpi(
     return {
       copy:
         kind === "profileViews"
-          ? "Estamos preparando esta leitura do seu perfil."
-          : "Estamos preparando esta leitura de interesse em agendar.",
+          ? "Estamos preparando esta leitura do seu perfil. Uma nova visualização pode levar até um dia para aparecer aqui."
+          : "Estamos preparando esta leitura de interesse em agendar. Um novo interesse pode levar até um dia para aparecer aqui.",
       state: "forming" as const,
       value: "—",
     };
   }
   if (discoveryStatus === "empty" || metric.status === "empty") {
     return {
-      copy: "Ainda não houve registros neste período completo.",
+      copy:
+        kind === "profileViews"
+          ? "Ainda não houve visualizações em um período completo. Uma nova visualização pode levar até um dia para aparecer aqui."
+          : "Ainda não houve interesses em um período completo. Um novo interesse pode levar até um dia para aparecer aqui.",
       state: "empty" as const,
       value: "0",
     };
   }
   return {
-    copy: "Eventos agregados do período completo",
+    copy:
+      kind === "profileViews"
+        ? "Visualizações em dias concluídos. Uma nova visualização pode levar até um dia para aparecer aqui."
+        : "Interesses em dias concluídos. Um novo interesse pode levar até um dia para aparecer aqui.",
     state: "ready" as const,
     value: formatMetricValue(metric.value, "events"),
   };

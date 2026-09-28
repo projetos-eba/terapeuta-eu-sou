@@ -1013,6 +1013,7 @@ function PaymentStep({
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
               retryBookingId={context.retryBookingId}
+              retryCheckoutAction={context.retryCheckoutAction}
               reviewHref={buildReservationHref(
                 new URLSearchParams(context.currentPath.split("?")[1] ?? ""),
                 { etapa: "momento", slot: null },

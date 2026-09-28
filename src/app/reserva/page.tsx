@@ -76,6 +76,10 @@ export default async function PublicReservationPage({
     context = {
       ...context,
       canPrepareEncounter: true,
+      retryCheckoutAction:
+        retrySnapshot.continuationMode === "resume_existing_checkout"
+          ? "resume"
+          : "retry",
       therapist: retrySnapshot.therapist,
     };
   }

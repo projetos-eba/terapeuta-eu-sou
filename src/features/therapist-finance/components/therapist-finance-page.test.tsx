@@ -33,7 +33,7 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Financeiro completo",
+        name: "Financeiro",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Resumo" })).toHaveAttribute(
@@ -76,7 +76,9 @@ describe("TherapistFinancePage", () => {
     );
     expect(costTooltip).toHaveClass("visible");
     expect(screen.queryByText("Evolução recente")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Valor líquido").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Valor após custos e reembolsos").length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
     ).not.toBeInTheDocument();
@@ -92,11 +94,13 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("R$ 10,00").length).toBeGreaterThan(0);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Saiba mais sobre Seu dinheiro" }),
+      screen.getByRole("button", {
+        name: "Saiba mais sobre Como o valor é formado",
+      }),
     );
     expect(
       screen.getByText(
-        "O valor líquido já considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído.",
+        "O valor líquido considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído.",
       ),
     ).toBeVisible();
   });
@@ -110,8 +114,8 @@ describe("TherapistFinancePage", () => {
         "É o valor que pertence a você após os custos da plataforma e os reembolsos confirmados, quando houver.",
       ],
       [
-        "A receber",
-        "Mostra os valores previstos para os próximos repasses e os que ainda não têm uma data bancária confirmada.",
+        "Valores previstos para recebimento",
+        "Valores previstos para os próximos repasses.",
       ],
       [
         "Sessões concluídas",
@@ -139,7 +143,9 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
     expect(within(quickSummary).getAllByRole("article")).toHaveLength(4);
     expect(
-      within(quickSummary).getByRole("heading", { name: "Ticket médio" }),
+      within(quickSummary).getByRole("heading", {
+        name: "Valor médio por sessão",
+      }),
     ).toBeInTheDocument();
     expect(
       within(quickSummary).getByRole("heading", {
@@ -155,7 +161,7 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     const receivableCard = screen
-      .getByRole("heading", { name: "A receber" })
+      .getByRole("heading", { name: "Valores previstos para recebimento" })
       .closest("article");
 
     expect(receivableCard).not.toBeNull();
@@ -167,7 +173,7 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(
-      screen.getAllByRole("heading", { name: "Ticket médio" }).length,
+      screen.getAllByRole("heading", { name: "Valor médio por sessão" }).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByText("Terapias com maior receita").length,
@@ -217,13 +223,13 @@ describe("TherapistFinancePage", () => {
       screen.getByRole("heading", { name: "Terapias com maior receita" }),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText("Receita contratada do mês").length,
+      screen.getAllByText("Receita prevista do mês").length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByText("Potencial estimado da agenda").length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Realizado").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Contratado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Previsto").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Período anterior").length).toBeGreaterThan(0);
     expect(screen.queryByText("Estimado")).not.toBeInTheDocument();
     expect(
@@ -268,7 +274,7 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("heading", { name: "Evolução financeira" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Receita contratada do mês")).toBeInTheDocument();
+    expect(screen.getByText("Receita prevista do mês")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Agenda e potencial" }),
     ).toBeInTheDocument();
@@ -363,7 +369,9 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("link", { name: "Conhecer Premium" }),
     ).toHaveAttribute("href", "/terapeuta/plano");
-    expect(screen.queryByText("Seu dinheiro")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Como o valor é formado"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps Recebimentos focused on session charges", () => {
@@ -377,7 +385,7 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Acompanhe os valores de seus encontros e veja o que já foi cobrado, o que ainda está programado e eventuais reembolsos.",
+        "Acompanhe o valor de cada sessão e o status do pagamento. A previsão de recebimento fica em Repasses.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -385,16 +393,18 @@ describe("TherapistFinancePage", () => {
         "Esta página mostra as cobranças feitas às pessoas pelos seus encontros.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Taxa de serviço").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Sua parte").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText("Receita líquida").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Cobranças realizadas").length).toBeGreaterThan(
       0,
     );
     expect(
       screen.getByText("Cobranças programadas — Próximos 30 dias"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Status da cobrança")).toBeInTheDocument();
-    expect(screen.getAllByText("Pessoa").length).toBeGreaterThan(0);
+    expect(screen.getByText("Status do pagamento")).toBeInTheDocument();
+    expect(screen.getAllByText("Pessoa atendida").length).toBeGreaterThan(0);
     expect(screen.queryByText("Financeiro completo")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Cobranças das suas sessões"),
@@ -406,7 +416,8 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.queryByText("Distribuição por status"),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("Custos da plataforma")).not.toBeInTheDocument();
+    expect(screen.queryByText("Taxa de serviço")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sua parte")).not.toBeInTheDocument();
     const chargeSummary = screen.getByLabelText("Resumo das cobranças");
     expect(within(chargeSummary).getAllByRole("link")).toHaveLength(3);
     expect(
@@ -496,15 +507,15 @@ describe("TherapistFinancePage", () => {
     renderPage("receipts");
 
     expect(
-      screen.getByRole("heading", { name: "Movimentações por sessão" }),
+      screen.getByRole("heading", { name: "Pagamentos por sessão" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Confira o valor da sessão, a Taxa de serviço, sua parte e a próxima etapa da cobrança.",
+        "Veja o valor de cada sessão, os custos da plataforma, o valor líquido e a próxima etapa do pagamento.",
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText("Movimentações das cobranças por sessão"),
+      screen.getByLabelText("Pagamentos por sessão"),
     ).toBeInTheDocument();
   });
 
@@ -778,7 +789,7 @@ describe("TherapistFinancePage", () => {
       .closest("section");
     expect(agenda).not.toBeNull();
     expect(agenda!.textContent!.indexOf("A caminho da sua conta")).toBeLessThan(
-      agenda!.textContent!.indexOf("Próximos previstos"),
+      agenda!.textContent!.indexOf("Próximos repasses previstos"),
     );
     expect(within(agenda!).queryByText("Recebido em")).not.toBeInTheDocument();
     expect(

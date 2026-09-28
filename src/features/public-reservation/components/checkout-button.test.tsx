@@ -186,6 +186,7 @@ describe("CheckoutButton", () => {
       <CheckoutButton
         {...props({
           retryBookingId: bookingId,
+          retryCheckoutAction: "retry",
           serviceId: null,
           startsAt: null,
         })}
@@ -200,6 +201,39 @@ describe("CheckoutButton", () => {
     expect(document.body).not.toHaveTextContent(
       "Você pode concluir o pagamento, mas o horário não fica reservado",
     );
+  });
+
+  it("resumes the current Checkout during the active reservation window", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    window.Stripe = vi.fn(() => ({
+      initEmbeddedCheckout: vi
+        .fn()
+        .mockResolvedValue({ destroy: vi.fn(), mount }),
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => checkoutResponse,
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bookingId = "d1000000-0000-4000-8000-000000000098";
+    render(
+      <CheckoutButton
+        {...props({
+          retryBookingId: bookingId,
+          retryCheckoutAction: "resume",
+          serviceId: null,
+          startsAt: null,
+        })}
+      />,
+    );
+
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+
+    const request = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(request).toMatchObject({ action: "resume", bookingId });
+    expect(document.body).toHaveTextContent("Horário reservado por até");
   });
 
   it("reports a patient schedule conflict before mounting Stripe", async () => {
