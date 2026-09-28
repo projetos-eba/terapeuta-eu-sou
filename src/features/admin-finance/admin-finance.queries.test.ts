@@ -190,6 +190,50 @@ describe("admin finance queries", () => {
       });
     }
   });
+
+  it("offers every canonical V10 payment and subscription status", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          metrics: {},
+          page: { hasNext: false, page: 1, pageSize: 12, total: 0 },
+          rows: [],
+        }),
+      ),
+    );
+
+    const payments = await getAdminFinancePage({
+      accessToken: "admin-token",
+      module: "payments",
+    });
+    const subscriptions = await getAdminFinancePage({
+      accessToken: "admin-token",
+      module: "subscriptions",
+    });
+
+    expect(payments.status).toBe("success");
+    expect(subscriptions.status).toBe("success");
+
+    if (payments.status === "success") {
+      expect(payments.data.filterOptions.status).toEqual(
+        expect.arrayContaining([
+          { label: "Parcialmente reembolsados", value: "partially_refunded" },
+          { label: "Reembolsados", value: "refunded" },
+          { label: "Em disputa", value: "disputed" },
+        ]),
+      );
+    }
+
+    if (subscriptions.status === "success") {
+      expect(subscriptions.data.filterOptions.status).toEqual(
+        expect.arrayContaining([
+          { label: "Incompletas expiradas", value: "incomplete_expired" },
+          { label: "Pausadas", value: "paused" },
+        ]),
+      );
+    }
+  });
 });
 
 function jsonResponse(payload: unknown, init: ResponseInit = {}) {

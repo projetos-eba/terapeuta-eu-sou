@@ -15950,6 +15950,10 @@ export type Database = {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
       }
+      admin_get_sessions_module_v1: {
+        Args: { p_query?: Json }
+        Returns: Json
+      }
       admin_get_operation_module_v2_before_patient_restrictions: {
         Args: { p_module: string; p_query?: Json }
         Returns: Json
@@ -17437,6 +17441,17 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_payouts_v8: {
+        Args: {
+          p_agenda_days?: number
+          p_page?: number
+          p_page_size?: number
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_payouts_v9: {
         Args: {
           p_agenda_days?: number
           p_page?: number

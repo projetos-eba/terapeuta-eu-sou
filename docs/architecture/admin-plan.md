@@ -46,6 +46,20 @@ O plano abaixo consolida o inventario do arquivo original `admin-plan.md`, as ro
 
 Regra de navegacao: o menu admin deve expor apenas modulos funcionais. Rotas em construcao podem existir internamente, mas nao devem ser anunciadas como prontas nem virar links mortos.
 
+### Atualizacao de filtros e paginacao — 2026-09-27
+
+- `/admin/pagamentos` mantém `partially_refunded` e passa a oferecer também os
+  estados canônicos V10 `refunded` e `disputed` no filtro visual.
+- `/admin/assinaturas` passa a oferecer `incomplete_expired` e `paused`, sem
+  alterar o estado ou o ciclo financeiro de nenhuma assinatura.
+- `/admin/sessoes` deixa de filtrar uma janela intermediária de 50 registros.
+  A RPC dedicada `admin_get_sessions_module_v1(p_query)` aplica busca, status,
+  ordenação e paginação diretamente sobre toda a base `bookings`, devolvendo o
+  mesmo DTO sanitizado e no máximo 50 itens por página.
+- A mudança de Sessões é isolada do contrato compartilhado de Profissionais,
+  Clientes, Suporte e Avaliações. Ela é somente leitura e não altera reservas,
+  pagamentos, repasses, Zoom ou regras de agenda.
+
 ## Modelo Arquitetural
 
 Fluxo padrao:

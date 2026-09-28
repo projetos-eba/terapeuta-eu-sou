@@ -49,7 +49,7 @@ Private RPCs:
   remain compatibility contracts);
 - `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
   compatibility contracts);
-- `get_private_therapist_payouts_v8` (current UI consumer; earlier versions
+- `get_private_therapist_payouts_v9` (current UI consumer; earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
 - `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
@@ -96,6 +96,11 @@ All derive the therapist from `auth.uid()`. Do not accept
   debt, preserve the allocated bank lifecycle as in transit and then received.
   Debt recovery is a separate axis; a later partial offset exposes only the
   positive net Transfer that actually continues to the therapist's bank history.
+- `Recebido no período` must sum the same complete bank allocations accepted
+  by received history. A direct V10 Transfer reversed only after its paid
+  Payout remains in both the received composition and this total when the exact
+  provider-linked neutral pair proves the chronology. History pagination must
+  not limit the summary.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.

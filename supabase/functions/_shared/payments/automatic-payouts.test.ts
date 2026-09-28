@@ -43,6 +43,7 @@ Deno.test(
     const sanitized = sanitizePayoutBalanceTransaction({
       amount: 10_000,
       available_on: 1_788_000_000,
+      created: 1_788_000_000,
       currency: "brl",
       id: "txn_connected",
       net: 10_000,
@@ -52,6 +53,7 @@ Deno.test(
       description: "must not cross the RPC boundary",
     } as never);
     assertEquals(sanitized.source, "py_destination");
+    assertEquals(sanitized.created, 1_788_000_000);
     assertEquals("description" in sanitized, false);
   },
 );
@@ -84,6 +86,7 @@ Deno.test("only a provider-verified refund annotates a neutral payout pair", asy
       net: 10455,
       currency: "brl",
       available_on: 1_788_000_000,
+      created: 1_788_000_000,
     },
     {
       id: "txn_refund",
@@ -94,6 +97,7 @@ Deno.test("only a provider-verified refund annotates a neutral payout pair", asy
       net: -10455,
       currency: "brl",
       available_on: 1_788_000_000,
+      created: 1_788_000_000,
     },
   ];
   const stripe = {
@@ -144,6 +148,7 @@ Deno.test("equal but unrelated provider movements are not paired", async () => {
       net: 10455,
       currency: "brl",
       available_on: 1_788_000_000,
+      created: 1_788_000_000,
     },
     {
       id: "txn_refund",
@@ -154,6 +159,7 @@ Deno.test("equal but unrelated provider movements are not paired", async () => {
       net: -10455,
       currency: "brl",
       available_on: 1_788_000_000,
+      created: 1_788_000_000,
     },
   ];
   const stripe = {
@@ -199,6 +205,7 @@ Deno.test("automatic payout sync sends verified evidence only to reconciliation 
             net: 10455,
             currency: "brl",
             available_on: 1_788_000_000,
+            created: 1_788_000_000,
           },
           {
             id: "txn_refund",
@@ -209,6 +216,7 @@ Deno.test("automatic payout sync sends verified evidence only to reconciliation 
             net: -10455,
             currency: "brl",
             available_on: 1_788_000_000,
+            created: 1_788_000_000,
           },
         ],
       }),
@@ -245,6 +253,7 @@ Deno.test("automatic payout sync sends verified evidence only to reconciliation 
     Record<string, unknown>
   >;
   assertEquals(movements[1].verified_refund_charge, "py_original");
+  assertEquals(movements[1].created, 1_788_000_000);
 });
 
 function assertEquals(actual: unknown, expected: unknown) {

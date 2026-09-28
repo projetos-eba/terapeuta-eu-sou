@@ -348,12 +348,12 @@ function PaymentKpiCard({ metric }: { metric: AdminFinanceMetric }) {
         </span>
         <StatusPill metric={metric} />
       </div>
-      <p className="mt-5 text-sm font-extrabold text-tesText-secondary">
+      <div className="mt-5 text-sm font-extrabold text-tesText-secondary">
         <span className="flex items-center gap-1.5">
           {paymentMetricLabel(metric)}
           <MetricInfo metric={metric} />
         </span>
-      </p>
+      </div>
       <strong className="mt-2 block text-[2.2rem] font-extrabold leading-none tracking-tight text-brand-deep">
         {formatMetricValue(metric)}
       </strong>
@@ -403,10 +403,10 @@ function RefundMetricValue({
   return (
     <div className={separated ? "mt-4 border-t border-brand-lavender/60 pt-4" : "mt-5"}>
       <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
+        <div className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
           {paymentMetricLabel(metric)}
           <MetricInfo metric={metric} />
-        </p>
+        </div>
         <StatusPill compact metric={metric} />
       </div>
       <strong className="mt-2 block text-2xl font-extrabold leading-none tracking-tight text-brand-deep">
@@ -428,10 +428,10 @@ function PaymentIndicatorCard({ metric }: { metric: AdminFinanceMetric }) {
             <PaymentMetricIcon aria-hidden="true" metric={metric} />
           </span>
           <div>
-            <p className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
+            <div className="flex items-center gap-1.5 text-sm font-extrabold text-brand-deep">
               {paymentMetricLabel(metric)}
               <MetricInfo metric={metric} />
-            </p>
+            </div>
             <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
               Indicador operacional
             </p>

@@ -18,6 +18,7 @@ import {
   syncTherapistSubscriptionFromStripe,
 } from "../_shared/payments/subscription-sync.ts";
 import { normalizeStripeBillingWebhookError } from "./errors.ts";
+import { ensurePaidPaymentRetryAuthorization } from "./session-payment-authorization-recovery.ts";
 import { ensureVideoSessionForPaidSessionPayment } from "./session-payment-side-effects.ts";
 import {
   type CheckoutFinancialSnapshot,
@@ -26,6 +27,10 @@ import {
 } from "../_shared/payments/checkout-financials.ts";
 import { shouldApplySessionAttemptEvent } from "../_shared/payments/session-attempt-policy.ts";
 import { reconcileChargeSettlements } from "../_shared/payments/charge-settlement.ts";
+import {
+  runLostSessionDisputeRecoveryV10,
+  type SessionDisputeProjectionV10,
+} from "../_shared/payments/session-dispute-recovery-v10.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
@@ -271,7 +276,14 @@ async function handleEvent(
     case "charge.dispute.created":
     case "charge.dispute.updated":
     case "charge.dispute.closed":
-      await handleDispute(client, dataObject, eventType, eventId, eventTime);
+      await handleDispute(
+        client,
+        stripe,
+        dataObject,
+        eventType,
+        eventId,
+        eventTime,
+      );
       return "processed";
     case "transfer.updated":
     case "transfer.reversed":
@@ -424,6 +436,14 @@ async function handleCheckoutEvent(
     });
     if (!claim.claimed) return;
   }
+  await ensurePaidPaymentRetryAuthorization(client, {
+    checkoutMode: metadata.tes_checkout_mode,
+    checkoutSessionId: stringOrNull(session.id),
+    eventId,
+    eventTime,
+    paymentIntentId,
+    sessionPaymentId,
+  });
   const financialSnapshot = await resolveCheckoutFinancialSnapshot(
     stripe,
     session,
@@ -741,6 +761,16 @@ async function applyPaymentIntentState(
     stripe,
     paymentIntent,
   );
+  if (status === "paid") {
+    await ensurePaidPaymentRetryAuthorization(client, {
+      checkoutMode: metadata.tes_checkout_mode,
+      checkoutSessionId: resolvedCheckout.checkoutSessionId,
+      eventId,
+      eventTime,
+      paymentIntentId: stringOrNull(paymentIntent.id),
+      sessionPaymentId,
+    });
+  }
   if (
     status !== "paid" &&
     resolvedCheckout.checkoutSessionId &&
@@ -1386,106 +1416,48 @@ async function handleRefundEvent(
 
 async function handleDispute(
   client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
   dispute: Record<string, unknown>,
   eventType: string,
   eventId: string,
   eventTime: string,
 ) {
   const chargeId = stringOrNull(dispute.charge);
-  if (!chargeId) return;
+  const disputeId = stringOrNull(dispute.id);
+  const amountCents = numberOrZero(dispute.amount);
+  if (!chargeId || !disputeId || amountCents <= 0) return;
 
-  const rows = await client.get<
-    Array<{ id: string; financial_status: string }>
-  >(
-    `/rest/v1/session_payments?select=id,financial_status&stripe_charge_id=eq.${encodeURIComponent(
+  const sessionPayments = await client.get<Array<{ id: string }>>(
+    `/rest/v1/session_payments?select=id&stripe_charge_id=eq.${encodeURIComponent(
       chargeId,
     )}&limit=1`,
   );
-  const payment = rows[0];
-  if (!payment) return;
+  if (!sessionPayments[0]) return;
 
-  await client.post(
-    "/rest/v1/session_disputes?on_conflict=stripe_dispute_id",
+  const projection = await client.rpc<SessionDisputeProjectionV10>(
+    "reconcile_session_dispute_event_v10",
     {
-      amount_cents: numberOrZero(dispute.amount),
-      closed_at: eventType === "charge.dispute.closed" ? eventTime : null,
-      currency: String(dispute.currency ?? "brl").toUpperCase(),
-      evidence_due_by: unixToIso(asRecord(dispute.evidence_details).due_by),
-      metadata: { eventType },
-      session_payment_id: payment.id,
-      status: String(dispute.status ?? "unknown"),
-      stripe_charge_id: chargeId,
-      stripe_dispute_id: String(dispute.id),
-      updated_at: new Date().toISOString(),
+      p_amount_cents: amountCents,
+      p_currency: String(dispute.currency ?? "").toUpperCase(),
+      p_evidence_due_by: unixToIso(asRecord(dispute.evidence_details).due_by),
+      p_event_created_at: eventTime,
+      p_event_id: eventId,
+      p_event_type: eventType,
+      p_status: String(dispute.status ?? "unknown"),
+      p_stripe_charge_id: chargeId,
+      p_stripe_dispute_id: disputeId,
     },
-    "resolution=merge-duplicates,return=minimal",
   );
-  const disputeId = String(dispute.id);
-  const disputeStatus = String(dispute.status ?? "unknown");
-  const disputeAmount = numberOrZero(dispute.amount);
 
-  if (eventType === "charge.dispute.created") {
-    await client.post(
-      "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
-      {
-        amount_cents: disputeAmount,
-        direction: "debit",
-        entry_type: "dispute",
-        occurred_at: eventTime,
-        session_payment_id: payment.id,
-        source_external_id: disputeId,
-        source_table: "stripe_disputes",
-        stripe_event_id: eventId,
-      },
-      "resolution=ignore-duplicates,return=minimal",
-    );
-  }
-
-  if (eventType === "charge.dispute.closed" && disputeStatus === "won") {
-    await client.patch(
-      `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
-      {
-        disputed_at: null,
-        financial_status:
-          payment.financial_status === "partially_refunded"
-            ? "partially_refunded"
-            : "paid",
-        transfer_blocked_reason: null,
-        updated_at: new Date().toISOString(),
-      },
-      "return=minimal",
-    );
-    await client.post(
-      "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
-      {
-        amount_cents: disputeAmount,
-        direction: "credit",
-        entry_type: "recovery",
-        occurred_at: eventTime,
-        session_payment_id: payment.id,
-        source_external_id: disputeId,
-        source_table: "stripe_disputes",
-        stripe_event_id: eventId,
-      },
-      "resolution=ignore-duplicates,return=minimal",
-    );
-    await client.rpc("refresh_session_transfer_eligibility", {
-      p_session_payment_id: payment.id,
+  if (eventType === "charge.dispute.closed" && projection.applied) {
+    await runLostSessionDisputeRecoveryV10({
+      client,
+      eventId,
+      eventTime,
+      projection,
+      stripe,
     });
-    return;
   }
-
-  await client.patch(
-    `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
-    {
-      disputed_at: eventTime,
-      financial_status: "disputed",
-      transfer_blocked_reason: "disputed",
-      transfer_status: "blocked",
-      updated_at: new Date().toISOString(),
-    },
-    "return=minimal",
-  );
 }
 
 async function handleTransferEvent(

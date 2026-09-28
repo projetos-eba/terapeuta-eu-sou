@@ -157,6 +157,7 @@ describe("refined admin finance pages", () => {
     expect(html).toContain("R$ 20,00");
     expect(html).toContain("R$ 30,00");
     expect(html).not.toContain("Reembolsos pendentes");
+    expect(html).not.toMatch(/<p\b[^>]*>(?:(?!<\/p>).)*<details\b/s);
     expect(html).not.toContain("Receita líquida TES");
     expect(html).toContain("R$ 1.200,00");
     expect(html).toContain("Forma de pagamento");

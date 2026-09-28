@@ -441,10 +441,23 @@ o cliente a atualizar a página e procurar o suporte.
 ### 8.3 Disputas
 
 Disputas debitam a plataforma no modelo Separate Charges and Transfers. O TES
-deve bloquear novas liberações associadas, tentar recuperação por reversão
-quando aplicável e usar o mesmo ledger de débito/compensação para valores não
-recuperados. A implementação detalhada continua subordinada à política de
-disputas existente e não autoriza automação além das decisões aprovadas.
+deve bloquear novas liberações associadas assim que receber um evento assinado,
+mas preservar o histórico de Transfer e payout já realizado. A recuperação do
+terapeuta só começa quando a Stripe encerra a disputa como `lost`:
+
+- `won`: restaurar o status financeiro compatível com os reembolsos existentes;
+- `lost` com Transfer direto: conferir os vínculos no provedor e tentar uma
+  única reversão proporcional, com idempotência determinística;
+- `lost` com saldo definitivamente insuficiente: registrar dívida somente do
+  saldo líquido não recuperado para compensação futura;
+- `lost` em composição `offset_only`: não chamar a Stripe e restituir como nova
+  dívida o benefício aplicado à dívida anterior;
+- resposta ambígua, reversão preexistente não vinculada ou divergência de dados:
+  bloquear nova escrita, registrar incidente deduplicado e exigir conferência.
+
+Eventos antigos e redeliveries não podem regredir uma decisão final, repetir uma
+reversão nem duplicar ledger/dívida. O V9 permanece apenas bloqueado e auditável;
+esta automação de recuperação é exclusiva do V10.
 
 ## 9. Conta Connect
 
@@ -763,6 +776,13 @@ Todas as métricas devem ler a política e a origem do pagamento.
   obrigação, Transfer ou taxa de cartão.
 - Dívida e compensação devem aparecer separadamente do valor bruto da sessão.
 - Reembolso e Reversal não podem ser somados duas vezes.
+- Uma reversão integral posterior a um Payout já pago não apaga o recebimento
+  bancário histórico. O débito da conta conectada permanece separado e só pode
+  compor um Payout futuro quando houver vínculo Stripe reconciliado; a projeção
+  não cria antecipadamente um grupo de repasse “Em análise”. Como o débito
+  posterior pertence a outro ciclo de saldo, o Payout histórico pode expor
+  somente o `payment` positivo; a restauração da composição exige IDs exatos e
+  cronologia integral de Refund/Reversal, nunca inferência por valor.
 - Confirmação e avaliação continuam em métricas de atendimento, sem alterar
   métricas financeiras.
 - Forecasts, resumo, recebimentos, repasses e admin devem suportar V9/V10 na

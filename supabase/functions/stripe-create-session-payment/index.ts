@@ -34,6 +34,7 @@ import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import { resolveCheckoutReturnUrlBase } from "./checkout-return-url.ts";
 import {
   requiresLegacyRetryPreflight,
+  resolveSessionCaptureMethod,
   resolveReservationCheckoutMode,
   shouldReusePersistedPaymentRetryCheckout,
   type ReservationCheckoutMode,
@@ -502,7 +503,12 @@ runtime.serve(async (request) => {
               : {}),
             mode: "payment" as const,
             payment_intent_data: {
-              ...(isV10 ? {} : { capture_method: "manual" as const }),
+              ...(resolveSessionCaptureMethod({
+                mode,
+                paymentFlowVersion,
+              }) === "manual"
+                ? { capture_method: "manual" as const }
+                : {}),
               metadata: commonMetadata,
               transfer_group: `tes_booking_${booking.id}`,
             },

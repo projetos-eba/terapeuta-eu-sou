@@ -338,7 +338,11 @@ Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
   como `legacy`, `initial_hold` ou `payment_retry`, com prazo autoritativo,
   autorização, reivindicação do slot e motivo terminal auditáveis.
 
-Pagamentos de encontro usam autorização e captura separadas. O Checkout inicial
+Pagamentos de encontro que podem disputar novamente um horário usam autorização
+e captura separadas. No V10, o Checkout inicial preserva a captura automática;
+uma retomada `payment_retry`, cuja reserva já foi liberada, usa sempre
+`capture_method=manual`. Assim, a Stripe só captura depois que o webhook assinado
+reivindica atomicamente o horário para terapeuta e paciente. O Checkout inicial
 ocupa a agenda por cinco minutos a partir da abertura do formulário. Ao fim do
 prazo, o pagamento permanece terminal e a reserva é cancelada por pagamento,
 com o intervalo liberado. A apresentação ao paciente só chama esse estado de
@@ -361,7 +365,13 @@ o SetupIntent e criar a agenda T-24. Falha entre provedor e persistência expira
 a nova Checkout e não reabre a reserva. Recarregar uma retomada já aberta
 recupera e reutiliza a mesma Checkout Session persistida, sem criar uma tentativa
 irmã nem substituir sua autoridade. Repetição usa a mesma chave
-idempotente. O
+idempotente. Como proteção contra entrega ausente ou fora de ordem do evento
+capturável, os eventos assinados de pagamento aprovado de uma `payment_retry`
+repetem o mesmo claim canônico antes de confirmar o pagamento. O replay é
+idempotente quando o slot já foi reivindicado. Se o horário tiver sido ocupado
+por outra reserva, o claim falha fechado: o webhook não confirma a reserva, não
+cria obrigação de Transfer e exige conciliação do pagamento capturado, sem
+reabrir uma sessão sobreposta. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
@@ -429,6 +439,20 @@ do booking; o endpoint retorna 404 sem dados financeiros.
 
 - `financial_ledger_entries`: ledger auditavel.
 - `stripe_webhook_events`: recebimento idempotente de webhooks.
+
+Disputas de sessão são vinculadas ao `Charge` exato por evento Stripe assinado.
+Uma disputa aberta marca o pagamento como `disputed` e bloqueia novos efeitos
+financeiros, mas não apaga nem reclassifica Transfer ou payout bancário já
+concluído. Nenhuma recuperação do terapeuta ocorre antes da decisão final.
+`won` restaura o estado financeiro compatível com os reembolsos registrados.
+`lost`, somente no V10, permite uma única reversão proporcional do Transfer
+direto após conferir Charge, destino, ambiente, moeda, valor e histórico no
+provedor. Saldo definitivamente insuficiente gera dívida apenas do valor líquido
+não recuperado; uma composição `offset_only` não chama a Stripe e converte o
+benefício anteriormente aplicado em dívida da contestação. Resultado ambíguo
+fica em `unknown` e nunca autoriza repetir cegamente a escrita; divergência de
+vínculo ou histórico externo inesperado fica em `requires_review`. Ambos geram
+incidente operacional deduplicado.
 
 Desde o Gate F0:
 

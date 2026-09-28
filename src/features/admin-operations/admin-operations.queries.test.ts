@@ -245,17 +245,15 @@ describe("admin operation queries", () => {
   });
 
   it("offers every canonical booking status through Portuguese admin filters", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        jsonResponse({
-          metrics: {},
-          module: "sessions",
-          page: { page: 1, pageSize: 12, total: 0, hasNext: false },
-          rows: [],
-        }),
-      ),
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: {},
+        module: "sessions",
+        page: { page: 1, pageSize: 12, total: 0, hasNext: false },
+        rows: [],
+      }),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await getAdminOperationPage({
       accessToken: "admin-token",
@@ -264,6 +262,13 @@ describe("admin operation queries", () => {
     });
 
     expect(result.status).toBe("success");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_sessions_module_v1",
+      expect.objectContaining({
+        body: JSON.stringify({ p_query: { page: 1, pageSize: 12 } }),
+        method: "POST",
+      }),
+    );
     if (result.status === "success") {
       expect(result.data.filterOptions.status).toEqual(
         expect.arrayContaining([

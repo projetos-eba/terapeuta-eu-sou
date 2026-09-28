@@ -154,12 +154,24 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
-- Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
-  database deadline is five minutes; for `payment_retry`, no slot is occupied
-  before authorization. On `payment_intent.amount_capturable_updated`, the
+- Legacy V9 Session Checkout and every `payment_retry` use
+  `capture_method=manual`; initial V10 Checkout remains automatic because its
+  five-minute hold still owns the slot. For `initial_hold`, the database
+  deadline is five minutes; for `payment_retry`, no slot is occupied before
+  authorization. On `payment_intent.amount_capturable_updated`, the
   service-role claim RPC locks therapist then patient, revalidates the current
   attempt and slot, and only the winner captures. A loser cancels the
-  authorization and records `slot_conflict`.
+  authorization and records `slot_conflict`. Signed paid events for a
+  `payment_retry` must repeat that same claim before financial confirmation so
+  a missing or out-of-order capturable event can recover a still-free session.
+  The replay is idempotent after a successful claim and must fail closed,
+  without Transfer, when another booking already occupies the interval.
+- A signed session dispute blocks new releases immediately but never rewrites
+  completed Transfer/payout history. Therapist recovery is V10-only and starts
+  only after a definitive `lost`: reconcile one exact proportional Transfer
+  Reversal, then create debt only for the residual exposure. `won` restores the
+  prior/refund-compatible financial state. Ambiguous provider writes are
+  terminally quarantined for reconciliation and must never be retried blindly.
 - A consumed initial hold without persisted Stripe Checkout must be released by
   `cancel_unstarted_initial_checkout_v1`; maintenance also sweeps expired
   bootstrap orphans. Never cancel when a Checkout Session is already persisted.
@@ -249,6 +261,18 @@ Edge Functions:
   active, partial or ambiguous reversals remain unmatched. Persist pair
   identifiers and classification for audit. Unrelated zero-sum movements
   without provider proof remain unmatched and block bank completion.
+- Chronology is part of that proof. If the full Refund and Transfer Reversal
+  occurred only after a reconciled Payout was already `paid`, preserve the
+  original Transfer allocation and bank history. Classify the later balance
+  debit separately; do not turn the received Payout into therapist-visible
+  review and do not guess which future Payout will absorb the debit. A future
+  composition may reflect it only after Stripe creates and reconciles that
+  Payout with exact provider evidence. The historical Payout snapshot can
+  contain only the original positive `payment` because the later
+  `payment_refund` belongs to another balance cycle; restore that allocation
+  only through the exact payment Balance Transaction, destination payment,
+  Connect account and full local Refund/Reversal chronology. Resolving this
+  reconciliation must also clear the stale unread admin-attention state.
 - A V10 Transfer success may resolve its earlier operational attention incident
   while its job remains `pending_source`. That job advances to bank-paid only
   after a fully allocated paid Payout; never conflate alert resolution with
