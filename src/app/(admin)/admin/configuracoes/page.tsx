@@ -5,10 +5,10 @@ import {
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminSettingsRoute() {
-  await requireAdminSession({
+  const session = await requireAdminSession({
     permission: "admin.settings.read",
   });
-  const result = await getAdminSettingsPage();
+  const result = await getAdminSettingsPage(session.accessToken);
 
   if (result.status === "error") {
     return (

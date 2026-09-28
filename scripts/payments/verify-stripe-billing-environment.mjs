@@ -23,7 +23,7 @@ const stripe = new Stripe(stripeSecretKey, {
 const desired = [
   ["tes_premium_brl_monthly_v2", 7990, "premium"],
   ["tes_premium_plus_brl_monthly_v3", 11990, "premium_plus"],
-  ["tes_premium_plus_founder_brl_monthly_v1", 7990, "premium_plus"],
+  ["tes_premium_plus_founder_brl_monthly_v2", 11990, "premium_plus"],
 ];
 const verifiedPrices = [];
 let premiumPlusProductId = null;
@@ -74,15 +74,8 @@ const promotionCode = codePage.data.find(
   (item) => item.metadata?.offer_key === "therapist_founder",
 );
 if (!promotionCode) throw new Error("TERAPEUTAFUNDADOR is missing.");
-const founderPromotionExpiresAt = Date.parse("2026-09-11T03:00:00.000Z") / 1000;
-const expectedFounderPromotionActive =
-  target === "test" &&
-  Math.floor(Date.now() / 1000) < founderPromotionExpiresAt;
-if (promotionCode.active !== expectedFounderPromotionActive) {
-  throw new Error("TERAPEUTAFUNDADOR active state diverges.");
-}
 if (
-  promotionCode.expires_at !== founderPromotionExpiresAt ||
+  promotionCode.metadata?.tes_checkout_scope !== "subscription" ||
   promotionCode.restrictions?.first_time_transaction !== true
 ) {
   throw new Error("TERAPEUTAFUNDADOR restrictions diverge.");
@@ -108,9 +101,8 @@ console.log(
   JSON.stringify({
     founder: {
       active: promotionCode.active,
-      expiresAt: "2026-09-11T03:00:00.000Z",
       firstTransactionOnly: true,
-      recurringAfterPromotionCents: 7990,
+      recurringAfterPromotionCents: 11990,
       zeroInvoiceCount: 3,
     },
     prices: verifiedPrices,

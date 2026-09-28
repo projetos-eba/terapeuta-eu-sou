@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(16);
 
 select is(
   (select count(*)::integer from public.billing_plan_prices
@@ -36,8 +36,8 @@ select is(
    where plans.code = 'premium_plus' and prices.is_active
      and not prices.is_public and prices.offer_key = 'therapist_founder'
      and prices.interval = 'month'),
-  7990,
-  'founder recurring Premium Plus Price is R$ 79,90 monthly'
+  11990,
+  'new founder recurring Premium Plus Price is R$ 119,90 monthly'
 );
 
 select is(
@@ -45,6 +45,27 @@ select is(
    where is_active and offer_key = 'therapist_founder'),
   1,
   'the founder offer has one active hidden Price'
+);
+
+select is(
+  (select stripe_lookup_key
+   from public.billing_plan_prices
+   where is_active and offer_key = 'therapist_founder'),
+  'tes_premium_plus_founder_brl_monthly_v2',
+  'the founder offer resolves to the new immutable Price'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.billing_plan_prices
+    where stripe_lookup_key = 'tes_premium_plus_founder_brl_monthly_v1'
+      and not is_active
+      and not is_public
+      and offer_key is null
+      and metadata ->> 'retired_offer_key' = 'therapist_founder'
+  ),
+  'the former founder Price is retained only as private history'
 );
 
 select is(
@@ -60,7 +81,8 @@ select is(
    where stripe_lookup_key in (
      'tes_premium_brl_monthly_v1',
      'tes_premium_plus_brl_monthly_v1',
-     'tes_premium_plus_brl_monthly_v2'
+     'tes_premium_plus_brl_monthly_v2',
+     'tes_premium_plus_founder_brl_monthly_v1'
    ) and (is_active or is_public)),
   0,
   'legacy monthly Prices are retained but inactive and private'

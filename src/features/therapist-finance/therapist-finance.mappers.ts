@@ -146,7 +146,7 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalNumber(value.contractVersion, 5),
+      contractVersion: literalNumber(value.contractVersion, 6),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
@@ -518,6 +518,20 @@ function receiptSummary(input: unknown): TherapistReceiptsContract["summary"] {
     processingCents: nonNegativeInteger(value.processingCents),
     refundedCents: nonNegativeInteger(value.refundedCents),
     scheduledCents: nonNegativeInteger(value.scheduledCents),
+    upcomingScheduled: upcomingScheduledSummary(value.upcomingScheduled),
+  };
+}
+
+function upcomingScheduledSummary(
+  input: unknown,
+): TherapistReceiptsContract["summary"]["upcomingScheduled"] {
+  const value = record(input);
+
+  return {
+    amountCents: nonNegativeInteger(value.amountCents),
+    periodEnd: dateString(value.periodEnd),
+    periodStart: dateString(value.periodStart),
+    sessionCount: nonNegativeInteger(value.sessionCount),
   };
 }
 

@@ -147,14 +147,14 @@ export function TherapistMetricsPage({
   const comparisonItems = [
     comparisonReference(
       "Visualizações do perfil",
-      overview.discovery.status === "ready"
+      hasDiscoveryPeriodData(overview.discovery.status)
         ? overview.discovery.stages.profileViews
         : null,
       "Essa leitura aparecerá quando os dados estiverem disponíveis.",
     ),
     comparisonReference(
       "Interessados em agendar",
-      overview.discovery.status === "ready"
+      hasDiscoveryPeriodData(overview.discovery.status)
         ? overview.discovery.stages.bookingFlowStarts
         : null,
       "Essa leitura aparecerá quando os dados estiverem disponíveis.",
@@ -287,21 +287,21 @@ export function TherapistMetricsPage({
               {
                 label: "Visualizaram o perfil",
                 value:
-                  overview.discovery.status === "ready"
+                  hasDiscoveryPeriodData(overview.discovery.status)
                     ? overview.discovery.stages.profileViews.value
                     : null,
               },
               {
                 label: "Iniciaram o agendamento",
                 value:
-                  overview.discovery.status === "ready"
+                  hasDiscoveryPeriodData(overview.discovery.status)
                     ? overview.discovery.stages.bookingFlowStarts.value
                     : null,
               },
               {
                 label: "Sessões concluídas",
                 value:
-                  overview.discovery.status === "ready"
+                  hasDiscoveryPeriodData(overview.discovery.status)
                     ? overview.counters.sessionsCompleted.value
                     : null,
               },
@@ -309,8 +309,7 @@ export function TherapistMetricsPage({
           />
           {overview.discovery.status !== "ready" ? (
             <MetricsVisualFootnote>
-              Em breve, você poderá acompanhar como as pessoas encontram seu
-              perfil.
+              {discoveryFootnote(overview.discovery.status)}
             </MetricsVisualFootnote>
           ) : null}
         </MetricPanel>
@@ -364,7 +363,7 @@ export function TherapistMetricsPage({
       {hasAnyActivity ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <MetricPanel
-            description="Comparação com o seu próprio período anterior, sem benchmark entre profissionais."
+            description="Compare seus resultados com o período anterior, sem comparações com outros profissionais."
             icon={RefreshCw}
             title="Comparativo com o período anterior"
             tone="cyan"
@@ -1357,21 +1356,21 @@ function discoveryKpi(
   metric: TherapistMetricsOverview["discovery"]["stages"]["profileViews"],
   kind: "bookingFlowStarts" | "profileViews",
 ) {
-  if (discoveryStatus !== "ready") {
+  if (discoveryStatus === "processing" || discoveryStatus === "unavailable") {
     return {
       copy:
         kind === "profileViews"
-          ? "Em breve, você poderá acompanhar como as pessoas encontram seu perfil."
-          : "Em breve, você poderá acompanhar quantas pessoas demonstraram interesse em agendar com você.",
-      state: "unavailable" as const,
-      value: "-",
+          ? "Estamos preparando esta leitura do seu perfil."
+          : "Estamos preparando esta leitura de interesse em agendar.",
+      state: "forming" as const,
+      value: "—",
     };
   }
-  if (metric.status === "empty") {
+  if (discoveryStatus === "empty" || metric.status === "empty") {
     return {
-      copy: "Nenhum evento registrado neste período",
+      copy: "Ainda não houve registros neste período completo.",
       state: "empty" as const,
-      value: "-",
+      value: "0",
     };
   }
   return {
@@ -1379,6 +1378,22 @@ function discoveryKpi(
     state: "ready" as const,
     value: formatMetricValue(metric.value, "events"),
   };
+}
+
+function hasDiscoveryPeriodData(
+  status: TherapistMetricsOverview["discovery"]["status"],
+) {
+  return status === "ready" || status === "empty";
+}
+
+function discoveryFootnote(
+  status: TherapistMetricsOverview["discovery"]["status"],
+) {
+  if (status === "empty") {
+    return "Ainda não houve registros neste período completo. Assim que houver movimento, este caminho mostrará os números reais.";
+  }
+
+  return "Estamos preparando esta leitura. Ela aparecerá com números reais assim que houver dados suficientes de períodos completos.";
 }
 
 function dashboardHasActivity(data: TherapistMetricsDashboard) {

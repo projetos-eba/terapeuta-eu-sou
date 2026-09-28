@@ -10,6 +10,7 @@ export type AdminFinanceModuleKey = "payments" | "reports" | "subscriptions";
 export type AdminFinancePeriod = "7d" | "30d" | "90d";
 
 export type AdminFinanceListQuery = AdminListQuery & {
+  plan?: "free" | "premium" | "premium_plus";
   period?: AdminFinancePeriod;
 };
 
@@ -41,6 +42,7 @@ export type AdminFinancePageData = {
   description: string;
   emptyMessage: string;
   filterOptions: {
+    plan?: AdminListOption[];
     period?: AdminListOption[];
     sort: AdminListOption[];
     status: AdminListOption[];
@@ -94,6 +96,11 @@ export type AdminFinanceDetailPageData = {
     available: boolean;
     state: string;
     followup?: { requestId: string; reason: string };
+  };
+  subscriptionManagement?: {
+    available: boolean;
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd?: string;
   };
   safetyNotes: string[];
   sections: AdminFinanceDetailSection[];

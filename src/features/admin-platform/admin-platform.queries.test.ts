@@ -141,12 +141,23 @@ describe("admin platform queries", () => {
         });
       }
 
+      if (url.includes("admin_get_therapist_metrics_telemetry_health_v1")) {
+        return jsonResponse({
+          retentionDays: 120,
+          telemetryEnabled: false,
+          updatedAt: "2026-09-28T12:00:00.000Z",
+        });
+      }
+
       return new Response(null, { status: 404 });
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const { getAdminSecurityPage } = await import("./admin-platform.queries");
-    const result = await getAdminSecurityPage({ accessToken: "admin-token" });
+    const result = await getAdminSecurityPage({
+      accessToken: "admin-token",
+      canManageTelemetry: true,
+    });
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
@@ -159,6 +170,12 @@ describe("admin platform queries", () => {
       }),
     ]);
     expect(result.data.auditEventsStatus).toBe("available");
+    expect(result.data.canManageTelemetry).toBe(true);
+    expect(result.data.telemetry).toEqual({
+      enabled: false,
+      retentionDays: 120,
+      updatedAt: "2026-09-28T12:00:00.000Z",
+    });
     expect(result.data.auditPage).toEqual({
       hasNext: false,
       page: 1,

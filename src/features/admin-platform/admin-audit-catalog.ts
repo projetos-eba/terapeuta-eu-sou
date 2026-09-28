@@ -19,6 +19,8 @@ const actionLabels: Record<string, string> = {
   "professional.suspend": "Profissional suspenso",
   "review.hide": "Avaliação ocultada",
   "review.restore": "Avaliação restaurada",
+  "metrics.telemetry.disabled": "Coleta de métricas desligada",
+  "metrics.telemetry.enabled": "Coleta de métricas ativada",
   "session_confirmation_incident.resolve": "Ocorrência da sessão analisada",
   "support.internal_note": "Nota interna adicionada ao atendimento",
   "support.reopen": "Atendimento reaberto",
@@ -41,6 +43,7 @@ const actionLabels: Record<string, string> = {
 
 const entityTypeLabels: Record<string, string> = {
   matching_theme: "tema de recomendação",
+  therapist_metrics_runtime_config: "coleta de métricas",
   session_confirmation_incident: "ocorrência da sessão",
   support_ticket: "atendimento",
   therapist_profile: "perfil profissional",

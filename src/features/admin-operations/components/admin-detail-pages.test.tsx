@@ -598,6 +598,22 @@ describe("admin operation detail pages", () => {
     expect(html).not.toContain("JWT");
   });
 
+  it("offers pre-charge cancellation only when the read model marks it safe", () => {
+    const eligible = renderToStaticMarkup(
+      <AdminSessionDetailPage
+        data={detailData({ canCancelSessionBeforeCharge: true })}
+      />,
+    );
+    const unavailable = renderToStaticMarkup(
+      <AdminSessionDetailPage
+        data={detailData({ canCancelSessionBeforeCharge: false })}
+      />,
+    );
+
+    expect(eligible).toContain("Cancelar sessão");
+    expect(unavailable).not.toContain("Cancelamento antes da cobrança");
+  });
+
   it("does not call an unclosed therapist no-show room ready for entry", () => {
     const html = renderToStaticMarkup(
       <AdminSessionDetailPage

@@ -40,6 +40,13 @@ const PAYMENT_PERIOD_OPTIONS: AdminListOption[] = [
   option("90d", "Últimos 90 dias"),
 ];
 
+const SUBSCRIPTION_PLAN_OPTIONS: AdminListOption[] = [
+  option("", "Todos os planos"),
+  option("free", "Free"),
+  option("premium", "Premium"),
+  option("premium_plus", "Premium Plus"),
+];
+
 type ModuleSpec = {
   description: string;
   emptyMessage: string;
@@ -159,6 +166,14 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
         "warning",
       ),
       metric(
+        "completed-refunds-amount",
+        "Reembolsos concluídos",
+        "Valores efetivamente devolvidos às pessoas no período.",
+        "session_refunds?status=eq.succeeded",
+        "session_refunds",
+        "success",
+      ),
+      metric(
         "therapist-change-refund-reviews",
         "Análises de reembolso",
         "Casos de alteração do terapeuta que exigem decisão administrativa.",
@@ -197,6 +212,7 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       option("processing", "Processando"),
       option("paid", "Pagos"),
       option("partially_refunded", "Parcialmente reembolsados"),
+      option("refunded", "Reembolsados"),
       option("failed", "Falhos"),
       option("canceled", "Cancelados"),
     ],
@@ -273,57 +289,49 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   },
   subscriptions: {
     description:
-      "Acompanhe as assinaturas de terapeutas sem alterar planos diretamente.",
+      "Acompanhe as assinaturas pagas dos profissionais, seus ciclos e situações atuais.",
     emptyMessage:
       "Nenhuma assinatura acessível para a sessão administrativa atual.",
     metrics: [
       metric(
-        "active-subscriptions",
-        "Ativas",
-        "Assinaturas active ou trialing.",
-        "therapist_subscriptions?status=in.(trialing,active)",
-        "therapist_subscriptions",
+        "paid-subscriptions",
+        "Total de assinaturas pagas",
+        "Profissionais atualmente nos planos Premium ou Premium Plus.",
+        "therapist_profiles?plan=in.(premium,premium_plus)",
+        "therapist_profiles",
         "success",
       ),
       metric(
-        "attention-subscriptions",
-        "Em atenção",
-        "Cobrança incompleta, inadimplente ou sem pagamento.",
-        "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)",
-        "therapist_subscriptions",
-        "warning",
-      ),
-      metric(
-        "ending-subscriptions",
-        "Cancelam no fim",
-        "Assinaturas marcadas para cancelamento futuro.",
-        "therapist_subscriptions?cancel_at_period_end=eq.true",
-        "therapist_subscriptions",
-        "warning",
-      ),
-      metric(
-        "failed-invoices",
-        "Faturas com falha",
-        "Faturas que pedem revisão operacional.",
-        "billing_invoices?status=in.(uncollectible,void,open)",
-        "billing_invoices",
-        "warning",
-      ),
-      metric(
-        "active-prices",
-        "Preços ativos",
-        "Preços ativos no catálogo de planos.",
-        "billing_plan_prices?is_active=eq.true",
-        "billing_plan_prices",
+        "free-therapists",
+        "Free",
+        "Profissionais atualmente no plano Free.",
+        "therapist_profiles?plan=eq.free",
+        "therapist_profiles",
         "info",
       ),
       metric(
-        "stripe-customers",
-        "Contas vinculadas",
-        "Contas de recebimento vinculadas ao perfil.",
-        "stripe_customers",
-        "stripe_customers",
+        "premium-therapists",
+        "Premium",
+        "Profissionais atualmente no plano Premium.",
+        "therapist_profiles?plan=eq.premium",
+        "therapist_profiles",
         "info",
+      ),
+      metric(
+        "premium-plus-therapists",
+        "Premium Plus",
+        "Profissionais atualmente no plano Premium Plus.",
+        "therapist_profiles?plan=eq.premium_plus",
+        "therapist_profiles",
+        "info",
+      ),
+      metric(
+        "canceled-subscriptions",
+        "Assinaturas canceladas",
+        "Assinaturas cuja cobrança recorrente já foi encerrada.",
+        "therapist_subscriptions?status=eq.canceled",
+        "therapist_subscriptions",
+        "danger",
       ),
     ],
     rowsTitle: "Assinaturas recentes",
@@ -387,7 +395,12 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
         description: spec.description,
         emptyMessage: spec.emptyMessage,
         filterOptions: {
-          period: module === "payments" ? PAYMENT_PERIOD_OPTIONS : undefined,
+          plan:
+            module === "subscriptions" ? SUBSCRIPTION_PLAN_OPTIONS : undefined,
+          period:
+            module === "payments" || module === "subscriptions"
+              ? PAYMENT_PERIOD_OPTIONS
+              : undefined,
           sort: SORT_OPTIONS,
           status: spec.statusOptions,
         },
@@ -425,7 +438,12 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
       description: spec.description,
       emptyMessage: spec.emptyMessage,
       filterOptions: {
-        period: module === "payments" ? PAYMENT_PERIOD_OPTIONS : undefined,
+        plan:
+          module === "subscriptions" ? SUBSCRIPTION_PLAN_OPTIONS : undefined,
+        period:
+          module === "payments" || module === "subscriptions"
+            ? PAYMENT_PERIOD_OPTIONS
+            : undefined,
         sort: SORT_OPTIONS,
         status: spec.statusOptions,
       },
@@ -701,11 +719,21 @@ function parseFinanceListQuery({
 }): AdminFinanceListQuery {
   const baseQuery = parseAdminListQuery(searchParams);
 
-  if (module !== "payments") return baseQuery;
+  if (module !== "payments" && module !== "subscriptions") return baseQuery;
 
   const rawPeriod = firstSearchParam(searchParams?.period);
   const period: AdminFinancePeriod =
     rawPeriod === "7d" || rawPeriod === "90d" ? rawPeriod : "30d";
+
+  if (module === "subscriptions") {
+    const rawPlan = firstSearchParam(searchParams?.plan);
+    const plan =
+      rawPlan === "free" || rawPlan === "premium" || rawPlan === "premium_plus"
+        ? rawPlan
+        : undefined;
+
+    return { ...baseQuery, period, plan };
+  }
 
   return { ...baseQuery, period };
 }
@@ -720,7 +748,11 @@ function toFinanceRpcQuery({
   return {
     page: query.page,
     pageSize: query.pageSize,
-    period: module === "payments" ? query.period ?? "30d" : undefined,
+    period:
+      module === "payments" || module === "subscriptions"
+        ? (query.period ?? "30d")
+        : undefined,
+    plan: module === "subscriptions" ? query.plan : undefined,
     search: query.search || undefined,
     sort: query.sort || undefined,
     status: query.status || undefined,

@@ -42,7 +42,7 @@ test.describe("therapist metrics and reports", () => {
     await expect(
       page
         .getByText(
-          "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
+          "Em breve, você poderá acompanhar quantas pessoas encontram seu perfil.",
         )
         .first(),
     ).toBeVisible();

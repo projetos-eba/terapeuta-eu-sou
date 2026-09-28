@@ -2,6 +2,7 @@ import {
   AdminSecurityPage,
   getAdminSecurityPage,
 } from "@/features/admin-platform";
+import { canUseAdminPermission } from "@/lib/auth/admin-permissions";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminSecurityRoute({
@@ -14,6 +15,10 @@ export default async function AdminSecurityRoute({
   });
   const result = await getAdminSecurityPage({
     accessToken: session.accessToken,
+    canManageTelemetry: canUseAdminPermission(
+      session.permissions,
+      "admin.settings.manage",
+    ),
     searchParams: await searchParams,
   });
 

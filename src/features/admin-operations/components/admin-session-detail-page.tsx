@@ -45,6 +45,7 @@ import {
   formatSessionStatusLabel,
 } from "./admin-operation-display";
 import { AdminSessionAttendanceResolution } from "./admin-session-attendance-resolution";
+import { AdminSessionPrechargeCancelAction } from "./admin-session-precharge-cancel-action";
 
 export function AdminSessionDetailPage({
   data,
@@ -245,6 +246,10 @@ export function AdminSessionDetailPage({
           name={data.title}
           title="Sessão"
         />
+
+        {data.canCancelSessionBeforeCharge ? (
+          <AdminSessionPrechargeCancelAction bookingId={data.id} />
+        ) : null}
 
         <StatsGrid items={stats} />
 
@@ -815,6 +820,7 @@ function formatPaymentLabel(value?: string) {
     paid: "Pago",
     partially_refunded: "Reembolso parcial",
     pending: "Pendente",
+    processing: "Em processamento",
     refunded: "Reembolsado",
   };
 
@@ -824,8 +830,10 @@ function formatPaymentLabel(value?: string) {
 function statusTone(status: string) {
   if (status === "Concluída" || status === "Confirmada")
     return "success" as const;
-  if (status === "Cancelada") return "danger" as const;
-  if (status === "Pagamento pendente") return "warning" as const;
+  if (status.startsWith("Cancelada")) return "danger" as const;
+  if (status === "Pagamento pendente" || status === "Reservada") {
+    return "warning" as const;
+  }
   return "primary" as const;
 }
 

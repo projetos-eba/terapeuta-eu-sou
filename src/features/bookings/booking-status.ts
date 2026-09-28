@@ -19,6 +19,7 @@ export function isCancelledBookingStatus(status: string) {
   return (
     status === "cancelled_by_patient" ||
     status === "cancelled_by_therapist" ||
+    status === "cancelled_by_admin" ||
     status === "no_show_patient" ||
     status === "no_show_therapist" ||
     status === "no_show_both" ||

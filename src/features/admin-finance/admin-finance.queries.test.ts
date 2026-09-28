@@ -31,6 +31,7 @@ describe("admin finance queries", () => {
         generatedAt: "2026-08-09T14:00:00.000Z",
         metrics: {
           "canceled-payment-amount": 4200,
+          "completed-refunds-amount": 2500,
           "paid-session-payments": 1,
         },
         module: "payments",
@@ -50,7 +51,7 @@ describe("admin finance queries", () => {
     const result = await getAdminFinancePage({
       accessToken: "admin-token",
       module: "payments",
-      searchParams: { q: "paid", status: "paid" },
+      searchParams: { q: "refund", status: "refunded" },
     });
 
     expect(result.status).toBe("success");
@@ -63,9 +64,9 @@ describe("admin finance queries", () => {
             page: 1,
             pageSize: 12,
             period: "30d",
-            search: "paid",
+            search: "refund",
             sort: undefined,
-            status: "paid",
+            status: "refunded",
           },
         }),
         method: "POST",
@@ -80,8 +81,17 @@ describe("admin finance queries", () => {
             status: "available",
             value: 4200,
           }),
+          expect.objectContaining({
+            key: "completed-refunds-amount",
+            status: "available",
+            value: 2500,
+          }),
         ]),
       );
+      expect(result.data.filterOptions.status).toContainEqual({
+        label: "Reembolsados",
+        value: "refunded",
+      });
       expect(JSON.stringify(result.data)).not.toContain("pi_secret");
     }
   });
@@ -114,6 +124,71 @@ describe("admin finance queries", () => {
       "https://tes.supabase.test/rest/v1/rpc/admin_get_finance_module_v2",
       expect.any(Object),
     );
+  });
+
+  it("sends the subscription plan and period filters only to the subscription read model", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: {
+          "canceled-subscriptions": 2,
+          "free-therapists": 3,
+          "paid-subscriptions": 8,
+          "premium-plus-therapists": 4,
+          "premium-therapists": 4,
+        },
+        module: "subscriptions",
+        page: { hasNext: false, page: 1, pageSize: 12, total: 1 },
+        rows: [
+          {
+            id: "subscription-1",
+            latest_invoice_at: "2026-09-27T12:00:00.000Z",
+            latest_invoice_status: "paid",
+            status: "active",
+            therapist_current_plan: "premium",
+            therapist_name: "Mariana Silva",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminFinancePage({
+      accessToken: "admin-token",
+      module: "subscriptions",
+      searchParams: { period: "90d", plan: "premium", status: "active" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_finance_module_v2",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_module: "subscriptions",
+          p_query: {
+            page: 1,
+            pageSize: 12,
+            period: "90d",
+            plan: "premium",
+            search: undefined,
+            sort: undefined,
+            status: "active",
+          },
+        }),
+      }),
+    );
+    if (result.status === "success") {
+      expect(result.data.filterOptions.plan).toContainEqual({
+        label: "Premium",
+        value: "premium",
+      });
+      expect(result.data.filterOptions.period).toContainEqual({
+        label: "Últimos 90 dias",
+        value: "90d",
+      });
+      expect(result.data.rows[0]?.fields).toContainEqual({
+        label: "Última cobrança",
+        value: "27/09/2026, 09:00 · Paga",
+      });
+    }
   });
 });
 

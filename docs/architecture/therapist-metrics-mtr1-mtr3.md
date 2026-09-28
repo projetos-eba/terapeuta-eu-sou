@@ -1,10 +1,10 @@
 # Métricas & Relatórios — MTR-1 a MTR-3
 
-Status revisado em 2026-09-11:
+Status revisado em 2026-09-27:
 
 | Corte                        | `implementation_status` | `data_source`                       | `qa_status`                                 | `external_homologation`              | `production_readiness`           |
 | ---------------------------- | ----------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------ | -------------------------------- |
-| MTR-1 — telemetria           | `functional`            | eventos objetivos deduplicados      | pgTAP, Vitest e contrato HTTP               | privacidade pendente                 | ativação pública bloqueada       |
+| MTR-1 — telemetria           | `functional`            | eventos objetivos deduplicados      | pgTAP, Vitest e contrato HTTP               | HML pendente após deploy aprovado    | desligada até aceite de HML      |
 | MTR-2 — agregados/read model | `functional`            | eventos, favoritos e bookings       | pgTAP, Vitest, lint, typecheck e build      | não aplicável aos dados operacionais | pronta com estados discriminados |
 | MTR-3 — Visão geral          | `functional`            | `get_therapist_metrics_overview_v1` | componentes e Playwright em cinco viewports | não aplicável à UI local             | pronta com limitações explícitas |
 
@@ -37,7 +37,9 @@ Evento autoritativo:
 
 O endpoint fino é `POST /api/public/metrics/events`. Ele valida o payload,
 descarta crawlers conhecidos e encaminha para
-`record_public_therapist_metric_events_v1`. O RPC:
+`record_public_therapist_metric_events_v2`. A versão preserva o contrato de
+validação e deduplicação da V1 e acrescenta somente contadores operacionais
+agregados de recebimento, repetição, invalidação, limite e falha. O RPC:
 
 - aceita no máximo 20 eventos por request;
 - limita uma sessão pseudônima a 100 eventos em 24 horas;
@@ -49,9 +51,24 @@ descarta crawlers conhecidos e encaminha para
 - não armazena IP, user agent, query string, nome, e-mail ou texto livre.
 
 `therapist_metrics_runtime_config.public_telemetry_enabled` nasce `false`.
-Somente uma operação interna com service role pode ativá-la. A ativação não
-deve ocorrer até a validação formal de base legal, aviso de privacidade e
-retenção. Esta entrega não inventa esses requisitos.
+Somente a operação interna auditada
+`set_therapist_metrics_runtime_v1`, disponível para `service_role`, pode
+alterá-la. Navegadores não recebem essa permissão nem uma configuração pública
+equivalente.
+
+Em 2026-09-27, os sócios do TES aprovaram o escopo de descoberta, a retenção
+máxima de 120 dias e a ativação em etapas. O aviso público existente permanece
+sem alteração por essa decisão. A aprovação não liga telemetria por si só:
+HML precisa ser homologada e aceita antes de repetir o procedimento em
+produção. Cada mudança de estado registra o ator administrativo verificado, a
+justificativa, a retenção e a referência de aprovação na auditoria append-only.
+
+A Auditoria administrativa oferece o controle visual da coleta com somente os
+estados **Ativa** e **Desligada**. O Admin autorizado solicita a alteração por
+um diálogo com justificativa obrigatória; a rota interna valida
+`admin.settings.manage` e a Edge Function deriva o ator da sessão antes de
+executar a operação com credencial de serviço. O navegador nunca recebe acesso
+direto à configuração ou à credencial de serviço.
 
 ## Agregação MTR-2
 
@@ -71,6 +88,10 @@ O RPC privado `get_therapist_metrics_overview_v1(period)`:
 - inclui versão, timezone, período, frescor e copy key direcional;
 - distingue `ready`, `empty`, `insufficient_sample`, `processing` e
   `unavailable`.
+
+`get_therapist_metrics_overview_v2(period)` é aditivo e usado pela interface
+atual. Ele aceita somente 30 ou 60 dias locais completos. A V1 mantém os
+períodos históricos de compatibilidade para consumidores já existentes.
 
 Read models:
 
@@ -114,8 +135,9 @@ backfill retroativo, o histórico append-only de regras e exceções da agenda.
 Cada inserção, edição ou remoção acrescenta um evento; clientes autenticados não
 recebem leitura direta dessas tabelas.
 
-`get_therapist_metrics_dashboard_v2(30|90)` agrega os três read models `v1` e
-acrescenta ocupação histórica. A capacidade é normalizada em buckets de 15
+`get_therapist_metrics_dashboard_v2` permanece para compatibilidade.
+`get_therapist_metrics_dashboard_v3(30|60)` compõe o overview V2 e acrescenta
+ocupação histórica. A capacidade é normalizada em buckets de 15
 minutos:
 
 - ofertado: bucket coberto por regra vigente e não bloqueado por exceção;
@@ -124,7 +146,7 @@ minutos:
 - ocupação: minutos ocupados divididos pelos minutos ofertados.
 
 O estado `forming` informa cobertura e período exigido. A leitura de 30 dias é
-liberada antes da de 90 dias; alterar a agenda hoje não reescreve métricas de
+liberada antes da de 60 dias; alterar a agenda hoje não reescreve métricas de
 dias já encerrados. Quando não existe capacidade ofertada sob cobertura
 completa, o estado é `empty`, nunca um sucesso fictício.
 
@@ -157,7 +179,7 @@ da projeção não é convertida em zero.
 `/terapeuta/insights` usa leitura inicial server-side e oferece:
 
 - hero e hierarquia baseados no Figma `13366:3628`;
-- períodos compartilháveis de 30, 60, 90 e 120 dias;
+- períodos compartilháveis de 30 e 60 dias;
 - seis indicadores com sparklines responsivas;
 - evolução de sessões, rankings, roscas e mapas de calor;
 - funil quando a coleta estiver autorizada e houver amostra;
@@ -172,7 +194,7 @@ funcionais MTR-4 e MTR-5. Não são preenchidas com números do Figma. Aura
 continua fora deste corte.
 
 O E2E autenticado `tests/e2e/therapist-metrics.spec.ts` valida dados reais,
-troca entre 30/90 dias e ausência de overflow horizontal em 320px, 375px,
+troca entre 30/60 dias e ausência de overflow horizontal em 320px, 375px,
 768px, 1024px e 1440px. O screenshot desktop foi comparado com a hierarquia do
 Figma; a composição usa o grid real do shell em vez de coordenadas fixas.
 
@@ -186,9 +208,37 @@ Figma; a composição usa o grid real do shell em vez de coordenadas fixas.
 - logs HTTP contêm somente operação, categoria sanitizada e correlation ID;
 - resposta privada não contém dados de paciente.
 
+## Operação controlada de descoberta
+
+Os eventos brutos pseudonimizados, agregados diários e registros operacionais
+de saúde expiram após 120 dias. A rotina diária
+`check_therapist_metrics_telemetry_health_v1` executa essa retenção e verifica
+frescor, coerência entre eventos e agregados e monotonicidade do funil. O painel
+administrativo mostra somente o estado e contagens agregadas; não mostra
+visitantes, perfis, buscas, IPs ou user agents.
+
+Procedimento após deploy aprovado:
+
+1. Aplicar a migration em HML, confirmando que a chave continua desligada.
+2. Executar os testes de busca, perfil e início de agendamento com visitante
+   anônimo; conferir remount/recarga, crawler, limite, payload e ausência de
+   dados pessoais.
+3. Conferir o painel administrativo e a rotina diária. Na Auditoria, usar o
+   controle de coleta para ativar a operação com justificativa obrigatória; a
+   rota interna e a Edge Function validam o Admin e executam a operação
+   auditada no servidor.
+4. Observar pelo menos um período completo em HML e registrar o aceite da
+   homologação. Em caso de atenção, desligar pelo mesmo procedimento auditado.
+5. Somente após esse aceite, repetir preflight e operação auditada em produção.
+
+O navegador pode apenas solicitar a ação autenticada; nenhuma etapa executa a
+configuração diretamente no cliente. Esta mudança não executa deploy nem altera
+o aviso público de privacidade.
+
 ## Próximos Gates
 
-1. Aprovar base legal, aviso e retenção antes de ativar telemetria pública.
-2. Aguardar cobertura de 30 e 90 dias antes de liberar cada leitura de ocupação.
+1. Homologar HML com a telemetria inicialmente desligada e obter aceite antes
+   de qualquer ativação produtiva.
+2. Aguardar cobertura de 30 e 60 dias antes de liberar cada leitura de ocupação.
 3. Implementar taxonomias estruturadas antes de novas análises qualitativas.
 4. Implementar Aura somente em MTR-6, consumindo métricas validadas.

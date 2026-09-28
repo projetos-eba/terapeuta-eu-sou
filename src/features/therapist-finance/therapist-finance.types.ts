@@ -126,7 +126,7 @@ export type TherapistReceiptTherapyOption = {
 };
 
 export type TherapistReceiptsContract = {
-  contractVersion: 5;
+  contractVersion: 6;
   filters: TherapistFinancePeriod & {
     search: string | null;
     status: TherapistChargeStatus | null;
@@ -140,6 +140,12 @@ export type TherapistReceiptsContract = {
     processingCents: number;
     refundedCents: number;
     scheduledCents: number;
+    upcomingScheduled: {
+      amountCents: number;
+      periodEnd: string;
+      periodStart: string;
+      sessionCount: number;
+    };
   };
   therapistProfileId: string;
   therapyOptions: TherapistReceiptTherapyOption[];

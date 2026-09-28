@@ -20,6 +20,9 @@ describe("admin operation display helpers", () => {
     expect(formatStatusLabel("cancelled_by_payment")).toBe(
       "Cancelada por falha no pagamento",
     );
+    expect(formatStatusLabel("cancelled_by_admin")).toBe(
+      "Cancelada pela administração",
+    );
     expect(formatStatusLabel("no_show_patient")).toBe(
       "Não realizada — cliente ausente",
     );
@@ -28,6 +31,9 @@ describe("admin operation display helpers", () => {
   it("formats every canonical session payment status without leaking enums", () => {
     expect(formatSessionPaymentStatusLabel("not_started")).toBe("Não iniciado");
     expect(formatSessionPaymentStatusLabel("pending")).toBe("Pendente");
+    expect(formatSessionPaymentStatusLabel("processing")).toBe(
+      "Em processamento",
+    );
     expect(formatSessionPaymentStatusLabel("paid")).toBe("Confirmado");
     expect(formatSessionPaymentStatusLabel("failed")).toBe("Falhou");
     expect(formatSessionPaymentStatusLabel("refunded")).toBe("Reembolsado");
@@ -47,6 +53,7 @@ describe("admin operation display helpers", () => {
     expect(formatSessionStatusLabel("cancelled_by_therapist")).toBe(
       "Cancelada pelo terapeuta",
     );
+    expect(formatSessionStatusLabel("reserved")).toBe("Reservada");
   });
 
   it("formats plan labels without legacy route jargon", () => {

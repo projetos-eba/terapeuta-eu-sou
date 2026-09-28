@@ -19581,6 +19581,7 @@ export type Database = {
         | "completed"
         | "cancelled_by_patient"
         | "cancelled_by_therapist"
+        | "cancelled_by_admin"
         | "no_show_patient"
         | "no_show_therapist"
         | "refunded"
@@ -19915,6 +19916,7 @@ export const Constants = {
         "completed",
         "cancelled_by_patient",
         "cancelled_by_therapist",
+        "cancelled_by_admin",
         "no_show_patient",
         "no_show_therapist",
         "refunded",

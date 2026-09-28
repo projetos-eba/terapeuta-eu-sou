@@ -400,6 +400,12 @@ describe("ReservationPage", () => {
 
     render(<ReservationPage context={context} />);
 
+    expect(
+      screen.getByText(
+        "O pagamento é realizado 24 horas antes da consulta. Se o agendamento for feito com menos de 24 horas de antecedência, a cobrança será realizada no momento da reserva.",
+      ),
+    ).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("checkbox", { name: /aceito os/i }));
     fireEvent.click(
       screen

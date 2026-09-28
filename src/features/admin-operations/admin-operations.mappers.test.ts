@@ -333,6 +333,33 @@ describe("admin operation mappers", () => {
     expect(row.title).toBe("Ajuda com pagamento");
   });
 
+  it("presents only future unpaid confirmed sessions as reserved", () => {
+    const [reserved, confirmed] = mapAdminOperationRows({
+      module: "sessions",
+      rows: [
+        {
+          financial_status: "pending",
+          id: "booking-reserved",
+          payment_status: "paid",
+          service_title_snapshot: "Reiki",
+          starts_at: "2099-08-11T14:00:00.000Z",
+          status: "confirmed",
+        },
+        {
+          financial_status: "paid",
+          id: "booking-paid",
+          service_title_snapshot: "Reiki",
+          starts_at: "2099-08-11T14:00:00.000Z",
+          status: "confirmed",
+        },
+      ],
+    });
+
+    expect(reserved.statusLabel).toBe("reserved");
+    expect(reserved.fields).toContainEqual({ label: "Pagamento", value: "pending" });
+    expect(confirmed.statusLabel).toBe("confirmed");
+  });
+
   it("maps safe support details without exposing the ticket description", () => {
     const detail = mapAdminOperationDetail({
       auditEvents: [],

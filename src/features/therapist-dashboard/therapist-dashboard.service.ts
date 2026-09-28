@@ -462,6 +462,7 @@ function isCountedSession(status: string) {
     "pending_payment",
     "cancelled_by_patient",
     "cancelled_by_therapist",
+    "cancelled_by_admin",
     "refunded",
   ].includes(status);
 }

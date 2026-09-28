@@ -17,11 +17,7 @@ export default async function TherapistInsightsPage({
   const periodDays =
     params?.period === "60"
       ? 60
-      : params?.period === "90"
-        ? 90
-        : params?.period === "120"
-          ? 120
-          : 30;
+      : 30;
   const tab =
     params?.tab === "sessions" || params?.tab === "interest"
       ? params.tab

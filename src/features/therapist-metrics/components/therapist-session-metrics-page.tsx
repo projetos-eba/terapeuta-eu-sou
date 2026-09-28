@@ -463,7 +463,7 @@ function SampleLock({ observed }: { observed: number }) {
         Ainda sem dados suficientes
       </p>
       <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-        A taxa aparece após 10 resultados elegíveis. Até agora, temos {observed}
+        A taxa aparece após 10 resultados elegíveis. Até agora, há {observed}
         .
       </p>
     </div>

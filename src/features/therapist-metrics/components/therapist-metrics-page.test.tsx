@@ -54,13 +54,12 @@ describe("TherapistMetricsPage", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText(
-        "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
-      ).length,
+      screen.getAllByText("Estamos preparando esta leitura do seu perfil.")
+        .length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Em breve, você poderá acompanhar quantas pessoas demonstraram interesse em agendar com você.",
+        "Estamos preparando esta leitura de interesse em agendar.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -95,9 +94,8 @@ describe("TherapistMetricsPage", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
-      screen.getAllByText(
-        "Em breve, você poderá acompanhar como as pessoas encontram seu perfil.",
-      ).length,
+      screen.getAllByText("Estamos preparando esta leitura do seu perfil.")
+        .length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByLabelText("Mapa de calor de sessões: ainda sem dados"),
@@ -127,6 +125,47 @@ describe("TherapistMetricsPage", () => {
 
     expect(screen.getByText("1 pessoa")).toBeInTheDocument();
     expect(screen.queryByText("1 pessoas")).not.toBeInTheDocument();
+  });
+
+  it("shows real discovery totals after a complete period has data", () => {
+    const data = dashboardFixture();
+    data.overview.discovery = {
+      ...data.overview.discovery,
+      freshThrough: data.meta.freshThrough,
+      reason: null,
+      stages: {
+        bookingFlowStarts: {
+          ...data.overview.discovery.stages.bookingFlowStarts,
+          direction: "up",
+          previousValue: 4,
+          status: "ready",
+          value: 7,
+        },
+        profileViews: {
+          ...data.overview.discovery.stages.profileViews,
+          direction: "up",
+          previousValue: 10,
+          status: "ready",
+          value: 14,
+        },
+        searchImpressions: {
+          ...data.overview.discovery.stages.searchImpressions,
+          direction: "up",
+          previousValue: 20,
+          status: "ready",
+          value: 28,
+        },
+      },
+      status: "ready",
+    };
+
+    render(<TherapistMetricsPage data={data} />);
+
+    expect(screen.getAllByText("14").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("7").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Eventos agregados do período completo").length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows the initial private session reading and derives idle hours from offered capacity", () => {
@@ -288,6 +327,12 @@ describe("TherapistMetricsPage", () => {
       screen.getByRole("region", { name: "Controles do período" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Período das métricas")).toHaveValue("30");
+    expect(screen.getByLabelText("Período das métricas")).toHaveTextContent(
+      "30 dias60 dias",
+    );
+    expect(screen.getByLabelText("Período das métricas")).not.toHaveTextContent(
+      "90 dias",
+    );
     expect(
       screen.getByRole("link", { name: "Baixar relatório em CSV" }),
     ).toHaveAttribute(
