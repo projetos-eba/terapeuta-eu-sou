@@ -86,6 +86,31 @@ describe("AdminSecurityPage", () => {
     expect(screen.queryByText("professional.publish")).not.toBeInTheDocument();
   });
 
+  it("presents telemetry state changes with a clear audit label", () => {
+    render(
+      <AdminSecurityPage
+        data={makeData({
+          auditEvents: [
+            {
+              actorRole: "admin",
+              createdAt: "2026-09-28T12:00:00.000Z",
+              entityType: "therapist_metrics_runtime_config",
+              eventType: "metrics.telemetry.enabled",
+              id: "audit-metrics-1",
+              permission: "admin.settings.manage",
+              reason: "Ativação aprovada para homologação controlada.",
+              source: "metrics-telemetry-operation",
+            },
+          ],
+          auditEventsStatus: "available",
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Coleta de métricas ativada")).toBeInTheDocument();
+    expect(screen.getByText(/coleta de métricas · Administração/i)).toBeInTheDocument();
+  });
+
   it("shows pagination controls for additional audit pages", () => {
     render(
       <AdminSecurityPage
@@ -126,6 +151,7 @@ function makeData(
   overrides: Pick<AdminSecurityPageData, "auditEvents" | "auditEventsStatus">,
 ): AdminSecurityPageData {
   return {
+    canManageTelemetry: false,
     auditPage: {
       hasNext: false,
       page: 1,
@@ -134,5 +160,6 @@ function makeData(
     },
     auditEvents: overrides.auditEvents,
     auditEventsStatus: overrides.auditEventsStatus,
+    telemetry: null,
   };
 }

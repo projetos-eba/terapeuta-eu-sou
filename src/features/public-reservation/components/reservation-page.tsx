@@ -1299,6 +1299,12 @@ function ReservationSummary({
           </p>
         </div>
 
+        <p className="rounded-2xl bg-surface-muted px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
+          O pagamento é realizado 24 horas antes da consulta. Se o agendamento
+          for feito com menos de 24 horas de antecedência, a cobrança será
+          realizada no momento da reserva.
+        </p>
+
         {context.step === "pagamento" ? (
           <>
             <div className="space-y-3 border-t border-border/70 pt-6">

@@ -49,6 +49,19 @@ describe("Stripe promotion checkout contract", () => {
     );
   });
 
+  it("keeps the Free plan alternative next to the payment guidance", () => {
+    const checkout = read("src/app/terapeuta/checkout/page.tsx");
+    const freePlanAction = "Acessar o plano Free";
+
+    expect(checkout.split(freePlanAction)).toHaveLength(2);
+    expect(checkout.indexOf('id="checkout-availability"')).toBeLessThan(
+      checkout.indexOf(freePlanAction),
+    );
+    expect(checkout.indexOf(freePlanAction)).toBeLessThan(
+      checkout.indexOf("<EmbeddedSubscriptionCheckout"),
+    );
+  });
+
   it("keeps the founder price selection server-side and collects a card", () => {
     const subscription = read(
       "supabase/functions/stripe-create-subscription-checkout/index.ts",

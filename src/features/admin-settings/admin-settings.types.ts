@@ -9,6 +9,10 @@ export type AdminSettingsSignal = {
   href?: string;
   key: string;
   label: string;
+  metrics?: Array<{
+    label: string;
+    value: number;
+  }>;
   source: string;
   status: AdminOperationalStatus;
   tone: AdminOperationalTone;

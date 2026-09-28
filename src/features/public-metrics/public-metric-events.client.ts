@@ -26,7 +26,9 @@ export function emitPublicMetricEvents(
   void fetch("/api/public/metrics/events", {
     body: JSON.stringify(payload),
     cache: "no-store",
-    credentials: "omit",
+    // Same-origin credentials let protected non-production deployments accept
+    // this first-party request without sending anything to another origin.
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
     method: "POST",

@@ -22,6 +22,7 @@ describe("ReminderCard", () => {
   it.each([
     BookingStatus.CancelledByPatient,
     BookingStatus.CancelledByTherapist,
+    BookingStatus.CancelledByAdmin,
     BookingStatus.CancelledByPayment,
     BookingStatus.Refunded,
   ])("hides the future countdown for terminal status %s", (status) => {

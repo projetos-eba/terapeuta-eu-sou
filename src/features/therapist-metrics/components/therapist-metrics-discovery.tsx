@@ -128,8 +128,8 @@ function DiscoveryState({
       title: "Preparando os primeiros dados",
     },
     unavailable: {
-      body: "A coleta permanece desativada até a validação formal de privacidade e retenção. Seus dados operacionais continuam disponíveis normalmente.",
-      title: "Dados de descoberta ainda não ativados",
+      body: "Esta leitura está sendo preparada. Seus dados operacionais continuam disponíveis normalmente.",
+      title: "Preparando dados de descoberta",
     },
   } as const;
 

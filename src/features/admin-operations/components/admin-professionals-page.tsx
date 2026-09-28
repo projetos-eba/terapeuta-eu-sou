@@ -89,8 +89,8 @@ export function AdminProfessionalsPage({
                   Lista de profissionais
                 </h2>
                 <p className="mt-1 max-w-[700px] text-sm font-semibold leading-6 text-tesText-secondary">
-                  Compare situação, disponibilidade e contexto essencial antes
-                  de abrir o profissional.
+                  Compare situação, disponibilidade, cadastro e contexto
+                  essencial antes de abrir o profissional.
                 </p>
               </div>
               {data.rowsStatus === "available" && data.rows.length > 0 ? (
@@ -431,11 +431,12 @@ function ProfessionalsTable({ rows }: { rows: AdminOperationRow[] }) {
           detalhe
         </caption>
         <colgroup>
-          <col className="w-[27%]" />
-          <col className="w-[21%]" />
+          <col className="w-[24%]" />
+          <col className="w-[17%]" />
           <col className="w-[20%]" />
-          <col className="w-[18%]" />
-          <col className="w-[14%]" />
+          <col className="w-[15%]" />
+          <col className="w-[13%]" />
+          <col className="w-[11%]" />
         </colgroup>
         <thead>
           <tr className="border-b border-border bg-surface-soft/70">
@@ -444,6 +445,7 @@ function ProfessionalsTable({ rows }: { rows: AdminOperationRow[] }) {
               "Situação",
               "Disponibilidade",
               "Contexto",
+              "Cadastro",
               "Ação",
             ].map((heading) => (
               <th
@@ -507,6 +509,12 @@ function ProfessionalTableRow({ row }: { row: AdminOperationRow }) {
         </p>
       </td>
       <td className="px-5 py-4 align-top">
+        <CompactPair
+          label="Cadastro"
+          value={getField(row, "Cadastro") || "Não informado"}
+        />
+      </td>
+      <td className="px-5 py-4 align-top">
         {detailHref ? (
           <Link
             aria-label={`Ver profissional ${row.title}`}
@@ -558,6 +566,10 @@ function ProfessionalEntity({ row }: { row: AdminOperationRow }) {
         <EntityField
           label="Plano"
           value={formatPlanLabel(getField(row, "Plano")) || "Não informado"}
+        />
+        <EntityField
+          label="Cadastro"
+          value={getField(row, "Cadastro") || "Não informado"}
         />
         <EntityField
           label="Atualizado"

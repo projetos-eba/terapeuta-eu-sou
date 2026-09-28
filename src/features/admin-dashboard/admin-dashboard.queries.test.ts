@@ -32,6 +32,23 @@ describe("admin dashboard queries", () => {
 
       if (url.endsWith("/rest/v1/rpc/admin_get_dashboard_v1")) {
         return jsonResponse({
+          activity: {
+            metrics: {
+              patients: { current: 8, previous: 5 },
+              professionals: { current: 4, previous: 2 },
+              sessions: { current: 7, previous: 3 },
+            },
+            periodLabel: "Últimos 30 dias",
+            series: [
+              {
+                label: "01/09",
+                patients: 2,
+                professionals: 1,
+                sessions: 3,
+              },
+            ],
+            status: "available",
+          },
           events: [
             {
               actorRole: "admin",
@@ -42,6 +59,34 @@ describe("admin dashboard queries", () => {
               reason: "Catálogo revisado.",
             },
           ],
+          financial: {
+            currency: "BRL",
+            feesStatus: "pending",
+            metrics: {
+              grossCommission: {
+                currentCents: 15000,
+                previousCents: 12000,
+              },
+              netRevenue: {
+                currentCents: 13200,
+                previousCents: 10500,
+              },
+              stripeFees: {
+                currentCents: 1800,
+                previousCents: 1500,
+              },
+            },
+            periodLabel: "Últimos 30 dias",
+            series: [
+              {
+                grossCommissionCents: 15000,
+                label: "01/09",
+                netRevenueCents: 13200,
+                stripeFeesCents: 1800,
+              },
+            ],
+            status: "available",
+          },
           generatedAt: "2026-08-09T07:00:00.000Z",
           metrics: {
             "active-patients": 9,
@@ -95,6 +140,23 @@ describe("admin dashboard queries", () => {
     expect(result.dashboard.events).toEqual([
       expect.objectContaining({ eventType: "therapy_published" }),
     ]);
+    expect(result.dashboard.activity).toEqual(
+      expect.objectContaining({
+        metrics: expect.objectContaining({
+          patients: { current: 8, previous: 5 },
+        }),
+        status: "available",
+      }),
+    );
+    expect(result.dashboard.financial).toEqual(
+      expect.objectContaining({
+        feesStatus: "pending",
+        metrics: expect.objectContaining({
+          netRevenue: { currentCents: 13200, previousCents: 10500 },
+        }),
+        status: "available",
+      }),
+    );
     expect(result.dashboard.modules.map((module) => module.key)).not.toEqual(
       expect.arrayContaining(["integrations", "settings"]),
     );

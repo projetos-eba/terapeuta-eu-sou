@@ -22,7 +22,6 @@ if (target === "live" && !process.argv.includes("--confirm-live-config")) {
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2026-06-24.dahlia",
 });
-const expiresAt = Date.parse("2026-09-11T03:00:00.000Z") / 1000;
 const offerKey = "therapist_founder";
 const promotionCodeValue = "TERAPEUTAFUNDADOR";
 
@@ -45,11 +44,11 @@ const definitions = [
     unitAmount: 11990,
   },
   {
-    lookupKey: "tes_premium_plus_founder_brl_monthly_v1",
+    lookupKey: "tes_premium_plus_founder_brl_monthly_v2",
     offerKey,
     planCode: "premium_plus",
     productId: products.premium_plus.id,
-    unitAmount: 7990,
+    unitAmount: 11990,
   },
 ];
 
@@ -69,14 +68,6 @@ for (const lookupKey of [
 
 const coupon = await findOrCreateCoupon(products.premium_plus.id);
 const promotionCode = await findOrCreatePromotionCode(coupon.id);
-const shouldBeActive = target === "test";
-
-if (promotionCode.active !== shouldBeActive) {
-  await stripe.promotionCodes.update(promotionCode.id, {
-    active: shouldBeActive,
-  });
-}
-
 runScript("configure-stripe-webhook-destinations.mjs");
 
 if (target === "test") {
@@ -90,15 +81,14 @@ runScript("verify-stripe-webhook-destinations.mjs");
 console.log(
   JSON.stringify({
     billingCatalog: {
-      founderRecurringAmountCents: 7990,
+      founderRecurringAmountCents: 11990,
       premiumAmountCents: 7990,
       premiumPlusAmountCents: 11990,
       recurringInterval: "month",
     },
     liveTransactionsCreated: false,
     promotionCode: {
-      active: shouldBeActive,
-      expiresAt: "2026-09-11T03:00:00.000Z",
+      active: promotionCode.active,
       firstTransactionOnly: true,
       value: promotionCodeValue,
       zeroInvoiceCount: 3,
@@ -161,6 +151,7 @@ function preferredLookupKeys(planCode) {
     ? [
         "tes_premium_plus_brl_monthly_v3",
         "tes_premium_plus_brl_monthly_v2",
+        "tes_premium_plus_founder_brl_monthly_v2",
         "tes_premium_plus_founder_brl_monthly_v1",
         "tes_premium_plus_brl_monthly_v1",
       ]
@@ -235,7 +226,6 @@ async function findOrCreateCoupon(productId) {
       if (existing.duration !== "repeating") mismatches.push("duration");
       if (existing.duration_in_months !== 3)
         mismatches.push("duration_in_months");
-      if (existing.redeem_by !== expiresAt) mismatches.push("redeem_by");
       if (!(existing.applies_to?.products ?? []).includes(productId)) {
         mismatches.push("applies_to.products");
       }
@@ -262,7 +252,6 @@ async function findOrCreateCoupon(productId) {
     },
     name: "TES Terapeuta Fundador — 3 meses grátis",
     percent_off: 100,
-    redeem_by: expiresAt,
   });
 }
 
@@ -276,7 +265,6 @@ async function findOrCreatePromotionCode(couponId) {
   );
   if (existing) {
     const mismatches = [];
-    if (existing.expires_at !== expiresAt) mismatches.push("expires_at");
     if (existing.metadata?.tes_checkout_scope !== "subscription") {
       mismatches.push("tes_checkout_scope");
     }
@@ -292,7 +280,6 @@ async function findOrCreatePromotionCode(couponId) {
   return stripe.promotionCodes.create({
     active: target === "test",
     code: promotionCodeValue,
-    expires_at: expiresAt,
     metadata: {
       environment: target,
       offer_key: offerKey,

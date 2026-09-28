@@ -19,6 +19,7 @@ import type {
 const closedBookingStatuses: ReadonlySet<BookingStatus> = new Set([
   BookingStatus.CancelledByPatient,
   BookingStatus.CancelledByTherapist,
+  BookingStatus.CancelledByAdmin,
   BookingStatus.NoShowPatient,
   BookingStatus.NoShowTherapist,
   BookingStatus.NoShowBoth,
@@ -394,6 +395,7 @@ export function getZoomAccessLabel(
   if (
     bookingStatus === BookingStatus.CancelledByPatient ||
     bookingStatus === BookingStatus.CancelledByTherapist ||
+    bookingStatus === BookingStatus.CancelledByAdmin ||
     bookingStatus === BookingStatus.CancelledByPayment
   ) {
     return "Sessão cancelada";

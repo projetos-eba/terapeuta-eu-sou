@@ -31,7 +31,9 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
   return {
     detailHref: getAdminFinanceDetailHref("payments", id),
     fields: compactFields([
+      field("Cliente", asText(row.patient_name)),
       field("Profissional", asText(row.therapist_name)),
+      field("Forma de pagamento", formatPaymentMethod(row.payment_method_type)),
       field(
         "Atendimento",
         formatServiceStatus(
@@ -55,13 +57,17 @@ function mapPaymentRow(row: UnknownRecord, index: number) {
       ),
       field("Valor encaminhado", formatEffectiveTransferAmount(row)),
       field(
-        "Custos da plataforma",
+        "Comissão TES",
         formatCurrency(row.platform_gross_commission_cents, row.currency),
+      ),
+      field(
+        "Taxas Stripe",
+        formatCurrency(row.stripe_fee_amount_cents, row.currency),
       ),
       field("Reembolso pendente", asBooleanLabel(row.refund_pending)),
       field("Revisão TES", formatFinancialReview(row.financial_review_status)),
       field("Disputa", formatDate(row.disputed_at)),
-      field("Atualizado", formatDate(row.updated_at)),
+      field("Data e hora", formatDate(row.updated_at)),
     ]),
     id,
     statusLabel: asText(row.financial_status),
@@ -80,29 +86,21 @@ function formatFinancialReview(value: unknown) {
 
 function mapSubscriptionRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `subscription-${index}`;
-  const plan = formatPlan(row.plan_code);
+  const plan =
+    formatPlan(row.therapist_current_plan) || formatPlan(row.plan_code);
 
   return {
     detailHref: getAdminFinanceDetailHref("subscriptions", id),
     fields: compactFields([
-      field("Plano", plan),
       field("Terapeuta", asText(row.therapist_name)),
-      field("Plano no perfil", formatPlan(row.therapist_current_plan)),
-      field(
-        "Ciclo atual",
-        formatPeriod(row.current_period_start, row.current_period_end),
-      ),
-      field("Cancelamento futuro", asBooleanLabel(row.cancel_at_period_end)),
-      field("Faturas", formatCount(row.invoice_count)),
-      field("Última fatura", asText(row.latest_invoice_status)),
-      field("Cancelada em", formatDate(row.canceled_at)),
-      field("Encerrada em", formatDate(row.ended_at)),
-      field("Atualizada", formatDate(row.updated_at)),
+      field("Plano atual", plan),
+      field("Início do ciclo", formatDate(row.current_period_start)),
+      field("Próxima cobrança", formatSubscriptionNextBilling(row)),
+      field("Última cobrança", formatLastBilling(row)),
     ]),
     id,
     statusLabel: asText(row.status),
-    subtitle:
-      "O plano exibido deve refletir uma confirmação financeira válida.",
+    subtitle: "Informações de plano, ciclo e cobrança mais recentes.",
     title: `Assinatura ${plan || "sem plano"}`,
   } satisfies AdminFinanceRow;
 }
@@ -149,6 +147,17 @@ export function mapAdminFinanceDetail({
     module,
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
+    subscriptionManagement:
+      module === "subscriptions"
+        ? {
+            available:
+              isCancellableSubscription(record) &&
+              !asBoolean(record.cancel_at_period_end),
+            cancelAtPeriodEnd: asBoolean(record.cancel_at_period_end),
+            currentPeriodEnd:
+              formatDate(record.current_period_end) || undefined,
+          }
+        : undefined,
     statusLabel: row?.statusLabel,
     subtitle: row?.subtitle,
     title: row?.title ?? getFallbackDetailTitle(module, id),
@@ -261,52 +270,53 @@ function getDetailSections(
 
   return [
     section("Assinatura", [
-      field("Assinatura local", asText(record.id)),
       field("Terapeuta", asText(record.therapist_name)),
-      field("Perfil terapeuta", asText(record.therapist_profile_id)),
-      field("Plano", formatPlan(record.plan_code)),
-      field("Plano no perfil", formatPlan(record.therapist_current_plan)),
-      field("Status", asText(record.status)),
+      field(
+        "Plano atual",
+        formatPlan(record.therapist_current_plan) ||
+          formatPlan(record.plan_code),
+      ),
+      field("Situação da assinatura", formatSubscriptionStatus(record.status)),
     ]),
     section("Ciclo e preço", [
+      field("Início do ciclo", formatDate(record.current_period_start)),
+      field("Próxima cobrança", formatSubscriptionNextBilling(record)),
       field(
-        "Ciclo atual",
-        formatPeriod(record.current_period_start, record.current_period_end),
+        "Valor do ciclo",
+        formatCurrency(record.unit_amount_cents, record.currency),
       ),
-      field("Valor", formatCurrency(record.unit_amount_cents, record.currency)),
-      field("Intervalo", asText(record.interval)),
-      field("Cancelar no fim", asBooleanLabel(record.cancel_at_period_end)),
+      field("Periodicidade", formatSubscriptionInterval(record.interval)),
+      field(
+        "Cancelamento programado",
+        asBooleanLabel(record.cancel_at_period_end),
+      ),
       field("Cancelada em", formatDate(record.canceled_at)),
       field("Encerrada em", formatDate(record.ended_at)),
     ]),
     section("Conciliação segura", [
-      field("Conta vinculada", asBooleanLabel(record.customer_linked)),
-      field("Contexto da conta", asText(record.customer_environment)),
-      field("Conta ativa", asBooleanLabel(record.customer_livemode)),
       field(
-        "E-mail da conta presente",
+        "Conta de cobrança vinculada",
+        asBooleanLabel(record.customer_linked),
+      ),
+      field(
+        "E-mail associado confirmado",
         asBooleanLabel(record.customer_email_present),
       ),
       field(
-        "Assinatura confirmada",
+        "Assinatura registrada",
         asBooleanLabel(record.has_subscription_reference),
       ),
-      field("Pagamento iniciado", asBooleanLabel(record.has_checkout_session)),
+      field("Cobrança iniciada", asBooleanLabel(record.has_checkout_session)),
       field(
-        "Última fatura recebida",
+        "Última cobrança registrada",
         asBooleanLabel(record.has_latest_invoice_reference),
       ),
       field("Última confirmação", formatDate(record.stripe_event_created_at)),
-      field(
-        "Informações adicionais presentes",
-        asBooleanLabel(record.metadata_present),
-      ),
     ]),
-    section("Faturas e eventos", [
-      field("Faturas", formatCount(record.invoice_count)),
-      field("Faturas abertas", formatCount(record.open_invoice_count)),
-      field("Faturas pagas", formatCount(record.paid_invoice_count)),
-      field("Eventos de assinatura", formatCount(record.event_count)),
+    section("Últimas cobranças", [
+      field("Cobranças registradas", formatCount(record.invoice_count)),
+      field("Cobranças em aberto", formatCount(record.open_invoice_count)),
+      field("Cobranças pagas", formatCount(record.paid_invoice_count)),
     ]),
     timestampSection(record),
   ];
@@ -360,6 +370,10 @@ function asBooleanLabel(value: unknown) {
   if (value === false) return "Não";
 
   return "";
+}
+
+function asBoolean(value: unknown) {
+  return value === true;
 }
 
 export function formatTransferStatus(value: unknown) {
@@ -430,6 +444,7 @@ function formatServiceStatus(
     cancelled_by_payment: "Cancelado",
     cancelled_by_patient: "Cancelado",
     cancelled_by_therapist: "Cancelado",
+    cancelled_by_admin: "Cancelado",
     completed: "Concluído",
     no_show_both: "Não realizado",
     no_show_patient: "Não realizado",
@@ -465,6 +480,84 @@ function formatPlan(value: unknown) {
   if (value === "free") return "Free";
 
   return asText(value);
+}
+
+function formatSubscriptionStatus(value: unknown) {
+  const labels: Record<string, string> = {
+    active: "Ativa",
+    canceled: "Cancelada",
+    incomplete: "Incompleta",
+    incomplete_expired: "Não concluída",
+    past_due: "Em atraso",
+    paused: "Pausada",
+    trialing: "Período de avaliação",
+    unpaid: "Inadimplente",
+  };
+  const normalized = asText(value).trim().toLowerCase();
+  return labels[normalized] ?? "Situação não identificada";
+}
+
+function formatSubscriptionInterval(value: unknown) {
+  const labels: Record<string, string> = {
+    day: "Diária",
+    month: "Mensal",
+    week: "Semanal",
+    year: "Anual",
+  };
+  const normalized = asText(value).trim().toLowerCase();
+  return labels[normalized] ?? "Situação não identificada";
+}
+
+function formatSubscriptionNextBilling(record: UnknownRecord) {
+  const end = formatDate(record.current_period_end);
+  const status = asText(record.status).trim().toLowerCase();
+
+  if (status === "canceled" || status === "unpaid") {
+    return "Sem nova cobrança";
+  }
+  if (asBoolean(record.cancel_at_period_end)) {
+    return end ? `Encerramento previsto em ${end}` : "Encerramento previsto";
+  }
+
+  return end;
+}
+
+function formatLastBilling(record: UnknownRecord) {
+  const date = formatDate(record.latest_invoice_at);
+  const status = formatInvoiceStatus(record.latest_invoice_status);
+
+  if (date && status) return `${date} · ${status}`;
+  return date || status;
+}
+
+function formatInvoiceStatus(value: unknown) {
+  const labels: Record<string, string> = {
+    draft: "Em preparação",
+    open: "Em aberto",
+    paid: "Paga",
+    uncollectible: "Não recebida",
+    void: "Cancelada",
+  };
+  const normalized = asText(value).trim().toLowerCase();
+  return labels[normalized] ?? asText(value);
+}
+
+function isCancellableSubscription(record: UnknownRecord) {
+  return ["active", "past_due", "trialing"].includes(
+    asText(record.status).trim().toLowerCase(),
+  );
+}
+
+function formatPaymentMethod(value: unknown) {
+  const normalized = asText(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    boleto: "Boleto",
+    card: "Cartão",
+    card_present: "Cartão",
+    pix: "Pix",
+  };
+
+  return labels[normalized] ?? "";
 }
 
 function formatCurrency(amount: unknown, currency: unknown) {
@@ -608,8 +701,11 @@ function mapFinanceEvent(
       createdAt: asText(event.created_at),
       id: asText(event.id),
       kind,
-      subtitle: `Pago em ${formatDate(event.paid_at) || "não informado"} · vencimento ${formatDate(event.due_at) || "não informado"}`,
-      title: `Fatura ${asText(event.status) || "sem status"}`,
+      subtitle: `Cobrança ${formatInvoiceStatus(event.status) || "sem situação"}`,
+      title:
+        formatDate(event.paid_at) ||
+        formatDate(event.created_at) ||
+        "Cobrança registrada",
     };
   }
 
@@ -617,9 +713,34 @@ function mapFinanceEvent(
     createdAt: asText(event.created_at),
     id: asText(event.id),
     kind,
-    subtitle: `${formatPlan(event.previous_plan)} → ${formatPlan(event.next_plan)}`,
-    title: asText(event.event_type) || "Evento de assinatura",
+    subtitle: subscriptionEventSummary(event),
+    title: subscriptionEventLabel(asText(event.event_type)),
   };
+}
+
+function subscriptionEventLabel(value: string) {
+  const labels: Record<string, string> = {
+    cancellation_reverted: "Cancelamento desfeito",
+    cancellation_scheduled: "Cancelamento programado",
+    "customer.subscription.created": "Assinatura criada",
+    "customer.subscription.deleted": "Assinatura encerrada",
+    "customer.subscription.updated": "Assinatura atualizada",
+  };
+  return labels[value] ?? "Atualização da assinatura";
+}
+
+function subscriptionEventSummary(event: UnknownRecord) {
+  const from = formatPlan(event.previous_plan);
+  const to = formatPlan(event.next_plan);
+  if (from && to && from !== to) return `${from} → ${to}`;
+
+  const previousStatus = formatSubscriptionStatus(event.previous_status);
+  const nextStatus = formatSubscriptionStatus(event.next_status);
+  if (previousStatus && nextStatus && previousStatus !== nextStatus) {
+    return `${previousStatus} → ${nextStatus}`;
+  }
+
+  return "Atualização registrada para acompanhamento.";
 }
 
 function financialEventLabel(code: string) {

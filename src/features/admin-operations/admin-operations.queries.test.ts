@@ -87,6 +87,41 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("forwards a valid rating filter only for the requested reviews query", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: { "total-reviews": 1 },
+        module: "reviews",
+        page: { hasNext: false, page: 1, pageSize: 12, total: 1 },
+        rows: [
+          {
+            booking_id: "booking-1",
+            id: "review-1",
+            rating: 5,
+            status: "published",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "reviews",
+      searchParams: { rating: "5" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_operation_module_v2",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_module: "reviews",
+          p_query: { page: 1, pageSize: 12, rating: "5" },
+        }),
+      }),
+    );
+  });
+
   it("maps global patient metrics including comparison and suspension independently of page rows", async () => {
     vi.stubGlobal(
       "fetch",
@@ -129,21 +164,96 @@ describe("admin operation queries", () => {
         label: "Suspensos",
         value: "suspended",
       });
+      expect(result.data.patientAnalytics).toMatchObject({
+        activityAge: [],
+        periodDays: 30,
+        series: [],
+        status: "unavailable",
+      });
+    }
+  });
+
+  it("requests and maps the global client analytics for the selected period", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: {},
+        page: { page: 1, pageSize: 12, total: 1, hasNext: false },
+        patientAnalytics: {
+          activityAge: [{ label: "Até 7 dias", value: 1 }],
+          periodDays: 90,
+          series: [
+            {
+              label: "01/09",
+              newRegistrations: 2,
+              totalClients: 100,
+            },
+          ],
+          status: "available",
+        },
+        rows: [
+          {
+            account_status: "active",
+            created_at: "2026-09-01T10:00:00.000Z",
+            display_name: "Cliente Analytics",
+            email: "cliente.analytics@example.test",
+            id: "patient-analytics",
+            phone: "11987654321",
+            phone_country_code: "55",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminOperationPage({
+      accessToken: "admin-token",
+      module: "patients",
+      searchParams: { analyticsPeriod: "90" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_operation_module_v2",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_module: "patients",
+          p_query: {
+            page: 1,
+            pageSize: 12,
+            analyticsPeriod: 90,
+          },
+        }),
+      }),
+    );
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.patientAnalytics).toEqual({
+        activityAge: [{ label: "Até 7 dias", value: 1 }],
+        periodDays: 90,
+        series: [
+          { label: "01/09", newRegistrations: 2, totalClients: 100 },
+        ],
+        status: "available",
+      });
+      expect(result.data.rows[0]).toMatchObject({
+        email: "cliente.analytics@example.test",
+        fields: expect.arrayContaining([
+          { label: "Contato", value: "+55 (11) 98765-4321" },
+          { label: "Cadastro", value: "01/09/2026" },
+        ]),
+      });
     }
   });
 
   it("offers every canonical booking status through Portuguese admin filters", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        jsonResponse({
-          metrics: {},
-          module: "sessions",
-          page: { page: 1, pageSize: 12, total: 0, hasNext: false },
-          rows: [],
-        }),
-      ),
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        metrics: {},
+        module: "sessions",
+        page: { page: 1, pageSize: 12, total: 0, hasNext: false },
+        rows: [],
+      }),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await getAdminOperationPage({
       accessToken: "admin-token",
@@ -152,12 +262,23 @@ describe("admin operation queries", () => {
     });
 
     expect(result.status).toBe("success");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_sessions_module_v1",
+      expect.objectContaining({
+        body: JSON.stringify({ p_query: { page: 1, pageSize: 12 } }),
+        method: "POST",
+      }),
+    );
     if (result.status === "success") {
       expect(result.data.filterOptions.status).toEqual(
         expect.arrayContaining([
           {
             label: "Canceladas por falha no pagamento",
             value: "cancelled_by_payment",
+          },
+          {
+            label: "Canceladas pela administração",
+            value: "cancelled_by_admin",
           },
           { label: "Cliente ausente", value: "no_show_patient" },
           { label: "Terapeuta ausente", value: "no_show_therapist" },

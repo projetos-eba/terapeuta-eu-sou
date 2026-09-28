@@ -36,6 +36,21 @@ describe("therapist metrics overview mapper", () => {
     expect(mapTherapistMetricsOverview(input).meta.periodDays).toBe(120);
   });
 
+  it("maps the additive V2 discovery contract for the 30 and 60-day interface", () => {
+    const input = rawOverview();
+    input.contractVersion = 2;
+    input.metricDefinitionVersion = 2;
+    input.meta.periodDays = 60;
+    input.discovery.status = "empty";
+    input.discovery.reason = null;
+
+    expect(mapTherapistMetricsOverview(input)).toMatchObject({
+      contractVersion: 2,
+      meta: { periodDays: 60 },
+      metricDefinitionVersion: 2,
+    });
+  });
+
   it("maps a ready cohort rate with its directional copy key", () => {
     const input = rawOverview();
     input.discovery.status = "ready";

@@ -370,10 +370,37 @@ describe("TherapistFinancePage", () => {
     renderPage("receipts");
 
     expect(
-      screen.getByRole("heading", { name: "Cobranças das suas sessões" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Cobranças dos seus encontros",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Acompanhe os valores de seus encontros e veja o que já foi cobrado, o que ainda está programado e eventuais reembolsos.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Esta página mostra as cobranças feitas às pessoas pelos seus encontros.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Taxa de serviço").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sua parte").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cobranças realizadas").length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.getByText("Cobranças programadas — Próximos 30 dias"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Status da cobrança")).toBeInTheDocument();
+    expect(screen.getAllByText("Pessoa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Financeiro completo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Cobranças das suas sessões"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Comissão TES")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pagamento aprovado")).not.toBeInTheDocument();
     expect(screen.getAllByText("Lucas").length).toBeGreaterThan(0);
     expect(screen.queryByText("Recebimento por mês")).not.toBeInTheDocument();
     expect(
@@ -388,6 +415,38 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("option", { name: "Processando" }),
     ).toBeInTheDocument();
+  });
+
+  it("links upcoming scheduled charges to the matching future period", () => {
+    const base = fixture();
+
+    renderPage("receipts", {
+      receipts: {
+        ...base.receipts,
+        summary: {
+          ...base.receipts.summary,
+          upcomingScheduled: {
+            amountCents: 18700,
+            periodEnd: "2026-08-26",
+            periodStart: "2026-07-28",
+            sessionCount: 2,
+          },
+        },
+      },
+    });
+
+    const scheduledCard = screen.getByRole("link", {
+      name: /Cobranças programadas — Próximos 30 dias/i,
+    });
+
+    expect(scheduledCard).toHaveTextContent("R$ 187,00");
+    expect(scheduledCard).toHaveTextContent(
+      "2 sessões com cobrança já agendada para os próximos 30 dias.",
+    );
+    expect(scheduledCard).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&period=custom&start=2026-07-28&end=2026-08-26&status=scheduled",
+    );
   });
 
   it("shows a fully offset payment as compensated without losing its approved charge", () => {
@@ -406,11 +465,11 @@ describe("TherapistFinancePage", () => {
       },
     });
 
-    expect(screen.getAllByText("Pagamento aprovado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cobrança realizada").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Compensado").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(
-        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+        "Sua parte foi usada para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
       ).length,
     ).toBeGreaterThan(0);
     expect(
@@ -428,7 +487,7 @@ describe("TherapistFinancePage", () => {
     ).toBeGreaterThan(0);
     expect(
       screen.queryByText(
-        "Seu valor foi usado para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
+        "Sua parte foi usada para compensar um saldo pendente. Não haverá depósito bancário para esta sessão.",
       ),
     ).not.toBeInTheDocument();
   });
@@ -441,7 +500,7 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Confira o valor da sessão, a Comissão TES, seu valor e a próxima etapa da cobrança.",
+        "Confira o valor da sessão, a Taxa de serviço, sua parte e a próxima etapa da cobrança.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -452,9 +511,9 @@ describe("TherapistFinancePage", () => {
   it.each([
     [
       "approved",
-      "Sessões com pagamento aprovado",
+      "Sessões com cobrança realizada",
       "Confira as sessões cuja cobrança foi concluída e acompanhe o valor antes da chegada à sua conta.",
-      "Não há sessões com pagamento aprovado neste período.",
+      "Não há sessões com cobrança realizada neste período.",
     ],
     [
       "processing",
@@ -464,14 +523,14 @@ describe("TherapistFinancePage", () => {
     ],
     [
       "scheduled",
-      "Sessões com cobrança agendada",
+      "Sessões com cobrança programada",
       "Confira as sessões com cobrança prevista antes do atendimento.",
-      "Não há sessões com cobrança agendada neste período.",
+      "Não há sessões com cobrança programada neste período.",
     ],
     [
       "refunded",
       "Sessões reembolsadas",
-      "Confira as sessões cujo valor foi devolvido ao paciente.",
+      "Confira as sessões cujo valor foi devolvido à pessoa.",
       "Não há sessões reembolsadas neste período.",
     ],
     [
@@ -739,6 +798,34 @@ describe("TherapistFinancePage", () => {
     );
   });
 
+  it("explains a provider-confirmed post-payout refund debit without inflating sessions", () => {
+    const payouts = fixture().payouts;
+    payouts.agenda.inTransit[0] = {
+      ...payouts.agenda.inTransit[0],
+      amountCents: 6955,
+      composition: [
+        ...payouts.agenda.inTransit[0].composition,
+        {
+          adjustmentId: "adjustment-1",
+          amountCents: -1045,
+          label: "Ajuste de reembolso",
+          occurredAt: "2026-07-29T14:00:00.000Z",
+          type: "adjustment",
+        },
+      ],
+      sessionCount: 1,
+    };
+
+    renderPage("payouts", { payouts });
+
+    fireEvent.click(screen.getAllByText("Ver composição")[0]);
+    expect(screen.getByText("Ajuste de reembolso")).toBeInTheDocument();
+    expect(screen.getByText(/Descontado do saldo em/)).toBeInTheDocument();
+    expect(screen.getByText("-R$ 10,45")).toBeInTheDocument();
+    expect(screen.getAllByText("1 sessão").length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/transfer reversal|conciliação/i);
+  });
+
   it("offers 7, 15 and 30 days and keeps 15 days selected by default", () => {
     renderPage("payouts");
 
@@ -981,6 +1068,7 @@ function fixture(): TherapistFinancePageData {
                 sessionDate: "2026-07-28T13:00:00.000Z",
                 sessionPaymentId: "payment-1",
                 therapyNameSnapshot: "Reiki",
+                type: "session",
               },
             ],
             date: "2026-07-30",
@@ -1002,6 +1090,7 @@ function fixture(): TherapistFinancePageData {
                 sessionDate: "2026-07-29T13:00:00.000Z",
                 sessionPaymentId: "payment-2",
                 therapyNameSnapshot: "Reiki",
+                type: "session",
               },
             ],
             date: "2026-08-01",
@@ -1011,7 +1100,7 @@ function fixture(): TherapistFinancePageData {
           },
         ],
       },
-      contractVersion: 8,
+      contractVersion: 10,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",
@@ -1030,6 +1119,7 @@ function fixture(): TherapistFinancePageData {
               sessionDate: "2026-07-28T13:00:00.000Z",
               sessionPaymentId: "payment-1",
               therapyNameSnapshot: "Reiki",
+              type: "session",
             },
           ],
           date: "2026-07-27",
@@ -1053,7 +1143,7 @@ function fixture(): TherapistFinancePageData {
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 5,
+      contractVersion: 6,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -1096,6 +1186,12 @@ function fixture(): TherapistFinancePageData {
         processingCents: 0,
         refundedCents: 0,
         scheduledCents: 0,
+        upcomingScheduled: {
+          amountCents: 0,
+          periodEnd: "2026-08-26",
+          periodStart: "2026-07-28",
+          sessionCount: 0,
+        },
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],

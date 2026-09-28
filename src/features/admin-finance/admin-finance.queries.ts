@@ -7,10 +7,8 @@ import { routes } from "@/lib/routes";
 import {
   ADMIN_LIST_DEFAULT_PAGE_SIZE,
   parseAdminListQuery,
-  toAdminListRpcQuery,
   type AdminListOption,
   type AdminListPageInfo,
-  type AdminListQuery,
 } from "@/features/admin-shared/admin-list-query";
 
 import {
@@ -19,8 +17,10 @@ import {
 } from "./admin-finance.mappers";
 import type {
   AdminFinanceDetailPageResult,
+  AdminFinanceListQuery,
   AdminFinanceMetric,
   AdminFinanceModuleKey,
+  AdminFinancePeriod,
   AdminFinancePageData,
   AdminFinancePageResult,
 } from "./admin-finance.types";
@@ -33,6 +33,19 @@ type CountSpec = {
   source: string;
   tone: AdminFinanceMetric["tone"];
 };
+
+const PAYMENT_PERIOD_OPTIONS: AdminListOption[] = [
+  option("7d", "Últimos 7 dias"),
+  option("30d", "Últimos 30 dias"),
+  option("90d", "Últimos 90 dias"),
+];
+
+const SUBSCRIPTION_PLAN_OPTIONS: AdminListOption[] = [
+  option("", "Todos os planos"),
+  option("free", "Free"),
+  option("premium", "Premium"),
+  option("premium_plus", "Premium Plus"),
+];
 
 type ModuleSpec = {
   description: string;
@@ -89,36 +102,76 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
     emptyMessage: "Nenhum pagamento de sessão disponível para esta consulta.",
     metrics: [
       metric(
-        "pending-session-payments",
-        "Pendentes",
-        "Aguardando autoridade financeira.",
-        "session_payments?financial_status=eq.pending",
+        "total-payments-amount",
+        "Total de pagamentos",
+        "Valores registrados no período selecionado.",
         "session_payments",
-        "warning",
+        "session_payments",
+        "info",
       ),
       metric(
-        "paid-session-payments",
-        "Pagos",
-        "Pagamentos confirmados e conciliados.",
-        "session_payments?financial_status=in.(paid,partially_refunded)",
+        "gross-platform-commission-amount",
+        "Comissão bruta TES",
+        "Parte da plataforma nos pagamentos confirmados.",
+        "session_payments",
         "session_payments",
         "success",
       ),
       metric(
-        "failed-session-payments",
-        "Falhos",
-        "Tentativas ou pagamentos recusados.",
-        "session_payments?financial_status=eq.failed",
+        "stripe-fees-amount",
+        "Taxas Stripe",
+        "Taxas de processamento dos pagamentos confirmados.",
+        "session_payments",
+        "session_payments",
+        "warning",
+      ),
+      metric(
+        "canceled-payment-amount",
+        "Pagamentos cancelados",
+        "Valores de pagamentos cancelados no período.",
+        "session_payments",
         "session_payments",
         "danger",
       ),
       metric(
-        "pending-refunds",
+        "pending-payment-amount",
+        "Pagamentos pendentes",
+        "Valores que aguardam confirmação financeira.",
+        "session_payments",
+        "session_payments",
+        "warning",
+      ),
+      metric(
+        "confirmed-payment-amount",
+        "Pagamentos confirmados",
+        "Valores com pagamento confirmado na plataforma.",
+        "session_payments",
+        "session_payments",
+        "success",
+      ),
+      metric(
+        "failed-payment-amount",
+        "Pagamentos com falha",
+        "Valores de pagamentos com falha no período.",
+        "session_payments",
+        "session_payments",
+        "danger",
+      ),
+      metric(
+        "pending-refunds-amount",
         "Reembolsos pendentes",
-        "Reembolsos ainda não finalizados.",
+        "Valores de reembolsos ainda não concluídos.",
         "session_refunds?status=eq.pending",
         "session_refunds",
         "warning",
+      ),
+      metric(
+        "completed-refunds-amount",
+        "Reembolsos concluídos",
+        "Valores efetivamente devolvidos às pessoas no período.",
+        "session_refunds?status=eq.succeeded",
+        "session_refunds",
+        "success",
       ),
       metric(
         "therapist-change-refund-reviews",
@@ -144,22 +197,6 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
         "payout_batches",
         "info",
       ),
-      metric(
-        "ledger-entries",
-        "Lançamentos",
-        "Registros financeiros auditáveis.",
-        "financial_ledger_entries",
-        "financial_ledger_entries",
-        "info",
-      ),
-      metric(
-        "stripe-transfers",
-        "Transferências",
-        "Transferências registradas com segurança.",
-        "stripe_transfers",
-        "stripe_transfers",
-        "info",
-      ),
     ],
     rowsTitle: "Pagamentos recentes",
     safetyNotes: [
@@ -175,6 +212,8 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       option("processing", "Processando"),
       option("paid", "Pagos"),
       option("partially_refunded", "Parcialmente reembolsados"),
+      option("refunded", "Reembolsados"),
+      option("disputed", "Em disputa"),
       option("failed", "Falhos"),
       option("canceled", "Cancelados"),
     ],
@@ -251,57 +290,49 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   },
   subscriptions: {
     description:
-      "Acompanhe as assinaturas de terapeutas sem alterar planos diretamente.",
+      "Acompanhe as assinaturas pagas dos profissionais, seus ciclos e situações atuais.",
     emptyMessage:
       "Nenhuma assinatura acessível para a sessão administrativa atual.",
     metrics: [
       metric(
-        "active-subscriptions",
-        "Ativas",
-        "Assinaturas active ou trialing.",
-        "therapist_subscriptions?status=in.(trialing,active)",
-        "therapist_subscriptions",
+        "paid-subscriptions",
+        "Total de assinaturas pagas",
+        "Profissionais atualmente nos planos Premium ou Premium Plus.",
+        "therapist_profiles?plan=in.(premium,premium_plus)",
+        "therapist_profiles",
         "success",
       ),
       metric(
-        "attention-subscriptions",
-        "Em atenção",
-        "Cobrança incompleta, inadimplente ou sem pagamento.",
-        "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)",
-        "therapist_subscriptions",
-        "warning",
-      ),
-      metric(
-        "ending-subscriptions",
-        "Cancelam no fim",
-        "Assinaturas marcadas para cancelamento futuro.",
-        "therapist_subscriptions?cancel_at_period_end=eq.true",
-        "therapist_subscriptions",
-        "warning",
-      ),
-      metric(
-        "failed-invoices",
-        "Faturas com falha",
-        "Faturas que pedem revisão operacional.",
-        "billing_invoices?status=in.(uncollectible,void,open)",
-        "billing_invoices",
-        "warning",
-      ),
-      metric(
-        "active-prices",
-        "Preços ativos",
-        "Preços ativos no catálogo de planos.",
-        "billing_plan_prices?is_active=eq.true",
-        "billing_plan_prices",
+        "free-therapists",
+        "Free",
+        "Profissionais atualmente no plano Free.",
+        "therapist_profiles?plan=eq.free",
+        "therapist_profiles",
         "info",
       ),
       metric(
-        "stripe-customers",
-        "Contas vinculadas",
-        "Contas de recebimento vinculadas ao perfil.",
-        "stripe_customers",
-        "stripe_customers",
+        "premium-therapists",
+        "Premium",
+        "Profissionais atualmente no plano Premium.",
+        "therapist_profiles?plan=eq.premium",
+        "therapist_profiles",
         "info",
+      ),
+      metric(
+        "premium-plus-therapists",
+        "Premium Plus",
+        "Profissionais atualmente no plano Premium Plus.",
+        "therapist_profiles?plan=eq.premium_plus",
+        "therapist_profiles",
+        "info",
+      ),
+      metric(
+        "canceled-subscriptions",
+        "Assinaturas canceladas",
+        "Assinaturas cuja cobrança recorrente já foi encerrada.",
+        "therapist_subscriptions?status=eq.canceled",
+        "therapist_subscriptions",
+        "danger",
       ),
     ],
     rowsTitle: "Assinaturas recentes",
@@ -319,6 +350,8 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       option("past_due", "Em atraso"),
       option("unpaid", "Inadimplentes"),
       option("incomplete", "Incompletas"),
+      option("incomplete_expired", "Incompletas expiradas"),
+      option("paused", "Pausadas"),
       option("canceled", "Canceladas"),
     ],
     title: "Assinaturas",
@@ -343,7 +376,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
 }): Promise<AdminFinancePageResult> {
   const config = getSupabasePublicConfig();
   const spec = MODULES[module];
-  const query = parseAdminListQuery(searchParams);
+  const query = parseFinanceListQuery({ module, searchParams });
 
   if (!config) {
     return {
@@ -365,6 +398,12 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
         description: spec.description,
         emptyMessage: spec.emptyMessage,
         filterOptions: {
+          plan:
+            module === "subscriptions" ? SUBSCRIPTION_PLAN_OPTIONS : undefined,
+          period:
+            module === "payments" || module === "subscriptions"
+              ? PAYMENT_PERIOD_OPTIONS
+              : undefined,
           sort: SORT_OPTIONS,
           status: spec.statusOptions,
         },
@@ -402,6 +441,12 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
       description: spec.description,
       emptyMessage: spec.emptyMessage,
       filterOptions: {
+        plan:
+          module === "subscriptions" ? SUBSCRIPTION_PLAN_OPTIONS : undefined,
+        period:
+          module === "payments" || module === "subscriptions"
+            ? PAYMENT_PERIOD_OPTIONS
+            : undefined,
         sort: SORT_OPTIONS,
         status: spec.statusOptions,
       },
@@ -492,7 +537,7 @@ async function fetchAdminFinanceReadModel({
   accessToken: string;
   config: { apiKey: string; url: string };
   module: AdminFinanceModuleKey;
-  query: AdminListQuery;
+  query: AdminFinanceListQuery;
 }): Promise<AdminFinanceReadResult> {
   try {
     const response = await fetch(
@@ -500,7 +545,7 @@ async function fetchAdminFinanceReadModel({
       {
         body: JSON.stringify({
           p_module: module,
-          p_query: toAdminListRpcQuery(query),
+          p_query: toFinanceRpcQuery({ module, query }),
         }),
         cache: "no-store",
         headers: {
@@ -668,6 +713,59 @@ function option(value: string, label: string): AdminListOption {
   return { label, value };
 }
 
+function parseFinanceListQuery({
+  module,
+  searchParams,
+}: {
+  module: AdminFinanceModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
+}): AdminFinanceListQuery {
+  const baseQuery = parseAdminListQuery(searchParams);
+
+  if (module !== "payments" && module !== "subscriptions") return baseQuery;
+
+  const rawPeriod = firstSearchParam(searchParams?.period);
+  const period: AdminFinancePeriod =
+    rawPeriod === "7d" || rawPeriod === "90d" ? rawPeriod : "30d";
+
+  if (module === "subscriptions") {
+    const rawPlan = firstSearchParam(searchParams?.plan);
+    const plan =
+      rawPlan === "free" || rawPlan === "premium" || rawPlan === "premium_plus"
+        ? rawPlan
+        : undefined;
+
+    return { ...baseQuery, period, plan };
+  }
+
+  return { ...baseQuery, period };
+}
+
+function toFinanceRpcQuery({
+  module,
+  query,
+}: {
+  module: AdminFinanceModuleKey;
+  query: AdminFinanceListQuery;
+}) {
+  return {
+    page: query.page,
+    pageSize: query.pageSize,
+    period:
+      module === "payments" || module === "subscriptions"
+        ? (query.period ?? "30d")
+        : undefined,
+    plan: module === "subscriptions" ? query.plan : undefined,
+    search: query.search || undefined,
+    sort: query.sort || undefined,
+    status: query.status || undefined,
+  };
+}
+
+function firstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function getFinanceListHref(module: AdminFinanceModuleKey) {
   if (module === "payments") return routes.admin.payments;
   if (module === "subscriptions") return routes.admin.subscriptions;
@@ -675,7 +773,7 @@ function getFinanceListHref(module: AdminFinanceModuleKey) {
   return routes.admin.reports;
 }
 
-function emptyPage(query: AdminListQuery): AdminListPageInfo {
+function emptyPage(query: AdminFinanceListQuery): AdminListPageInfo {
   return {
     hasNext: false,
     page: query.page,
@@ -684,7 +782,10 @@ function emptyPage(query: AdminListQuery): AdminListPageInfo {
   };
 }
 
-function mapPageInfo(value: unknown, query: AdminListQuery): AdminListPageInfo {
+function mapPageInfo(
+  value: unknown,
+  query: AdminFinanceListQuery,
+): AdminListPageInfo {
   if (!isRecord(value)) return emptyPage(query);
 
   return {

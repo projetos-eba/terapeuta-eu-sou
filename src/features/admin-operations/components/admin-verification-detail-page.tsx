@@ -33,6 +33,7 @@ export function AdminVerificationDetailPage({
   data: AdminOperationDetailPageData;
 }) {
   const verification = findSection(data, "Verificação");
+  const professionalData = findSection(data, "Dados do profissional");
   const traceability = findSection(data, "Rastreabilidade");
   const fields = fieldMap(verification?.fields ?? []);
   const therapistName = fields.get("Terapeuta") || data.title;
@@ -107,8 +108,16 @@ export function AdminVerificationDetailPage({
                 },
               ].filter((detail) => detail.value)}
               name={therapistName}
-              title="ID profissional"
+              title="Profissional em verificação"
             />
+
+            {professionalData?.fields.length ? (
+              <DetailSectionCard
+                description="Informações cadastrais usadas para identificar este profissional na revisão."
+                fields={professionalData.fields}
+                title="Dados do profissional"
+              />
+            ) : null}
 
             <section
               aria-labelledby="verification-progress-title"

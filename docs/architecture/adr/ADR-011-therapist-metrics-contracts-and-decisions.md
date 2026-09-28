@@ -506,6 +506,37 @@ Regras:
 - ausência de telemetria não vira lista ou gráfico vazio;
 - demo nunca aparece silenciosamente em produção.
 
+### Adendo — descoberta e funil com ativação controlada
+
+**Status:** aceito em 2026-09-27. **Origem:** decisão explícita dos sócios do
+TES e solicitação de produto aprovada.
+
+O escopo de descoberta foi aprovado com retenção máxima de 120 dias. A decisão
+preserva o aviso público de privacidade sem alteração e não autoriza ativação
+direta em produção: primeiro ocorre a homologação em HML, com aceite
+registrado, e só então o mesmo procedimento pode ser repetido em produção.
+
+- a chave de telemetria permanece desligada por padrão;
+- nenhum navegador recebe permissão, variável pública ou endpoint de comando
+  para ativá-la;
+- somente uma operação server-side com `service_role`, ator administrativo
+  válido, justificativa e request id pode mudar o estado;
+- a mudança grava aprovação, retenção, estado anterior e estado seguinte na
+  auditoria administrativa append-only;
+- a saúde operacional é agregada: recebidos, duplicados, inválidos, limitados,
+  falhas, última atividade e verificações de coerência;
+- registros pseudonimizados de eventos, agregados diários e saúde operacional
+  expiram diariamente após 120 dias; auditoria administrativa segue sua
+  política própria e não inclui navegação;
+- a interface de Métricas aceita somente períodos completos de 30 ou 60 dias;
+  a V1 continua disponível para compatibilidade técnica;
+- percentuais de descoberta continuam protegidos por amostra mínima de 10 e o
+  funil nunca devolve identificadores, IP, user-agent, termo de busca ou texto
+  livre.
+
+O aceite formal da homologação HML é o próximo gate operacional. Até ele, a
+telemetria em HML e produção permanece desligada.
+
 ## Matriz de fechamento da seção 19 da estratégia
 
 | Item antes pendente          | Decisão                                                       | Origem                 |
@@ -521,7 +552,7 @@ Regras:
 | Temas da jornada             | Texto livre proibido; sentimento fechado é alternativa futura | `LEIAME` + `AUDITORIA` |
 | Aura Premium                 | Copy direcional no Premium; Aura completa no Premium Plus     | `LEIAME` + `NOVA`      |
 | Exportação                   | CSV primeiro, PDF depois                                      | `NOVA`                 |
-| Base legal e retenção        | Gate externo antes de novos eventos em produção               | `LEIAME` + `EXTERNA`   |
+| Base legal e retenção        | Escopo aprovado: 120 dias; HML antes de produção              | `EXTERNA` + decisão TES |
 
 ## Primeiro corte vertical de implementação
 
@@ -677,10 +708,13 @@ preservado.
 
 - eventos objetivos foram implementados em `therapist_metric_events`;
 - a projeção diária versionada usa `therapist_metric_daily_aggregates`;
-- a ingestão pública passa por
-  `record_public_therapist_metric_events_v1(uuid,jsonb)`;
-- o read model privado é `get_therapist_metrics_overview_v1(integer)`;
-- períodos permitidos são 30, 60, 90 e 120 dias locais completos;
+- a ingestão pública atual passa por
+  `record_public_therapist_metric_events_v2(uuid,jsonb)`, preservando a V1
+  para consumidores compatíveis;
+- os read models atuais são `get_therapist_metrics_overview_v2(integer)` e
+  `get_therapist_metrics_dashboard_v3(integer)`; a V1 permanece disponível;
+- a interface atual aceita 30 ou 60 dias locais completos; a V1 preserva os
+  períodos históricos de 30, 60, 90 e 120 dias para compatibilidade;
 - favoritos entram como evento autoritativo do perfil. A contagem agregada de
   favoritos no período fica disponível desde o primeiro registro para o
   Premium Plus; a tendência e a comparação entre períodos continuam
@@ -690,8 +724,8 @@ preservado.
   oferta;
 - a UI mostra estados discriminados e não preenche lacunas com números do
   Figma;
-- a telemetria pública nasce desativada e não será ativada antes da validação
-  formal de base legal, aviso de privacidade e retenção.
+- a telemetria pública nasce desativada e só pode ser ativada pela operação
+  server-side auditada, após preflight e aceite do ambiente aplicável.
 
 Este adendo resolve os nomes físicos antes deixados em aberto sem alterar as
 decisões de produto da ADR. A implementação detalhada está em
@@ -735,14 +769,14 @@ por `get_therapist_metrics_today_v1()`.
 - Novos eventos exigirão schema, ingestão, consentimento e homologação.
 - O catálogo de copy precisa ser mantido junto ao dicionário de métricas.
 - Alterar fórmula exige nova versão e possível reprocessamento.
-- A validação externa de privacidade continua necessária antes da produção dos
-  novos eventos.
+- A homologação HML continua obrigatória antes da ativação produtiva dos novos
+  eventos.
 
 ## Ainda não decidido
 
 - valores finais das janelas de lacuna;
 - taxonomia exata de sentimentos positivos e neutros;
-- base legal e retenção dos novos eventos;
+- reavaliações futuras de base legal, aviso e retenção fora do escopo aprovado;
 - implementação do CSV;
 - eventual uso futuro de `aura_limited`.
 

@@ -37,6 +37,12 @@ type AdminAuditEventRow = {
   source?: string | null;
 };
 
+type TelemetryControlReadModel = {
+  retentionDays?: unknown;
+  telemetryEnabled?: unknown;
+  updatedAt?: unknown;
+};
+
 type IntegrationHealthReadModel = {
   generatedAt?: string | null;
   last?: Record<string, string | null | undefined> | null;
@@ -117,9 +123,11 @@ export const getAdminIntegrationsPage = cache(
 
 export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
   accessToken,
+  canManageTelemetry = false,
   searchParams,
 }: {
   accessToken: string;
+  canManageTelemetry?: boolean;
   searchParams?: Record<string, string | string[] | undefined>;
 }): Promise<AdminPlatformPageResult<AdminSecurityPageData>> {
   const config = getSupabasePublicConfig();
@@ -132,20 +140,63 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
   }
 
   const page = parseAuditPage(searchParams?.page);
-  const auditEventsResult = await fetchRecentAuditEvents(
-    config,
-    accessToken,
-    page,
-  );
+  const [auditEventsResult, telemetry] = await Promise.all([
+    fetchRecentAuditEvents(config, accessToken, page),
+    fetchTelemetryControl(config, accessToken),
+  ]);
   return {
     data: {
       auditPage: auditEventsResult.page,
       auditEvents: auditEventsResult.events,
       auditEventsStatus: auditEventsResult.status,
+      canManageTelemetry,
+      telemetry,
     },
     status: "success",
   };
 });
+
+async function fetchTelemetryControl(
+  config: { apiKey: string; url: string },
+  accessToken: string,
+): Promise<AdminSecurityPageData["telemetry"]> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_therapist_metrics_telemetry_health_v1`,
+      {
+        body: "{}",
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+    if (!response.ok) return null;
+
+    const payload = (await response.json().catch(() => null)) as
+      | TelemetryControlReadModel
+      | null;
+    if (
+      !payload ||
+      typeof payload.telemetryEnabled !== "boolean" ||
+      payload.retentionDays !== 120
+    ) {
+      return null;
+    }
+
+    return {
+      enabled: payload.telemetryEnabled,
+      retentionDays: 120,
+      updatedAt:
+        typeof payload.updatedAt === "string" ? payload.updatedAt : null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function fetchIntegrationHealthReadModel(
   config: { apiKey: string; url: string },

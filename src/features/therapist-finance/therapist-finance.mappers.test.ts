@@ -346,7 +346,7 @@ describe("therapist finance mappers", () => {
 
   it("maps the charge-focused receipt contract", () => {
     const receipts = mapTherapistReceiptsContract({
-      contractVersion: 5,
+      contractVersion: 6,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -389,6 +389,12 @@ describe("therapist finance mappers", () => {
         processingCents: 0,
         refundedCents: 1000,
         scheduledCents: 0,
+        upcomingScheduled: {
+          amountCents: 18700,
+          periodEnd: "2026-08-26",
+          periodStart: "2026-07-28",
+          sessionCount: 2,
+        },
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],
@@ -401,6 +407,12 @@ describe("therapist finance mappers", () => {
       receiptStatus: "refunded",
       refundedAmountCents: 1000,
       therapistNetAmountCents: 3000,
+    });
+    expect(receipts.summary.upcomingScheduled).toEqual({
+      amountCents: 18700,
+      periodEnd: "2026-08-26",
+      periodStart: "2026-07-28",
+      sessionCount: 2,
     });
   });
 
@@ -439,6 +451,14 @@ describe("therapist finance mappers", () => {
                 sessionDate: "2026-07-28T13:00:00.000Z",
                 sessionPaymentId: "f6200000-0000-4000-8000-000000000001",
                 therapyNameSnapshot: "Reiki",
+                type: "session",
+              },
+              {
+                adjustmentId: "adjustment-1",
+                amountCents: -1000,
+                label: "Ajuste de reembolso",
+                occurredAt: "2026-07-29T13:00:00.000Z",
+                type: "adjustment",
               },
             ],
             date: "2026-07-30",
@@ -451,7 +471,7 @@ describe("therapist finance mappers", () => {
         periodStart: "2026-07-28",
         predicted: [],
       },
-      contractVersion: 8,
+      contractVersion: 10,
       filters: {
         agendaDays: 15,
         periodEnd: "2026-07-28",
@@ -488,6 +508,13 @@ describe("therapist finance mappers", () => {
     expect(payouts.agenda.balanceAvailable[0]?.date).toBe("2026-08-01");
     expect(payouts.agenda.awaitingBankDate[0]?.date).toBeNull();
     expect(payouts.agenda.inTransit[0]?.status).toBe("in_transit");
+    expect(payouts.agenda.inTransit[0]?.composition[1]).toEqual({
+      adjustmentId: "adjustment-1",
+      amountCents: -1000,
+      label: "Ajuste de reembolso",
+      occurredAt: "2026-07-29T13:00:00.000Z",
+      type: "adjustment",
+    });
     expect(payouts.historyItems[0]?.status).toBe("received");
     expect(payouts.summary.receivedCents).toBe(8000);
   });

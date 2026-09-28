@@ -26,6 +26,7 @@ export async function POST(request: Request) {
   try {
     payload = parsePublicMetricEventBatch(await request.json());
   } catch (error) {
+    await recordInvalidMetricRequest();
     const message =
       error instanceof PublicMetricEventContractError
         ? "Evento de produto inválido."
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/record_public_therapist_metric_events_v1`,
+      `${config.url}/rest/v1/rpc/record_public_therapist_metric_events_v2`,
       {
         body: JSON.stringify({
           p_events: payload.events,
@@ -94,6 +95,29 @@ export async function POST(request: Request) {
         ? result.status
         : "accepted";
 
+    if (status === "invalid") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Evento de produto inválido.",
+          },
+        },
+        { headers: noStoreHeaders, status: 422 },
+      );
+    }
+
+    if (status === "rate_limited") {
+      return NextResponse.json(
+        { accepted: false, status },
+        { headers: noStoreHeaders, status: 202 },
+      );
+    }
+
+    if (status === "failed") {
+      return unavailable("query_failed");
+    }
+
     return NextResponse.json(
       {
         accepted: status === "accepted",
@@ -106,6 +130,31 @@ export async function POST(request: Request) {
   }
 }
 
+async function recordInvalidMetricRequest() {
+  const config = getSupabasePublicConfig();
+  if (!config) return;
+
+  try {
+    await fetch(
+      `${config.url}/rest/v1/rpc/record_public_therapist_metric_events_v2`,
+      {
+        body: JSON.stringify({ p_events: {}, p_session_id: null }),
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+  } catch {
+    // Invalid public payloads must never block the response or produce logs
+    // containing visitor-provided fields. The monitored boundary records the
+    // aggregate outcome whenever it is available.
+  }
+}
+
 function unavailable(category: "configuration_missing" | "query_failed") {
   const correlationId = randomUUID();
   console.error(
@@ -113,7 +162,7 @@ function unavailable(category: "configuration_missing" | "query_failed") {
       category,
       correlationId,
       event: "public_metric_ingestion_failed",
-      operation: "record_public_therapist_metric_events_v1",
+      operation: "record_public_therapist_metric_events_v2",
     }),
   );
 

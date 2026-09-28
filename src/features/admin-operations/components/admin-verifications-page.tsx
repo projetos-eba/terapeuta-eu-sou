@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, CalendarClock, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarClock, Search } from "lucide-react";
 
 import { routes } from "@/lib/routes";
 
@@ -10,14 +10,12 @@ import type {
   AdminOperationRow,
 } from "../admin-operations.types";
 import {
-  AsideCard,
   EditorialHeader,
   HonestState,
   ProductBackLink,
   ProductBadge,
   ProductBreadcrumbs,
   ProductPagination,
-  formatDateTime,
   formatStatusLabel,
 } from "./admin-operation-display";
 
@@ -58,7 +56,7 @@ export function AdminVerificationsPage({
           ))}
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section>
           <div className="overflow-hidden rounded-[28px] border border-brand-lavender/70 bg-white shadow-[0_24px_70px_rgba(20,16,90,0.11)]">
             <div className="border-b border-brand-lavender/60 px-5 py-5 lg:px-6">
               <div className="flex flex-col gap-4">
@@ -87,7 +85,7 @@ export function AdminVerificationsPage({
                       className="min-h-12 w-full rounded-full border border-brand-lavender bg-surface-soft py-2 pl-11 pr-4 text-sm font-semibold text-brand-deep outline-none transition placeholder:text-tesText-muted focus:border-brand-primary focus:bg-white focus:ring-4 focus:ring-ring/20"
                       defaultValue={data.query.search}
                       name="q"
-                      placeholder="Buscar por profissional ou identificador"
+                      placeholder="Buscar por profissional, e-mail ou ID"
                       type="search"
                     />
                   </label>
@@ -164,12 +162,43 @@ export function AdminVerificationsPage({
               />
             ) : (
               <>
-                <div className="hidden divide-y divide-brand-lavender/60 lg:block">
-                  {data.rows.map((row) => (
-                    <DesktopVerificationRow key={row.id} row={row} />
-                  ))}
+                <div className="hidden overflow-x-auto xl:block">
+                  <table className="w-full min-w-[760px] text-left">
+                    <caption className="sr-only">
+                      Profissionais em verificação
+                    </caption>
+                    <thead className="border-b border-brand-lavender/60 bg-surface-soft/80">
+                      <tr>
+                        {[
+                          "Profissional",
+                          "Data de cadastro",
+                          "Situação",
+                          "Pendência",
+                          "Última movimentação",
+                          "Ação",
+                        ].map((label) => (
+                          <th
+                            className={`px-3 py-4 text-[11px] font-extrabold uppercase tracking-[0.06em] text-tesText-secondary first:pl-5 last:pr-5 lg:first:pl-6 lg:last:pr-6 ${
+                              label === "Ação"
+                                ? "sticky right-0 z-10 bg-surface-soft shadow-[-12px_0_18px_-18px_rgba(20,16,90,0.45)]"
+                                : ""
+                            }`}
+                            key={label}
+                            scope="col"
+                          >
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-lavender/60">
+                      {data.rows.map((row) => (
+                        <DesktopVerificationRow key={row.id} row={row} />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="grid gap-4 p-4 lg:hidden">
+                <div className="grid gap-4 p-4 xl:hidden">
                   {data.rows.map((row) => (
                     <MobileVerificationCard key={row.id} row={row} />
                   ))}
@@ -180,26 +209,6 @@ export function AdminVerificationsPage({
             <ProductPagination data={data} />
           </div>
 
-          <AsideCard title="Como funciona a revisão">
-            <div className="space-y-3">
-              <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                <strong className="text-brand-deep">
-                  1. Aguardando análise:
-                </strong>{" "}
-                o profissional publicou o perfil e entrou na fila de revisão.
-              </p>
-              <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                <strong className="text-brand-deep">2. Em análise:</strong> abra
-                o cadastro, confira as informações disponíveis e registre o
-                início da revisão.
-              </p>
-              <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                <strong className="text-brand-deep">3. Decisão:</strong> aprove
-                o profissional, solicite ajustes ou registre a não aprovação com
-                um motivo claro.
-              </p>
-            </div>
-          </AsideCard>
         </section>
       </div>
     </main>
@@ -241,74 +250,130 @@ function MetricCard({ metric }: { metric: AdminOperationMetric }) {
 }
 
 function DesktopVerificationRow({ row }: { row: AdminOperationRow }) {
-  const submitted = getFieldValue(row, "Enviado");
-  const reviewed = getFieldValue(row, "Revisado");
-  const updated = getFieldValue(row, "Atualizado");
+  const email = row.email || getFieldValue(row, "E-mail");
+  const professionalId = getFieldValue(row, "ID do terapeuta");
+  const registeredAt = getFieldValue(row, "Data de cadastro");
+  const pending = getFieldValue(row, "Pendência");
+  const updated = getFieldValue(row, "Última movimentação");
 
   return (
-    <article className="px-5 py-4 lg:px-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-extrabold text-brand-deep">
+    <tr className="group align-middle transition hover:bg-surface-soft/70">
+      <td className="min-w-[280px] px-3 py-4 first:pl-5 lg:first:pl-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <VerificationAvatar row={row} />
+          <div className="min-w-0">
+            <p className="line-clamp-2 text-sm font-extrabold leading-5 text-brand-deep">
               {row.title}
-            </h3>
-            {row.statusLabel ? (
-              <ProductBadge
-                label={formatStatusLabel(row.statusLabel)}
-                tone={statusTone(row.statusLabel)}
-              />
+            </p>
+            {professionalId ? (
+              <p className="mt-1 break-all text-xs font-semibold leading-4 text-tesText-muted">
+                ID: {professionalId}
+              </p>
+            ) : null}
+            {email ? (
+              <p
+                className="mt-0.5 truncate text-xs font-semibold text-tesText-secondary"
+                title={email}
+              >
+                {email}
+              </p>
             ) : null}
           </div>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm font-semibold text-tesText-secondary">
-            {submitted ? <span>Enviado em {submitted}</span> : null}
-            {reviewed ? <span>Última revisão em {reviewed}</span> : null}
-            {!reviewed && updated ? <span>Atualizado em {updated}</span> : null}
-          </div>
         </div>
-
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-tesText-secondary">
+        {registeredAt || "—"}
+      </td>
+      <td className="px-3 py-4">
+        {row.statusLabel ? (
+          <ProductBadge
+            label={formatStatusLabel(row.statusLabel)}
+            tone={statusTone(row.statusLabel)}
+          />
+        ) : (
+          <span className="text-sm font-semibold text-tesText-muted">—</span>
+        )}
+      </td>
+      <td className="max-w-[165px] px-3 py-4 text-sm font-semibold leading-5 text-tesText-secondary">
+        <span className="line-clamp-2">{pending || "—"}</span>
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-tesText-secondary">
+        {updated || "—"}
+      </td>
+      <td className="sticky right-0 z-[1] bg-white px-3 py-4 shadow-[-12px_0_18px_-18px_rgba(20,16,90,0.45)] transition group-hover:bg-surface-soft last:pr-5 lg:last:pr-6">
         {row.detailHref ? (
           <Link
-            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-brand-lavender/70 bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+            className="inline-flex min-h-10 whitespace-nowrap items-center gap-1.5 rounded-full border border-brand-lavender/70 bg-white px-3 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
             href={row.detailHref as Route<string>}
           >
             Abrir análise
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-        ) : null}
-      </div>
-    </article>
+        ) : (
+          <span className="text-sm font-semibold text-tesText-muted">—</span>
+        )}
+      </td>
+    </tr>
   );
 }
 
 function MobileVerificationCard({ row }: { row: AdminOperationRow }) {
-  const submitted = getFieldValue(row, "Enviado");
-  const reviewed = getFieldValue(row, "Revisado");
-  const updated = getFieldValue(row, "Atualizado");
+  const email = row.email || getFieldValue(row, "E-mail");
+  const professionalId = getFieldValue(row, "ID do terapeuta");
+  const details = [
+    { label: "Data de cadastro", value: getFieldValue(row, "Data de cadastro") },
+    { label: "Pendência", value: getFieldValue(row, "Pendência") },
+    {
+      label: "Última movimentação",
+      value: getFieldValue(row, "Última movimentação"),
+    },
+  ].filter((detail) => detail.value);
 
   return (
     <article className="rounded-[24px] border border-brand-lavender/70 bg-white p-4 shadow-[0_16px_40px_rgba(20,16,90,0.08)]">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-base font-extrabold text-brand-deep">
-            {row.title}
-          </h3>
-          {row.statusLabel ? (
-            <div className="mt-3">
-              <ProductBadge
-                label={formatStatusLabel(row.statusLabel)}
-                tone={statusTone(row.statusLabel)}
-              />
-            </div>
-          ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          <VerificationAvatar row={row} />
+          <div className="min-w-0">
+            <h3 className="text-base font-extrabold text-brand-deep">
+              {row.title}
+            </h3>
+            {professionalId ? (
+              <p className="mt-1 break-all text-xs font-semibold leading-4 text-tesText-muted">
+                ID: {professionalId}
+              </p>
+            ) : null}
+            {email ? (
+              <p className="mt-0.5 break-words text-xs font-semibold text-tesText-secondary">
+                {email}
+              </p>
+            ) : null}
+            {row.statusLabel ? (
+              <div className="mt-2">
+                <ProductBadge
+                  label={formatStatusLabel(row.statusLabel)}
+                  tone={statusTone(row.statusLabel)}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 text-sm font-semibold text-tesText-secondary">
-        {submitted ? <p>Enviado em {submitted}</p> : null}
-        {reviewed ? <p>Última revisão em {reviewed}</p> : null}
-        {!reviewed && updated ? <p>Atualizado em {updated}</p> : null}
-      </div>
+      {details.length > 0 ? (
+        <dl className="mt-4 grid gap-x-4 gap-y-3 border-t border-brand-lavender/60 pt-4 sm:grid-cols-2">
+          {details.map((detail) => (
+            <div key={detail.label}>
+              <dt className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-tesText-muted">
+                {detail.label}
+              </dt>
+              <dd className="mt-1 break-words text-sm font-semibold leading-5 text-tesText-secondary">
+                {detail.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
 
       {row.detailHref ? (
         <Link
@@ -320,6 +385,36 @@ function MobileVerificationCard({ row }: { row: AdminOperationRow }) {
         </Link>
       ) : null}
     </article>
+  );
+}
+
+function VerificationAvatar({ row }: { row: AdminOperationRow }) {
+  const initials = row.title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("")
+    .toUpperCase();
+
+  if (row.avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- photo URL is supplied by the existing protected read model.
+      <img
+        alt=""
+        className="size-10 shrink-0 rounded-full border border-brand-lavender/60 object-cover"
+        src={row.avatarUrl}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary"
+    >
+      {initials || "—"}
+    </span>
   );
 }
 

@@ -24,6 +24,7 @@ import type {
   AdminOperationModuleKey,
   AdminOperationPageData,
   AdminOperationPageResult,
+  AdminPatientAnalytics,
   AdminProfessionalProfileReview,
   AdminProfessionalPublishedProfile,
   AdminProfessionalVerificationSummary,
@@ -53,6 +54,7 @@ type AdminOperationReadModel = {
   metrics?: unknown;
   module?: unknown;
   page?: unknown;
+  patientAnalytics?: unknown;
   rows?: unknown;
 };
 
@@ -263,6 +265,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       option("pending_payment", "Pagamento pendente"),
       option("confirmed", "Confirmadas"),
       option("completed", "Concluídas"),
+      option("cancelled_by_admin", "Canceladas pela administração"),
       option("cancelled_by_patient", "Canceladas pelo cliente"),
       option("cancelled_by_therapist", "Canceladas pelo terapeuta"),
       option("cancelled_by_payment", "Canceladas por falha no pagamento"),
@@ -371,6 +374,10 @@ export const getAdminOperationPage = cache(
     const config = getSupabasePublicConfig();
     const spec = MODULES[module];
     const query = parseAdminListQuery(searchParams);
+    const patientAnalyticsPeriod =
+      module === "patients"
+        ? parsePatientAnalyticsPeriod(searchParams?.analyticsPeriod)
+        : undefined;
 
     if (!config) {
       return {
@@ -383,6 +390,7 @@ export const getAdminOperationPage = cache(
       accessToken,
       config,
       module,
+      patientAnalyticsPeriod,
       query,
     });
 
@@ -406,6 +414,10 @@ export const getAdminOperationPage = cache(
             unavailableMetric(metricSpec, readResult.status),
           ),
           page: emptyPage(query),
+          patientAnalytics:
+            module === "patients"
+              ? unavailablePatientAnalytics(patientAnalyticsPeriod ?? 30)
+              : undefined,
           query,
           rows: [],
           rowsStatus: readResult.status,
@@ -440,6 +452,13 @@ export const getAdminOperationPage = cache(
           status: spec.statusOptions,
         },
         page: mapPageInfo(readResult.model.page, query),
+        patientAnalytics:
+          module === "patients"
+            ? mapPatientAnalytics(
+                readResult.model.patientAnalytics,
+                patientAnalyticsPeriod ?? 30,
+              )
+            : undefined,
         query,
         rows: mapAdminOperationRows({ module, rows: rowsPayload }),
         rowsStatus: "available",
@@ -919,30 +938,42 @@ async function fetchAdminOperationReadModel({
   accessToken,
   config,
   module,
+  patientAnalyticsPeriod,
   query,
 }: {
   accessToken: string;
   config: { apiKey: string; url: string };
   module: AdminOperationModuleKey;
+  patientAnalyticsPeriod?: 30 | 90;
   query: AdminListQuery;
 }): Promise<AdminOperationReadResult> {
   try {
-    const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_operation_module_v2`,
-      {
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-          p_module: module,
-          p_query: toAdminListRpcQuery(query),
-        }),
+    const { rating, ...baseQuery } = toAdminListRpcQuery(query);
+    const rpcName =
+      module === "sessions"
+        ? "admin_get_sessions_module_v1"
+        : "admin_get_operation_module_v2";
+    const rpcQuery = {
+      ...baseQuery,
+      ...(module === "reviews" && rating ? { rating } : {}),
+      ...(patientAnalyticsPeriod
+        ? { analyticsPeriod: patientAnalyticsPeriod }
+        : {}),
+    };
+    const response = await fetch(`${config.url}/rest/v1/rpc/${rpcName}`, {
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    );
+      method: "POST",
+      body: JSON.stringify(
+        module === "sessions"
+          ? { p_query: rpcQuery }
+          : { p_module: module, p_query: rpcQuery },
+      ),
+    });
 
     if (response.status === 401 || response.status === 403) {
       logAdminOperationReadFailure({
@@ -1179,6 +1210,65 @@ function mapPageInfo(value: unknown, query: AdminListQuery): AdminListPageInfo {
     page: asPositiveNumber(value.page, query.page),
     pageSize: asPositiveNumber(value.pageSize, query.pageSize),
     total: asNonNegativeNumber(value.total, 0),
+  };
+}
+
+function parsePatientAnalyticsPeriod(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+
+  return raw === "90" ? 90 : 30;
+}
+
+function unavailablePatientAnalytics(
+  periodDays: 30 | 90,
+): AdminPatientAnalytics {
+  return {
+    activityAge: [],
+    periodDays,
+    series: [],
+    status: "unavailable",
+  };
+}
+
+function mapPatientAnalytics(
+  value: unknown,
+  fallbackPeriodDays: 30 | 90,
+): AdminPatientAnalytics {
+  if (!isRecord(value) || value.status !== "available") {
+    return unavailablePatientAnalytics(fallbackPeriodDays);
+  }
+
+  const periodDays = value.periodDays === 90 ? 90 : 30;
+  const series = Array.isArray(value.series)
+    ? value.series.flatMap((point) => {
+        if (!isRecord(point)) return [];
+        const label = asString(point.label);
+        const newRegistrations = asNonNegativeNumber(
+          point.newRegistrations,
+          -1,
+        );
+        const totalClients = asNonNegativeNumber(point.totalClients, -1);
+
+        return label && newRegistrations >= 0 && totalClients >= 0
+          ? [{ label, newRegistrations, totalClients }]
+          : [];
+      })
+    : [];
+  const activityAge = Array.isArray(value.activityAge)
+    ? value.activityAge.flatMap((bucket) => {
+        if (!isRecord(bucket)) return [];
+        const label = asString(bucket.label);
+        const bucketValue = asNonNegativeNumber(bucket.value, -1);
+
+        return label && bucketValue >= 0 ? [{ label, value: bucketValue }] : [];
+      })
+    : [];
+
+  return {
+    activityAge,
+    periodDays,
+    series,
+    status: "available",
   };
 }
 

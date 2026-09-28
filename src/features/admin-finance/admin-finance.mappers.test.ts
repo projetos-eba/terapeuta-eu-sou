@@ -18,9 +18,12 @@ describe("admin finance mappers", () => {
           gross_amount_cents: 17000,
           id: "payment-1",
           metadata: { raw: "hidden-financial-metadata" },
+          patient_name: "Mariana Souza",
+          payment_method_type: "pix",
           platform_gross_commission_cents: 3400,
           refund_pending: false,
           service_status: "completed",
+          stripe_fee_amount_cents: 510,
           stripe_checkout_session_id: "cs_test_secret",
           stripe_payment_intent_id: "pi_secret",
           therapist_amount_cents: 13600,
@@ -38,15 +41,19 @@ describe("admin finance mappers", () => {
     expect(JSON.stringify(row)).not.toContain("pi_secret");
     expect(JSON.stringify(row)).not.toContain("hidden-financial-metadata");
     expect(row.fields.map((field) => field.label)).toEqual([
+      "Cliente",
       "Profissional",
+      "Forma de pagamento",
       "Atendimento",
       "Repasse",
       "Valor bruto",
       "Repasse terapeuta",
-      "Custos da plataforma",
+      "Comissão TES",
+      "Taxas Stripe",
       "Reembolso pendente",
-      "Atualizado",
+      "Data e hora",
     ]);
+    expect(row.fields).toContainEqual({ label: "Forma de pagamento", value: "Pix" });
   });
 
   it("presents refunded sessions as closed without a stale transferred state", () => {

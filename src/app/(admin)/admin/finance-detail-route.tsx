@@ -5,7 +5,10 @@ import {
   getAdminFinanceDetailPage,
   type AdminFinanceModuleKey,
 } from "@/features/admin-finance";
-import type { AdminPermission } from "@/lib/auth/admin-permissions";
+import {
+  canUseAdminPermission,
+  type AdminPermission,
+} from "@/lib/auth/admin-permissions";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
@@ -69,14 +72,22 @@ export async function AdminFinanceDetailRoute({
       try {
         const response = await fetch(
           `${config.url}/rest/v1/rpc/admin_get_full_session_refund_status_v11`,
-          { method: "POST", cache: "no-store", headers: {
-            apikey: config.apiKey,
-            Authorization: `Bearer ${session.accessToken}`,
-            "Content-Type": "application/json",
-          }, body: JSON.stringify({ p_session_payment_id: id }) },
+          {
+            method: "POST",
+            cache: "no-store",
+            headers: {
+              apikey: config.apiKey,
+              Authorization: `Bearer ${session.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ p_session_payment_id: id }),
+          },
         );
         if (response.ok) {
-          const status = await response.json() as { available?: boolean; state?: string };
+          const status = (await response.json()) as {
+            available?: boolean;
+            state?: string;
+          };
           result.data.fullRefundStatus = {
             available: status.available === true,
             state: status.state ?? "unavailable",
@@ -84,19 +95,27 @@ export async function AdminFinanceDetailRoute({
           if (status.state === "in_review") {
             const followupResponse = await fetch(
               `${config.url}/rest/v1/rpc/admin_get_full_session_refund_followup_v10`,
-              { method: "POST", cache: "no-store", headers: {
-                apikey: config.apiKey,
-                Authorization: `Bearer ${session.accessToken}`,
-                "Content-Type": "application/json",
-              }, body: JSON.stringify({ p_session_payment_id: id }) },
+              {
+                method: "POST",
+                cache: "no-store",
+                headers: {
+                  apikey: config.apiKey,
+                  Authorization: `Bearer ${session.accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ p_session_payment_id: id }),
+              },
             );
             if (followupResponse.ok) {
-              const followup = await followupResponse.json() as {
-                found?: boolean; requestId?: string; reason?: string;
+              const followup = (await followupResponse.json()) as {
+                found?: boolean;
+                requestId?: string;
+                reason?: string;
               };
               if (followup.found && followup.requestId && followup.reason) {
                 result.data.fullRefundStatus.followup = {
-                  requestId: followup.requestId, reason: followup.reason,
+                  requestId: followup.requestId,
+                  reason: followup.reason,
                 };
               }
             }
@@ -106,6 +125,12 @@ export async function AdminFinanceDetailRoute({
         // The detail remains read-only if the protected status cannot load.
       }
     }
+  }
+
+  if (module === "subscriptions" && result.data.subscriptionManagement) {
+    result.data.subscriptionManagement.available =
+      result.data.subscriptionManagement.available &&
+      canUseAdminPermission(session.permissions, "admin.subscriptions.manage");
   }
   return <AdminFinanceDetailPage data={result.data} />;
 }

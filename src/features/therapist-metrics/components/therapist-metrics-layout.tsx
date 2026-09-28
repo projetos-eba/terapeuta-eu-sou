@@ -53,9 +53,10 @@ function MetricsHero({
               Acompanhe seu trabalho
             </h1>
             <p className="mt-5 max-w-[610px] text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
-              Acompanhe como as pessoas encontram seu perfil, agendam sessões e
-              interagem com seu trabalho. Use estes dados para tomar decisões
-              com mais clareza.
+              Veja como as pessoas encontram seu perfil, agendam sessões e se
+              aproximam do seu trabalho. Estas informações ajudam você a
+              entender o que está acontecendo e decidir os próximos passos com
+              mais clareza.
             </p>
           </div>
         </div>
@@ -72,10 +73,10 @@ function MetricsHero({
         </div>
       </div>
 
-      <div className="grid border-t border-brand-lavender lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="border-t border-brand-lavender">
         <nav
           aria-label="Visões de métricas"
-          className="flex min-h-14 items-end gap-1 overflow-x-auto px-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden"
+          className="flex min-h-14 items-end gap-1 overflow-x-auto border-b border-brand-lavender px-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden"
         >
           {tabs.map((item) => {
             const active = item.value === tab;
@@ -110,8 +111,8 @@ function MetricsControlBar({
 }) {
   return (
     <section
-      aria-label="Controles do período"
-      className="grid gap-3 border-t border-brand-lavender p-3 sm:p-4 lg:min-w-[540px] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:border-l lg:border-t-0"
+    aria-label="Controles do período"
+      className="grid gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -143,8 +144,6 @@ function MetricsControlBar({
         >
           <option value="30">30 dias</option>
           <option value="60">60 dias</option>
-          <option value="90">90 dias</option>
-          <option value="120">120 dias</option>
         </select>
         <button
           className="min-h-11 rounded-lg bg-brand-primary px-3 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"

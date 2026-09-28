@@ -154,12 +154,24 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   retry page must require the server-derived `canRetry` flag.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
-- Legacy V9 Session Checkout uses `capture_method=manual`. For `initial_hold`, the
-  database deadline is five minutes; for `payment_retry`, no slot is occupied
-  before authorization. On `payment_intent.amount_capturable_updated`, the
+- Legacy V9 Session Checkout and every `payment_retry` use
+  `capture_method=manual`; initial V10 Checkout remains automatic because its
+  five-minute hold still owns the slot. For `initial_hold`, the database
+  deadline is five minutes; for `payment_retry`, no slot is occupied before
+  authorization. On `payment_intent.amount_capturable_updated`, the
   service-role claim RPC locks therapist then patient, revalidates the current
   attempt and slot, and only the winner captures. A loser cancels the
-  authorization and records `slot_conflict`.
+  authorization and records `slot_conflict`. Signed paid events for a
+  `payment_retry` must repeat that same claim before financial confirmation so
+  a missing or out-of-order capturable event can recover a still-free session.
+  The replay is idempotent after a successful claim and must fail closed,
+  without Transfer, when another booking already occupies the interval.
+- A signed session dispute blocks new releases immediately but never rewrites
+  completed Transfer/payout history. Therapist recovery is V10-only and starts
+  only after a definitive `lost`: reconcile one exact proportional Transfer
+  Reversal, then create debt only for the residual exposure. `won` restores the
+  prior/refund-compatible financial state. Ambiguous provider writes are
+  terminally quarantined for reconciliation and must never be retried blindly.
 - A consumed initial hold without persisted Stripe Checkout must be released by
   `cancel_unstarted_initial_checkout_v1`; maintenance also sweeps expired
   bootstrap orphans. Never cancel when a Checkout Session is already persisted.
@@ -219,7 +231,7 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 ## Architecture Map
 
-Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_payment_setups`, `session_payment_schedules`, `session_promotion_reservations`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `session_transfer_jobs`, `stripe_transfer_reversals`, `stripe_payouts`, `stripe_payout_transfer_allocations`, `therapist_financial_debts`, `therapist_financial_debt_events`, `therapist_financial_debt_allocations`, `payout_scheduler_runs`, `payout_operational_incidents`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
+Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_payment_setups`, `session_payment_schedules`, `session_promotion_reservations`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `session_transfer_jobs`, `stripe_transfer_reversals`, `stripe_payouts`, `stripe_payout_transfer_allocations`, `stripe_payout_balance_adjustments`, `therapist_financial_debts`, `therapist_financial_debt_events`, `therapist_financial_debt_allocations`, `payout_scheduler_runs`, `payout_operational_incidents`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
 
 Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `promotion-codes.ts`, `session-attempt-policy.ts`, `subscription-sync.ts`.
 
@@ -249,6 +261,27 @@ Edge Functions:
   active, partial or ambiguous reversals remain unmatched. Persist pair
   identifiers and classification for audit. Unrelated zero-sum movements
   without provider proof remain unmatched and block bank completion.
+- Chronology is part of that proof. If the full Refund and Transfer Reversal
+  occurred only after a reconciled Payout was already `paid`, preserve the
+  original Transfer allocation and bank history. Classify the later balance
+  debit separately; do not turn the received Payout into therapist-visible
+  review and do not guess which future Payout will absorb the debit. A future
+  composition may reflect it only after Stripe creates and reconciles that
+  Payout with exact provider evidence. The historical Payout snapshot can
+  contain only the original positive `payment` because the later
+  `payment_refund` belongs to another balance cycle; restore that allocation
+  only through the exact payment Balance Transaction, destination payment,
+  Connect account and full local Refund/Reversal chronology. Resolving this
+  reconciliation must also clear the stale unread admin-attention state.
+- Once Stripe actually includes that later `payment_refund` in another Payout,
+  use `reconcile_automatic_stripe_payout_v3`. Require a unique provider Refund,
+  full V10 local Refund/Reversal chronology, the original fully reconciled paid
+  Payout, no open debt/refund incident, exact positive Transfer bindings and
+  `positive allocations - balance adjustments = Payout amount`. Persist the
+  debit only in `stripe_payout_balance_adjustments`; never create ledger or a
+  Stripe mutation. The V10 therapist projection shows one negative product-copy
+  adjustment, preserves positive session count and resolves the admin alert.
+  Unsupported or ambiguous snapshots delegate unchanged to V2.
 - A V10 Transfer success may resolve its earlier operational attention incident
   while its job remains `pending_source`. That job advances to bank-paid only
   after a fully allocated paid Payout; never conflate alert resolution with

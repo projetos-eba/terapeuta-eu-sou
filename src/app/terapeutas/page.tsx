@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
@@ -528,7 +530,10 @@ export default async function TherapistsPage({
           <DegradedState correlationId={result.correlationId} />
         ) : result.therapists.length ? (
           <div className="grid gap-x-[20px] gap-y-[20px] xl:grid-cols-2">
-            <PublicSearchMetricsTracker enabled={result.source === "live"} />
+            <PublicSearchMetricsTracker
+              enabled={result.source === "live"}
+              resultSetId={randomUUID()}
+            />
             {result.therapists.map((therapist, index) => (
               <TherapistResultCard
                 key={`${therapist.slug}-${therapist.serviceTitle}`}

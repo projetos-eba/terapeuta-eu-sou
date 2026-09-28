@@ -25,15 +25,27 @@ export function FinancialHeader({
   filters: TherapistFinanceFilters;
   tab: TherapistFinanceTab;
 }) {
+  const headerCopy =
+    tab === "receipts"
+      ? {
+          description:
+            "Acompanhe os valores de seus encontros e veja o que já foi cobrado, o que ainda está programado e eventuais reembolsos.",
+          title: "Cobranças dos seus encontros",
+        }
+      : {
+          description: "Mais clareza para acompanhar o crescimento do seu cuidado.",
+          title: "Financeiro completo",
+        };
+
   return (
     <header className="grid min-w-0 gap-4 sm:gap-5">
       <div className="grid min-w-0 gap-4 lg:flex lg:items-start lg:justify-between lg:gap-5">
         <div className="min-w-0 max-w-full">
           <h1 className="max-w-full break-words font-display text-[36px] font-light italic leading-[1.05] text-brand-deep sm:text-[52px]">
-            Financeiro completo
+            {headerCopy.title}
           </h1>
           <p className="mt-2 max-w-[38rem] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-            Mais clareza para acompanhar o crescimento do seu cuidado.
+            {headerCopy.description}
           </p>
         </div>
 

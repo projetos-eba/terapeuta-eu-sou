@@ -28,6 +28,7 @@ export function getBookingDetailStatusLabel(status: BookingDetailStatus) {
   const labels: Record<string, string> = {
     cancelled_by_patient: "Cancelada",
     cancelled_by_therapist: "Cancelada",
+    cancelled_by_admin: "Cancelada",
     completed: "Realizada",
     confirmed: "Confirmada",
     draft: "Rascunho",

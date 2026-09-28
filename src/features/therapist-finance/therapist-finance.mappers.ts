@@ -146,7 +146,7 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalNumber(value.contractVersion, 5),
+      contractVersion: literalNumber(value.contractVersion, 6),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
@@ -186,7 +186,7 @@ export function mapTherapistPayoutsContract(
         periodStart: dateString(agenda.periodStart),
         predicted: array(agenda.predicted).map(payoutAgendaGroup),
       },
-      contractVersion: literalNumber(value.contractVersion, 8),
+      contractVersion: literalNumber(value.contractVersion, 10),
       filters: {
         agendaDays: agendaDays(filters.agendaDays),
         periodEnd: dateString(filters.periodEnd),
@@ -468,6 +468,22 @@ function receiptItem(input: unknown): TherapistReceiptItem {
 
 function payoutCompositionItem(input: unknown): TherapistPayoutCompositionItem {
   const value = record(input);
+  if (value.type === "adjustment") {
+    const amountCents = integer(value.amountCents);
+    if (amountCents >= 0) {
+      throw new TherapistFinanceError("invalid_contract");
+    }
+    return {
+      adjustmentId: nonEmptyString(value.adjustmentId),
+      amountCents,
+      label: nonEmptyString(value.label),
+      occurredAt: dateTime(value.occurredAt),
+      type: "adjustment",
+    };
+  }
+  if (value.type !== "session") {
+    throw new TherapistFinanceError("invalid_contract");
+  }
   return {
     amountCents: nonNegativeInteger(value.amountCents),
     bookingId: nonEmptyString(value.bookingId),
@@ -475,6 +491,7 @@ function payoutCompositionItem(input: unknown): TherapistPayoutCompositionItem {
     sessionDate: dateTime(value.sessionDate),
     sessionPaymentId: nonEmptyString(value.sessionPaymentId),
     therapyNameSnapshot: nonEmptyString(value.therapyNameSnapshot),
+    type: "session",
   };
 }
 
@@ -518,6 +535,20 @@ function receiptSummary(input: unknown): TherapistReceiptsContract["summary"] {
     processingCents: nonNegativeInteger(value.processingCents),
     refundedCents: nonNegativeInteger(value.refundedCents),
     scheduledCents: nonNegativeInteger(value.scheduledCents),
+    upcomingScheduled: upcomingScheduledSummary(value.upcomingScheduled),
+  };
+}
+
+function upcomingScheduledSummary(
+  input: unknown,
+): TherapistReceiptsContract["summary"]["upcomingScheduled"] {
+  const value = record(input);
+
+  return {
+    amountCents: nonNegativeInteger(value.amountCents),
+    periodEnd: dateString(value.periodEnd),
+    periodStart: dateString(value.periodStart),
+    sessionCount: nonNegativeInteger(value.sessionCount),
   };
 }
 

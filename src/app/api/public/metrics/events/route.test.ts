@@ -54,7 +54,7 @@ describe("public metric events route", () => {
       status: "accepted",
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://project.supabase.co/rest/v1/rpc/record_public_therapist_metric_events_v1",
+      "https://project.supabase.co/rest/v1/rpc/record_public_therapist_metric_events_v2",
       expect.objectContaining({
         body: JSON.stringify({
           p_events: validBody.events,
@@ -66,7 +66,14 @@ describe("public metric events route", () => {
   });
 
   it("rejects unknown fields without forwarding free text", async () => {
-    const fetchMock = vi.fn();
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ accepted: 0, status: "invalid" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(
@@ -77,7 +84,36 @@ describe("public metric events route", () => {
     );
 
     expect(response.status).toBe(422);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://project.supabase.co/rest/v1/rpc/record_public_therapist_metric_events_v2",
+      expect.objectContaining({
+        body: JSON.stringify({ p_events: {}, p_session_id: null }),
+        method: "POST",
+      }),
+    );
+    expect(JSON.stringify(fetchMock.mock.calls)).not.toContain("private content");
+  });
+
+  it("keeps a rate-limited event non-blocking", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ accepted: 0, status: "rate_limited" }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        }),
+      ),
+    );
+
+    const response = await POST(request(validBody));
+
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({
+      accepted: false,
+      status: "rate_limited",
+    });
   });
 
   it("logs only a sanitized category and correlation id on failure", async () => {

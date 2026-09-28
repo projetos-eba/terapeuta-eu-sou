@@ -28,6 +28,7 @@ import type {
   AdminFinanceRow,
 } from "../admin-finance.types";
 import { AdminPaymentDetailPage } from "./admin-payment-detail-page";
+import { AdminSubscriptionDetailPage } from "./admin-subscription-detail-page";
 
 export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
   return (
@@ -326,6 +327,10 @@ export function AdminFinanceDetailPage({
 }) {
   if (data.module === "payments") {
     return <AdminPaymentDetailPage data={data} />;
+  }
+
+  if (data.module === "subscriptions") {
+    return <AdminSubscriptionDetailPage data={data} />;
   }
 
   return (

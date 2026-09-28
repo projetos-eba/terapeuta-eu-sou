@@ -1,6 +1,7 @@
 export type AdminListQuery = {
   page: number;
   pageSize: number;
+  rating?: string;
   search: string;
   sort: string;
   status: string;
@@ -26,6 +27,8 @@ export const ADMIN_LIST_MAX_PAGE_SIZE = 50;
 export function parseAdminListQuery(
   searchParams: RawSearchParams = {},
 ): AdminListQuery {
+  const rating = cleanRating(firstValue(searchParams.rating));
+
   return {
     page: parsePositiveInt(firstValue(searchParams.page), 1),
     pageSize: Math.min(
@@ -35,6 +38,7 @@ export function parseAdminListQuery(
       ),
       ADMIN_LIST_MAX_PAGE_SIZE,
     ),
+    ...(rating ? { rating } : {}),
     search: cleanText(firstValue(searchParams.q)),
     sort: cleanToken(firstValue(searchParams.sort)),
     status: cleanToken(firstValue(searchParams.status)),
@@ -45,6 +49,7 @@ export function toAdminListRpcQuery(query: AdminListQuery) {
   return {
     page: query.page,
     pageSize: query.pageSize,
+    ...(query.rating ? { rating: query.rating } : {}),
     search: query.search || undefined,
     sort: query.sort || undefined,
     status: query.status || undefined,
@@ -61,6 +66,7 @@ export function buildAdminListHref(
 
   if (next.search) params.set("q", next.search);
   if (next.status) params.set("status", next.status);
+  if (next.rating) params.set("rating", next.rating);
   if (next.sort) params.set("sort", next.sort);
   if (next.page > 1) params.set("page", String(next.page));
   if (next.pageSize !== ADMIN_LIST_DEFAULT_PAGE_SIZE) {
@@ -84,6 +90,10 @@ function cleanToken(value: string | undefined) {
   const token = (value ?? "").trim().slice(0, 64);
 
   return /^[a-z0-9_.-]+$/i.test(token) ? token : "";
+}
+
+function cleanRating(value: string | undefined) {
+  return value && /^[1-5]$/.test(value) ? value : "";
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number) {

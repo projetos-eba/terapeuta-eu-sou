@@ -68,6 +68,7 @@ export function AdminProfessionalDetailPage({
   const identity = fieldMap(
     findSection(data, "Identidade operacional")?.fields ?? [],
   );
+  const mainData = findSection(data, "Dados principais")?.fields ?? [];
   const profile = fieldMap(findSection(data, "Estado do perfil")?.fields ?? []);
   const operation = fieldMap(findSection(data, "Operação")?.fields ?? []);
   const traceability = findSection(data, "Rastreabilidade")?.fields ?? [];
@@ -349,6 +350,7 @@ export function AdminProfessionalDetailPage({
               <OverviewPanel
                 activityFields={activityFields}
                 fields={overviewFields}
+                mainDataFields={mainData}
               />
             ) : null}
             {activeTab === "profile" ? (
@@ -383,24 +385,34 @@ export function AdminProfessionalDetailPage({
 function OverviewPanel({
   activityFields,
   fields,
+  mainDataFields,
 }: {
   activityFields: AdminOperationField[];
   fields: AdminOperationField[];
+  mainDataFields: AdminOperationField[];
 }) {
   return (
-    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
+    <div className="max-w-5xl space-y-8">
       <OpenSection
-        description="Aprovação administrativa, publicação pública e disponibilidade para reservas são sinais distintos."
-        title="Situação atual"
+        description="Informações de cadastro visíveis apenas para a equipe TES autorizada."
+        title="Dados principais"
       >
-        <DefinitionList fields={fields} />
+        <DefinitionList fields={mainDataFields} />
       </OpenSection>
-      <OpenSection
-        description="Dados essenciais para acompanhar a presença atual na plataforma."
-        title="Atividade"
-      >
-        <DefinitionList fields={activityFields} />
-      </OpenSection>
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
+        <OpenSection
+          description="Aprovação administrativa, publicação pública e disponibilidade para reservas são sinais distintos."
+          title="Situação atual"
+        >
+          <DefinitionList fields={fields} />
+        </OpenSection>
+        <OpenSection
+          description="Dados essenciais para acompanhar a presença atual na plataforma."
+          title="Atividade"
+        >
+          <DefinitionList fields={activityFields} />
+        </OpenSection>
+      </div>
     </div>
   );
 }

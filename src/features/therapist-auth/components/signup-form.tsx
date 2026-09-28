@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { Check, Gem, LockKeyhole, Mail, Star, UserRound } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   PasswordVisibilityToggle,
   PhoneInput,
   TESButton,
+  TESDialog,
 } from "@/components/tes";
 import {
   TherapistPlan,
@@ -16,6 +17,7 @@ import {
   therapistPlanDefinitions,
   type PlanDefinition,
 } from "@/domain/tes";
+import { therapistExplainerAccordions } from "@/features/for-therapists/content";
 import { routes } from "@/lib/routes";
 import { announceAuthSession } from "@/lib/auth/session-marker";
 import { cn } from "@/lib/utils";
@@ -140,16 +142,29 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPartnershipDialogOpen, setIsPartnershipDialogOpen] = useState(false);
+  const [hasReadPartnershipInfo, setHasReadPartnershipInfo] = useState(false);
   const [phone, setPhone] = useState("");
   const [phoneCountryCode, setPhoneCountryCode] = useState("55");
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!hasReadPartnershipInfo) {
+      setIsPartnershipDialogOpen(true);
+      return;
+    }
+
+    await submitSignup(event.currentTarget);
+  }
+
+  async function submitSignup(formElement: HTMLFormElement) {
     setFieldErrors({});
     setFormError(null);
     setIsSubmitting(true);
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
 
     try {
       const response = await fetch("/api/auth/therapist/signup", {
@@ -186,8 +201,18 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
     }
   }
 
+  async function handlePartnershipInfoConfirmation() {
+    setHasReadPartnershipInfo(true);
+    setIsPartnershipDialogOpen(false);
+
+    if (formRef.current) {
+      await submitSignup(formRef.current);
+    }
+  }
+
   return (
     <form
+      ref={formRef}
       method="post"
       onSubmit={handleSubmit}
       noValidate
@@ -327,7 +352,106 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           Entrar como terapeuta
         </Link>
       </p>
+
+      {isPartnershipDialogOpen ? (
+        <TherapistPartnershipDialog
+          onClose={() => setIsPartnershipDialogOpen(false)}
+          onConfirm={handlePartnershipInfoConfirmation}
+        />
+      ) : null}
     </form>
+  );
+}
+
+function TherapistPartnershipDialog({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [hasConfirmed, setHasConfirmed] = useState(false);
+
+  return (
+    <TESDialog
+      className="max-w-[760px]"
+      description="Leia como funciona a parceria antes de concluir seu cadastro."
+      onClose={onClose}
+      title="Entenda como funciona sua parceria com o TES"
+    >
+      <div className="space-y-6">
+        {therapistExplainerAccordions.map((section) => (
+          <section
+            key={section.id}
+            className="border-b border-brand-lavender pb-6 last:border-b-0 last:pb-0"
+          >
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-primary text-lg font-extrabold text-white">
+                {section.number}
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-display text-2xl font-light italic leading-tight text-brand-deep sm:text-[28px]">
+                  {section.title}
+                </h3>
+                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                  {section.subtitle}
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-5 text-sm font-semibold leading-6 text-tesText-secondary">
+              {section.intro.body}
+            </p>
+
+            <ul className="mt-5 space-y-4">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.title} className="flex items-start gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+                      <Icon aria-hidden="true" className="size-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-extrabold leading-5 text-brand-deep">
+                        {item.title}
+                      </h4>
+                      <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+                        {item.body}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+
+        <div className="rounded-2xl border border-brand-lavender bg-brand-lavenderSoft/60 p-4">
+          <label className="flex cursor-pointer items-start gap-3 text-sm font-semibold leading-6 text-brand-deep">
+            <input
+              aria-label="Li e entendi como funciona a parceria com o TES."
+              checked={hasConfirmed}
+              className="mt-1 size-5 shrink-0 rounded border-border text-brand-primary focus:ring-brand-primary"
+              onChange={(event) => setHasConfirmed(event.target.checked)}
+              type="checkbox"
+            />
+            <span>Li e entendi como funciona a parceria com o TES.</span>
+          </label>
+        </div>
+
+        <TESButton
+          disabled={!hasConfirmed}
+          onClick={onConfirm}
+          size="lg"
+          type="button"
+          variant="gradient"
+          className="w-full rounded-2xl text-base"
+        >
+          Entendi, continuar meu cadastro
+        </TESButton>
+      </div>
+    </TESDialog>
   );
 }
 

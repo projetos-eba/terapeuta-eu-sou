@@ -22,6 +22,7 @@ const SCHEDULED_BOOKING_STATUSES = new Set([
 const CANCELLED_BOOKING_STATUSES = new Set([
   "cancelled_by_patient",
   "cancelled_by_therapist",
+  "cancelled_by_admin",
   "refunded",
 ]);
 

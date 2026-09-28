@@ -43,6 +43,8 @@ dados.
   - `get_therapist_shell_counters_v1`;
 - `get_therapist_sessions_v1` usa cursor `(startsAt, bookingId)` e filtros
   opcionais de período, booking, pagamento, paciente, serviço e modalidade;
+  janelas futuras abertas são cronológicas, enquanto o histórico permanece em
+  ordem cronológica inversa;
 - intervalos de Agenda e filtros temporais usam `[start, end)`;
 - páginas consomem serviços de aplicação com resultados discriminados
   `success`, `empty` e `error`;

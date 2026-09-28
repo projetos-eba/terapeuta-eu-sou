@@ -48,6 +48,7 @@ export function sanitizePayoutBalanceTransaction(
   return {
     amount: transaction.amount,
     available_on: transaction.available_on,
+    created: transaction.created,
     currency: transaction.currency,
     id: transaction.id,
     net: transaction.net,
@@ -65,18 +66,15 @@ type SanitizedPayoutTransaction =
   >
   & { verified_refund_charge?: string };
 
-// A zero-sum pair is not enough evidence to omit provider movements. The
-// connected-account Refund must identify the exact payment and balance debit.
+// A same-Payout zero-sum pair is not required here: after the original Payout
+// was paid, Stripe can include only the connected-account Refund debit in a
+// later Payout. This boundary attaches provider evidence only. The database
+// still requires the exact TES payment, Transfer, reversal and chronology.
 export async function annotateVerifiedPayoutRefunds(
   transactions: SanitizedPayoutTransaction[],
   stripe: StripeClient,
   accountId: string,
 ): Promise<SanitizedPayoutTransaction[]> {
-  const payments = transactions.filter((transaction) =>
-    transaction.type === "payment" && transaction.amount > 0 &&
-    transaction.net > 0 && transaction.currency === "brl" &&
-    transaction.source
-  );
   const verified = new Map<string, string>();
 
   for (const transaction of transactions) {
@@ -98,12 +96,7 @@ export async function annotateVerifiedPayoutRefunds(
         refund.amount !== -transaction.amount ||
         refund.currency !== transaction.currency ||
         objectId(refund.balance_transaction) !== transaction.id ||
-        !chargeId ||
-        payments.filter((payment) =>
-            payment.source === chargeId &&
-            payment.amount === -transaction.amount &&
-            payment.net === -transaction.net
-          ).length !== 1
+        !chargeId
       ) continue;
       verified.set(transaction.id, chargeId);
     } catch {
@@ -210,7 +203,7 @@ export async function syncAutomaticStripePayout(input: {
   } while (startingAfter);
 
   const reconciliation = await input.client.rpc<Record<string, unknown>>(
-    "reconcile_automatic_stripe_payout_v2",
+    "reconcile_automatic_stripe_payout_v3",
     {
       p_balance_transactions: await annotateVerifiedPayoutRefunds(
         transactions,

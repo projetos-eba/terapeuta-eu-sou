@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(33);
 
 select ok(
   to_regprocedure('public.admin_get_dashboard_v1()') is not null,
@@ -64,6 +64,27 @@ select ok(
   'service_role can invoke integration health RPC for server-side adapters'
 );
 
+insert into auth.users (id, email)
+values (
+  'a0420000-0000-4000-8000-000000000001',
+  'admin-dashboard-fixture@example.test'
+)
+on conflict (id) do update
+set email = excluded.email;
+
+insert into public.profiles (id, role, display_name, email)
+values (
+  'a0420000-0000-4000-8000-000000000001',
+  'admin',
+  'Admin Dashboard Fixture',
+  'admin-dashboard-fixture@example.test'
+)
+on conflict (id) do update
+set
+  role = excluded.role,
+  display_name = excluded.display_name,
+  email = excluded.email;
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -124,7 +145,7 @@ insert into public.admin_audit_events (
   source
 )
 values (
-  'aaaaaaaa-0000-4000-8000-000000000090',
+  'a0420000-0000-4000-8000-000000000001',
   'admin',
   'admin.therapies.manage',
   'therapy_published',
@@ -141,7 +162,7 @@ on conflict do nothing;
 
 select set_config(
   'request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"authenticated"}',
+  '{"sub":"a0420000-0000-4000-8000-000000000001","role":"authenticated"}',
   true
 );
 
@@ -244,6 +265,44 @@ select is(
   public.admin_get_dashboard_v1()::text like '%hidden-stripe-payload%',
   false,
   'dashboard DTO does not expose Stripe payload content'
+);
+
+select ok(
+  public.admin_get_dashboard_v1() ? 'activity',
+  'dashboard includes aggregate activity history'
+);
+
+select is(
+  jsonb_array_length(public.admin_get_dashboard_v1() -> 'activity' -> 'series'),
+  7,
+  'dashboard activity history returns seven period buckets'
+);
+
+select ok(
+  public.admin_get_dashboard_v1() ? 'financial',
+  'dashboard includes aggregate financial results'
+);
+
+select is(
+  jsonb_array_length(public.admin_get_dashboard_v1() -> 'financial' -> 'series'),
+  7,
+  'dashboard financial results return seven period buckets'
+);
+
+select is(
+  (
+    public.admin_get_dashboard_v1()
+      #>> '{financial,metrics,netRevenue,currentCents}'
+  )::integer,
+  (
+    public.admin_get_dashboard_v1()
+      #>> '{financial,metrics,grossCommission,currentCents}'
+  )::integer
+  - (
+    public.admin_get_dashboard_v1()
+      #>> '{financial,metrics,stripeFees,currentCents}'
+  )::integer,
+  'dashboard net revenue equals gross commission less reconciled Stripe fees'
 );
 
 select is(

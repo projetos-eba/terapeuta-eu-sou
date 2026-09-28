@@ -57,6 +57,7 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
       field("Serviços", formatCount(row.service_count)),
       field("Conta de recebimento", asText(row.connect_status)),
       field("Próxima sessão", formatDate(row.next_session_at)),
+      field("Cadastro", formatDateOnly(row.created_at)),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
     id,
@@ -74,19 +75,22 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
   const publication = publicationLabel(row.publication_eligibility);
 
   return {
+    avatarUrl: asText(row.therapist_photo_url) || undefined,
     detailHref:
       status === "approved" && professionalId
         ? routes.admin.professionalDetail(professionalId)
         : getAdminOperationDetailHref("verifications", id),
+    email: asText(row.therapist_email) || undefined,
     fields: compactFields([
-      field("Enviado", formatDate(row.submitted_at)),
-      field("Revisado", formatDate(row.reviewed_at)),
-      field("Publicação", publication),
+      field("E-mail", asText(row.therapist_email)),
+      field("ID do terapeuta", professionalId),
+      field("Data de cadastro", formatDateOnly(row.therapist_created_at)),
+      field("Situação", verificationStatusLabel(status, publication)),
       field(
-        "Pendências de publicação",
-        publicationBlockers(row.publication_blockers),
+        "Pendência",
+        verificationPendingLabel(status, row.publication_blockers),
       ),
-      field("Atualizado", formatDate(row.updated_at)),
+      field("Última movimentação", formatDate(row.updated_at)),
     ]),
     id,
     statusLabel: verificationStatusLabel(status, publication),
@@ -100,13 +104,19 @@ function mapPatientRow(row: UnknownRecord, index: number) {
 
   return {
     detailHref: getAdminOperationDetailHref("patients", id),
+    email: asText(row.email) || undefined,
     fields: compactFields([
+      field("ID", id),
       field("Status", asText(row.account_status)),
-      field("Fuso", asText(row.timezone)),
-      field("Reservas", formatCount(row.booking_count)),
-      field("Chamados", formatCount(row.ticket_count)),
+      field(
+        "Contato",
+        formatPhone(
+          asText(row.phone_country_code),
+          asText(row.phone),
+        ),
+      ),
       field("Última atividade", formatDate(row.last_activity_at)),
-      field("Criado", formatDate(row.created_at)),
+      field("Cadastro", formatDateOnly(row.created_at)),
     ]),
     id,
     subtitle: asText(row.user_id),
@@ -117,13 +127,15 @@ function mapPatientRow(row: UnknownRecord, index: number) {
 
 function mapSessionRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `session-${index}`;
+  const financialStatus =
+    asText(row.financial_status) || asText(row.payment_status);
 
   return {
     detailHref: getAdminOperationDetailHref("sessions", id),
     fields: compactFields([
       field("Terapeuta", asText(row.therapist_name)),
       field("Cliente", asText(row.patient_name)),
-      field("Pagamento", asText(row.payment_status)),
+      field("Pagamento", financialStatus),
       field("Início", formatDate(row.starts_at)),
       field("Término", formatDate(row.ends_at)),
       field("Fuso", asText(row.timezone)),
@@ -131,10 +143,27 @@ function mapSessionRow(row: UnknownRecord, index: number) {
       field("Atualizada", formatDate(row.updated_at)),
     ]),
     id,
-    statusLabel: asText(row.status),
+    statusLabel: isFutureUnconfirmedReservation(row, financialStatus)
+      ? "reserved"
+      : asText(row.status),
     subtitle: `Booking ${shortId(asText(row.id))}`,
     title: asText(row.service_title_snapshot) || "Sessão sem título",
   } satisfies AdminOperationRow;
+}
+
+function isFutureUnconfirmedReservation(
+  row: UnknownRecord,
+  financialStatus: string,
+) {
+  if (
+    asText(row.status) !== "confirmed" ||
+    !["pending", "processing"].includes(financialStatus)
+  ) {
+    return false;
+  }
+
+  const startsAt = new Date(asText(row.starts_at));
+  return !Number.isNaN(startsAt.getTime()) && startsAt.getTime() > Date.now();
 }
 
 function mapSupportRow(row: UnknownRecord, index: number) {
@@ -215,6 +244,10 @@ export function mapAdminOperationDetail({
     relatedProfessionalId,
     canManagePatientBookings:
       module === "patients" ? record.booking_management_available === true : undefined,
+    canCancelSessionBeforeCharge:
+      module === "sessions"
+        ? record.can_cancel_before_charge === true
+        : undefined,
     relatedVerificationId,
     canApprove: canApproveVerification(record),
     canPublish: canPublishAdministratively(record),
@@ -385,7 +418,23 @@ function getDetailSections(
   record: UnknownRecord,
 ): AdminOperationDetailSection[] {
   if (module === "professionals") {
+    const mainData = asRecordOrNull(record.admin_main_data);
+    const email = asText(mainData?.email) || asText(record.email);
+
     return [
+      section("Dados principais", [
+        field("ID do profissional", asText(record.id)),
+        field("E-mail", email),
+        field(
+          "Telefone",
+          formatPhone(
+            asText(mainData?.phone_country_code),
+            asText(mainData?.phone),
+          ),
+        ),
+        field("Data de nascimento", formatIsoDateOnly(mainData?.birth_date)),
+        field("Data de cadastro", formatDateOnly(record.created_at)),
+      ]),
       section("Identidade operacional", [
         field("Slug público", asText(record.slug)),
         field("Cidade", asLocation(record.city, record.state, record.country)),
@@ -452,7 +501,10 @@ function getDetailSections(
     return [
       section("Sessão", [
         field("Status", asText(record.status)),
-        field("Pagamento", asText(record.payment_status)),
+        field(
+          "Pagamento",
+          asText(record.financial_status) || asText(record.payment_status),
+        ),
         field("Serviço", asText(record.service_title_snapshot)),
         field(
           "Duração",
@@ -526,7 +578,17 @@ function getDetailSections(
     ];
   }
 
+  const professional = asRecordOrNull(record.admin_verification_professional);
+
   return [
+    section("Dados do profissional", [
+      field("E-mail", asText(professional?.email)),
+      field(
+        "ID do terapeuta",
+        asText(professional?.id) || asText(record.therapist_profile_id),
+      ),
+      field("Data de cadastro", formatDateOnly(professional?.created_at)),
+    ]),
     section("Verificação", [
       field("Verificação", asText(record.id)),
       field("Status", asText(record.status)),
@@ -667,6 +729,21 @@ function verificationStatusLabel(status: string, publication: string) {
   return "Aprovado · falta publicar";
 }
 
+function verificationPendingLabel(status: string, blockers: unknown) {
+  const publicationPending = publicationBlockers(blockers);
+
+  if (status === "changes_requested") {
+    return publicationPending
+      ? `Ajustes solicitados · ${publicationPending}`
+      : "Ajustes solicitados";
+  }
+
+  if (status === "rejected") return "Cadastro não aprovado";
+  if (status === "approved") return publicationPending;
+
+  return "";
+}
+
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
   const labels: Record<string, string> = {
@@ -722,6 +799,42 @@ function formatDate(value: unknown) {
     timeStyle: "short",
     timeZone: "America/Sao_Paulo",
   }).format(date);
+}
+
+function formatDateOnly(value: unknown) {
+  if (typeof value !== "string" || !value) return "";
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+function formatIsoDateOnly(value: unknown) {
+  if (typeof value !== "string") return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
+}
+
+function formatPhone(countryCode: string, value: string) {
+  if (!value) return "";
+  const countryDigits = countryCode.replace(/\D/g, "");
+  const digits = value.replace(/\D/g, "");
+  const country = countryDigits || "55";
+
+  if (country === "55" && digits.length === 11) {
+    return `+${country} (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+
+  if (country === "55" && digits.length === 10) {
+    return `+${country} (${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  return `+${country} ${digits}`.trim();
 }
 
 function shortId(value: string) {

@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  Heart,
-  Repeat2,
-  Sparkles,
-  UserCheck,
-  UserMinus,
-} from "lucide-react";
+import { Heart, Repeat2, Sparkles, UserCheck, UserMinus } from "lucide-react";
 
 import {
   AppPageAside,
@@ -36,11 +30,11 @@ import {
 import type { MetricChartTone } from "./therapist-metrics-charts";
 
 const segmentLabels = {
-  active: "Ativas",
-  inactive: "Inativas",
-  new: "Novas",
+  active: "Em acompanhamento",
+  inactive: "Sem retorno recente",
+  new: "Pessoas novas",
   paused: "Em pausa",
-  recurring: "Recorrentes",
+  recurring: "Pessoas que retornaram",
 } as const;
 
 export function TherapistInterestMetricsPage({
@@ -54,7 +48,7 @@ export function TherapistInterestMetricsPage({
     return (
       <TherapistMetricsLayout meta={data.meta} tab="interest">
         <TherapistLockedCard
-          description="A aba Interesse reúne retorno, evolução das pessoas acompanhadas e grupos ao longo do tempo, sempre com cuidado com a privacidade."
+          description="A aba Interesse reúne retorno, evolução das pessoas atendidas e grupos ao longo do tempo, sempre com cuidado com a privacidade."
           requiredPlan={TherapistPlan.PremiumPlus}
           title="Continuidade com contexto e privacidade"
           variant="section"
@@ -82,7 +76,7 @@ export function TherapistInterestMetricsPage({
           <SegmentSampledCard
             data={data}
             icon={UserCheck}
-            label="Pessoas ativas"
+            label="Pessoas em acompanhamento"
             sampleCaption="pessoas na base atual"
             segment="active"
             tone="primary"
@@ -98,14 +92,14 @@ export function TherapistInterestMetricsPage({
           <SegmentSampledCard
             data={data}
             icon={UserMinus}
-            label="Pessoas inativas"
+            label="Pessoas sem retorno recente"
             sampleCaption="pessoas na base atual"
             segment="inactive"
             tone="danger"
           />
           <SampledCard
             icon={Sparkles}
-            label="Sessões por pessoa"
+            label="Frequência de sessões por pessoa"
             metric={data.summary.sessionsPerPerson}
             sampleCaption="pessoas no período"
             tone="warning"
@@ -159,7 +153,7 @@ function FavoritesCard({
           <Heart aria-hidden="true" size={18} />
         </span>
         <h3 className="pt-0.5 text-sm font-extrabold leading-[18px] text-brand-deep">
-          Novos favoritos do perfil
+          Novos favoritos
         </h3>
       </div>
       {favorites.activity.status === "ready" ? (
@@ -204,7 +198,7 @@ function FavoritesCard({
           className="h-7"
           data={sparkline}
           empty={sparkline.length < 2}
-          label="Tendência de novos favoritos do perfil"
+          label="Tendência de novos favoritos"
           tone="danger"
         />
       </div>
@@ -242,16 +236,17 @@ function ReturnSummaryCard({
           <Repeat2 aria-hidden="true" size={18} />
         </span>
         <h3 className="pt-0.5 text-sm font-extrabold leading-[18px] text-brand-deep">
-          Retorno no período
+          Pessoas que retornaram
         </h3>
       </div>
       {isReady ? (
         <>
           <p className="mt-3 text-[30px] font-extrabold leading-none text-brand-deep">
-            {formatCompactNumber(peopleReturned.value)} pessoas
+            {formatPeopleCount(peopleReturned.value)}
           </p>
           <p className="mt-2 min-h-7 text-[11px] font-bold leading-4 text-tesText-muted">
-            {formatPercent(returnRate.value)} da base voltou para uma nova sessão
+            {formatPercent(returnRate.value)} da base retornou para uma nova
+            sessão no período
           </p>
           {trend ? (
             <div className="mt-1 flex min-h-6 items-center gap-2">
@@ -288,7 +283,7 @@ function ReturnSummaryCard({
           className="h-7"
           data={sparkline}
           empty={sparkline.length < 2}
-          label="Tendência de retorno no período"
+          label="Tendência de pessoas que retornaram"
           tone="mint"
         />
       </div>
@@ -365,7 +360,7 @@ function SegmentSampledCard({
         };
   const badge: InterestCardBadge | undefined = item
     ? {
-        accessibleLabel: `${formatPercent(item.percentage)} da base acompanhada`,
+        accessibleLabel: `${formatPercent(item.percentage)} da base de pessoas atendidas`,
         caption: "da base no período",
         className:
           tone === "danger"
@@ -570,25 +565,30 @@ function formatCompactNumber(value: number) {
   }).format(value);
 }
 
+function formatPeopleCount(value: number) {
+  return `${formatCompactNumber(value)} ${value === 1 ? "pessoa" : "pessoas"}`;
+}
+
 function Segments({ data }: { data: TherapistInterestMetricsReady }) {
   return (
     <AppPageSection>
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Distribuição por continuidade
+        Como está a continuidade
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Mostra em qual etapa de continuidade cada pessoa está no período. Cada
-        pessoa aparece uma única vez, conforme sua situação mais recente.
+        Veja como as pessoas se distribuem entre as etapas de continuidade no
+        período. Cada pessoa aparece uma vez, considerando sua situação mais
+        recente.
       </p>
       {data.segments.status === "ready" ? (
         <DistributionDonut
-          centerLabel={`${data.segments.observedSample} pessoas`}
+          centerLabel={formatPeopleCount(data.segments.observedSample)}
           compact
           items={data.segments.items.map((item) => ({
             label: segmentLabels[item.key],
             value: item.value,
           }))}
-          label="Distribuição das pessoas por continuidade"
+          label="Como está a continuidade das pessoas"
         />
       ) : (
         <ProtectedCollection collection={data.segments} />
@@ -602,7 +602,7 @@ function BaseEvolution({ data }: { data: TherapistInterestMetricsReady }) {
     return (
       <AppPageSection>
         <h2 className="text-xl font-extrabold text-brand-deep">
-          Evolução da base atendida
+          Evolução das pessoas atendidas
         </h2>
         <ProtectedCollection collection={data.baseEvolution} />
       </AppPageSection>
@@ -618,11 +618,12 @@ function BaseEvolution({ data }: { data: TherapistInterestMetricsReady }) {
         className="text-xl font-extrabold text-brand-deep"
         id="base-evolution-title"
       >
-        Evolução da base atendida
+        Evolução das pessoas atendidas
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Compare a base acompanhada e as novas pessoas em cada bloco do período.
-        Passe o cursor ou navegue pelo gráfico para ver os valores exatos.
+        Veja como a quantidade de pessoas atendidas e de novas pessoas muda ao
+        longo do período. Passe o cursor ou navegue pelo gráfico para ver os
+        valores exatos.
       </p>
       <div className="mt-5">
         <PeopleEvolutionChart points={data.baseEvolution.items} />
@@ -643,9 +644,8 @@ function JourneyThemes({ data }: { data: TherapistInterestMetricsReady }) {
             Temas mais recorrentes na jornada
           </h2>
           <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-            Reunirá os temas compartilhados diretamente pelas pessoas no
-            Histórico da Jornada. Os percentuais mostrarão em quantas jornadas
-            cada tema aparece, sem expor anotações individuais.
+            Aqui você verá os temas registrados no Histórico da Jornada e em
+            quantas jornadas cada um aparece, sem mostrar anotações individuais.
           </p>
         </div>
         <span className="inline-flex min-h-7 w-fit shrink-0 items-center rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
@@ -663,11 +663,11 @@ function JourneyThemes({ data }: { data: TherapistInterestMetricsReady }) {
           </span>
           <div>
             <p className="text-sm font-extrabold text-brand-deep">
-              Ainda não há temas estruturados para mostrar
+              Ainda não há temas registrados para mostrar
             </p>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando os temas forem registrados nos detalhes de cada jornada,
-              esta visão será atualizada com os mais recorrentes.
+              Quando os temas forem registrados no Histórico da Jornada, esta
+              visão será atualizada com os mais recorrentes.
             </p>
           </div>
         </div>
@@ -687,11 +687,12 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
   return (
     <AppPageSection>
       <h2 className="text-xl font-extrabold text-brand-deep">
-        Retorno por terapia
+        Pessoas que retornaram por terapia
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Mostra apenas terapias com pelo menos 10 pessoas atendidas no período e
-        compara o retorno com a própria terapia.
+        Mostra a proporção de pessoas que voltaram para uma nova sessão em cada
+        terapia, considerando apenas terapias com pelo menos 10 pessoas
+        atendidas no período.
       </p>
       {data.therapyReturn.status === "ready" ? (
         <TherapyBarsChart
@@ -699,8 +700,8 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
             name: item.therapyName,
             value: item.returnRate,
           }))}
-          label="Taxa de retorno por terapia"
-          seriesLabel="Taxa de retorno"
+          label="Pessoas que retornaram por terapia"
+          seriesLabel="Proporção de pessoas que voltaram"
           valueSuffix="%"
         />
       ) : (
@@ -713,24 +714,25 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
 function UnavailableSignals() {
   const items = [
     {
-      label: "Favoritos que viraram sessão",
+      label: "Favoritos que levaram a uma sessão",
       reason:
-        "A ligação histórica entre favorito e sessão ainda não pode ser mostrada com segurança.",
+        "Ainda não é possível relacionar favoritos e sessões com segurança.",
     },
     {
-      label: "Sentimento pós-sessão",
-      reason: "Ainda não há dados suficientes para esta leitura.",
+      label: "Sentimento depois da sessão",
+      reason: "Essa leitura aparecerá quando houver dados suficientes.",
     },
     {
-      label: "Lacuna da agenda",
-      reason: "O sinal de procura sem disponibilidade ainda não foi ativado.",
+      label: "Procura sem horário disponível",
+      reason:
+        "Essa leitura mostra quando houve procura sem disponibilidade e aparecerá quando esse sinal estiver disponível.",
     },
   ];
 
   return (
     <AppPageSection>
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Informações ainda indisponíveis
+        Leituras em preparação
       </h2>
       <div className="mt-4 grid gap-4">
         {items.map((item) => (

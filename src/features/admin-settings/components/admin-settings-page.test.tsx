@@ -69,4 +69,36 @@ describe("AdminSettingsPage", () => {
     expect(html).toContain("Gerenciar e-mails");
     expect(html).toContain("/admin/configuracoes/emails");
   });
+
+  it("renders aggregate telemetry counters without displaying the signal source", () => {
+    const html = renderToStaticMarkup(
+      <AdminSettingsPage
+        data={{
+          ...data,
+          groups: [
+            {
+              ...data.groups[0],
+              items: [
+                {
+                  ...data.groups[0].items[0],
+                  key: "public-metrics-telemetry",
+                  label: "Descoberta e funil",
+                  metrics: [
+                    { label: "Recebidos", value: 12 },
+                    { label: "Repetições evitadas", value: 3 },
+                  ],
+                },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(html).toContain("Descoberta e funil");
+    expect(html).toContain("Recebidos");
+    expect(html).toContain("Repetições evitadas");
+    expect(html).toContain("12");
+    expect(html).not.toContain("internal_file_name");
+  });
 });
