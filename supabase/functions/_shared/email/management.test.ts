@@ -1,8 +1,10 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert@1";
 import {
   renderEmailManagementPreview,
+  resolveEmailTemplate,
   sanitizeEmailHtml,
 } from "./management.ts";
+import { getEmailActionRegistryEntry } from "./registry.ts";
 
 Deno.test("management preview uses only the registry fixture", () => {
   const preview = renderEmailManagementPreview(
@@ -11,6 +13,18 @@ Deno.test("management preview uses only the registry fixture", () => {
   );
   assertEquals(preview.subject.includes("{{"), false);
   assertEquals(preview.html.includes("Pessoa de exemplo"), true);
+});
+
+Deno.test("default template preserves the registry source before preview rendering", () => {
+  const actionKey = "therapy_catalog_request_submitted";
+  const entry = getEmailActionRegistryEntry(actionKey);
+  const template = resolveEmailTemplate(actionKey, {});
+
+  assertEquals(entry === undefined, false);
+  assertEquals(template.subject, entry?.defaults.subject);
+  assertEquals(template.preheader, entry?.defaults.preheader);
+  assertEquals(template.text, entry?.defaults.text);
+  assertEquals(template.html, sanitizeEmailHtml(entry?.defaults.html ?? ""));
 });
 
 Deno.test(

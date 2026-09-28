@@ -47,7 +47,7 @@ type Overrides = {
 
 type Detail = {
   actionKey: string;
-  allowedTokens: Array<{ key: string; label: string }>;
+  allowedTokens: ReadonlyArray<{ key: string; label: string }>;
   description: string;
   label: string;
   preview: { html: string; preheader: string; subject: string; text: string };
@@ -62,6 +62,7 @@ type Detail = {
     text_override: string | null;
   } | null;
   supportsAutomaticDispatch: boolean;
+  template: { defaults: Overrides };
 };
 
 type Draft = Overrides & {
@@ -98,7 +99,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
     setData(next);
     setDraft(nextDraft);
     setPreview(next.preview);
-    setTemplateMode(hasCustomTemplate(nextDraft) ? "custom" : "default");
+    setTemplateMode(hasCustomTemplate(next.setting) ? "custom" : "default");
     setSaved(false);
     setHasEdited(false);
   }, []);
@@ -139,7 +140,8 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
             body: JSON.stringify({
               action: "preview",
               actionKey,
-              overrides: pickOverrides(draft),
+              overrides:
+                templateMode === "custom" ? pickOverrides(draft) : emptyOverrides,
             }),
             headers: { "Content-Type": "application/json" },
             method: "POST",
@@ -161,7 +163,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [actionKey, draft, hasEdited]);
+  }, [actionKey, draft, hasEdited, templateMode]);
 
   const updateDraft = useCallback((update: Partial<Draft>) => {
     setDraft((current) => (current ? { ...current, ...update } : current));
@@ -170,7 +172,10 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
     setError("");
   }, []);
 
-  async function save(nextDraft = draft) {
+  async function save(
+    nextDraft = draft,
+    nextTemplateMode = templateMode,
+  ) {
     if (!nextDraft || !data) return;
     setSaving(true);
     setSaved(false);
@@ -185,7 +190,10 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
             ? nextDraft.automatic
             : false,
           enabled: nextDraft.enabled,
-          overrides: pickOverrides(nextDraft),
+          overrides:
+            nextTemplateMode === "custom"
+              ? pickOverrides(nextDraft)
+              : emptyOverrides,
           senderProfileId: nextDraft.senderProfileId || null,
         }),
         headers: { "Content-Type": "application/json" },
@@ -208,10 +216,11 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
   }
 
   function selectTemplateMode(mode: TemplateMode) {
+    if (mode === templateMode) return;
     setTemplateMode(mode);
-    if (mode === "default") {
-      updateDraft(emptyOverrides);
-    }
+    setHasEdited(true);
+    setSaved(false);
+    setError("");
   }
 
   function insertToken(token: string) {
@@ -238,6 +247,9 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
     (sender) => sender.id === draft.senderProfileId,
   );
   const resolvedProvider = selectedSender?.provider ?? "hostinger_mail_api";
+  const displayedTemplate =
+    templateMode === "custom" ? pickOverrides(draft) : data.template.defaults;
+  const canEditTemplate = templateMode === "custom";
 
   return (
     <AppPageContainer className="max-w-[1166px] py-5 lg:py-6">
@@ -371,39 +383,43 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
 
             {templateMode === "default" ? (
               <div className="mt-5 rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                A mensagem padrão já está pronta. Escolha
+                Este é o modelo padrão da plataforma. Você pode consultar o
+                assunto, o texto de apoio e o conteúdo, mas não editá-los
+                neste modo. Escolha
                 <strong className="font-extrabold text-brand-deep">
                   {" "}
                   Personalizado
                 </strong>{" "}
                 para criar uma versão exclusiva desta mensagem.
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-5 rounded-[20px] border border-brand-cyan/30 bg-brand-cyanSoft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
+                Você está criando uma versão exclusiva desta mensagem. Ao
+                salvar, ela passará a usar este conteúdo personalizado.
+              </div>
+            )}
 
-            <fieldset
-              className="mt-5 grid gap-4"
-              disabled={templateMode !== "custom"}
-            >
+            <div className="mt-5 grid gap-4">
               <label className="grid gap-2 text-sm font-extrabold text-brand-deep">
                 Assunto
                 <input
                   className="min-h-11 rounded-xl border border-brand-lavender bg-white px-3 text-sm font-semibold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft"
+                  disabled={!canEditTemplate}
                   onChange={(event) =>
                     updateDraft({ subject: event.target.value })
                   }
-                  placeholder="Usar assunto padrão"
-                  value={draft.subject}
+                  value={displayedTemplate.subject}
                 />
               </label>
               <label className="grid gap-2 text-sm font-extrabold text-brand-deep">
                 Texto de apoio
                 <input
                   className="min-h-11 rounded-xl border border-brand-lavender bg-white px-3 text-sm font-semibold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft"
+                  disabled={!canEditTemplate}
                   onChange={(event) =>
                     updateDraft({ preheader: event.target.value })
                   }
-                  placeholder="Usar texto padrão"
-                  value={draft.preheader}
+                  value={displayedTemplate.preheader}
                 />
               </label>
 
@@ -432,20 +448,21 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                   </ModeButton>
                 </div>
                 <textarea
+                  aria-label={
+                    contentMode === "html"
+                      ? "Conteúdo HTML do e-mail"
+                      : "Conteúdo em texto do e-mail"
+                  }
                   className="mt-3 min-h-64 w-full resize-y rounded-xl border border-brand-lavender bg-white p-3 font-mono text-sm font-medium leading-6 text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft"
+                  disabled={!canEditTemplate}
                   onChange={(event) =>
                     updateDraft({ [contentMode]: event.target.value })
                   }
-                  placeholder={
-                    contentMode === "html"
-                      ? "Use o HTML padrão ou escreva uma substituição segura."
-                      : "Use o texto padrão ou escreva uma substituição."
-                  }
                   ref={textAreaRef}
-                  value={draft[contentMode]}
+                  value={displayedTemplate[contentMode]}
                 />
               </div>
-            </fieldset>
+            </div>
 
             <div className="mt-5 rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4">
               <h3 className="text-sm font-extrabold text-brand-deep">
@@ -473,21 +490,21 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
               </div>
             </div>
 
-            <TESButton
-              className="mt-5"
-              disabled={saving}
-              onClick={() => {
-                const resetDraft = { ...draft, ...emptyOverrides };
-                setTemplateMode("default");
-                setDraft(resetDraft);
-                void save(resetDraft);
-              }}
-              type="button"
-              variant="ghost"
-            >
-              <RotateCcw aria-hidden="true" className="size-4" />
-              Restaurar padrão
-            </TESButton>
+            {templateMode === "custom" ? (
+              <TESButton
+                className="mt-5"
+                disabled={saving}
+                onClick={() => {
+                  setTemplateMode("default");
+                  void save(draft, "default");
+                }}
+                type="button"
+                variant="ghost"
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                Restaurar padrão
+              </TESButton>
+            ) : null}
           </AppPageSection>
         </AppPageMain>
 
@@ -694,21 +711,40 @@ function EditorError({ message }: { message: string }) {
 }
 
 function draftFromDetail(detail: Detail): Draft {
+  const template = resolveTemplateValues(detail.template.defaults, detail.setting);
+
   return {
     automatic:
       detail.supportsAutomaticDispatch &&
       detail.setting?.automatic_dispatch_enabled !== false,
     enabled: detail.setting?.enabled !== false,
-    html: detail.setting?.html_override ?? "",
-    preheader: detail.setting?.preheader_override ?? "",
+    html: template.html,
+    preheader: template.preheader,
     senderProfileId: detail.setting?.sender_profile_id ?? "",
-    subject: detail.setting?.subject_override ?? "",
-    text: detail.setting?.text_override ?? "",
+    subject: template.subject,
+    text: template.text,
   };
 }
 
-function hasCustomTemplate(draft: Draft) {
-  return Boolean(draft.html || draft.preheader || draft.subject || draft.text);
+function hasCustomTemplate(setting: Detail["setting"]) {
+  return Boolean(
+    setting?.html_override ||
+      setting?.preheader_override ||
+      setting?.subject_override ||
+      setting?.text_override,
+  );
+}
+
+function resolveTemplateValues(
+  defaults: Overrides,
+  setting: Detail["setting"],
+): Overrides {
+  return {
+    html: setting?.html_override ?? defaults.html,
+    preheader: setting?.preheader_override ?? defaults.preheader,
+    subject: setting?.subject_override ?? defaults.subject,
+    text: setting?.text_override ?? defaults.text,
+  };
 }
 
 function pickOverrides(draft: Draft): Overrides {

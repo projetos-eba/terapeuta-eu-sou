@@ -76,6 +76,7 @@ export function CheckoutButton({
   onPromotionSettled,
   promotionRequest,
   retryBookingId,
+  retryCheckoutAction,
   reviewHref,
   serviceId,
   sharedNote,
@@ -101,6 +102,7 @@ export function CheckoutButton({
   }) => void;
   promotionRequest?: { code: string | null; requestId: string } | null;
   retryBookingId?: string | null;
+  retryCheckoutAction?: "resume" | "retry" | null;
   reviewHref: string;
   serviceId: string | null;
   sharedNote: string;
@@ -190,6 +192,7 @@ export function CheckoutButton({
         !isPatientAuthenticated ||
         !acceptedTerms ||
         (!retryBookingId && (!serviceId || !startsAt)) ||
+        (retryBookingId && !retryCheckoutAction) ||
         disabled
       ) {
         setIsSubmitting(false);
@@ -204,7 +207,7 @@ export function CheckoutButton({
       }
 
       setIsSubmitting(true);
-      const checkoutInputKey = `${retryBookingId ?? serviceId}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
+      const checkoutInputKey = `${retryBookingId ?? serviceId}:${retryCheckoutAction ?? "create"}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
         requestIdRef.current = checkoutAttemptId ?? crypto.randomUUID();
@@ -243,7 +246,7 @@ export function CheckoutButton({
                 }
               : retryBookingId
                 ? {
-                    action: "retry",
+                    action: retryCheckoutAction,
                     bookingId: retryBookingId,
                     checkoutAttemptId: requestIdRef.current,
                   }
@@ -418,6 +421,7 @@ export function CheckoutButton({
     onPromotionSettled,
     promotionRequest,
     retryBookingId,
+    retryCheckoutAction,
     serviceId,
     sharedNote,
     startsAt,

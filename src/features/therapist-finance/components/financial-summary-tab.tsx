@@ -92,15 +92,15 @@ export function FinancialSummaryTab({
             />
             <FinancialKpiCard
               accent="blue"
-              helpText="Mostra os valores previstos para os próximos repasses e os que ainda não têm uma data bancária confirmada."
+              helpText="Valores previstos para os próximos repasses."
               icon={WalletCards}
-              label="A receber"
+              label="Valores previstos para recebimento"
               status={
                 receivable === 0
                   ? "Sem valores previstos"
                   : "Acompanhando os próximos repasses"
               }
-              valueNote="Valores previstos para chegar"
+              valueNote="Previsto para os próximos repasses"
               value={formatCurrency(receivable)}
             />
             <FinancialKpiCard
@@ -112,10 +112,10 @@ export function FinancialSummaryTab({
                   : "sem dados"
               }.`}
               icon={Ticket}
-              label="Ticket médio"
+              label="Valor médio por sessão"
               valueNote={
                 metrics
-                  ? `Média líquida de ${formatInteger(metrics.revenue.paidSessionCount)} sessões pagas`
+                  ? `Média líquida considerando ${formatInteger(metrics.revenue.paidSessionCount)} sessões pagas`
                   : "Disponível no Premium"
               }
               value={
@@ -129,6 +129,7 @@ export function FinancialSummaryTab({
               helpText="Conta as sessões concluídas ou confirmadas no período selecionado."
               icon={CalendarDays}
               label="Sessões concluídas"
+              hideStatus={Boolean(metrics && hasMetricsData)}
               status={
                 metrics
                   ? hasMetricsData
@@ -218,6 +219,7 @@ function FinancialKpiCard({
   helpText,
   icon: Icon,
   label,
+  hideStatus,
   status,
   tone = "default",
   valueNote,
@@ -228,6 +230,7 @@ function FinancialKpiCard({
   helpText: string;
   icon: LucideIcon;
   label: string;
+  hideStatus?: boolean;
   status?: string;
   tone?: "default" | "muted" | "success";
   valueNote: string;
@@ -282,21 +285,23 @@ function FinancialKpiCard({
           {valueNote}
         </p>
       </div>
-      <div className="self-start">
-        <p
-          className={`flex items-center gap-1.5 text-sm font-extrabold ${statusClass}`}
-        >
-          {comparisonAvailable ? (
-            <TrendIcon aria-hidden="true" className="shrink-0" size={18} />
-          ) : null}
-          {statusText}
-        </p>
-        {comparison ? (
-          <p className="mt-1 text-[11px] font-bold leading-4 text-tesText-secondary">
-            em relação ao período anterior
+      {!hideStatus ? (
+        <div className="self-start">
+          <p
+            className={`flex items-center gap-1.5 text-sm font-extrabold ${statusClass}`}
+          >
+            {comparisonAvailable ? (
+              <TrendIcon aria-hidden="true" className="shrink-0" size={18} />
+            ) : null}
+            {statusText}
           </p>
-        ) : null}
-      </div>
+          {comparison ? (
+            <p className="mt-1 text-[11px] font-bold leading-4 text-tesText-secondary">
+              em relação ao período anterior
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -334,7 +339,7 @@ function MoneyCompositionPanel({
       : []),
     {
       color: "bg-status-success",
-      label: "Valor líquido",
+      label: "Valor após custos e reembolsos",
       note: "Já faturado por você",
       value: formatCurrencyOrDash(overview.therapistNetCents, hasFinancialData),
     },
@@ -344,12 +349,12 @@ function MoneyCompositionPanel({
     <section className="grid min-h-[430px] content-start gap-6 rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
-          Seu dinheiro
+          Como o valor é formado
         </h2>
         <FinancialInfoTooltip
           align="end"
-          label="Seu dinheiro"
-          text="O valor líquido já considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído."
+          label="Como o valor é formado"
+          text="O valor líquido considera os reembolsos confirmados. O total devolvido aparece apenas como informação e não deve ser subtraído."
         />
       </div>
 
@@ -395,8 +400,8 @@ function MoneyCompositionPanel({
           className="mt-0.5 shrink-0 text-brand-primary"
           size={20}
         />
-        Os custos da plataforma já estão considerados no valor líquido que
-        pertence a você.
+        Os custos da plataforma já estão descontados do valor líquido exibido
+        acima.
       </p>
     </section>
   );
@@ -425,7 +430,7 @@ function AgendaPotentialPanel({
           </h2>
           <FinancialInfoTooltip
             label="Agenda e potencial"
-            text="A ocupação usa a agenda disponível no período. Os valores de potencial são estimativas e não representam receita garantida."
+            text="A ocupação mostra quanto da sua agenda disponível foi preenchida. O potencial é uma estimativa e não representa receita garantida."
           />
         </div>
       </div>
@@ -452,7 +457,7 @@ function AgendaPotentialPanel({
 
       <dl className="grid gap-3 sm:grid-cols-2">
         <AgendaDetail
-          label="Horas comprometidas"
+          label="Horas reservadas"
           value={available ? formatMinutes(agenda?.committedMinutes ?? 0) : "-"}
         />
         <AgendaDetail
@@ -471,7 +476,7 @@ function AgendaPotentialPanel({
             : "-"}
         </p>
         <p className="mt-2 text-sm font-semibold leading-5 text-tesText-secondary">
-          {agendaCapacityMessage(agenda)} Potencial é uma estimativa e não
+          {agendaCapacityMessage(agenda)} Este valor é uma estimativa e não
           representa receita garantida.
         </p>
       </div>
@@ -482,7 +487,9 @@ function AgendaPotentialPanel({
           className="mt-0.5 shrink-0 text-status-warning"
           size={20}
         />
-        {opportunity?.description ??
+        {(opportunity?.code === "agenda_open_potential"
+          ? "Há horários online disponíveis para novas reservas."
+          : opportunity?.description) ??
           (agenda?.reason === "no_active_services"
             ? "Ative uma terapia para estimar o potencial dos horários já configurados. O potencial é uma estimativa e não representa receita garantida."
             : "Os horários disponíveis ajudam a estimar o potencial do período. O potencial é uma estimativa e não representa receita garantida.")}
@@ -505,17 +512,17 @@ function AgendaDetail({ label, value }: { label: string; value: string }) {
 function agendaCapacityMessage(
   agenda: TherapistAdvancedFinancialDashboard["agendaPotential"] | null,
 ) {
-  if (!agenda) return "Leitura da agenda indisponível no momento";
+  if (!agenda) return "Leitura da agenda indisponível no momento.";
   if (agenda.status === "available") {
     if (agenda.reason === "no_active_services") {
-      return "Há horários configurados, mas falta uma terapia ativa para estimar o potencial";
+      return "Há horários configurados, mas falta uma terapia ativa para estimar o potencial.";
     }
-    return `${formatMinutes(agenda.committedMinutes)} já comprometidos no período`;
+    return `${formatMinutes(agenda.committedMinutes)} já estão reservadas no período.`;
   }
   if (agenda.reason === "no_availability_rules") {
-    return "Sem horários configurados para o restante do mês";
+    return "Sem horários configurados para o restante do mês.";
   }
-  return "Não foi possível calcular a ocupação da agenda neste período";
+  return "Não foi possível calcular a ocupação da agenda neste período.";
 }
 
 function TherapyRankingCard({
@@ -614,14 +621,14 @@ function FinancialEvolutionCard({
   if (advanced?.financialEvolution.length) {
     return (
       <FinancialEvolutionChart
-        emptyMessage="A evolução aparece quando houver uma base suficiente para comparar realizado, contratado e o período anterior."
+        emptyMessage="A evolução aparece quando houver uma base suficiente para comparar o realizado, o previsto e o período anterior."
         footer={getEvolutionFooter(
           advanced.financialEvolution.map((point) => point.realizedNetCents),
         )}
         highlights={[
           {
             color: "var(--tes-color-brand-primaryHover)",
-            label: "Receita contratada do mês",
+            label: "Receita prevista do mês",
             value:
               advanced.forecast.status === "available"
                 ? formatCurrency(advanced.forecast.contractedMonthNetCents)
@@ -629,7 +636,7 @@ function FinancialEvolutionCard({
           },
           {
             color: "var(--tes-color-status-success)",
-            label: "Variação vs período anterior",
+            label: "Variação em relação ao período anterior",
             value: formatPercentageComparison(
               metrics?.revenue.comparison.therapistNet,
             ),
@@ -651,7 +658,7 @@ function FinancialEvolutionCard({
           {
             color: "var(--tes-color-brand-primaryHover)",
             dataKey: "contracted",
-            label: "Contratado",
+            label: "Previsto",
             type: "bar",
           },
           {
@@ -743,7 +750,7 @@ function FinancialMethodology({
             Como calculamos estes indicadores
           </h2>
           <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-            O valor líquido considera o bruto, os custos da plataforma e os
+            O valor líquido considera o valor bruto, os custos da plataforma e
             reembolsos confirmados.
           </p>
         </div>
@@ -753,7 +760,7 @@ function FinancialMethodology({
       </div>
       <p className="mt-3 border-t border-brand-lavender pt-3 text-xs font-semibold leading-5 text-tesText-secondary">
         {advanced.status === "available"
-          ? "Receita contratada reúne o realizado e sessões futuras já pagas; o potencial da agenda é uma estimativa, não uma receita garantida."
+          ? "A receita contratada reúne sessões realizadas e sessões futuras já pagas. O potencial da agenda é apenas uma estimativa e não representa receita garantida."
           : "As estimativas de receita e potencial da agenda são exibidas somente quando estiverem disponíveis no seu plano."}
       </p>
     </footer>
@@ -785,7 +792,7 @@ function getEvolutionFooter(values: number[]) {
     return "Tendência positiva na sequência observada: a receita líquida aumentou entre os períodos com base disponível.";
   }
   if (last < first) {
-    return "A receita líquida variou na sequência observada. Consulte os períodos para interpretar a mudança com contexto.";
+    return "Consulte os períodos anteriores para entender como sua receita mudou ao longo do tempo.";
   }
   return "A receita líquida permaneceu estável na sequência observada.";
 }

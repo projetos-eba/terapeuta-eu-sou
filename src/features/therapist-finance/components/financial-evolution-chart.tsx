@@ -71,7 +71,7 @@ export function FinancialEvolutionChart({
               Evolução financeira
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Compare a leitura dos períodos com mais clareza.
+              Acompanhe como sua receita mudou ao longo dos períodos.
             </p>
           </div>
         </div>

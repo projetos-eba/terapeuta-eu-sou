@@ -26,6 +26,11 @@ reembolso e valor para repasse. O Manual também ilustra data, forma de pagament
 e período em alguns desses cenários, mas esses campos não compõem o contrato
 server-side atual; eles não foram simulados no template.
 
+Na configuração administrativa de cada mensagem, o modo **Padrão** apresenta o
+template versionado com seus campos dinâmicos e não permite edição. Ao escolher
+**Personalizado**, o Admin parte desse mesmo conteúdo e só cria overrides após
+salvar. A prévia continua usando fixtures fictícias, sem dados de pessoas reais.
+
 ## Arquitetura existente auditada
 
 | Elemento        | Estado confirmado                                                                                                                                                 | Fonte de verdade                                                |

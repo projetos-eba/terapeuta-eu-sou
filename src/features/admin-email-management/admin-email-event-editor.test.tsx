@@ -31,6 +31,14 @@ const detail = {
     text_override: "Texto customizado",
   },
   supportsAutomaticDispatch: true,
+  template: {
+    defaults: {
+      html: "<p>HTML padrão para {{recipient_name}}</p>",
+      preheader: "Texto de apoio padrão",
+      subject: "Assunto padrão para {{recipient_name}}",
+      text: "Texto padrão para {{recipient_name}}",
+    },
+  },
 };
 
 const reminderDetail = {
@@ -56,6 +64,135 @@ afterEach(() => {
 });
 
 describe("AdminEmailEventEditor", () => {
+  it("shows the real default template as read-only, including text and HTML", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({ data: reminderDetail, ok: true }),
+        ok: true,
+      })),
+    );
+
+    render(<AdminEmailEventEditor actionKey="booking_reminder_24h_patient" />);
+
+    const subject = await screen.findByRole("textbox", { name: "Assunto" });
+    expect(subject).toHaveValue("Assunto padrão para {{recipient_name}}");
+    expect(subject).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Texto de apoio" })).toHaveValue(
+      "Texto de apoio padrão",
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
+    ).toHaveValue("Texto padrão para {{recipient_name}}");
+    expect(
+      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
+    ).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "HTML" }));
+
+    expect(
+      screen.getByRole("textbox", { name: "Conteúdo HTML do e-mail" }),
+    ).toHaveValue("<p>HTML padrão para {{recipient_name}}</p>");
+    expect(
+      screen.getByRole("textbox", { name: "Conteúdo HTML do e-mail" }),
+    ).toBeDisabled();
+  });
+
+  it("copies the default template into editable fields when customization begins", async () => {
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const request = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        requests.push(request);
+        return { json: async () => ({ data: reminderDetail, ok: true }), ok: true };
+      }),
+    );
+
+    render(<AdminEmailEventEditor actionKey="booking_reminder_24h_patient" />);
+
+    const subject = await screen.findByRole("textbox", { name: "Assunto" });
+    fireEvent.click(screen.getByRole("button", { name: "Personalizado" }));
+    expect(subject).toBeEnabled();
+    expect(subject).toHaveValue("Assunto padrão para {{recipient_name}}");
+
+    fireEvent.change(subject, { target: { value: "Assunto exclusivo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar configuração" }));
+
+    await waitFor(() =>
+      expect(requests.some((request) => request.action === "save")).toBe(true),
+    );
+    expect(requests.find((request) => request.action === "save")).toMatchObject({
+      overrides: {
+        html: "<p>HTML padrão para {{recipient_name}}</p>",
+        preheader: "Texto de apoio padrão",
+        subject: "Assunto exclusivo",
+        text: "Texto padrão para {{recipient_name}}",
+      },
+    });
+  });
+
+  it("clears all overrides when the standard mode is saved", async () => {
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const request = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        requests.push(request);
+        return { json: async () => ({ data: detail, ok: true }), ok: true };
+      }),
+    );
+
+    render(
+      <AdminEmailEventEditor actionKey="therapy_catalog_request_submitted" />,
+    );
+
+    await screen.findByRole("button", { name: "Padrão" });
+    fireEvent.click(screen.getByRole("button", { name: "Padrão" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar configuração" }));
+
+    await waitFor(() =>
+      expect(requests.some((request) => request.action === "save")).toBe(true),
+    );
+    expect(requests.find((request) => request.action === "save")).toMatchObject({
+      overrides: { html: "", preheader: "", subject: "", text: "" },
+    });
+  });
+
+  it("resolves uncustomized fields from the default template in a partial override", async () => {
+    const partialDetail = {
+      ...detail,
+      setting: {
+        ...detail.setting,
+        html_override: null,
+        preheader_override: null,
+        subject_override: "Assunto personalizado",
+        text_override: null,
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({ data: partialDetail, ok: true }),
+        ok: true,
+      })),
+    );
+
+    render(
+      <AdminEmailEventEditor actionKey="therapy_catalog_request_submitted" />,
+    );
+
+    expect(
+      await screen.findByRole("textbox", { name: "Assunto" }),
+    ).toHaveValue("Assunto personalizado");
+    expect(screen.getByRole("textbox", { name: "Texto de apoio" })).toHaveValue(
+      "Texto de apoio padrão",
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
+    ).toHaveValue("Texto padrão para {{recipient_name}}");
+  });
+
   it("restores defaults by persisting empty template overrides", async () => {
     const requests: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {

@@ -6,6 +6,7 @@ export type ReservationRetrySnapshot = {
   bookingId: string;
   bookingStatus: string;
   canRetry: boolean;
+  continuationMode: "payment_retry" | "resume_existing_checkout" | null;
   durationMinutes: number;
   financialStatus: string;
   priceCents: number;
@@ -47,7 +48,9 @@ export async function getReservationRetrySnapshot(input: {
   if (
     !value ||
     value.bookingId !== input.bookingId ||
-    value.canRetry !== true
+    value.canRetry !== true ||
+    (value.continuationMode !== "payment_retry" &&
+      value.continuationMode !== "resume_existing_checkout")
   ) {
     return null;
   }

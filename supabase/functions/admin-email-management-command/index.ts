@@ -16,6 +16,7 @@ import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-pr
 import type { SenderProfileRow } from "../_shared/email/types.ts";
 import {
   renderEmailManagementPreview,
+  resolveEmailTemplate,
   sanitizeEmailHtml,
 } from "../_shared/email/management.ts";
 
@@ -119,7 +120,11 @@ async function list(client: SupabaseRestClient) {
   ]);
   return {
     actions: getAdminConfigurableEmailActions().map((entry) => ({
-      ...entry,
+      actionKey: entry.actionKey,
+      category: entry.category,
+      description: entry.description,
+      label: entry.label,
+      supportsAutomaticDispatch: entry.supportsAutomaticDispatch,
       setting:
         settings.find((setting) => setting.action_key === entry.actionKey) ??
         null,
@@ -188,12 +193,17 @@ async function syncSendersFromProvider(client: SupabaseRestClient) {
 async function detail(client: SupabaseRestClient, actionKey: string) {
   const result = await list(client);
   const action = result.actions.find((item) => item.actionKey === actionKey);
-  if (!action)
+  const entry = getEmailActionRegistryEntry(actionKey);
+  if (!action || !entry?.adminConfigurable)
     throw new DomainError("not_found", 404, "Evento não encontrado.");
   return {
     ...action,
+    allowedTokens: entry.allowedTokens,
     senders: result.senders,
     preview: renderEmailManagementPreview(actionKey, action.setting ?? {}),
+    template: {
+      defaults: resolveEmailTemplate(actionKey, {}),
+    },
   };
 }
 async function save(

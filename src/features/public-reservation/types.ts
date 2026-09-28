@@ -32,6 +32,7 @@ export type ReservationContext = {
   priceLabel: string;
   reservationUnavailable: boolean;
   retryBookingId: string | null;
+  retryCheckoutAction: "resume" | "retry" | null;
   patientScheduleIntervals: PatientScheduleInterval[];
   patientScheduleCheckStatus: PatientScheduleCheckStatus;
   prepareStepHref: string;
