@@ -137,7 +137,7 @@ Deno.test("only a provider-verified refund annotates a neutral payout pair", asy
   assertEquals(rejected[1].verified_refund_charge, undefined);
 });
 
-Deno.test("equal but unrelated provider movements are not paired", async () => {
+Deno.test("a provider-verified refund is annotated without a same-Payout payment", async () => {
   const transactions: Parameters<typeof annotateVerifiedPayoutRefunds>[0] = [
     {
       id: "txn_payment",
@@ -178,10 +178,10 @@ Deno.test("equal but unrelated provider movements are not paired", async () => {
     stripe,
     "acct_test",
   );
-  assertEquals(annotated[1].verified_refund_charge, undefined);
+  assertEquals(annotated[1].verified_refund_charge, "py_original");
 });
 
-Deno.test("automatic payout sync sends verified evidence only to reconciliation v2", async () => {
+Deno.test("automatic payout sync sends verified evidence only to reconciliation v3", async () => {
   const calls: Array<{ name: string; payload: Record<string, unknown> }> = [];
   const client = {
     rpc: async (name: string, payload: Record<string, unknown>) => {
@@ -248,7 +248,7 @@ Deno.test("automatic payout sync sends verified evidence only to reconciliation 
     stripe,
     stripeMode: "test",
   });
-  assertEquals(calls[1].name, "reconcile_automatic_stripe_payout_v2");
+  assertEquals(calls[1].name, "reconcile_automatic_stripe_payout_v3");
   const movements = calls[1].payload.p_balance_transactions as Array<
     Record<string, unknown>
   >;
