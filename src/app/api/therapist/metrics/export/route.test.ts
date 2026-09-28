@@ -48,9 +48,21 @@ describe("therapist metrics export route", () => {
     expect(response.headers.get("x-correlation-id")).toBeTruthy();
   });
 
-  it("accepts the 120-day period and continues to auth validation", async () => {
+  it("accepts the 60-day period and continues to auth validation", async () => {
     headerMocks.cookieGet.mockReturnValue(undefined);
 
+    const response = await GET(
+      new Request(
+        "https://tes.example.test/api/therapist/metrics/export?tab=overview&period=60",
+      ),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(payload.error.code).toBe("SESSION_EXPIRED");
+  });
+
+  it("rejects the legacy 120-day period before reading the session", async () => {
     const response = await GET(
       new Request(
         "https://tes.example.test/api/therapist/metrics/export?tab=overview&period=120",
@@ -58,7 +70,8 @@ describe("therapist metrics export route", () => {
     );
     const payload = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(payload.error.code).toBe("SESSION_EXPIRED");
+    expect(response.status).toBe(422);
+    expect(payload.error.code).toBe("VALIDATION_ERROR");
+    expect(headerMocks.cookies).not.toHaveBeenCalled();
   });
 });
