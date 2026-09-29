@@ -9,7 +9,12 @@ select ok(has_function_privilege('authenticated',
 select ok(not has_function_privilege('anon',
   'public.admin_cancel_uncharged_session_v10(uuid,text,uuid)', 'EXECUTE'),
   'anonymous users cannot reach the cancellation command');
-select ok(enum_has_labels('public.booking_status', array['cancelled_by_admin']),
+select ok(
+  exists (
+    select 1
+    from unnest(enum_range(null::public.booking_status)) as status(label)
+    where status.label = 'cancelled_by_admin'::public.booking_status
+  ),
   'the administrative terminal cancellation status is registered');
 select is(
   regexp_count(
@@ -143,6 +148,8 @@ select is(
   'true',
   'an authorized admin cancels the untouched V10 reservation atomically'
 );
+reset role;
+
 select is((select status::text from public.bookings
   where id = 'b1520000-0000-4000-8000-000000000011'),
   'cancelled_by_admin', 'the booking retains an administrative cancellation attribution');
@@ -170,11 +177,16 @@ select is((select count(*)::integer from public.session_refunds as refund
 select is((select count(*)::integer from public.session_transfer_jobs
   where booking_id = 'b1520000-0000-4000-8000-000000000011'),
   0, 'the pre-charge cancellation creates no transfer obligation');
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000090', true);
 select is(public.admin_cancel_uncharged_session_v10(
   'b1520000-0000-4000-8000-000000000011',
   'Reserva duplicada confirmada pela equipe.',
   'b1520000-0000-4000-8000-000000000099'
 ) ->> 'applied', 'false', 'the same administrative request is idempotent');
+reset role;
+
 select is((select count(*)::integer from public.admin_audit_events
   where action = 'session.cancel_before_charge'
     and entity_id = 'b1520000-0000-4000-8000-000000000011'),

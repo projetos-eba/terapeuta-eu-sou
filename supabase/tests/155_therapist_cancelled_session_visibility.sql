@@ -27,13 +27,38 @@ select ok(
   'the public role cannot use the therapist sessions reader'
 );
 
-update public.bookings
-set status = 'cancelled_by_patient'
-where id = 'f2000000-0000-4000-8000-000000000004';
-
-update public.bookings
-set status = 'cancelled_by_admin'
-where id = 'f2000000-0000-4000-8000-000000000005';
+-- This test owns only the therapist read model. Create terminal fixtures
+-- directly instead of exercising cancellation commands or mutating shared
+-- seed bookings; lifecycle command coverage belongs to its dedicated tests.
+insert into public.bookings (
+  id, patient_profile_id, therapist_profile_id, service_id,
+  starts_at, ends_at, timezone, status, payment_status, cancelled_at
+)
+values
+  (
+    'a1550000-0000-4000-8000-000000000004',
+    'b1000000-0000-4000-8000-000000000004',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    now() + interval '1 day', now() + interval '1 day 60 minutes',
+    'America/Sao_Paulo', 'cancelled_by_patient', 'cancelled', now()
+  ),
+  (
+    'a1550000-0000-4000-8000-000000000005',
+    'b1000000-0000-4000-8000-000000000005',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    now() + interval '2 days', now() + interval '2 days 50 minutes',
+    'America/Sao_Paulo', 'cancelled_by_admin', 'cancelled', now()
+  ),
+  (
+    'a1550000-0000-4000-8000-000000000002',
+    'b1000000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    '2099-12-30 13:00:00+00', '2099-12-30 13:50:00+00',
+    'America/Sao_Paulo', 'confirmed', 'paid', null
+  );
 
 set local role authenticated;
 select set_config(
@@ -62,7 +87,7 @@ select ok(
         p_period_end => now()
       ) -> 'items'
     ) as item
-    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000004'
+    where item ->> 'bookingId' = 'a1550000-0000-4000-8000-000000000004'
   ),
   'future cancellations stay out of ordinary historical windows by default'
 );
@@ -78,7 +103,7 @@ select ok(
         p_include_future_terminal => true
       ) -> 'items'
     ) as item
-    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000004'
+    where item ->> 'bookingId' = 'a1550000-0000-4000-8000-000000000004'
       and item ->> 'bookingStatus' = 'cancelled_by_patient'
   ),
   'a future cancellation by the person remains visible to the therapist'
@@ -95,7 +120,7 @@ select ok(
         p_include_future_terminal => true
       ) -> 'items'
     ) as item
-    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000005'
+    where item ->> 'bookingId' = 'a1550000-0000-4000-8000-000000000005'
       and item ->> 'bookingStatus' = 'cancelled_by_admin'
   ),
   'a future administrative cancellation remains visible to the therapist'
@@ -112,7 +137,7 @@ select ok(
         p_include_future_terminal => true
       ) -> 'items'
     ) as item
-    where item ->> 'bookingId' = 'f2000000-0000-4000-8000-000000000002'
+    where item ->> 'bookingId' = 'a1550000-0000-4000-8000-000000000002'
   ),
   'an active future session is not moved into history'
 );

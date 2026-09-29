@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-09-14.
+Atualizado em 2026-09-28.
 
 ## Visao geral
 
@@ -677,6 +677,13 @@ sem escrever ledger nem comandar movimentação financeira. A projeção V10
 subtrai o ajuste do grupo posterior, preserva a contagem das sessões positivas
 e elimina o alerta administrativo apenas depois da reconciliação integral.
 Qualquer ambiguidade permanece em atenção pelo contrato anterior.
+
+O registro de eventos e a reconciliação de um mesmo Payout automático são
+serializados no PostgreSQL por conta Connect e identificador do Payout, com
+lock restrito à transação. Isso cobre a entrega quase simultânea de
+`payout.updated`/`payout.paid` e a concorrência com o reconciliador horário sem
+serializar Payouts diferentes, sem manter lock durante chamadas à Stripe e sem
+alterar valores, ledger, Transfer, Refund ou estado bancário.
 
 Documentos de contrato:
 
