@@ -23,6 +23,47 @@ select ok(
   'the browser cannot call the active Checkout continuation command'
 );
 
+insert into public.therapist_connect_accounts (
+  id, therapist_profile_id, stripe_account_id, onboarding_status,
+  details_submitted, charges_enabled, payouts_enabled,
+  stripe_transfers_status, operational_status, payout_status,
+  payout_schedule_interval, is_current
+)
+values (
+  'a1540000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'acct_test_resume_154', 'ready', true, true, true,
+  'active', 'ready', 'enabled', 'daily', true
+)
+on conflict (therapist_profile_id) where is_current
+do update set
+  stripe_account_id = excluded.stripe_account_id,
+  onboarding_status = excluded.onboarding_status,
+  details_submitted = excluded.details_submitted,
+  charges_enabled = excluded.charges_enabled,
+  payouts_enabled = excluded.payouts_enabled,
+  stripe_transfers_status = excluded.stripe_transfers_status,
+  operational_status = excluded.operational_status,
+  payout_status = excluded.payout_status,
+  payout_schedule_interval = excluded.payout_schedule_interval;
+
+insert into public.stripe_customers (
+  id, profile_id, patient_profile_id, role, environment,
+  stripe_customer_id, email, livemode
+)
+values (
+  'a1540000-0000-4000-8000-000000000002',
+  'bbbbbbbb-0000-4000-8000-000000000010',
+  'b1000000-0000-4000-8000-000000000010',
+  'patient', 'test', 'cus_test_resume_154',
+  'resume-154@example.test', false
+)
+on conflict (profile_id, role, environment) do update
+set patient_profile_id = excluded.patient_profile_id,
+    stripe_customer_id = excluded.stripe_customer_id,
+    email = excluded.email,
+    livemode = excluded.livemode;
+
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
   starts_at, ends_at, timezone, status, payment_status,
