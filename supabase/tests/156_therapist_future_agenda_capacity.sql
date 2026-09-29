@@ -288,22 +288,22 @@ select ok(
 
 select is(
   position(
-    '30, 60, 90' in pg_get_functiondef(
+    '30, 60, 90, 120' in pg_get_functiondef(
       'public.get_therapist_occupancy_metrics_v2(uuid,text,integer)'::regprocedure
     )
   ) > 0,
   true,
-  'historical occupancy retains 90-day compatibility and accepts the 60-day dashboard period'
+  'historical occupancy keeps all established 30, 60, 90 and 120-day periods'
 );
 
 select is(
   position(
-    '30, 60, 90' in pg_get_functiondef(
+    '30, 60, 90, 120' in pg_get_functiondef(
       'public.get_therapist_metrics_dashboard_v2(integer)'::regprocedure
     )
   ) > 0,
   true,
-  'the v2 dashboard chain also accepts the 60-day route without losing 90-day compatibility'
+  'the v2 dashboard chain keeps all established historical periods'
 );
 
 select is(
