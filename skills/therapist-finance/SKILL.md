@@ -108,6 +108,12 @@ All derive the therapist from `auth.uid()`. Do not accept
   Payout and do not create an `Em análise` history group. Never infer the
   adjustment from value or chronology alone; ambiguous evidence stays
   fail-closed and invisible as a bank fact.
+- Recording and reconciling the same automatic Payout must acquire the same
+  transaction-scoped PostgreSQL advisory lock derived from the connected
+  account and Payout identifiers. This serializes concurrent
+  `payout.updated`/`payout.paid` delivery and hourly reconciliation only for
+  that Payout; never hold the lock across Stripe requests or serialize
+  unrelated Payouts.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.
