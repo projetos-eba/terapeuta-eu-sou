@@ -85,6 +85,11 @@ que possível. A publicação continua sendo uma ação separada.
 - Aprovação e publicação exigem 100% dos seis itens canônicos de completude,
   incluindo terapia ativa e disponibilidade recorrente ativa. A conta de
   recebimento e os documentos continuam gates adicionais separados.
+- As superfícies de onboarding usam essa mesma completude canônica para a etapa
+  `Perfil público`: estar em análise não transforma um perfil incompleto em
+  concluído. Quando faltar conteúdo, a interface mantém a pendência visível,
+  nomeia os itens disponíveis no contrato e leva à edição; conta, documentos,
+  terapias e agenda continuam etapas próprias.
 - Remover a última disponibilidade recorrente de um perfil aprovado e público
   despublica o perfil e abre revisão `availability_removed`. Restaurar horários
   não republica automaticamente; nova aprovação do TES é obrigatória e deve

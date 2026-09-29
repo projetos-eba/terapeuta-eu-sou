@@ -59,7 +59,7 @@ describe("queryTherapistMetricsTodayActivity", () => {
 });
 
 describe("discovery metrics contracts", () => {
-  it("uses the additive V2 overview and V3 dashboard contracts for complete 60-day periods", async () => {
+  it("uses the additive V2 overview and V4 dashboard contracts for complete 60-day periods", async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({ contractVersion: 2 }), {
@@ -83,7 +83,7 @@ describe("discovery metrics contracts", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "https://example.supabase.co/rest/v1/rpc/get_therapist_metrics_dashboard_v3",
+      "https://example.supabase.co/rest/v1/rpc/get_therapist_metrics_dashboard_v4",
       expect.objectContaining({
         body: JSON.stringify({ p_period_days: 60 }),
         cache: "no-store",

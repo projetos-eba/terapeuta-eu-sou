@@ -143,7 +143,10 @@ export function TherapistGettingStartedPage({
                   {readiness.documents.map((item) => (
                     <DocumentStepRow item={item} key={item.id} />
                   ))}
-                  <ReviewStep status={readiness.verificationStatus} />
+                  <ReviewStep
+                    profileIsComplete={readiness.profileCompleteness === 100}
+                    status={readiness.verificationStatus}
+                  />
                 </ul>
               </div>
             </div>
@@ -383,9 +386,17 @@ function DocumentStepRow({ item }: { item: TherapistHomeDocument }) {
   );
 }
 
-function ReviewStep({ status }: { status: string }) {
+function ReviewStep({
+  profileIsComplete,
+  status,
+}: {
+  profileIsComplete: boolean;
+  status: string;
+}) {
   const complete =
-    status === "approved" || status === "submitted" || status === "in_review";
+    status === "approved" ||
+    ((status === "submitted" || status === "in_review") &&
+      profileIsComplete);
   const attention = status === "changes_requested" || status === "rejected";
 
   return (
@@ -405,7 +416,9 @@ function ReviewStep({ status }: { status: string }) {
           <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
             {complete
               ? "Cadastro encaminhado para análise."
-              : "Revise os dados e envie seu cadastro quando estiver pronto."}
+              : status === "submitted" || status === "in_review"
+                ? "Complete os itens indicados acima para que a análise possa avançar."
+                : "Revise os dados e envie seu cadastro quando estiver pronto."}
           </span>
         </span>
         <span className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition group-hover:bg-white">

@@ -445,3 +445,18 @@ A fixture nunca copia `stripe_account_id`, banco, agência, conta, Pix,
 documentos ou dados de KYC de HML. Ela serve somente para read model e UI. Login
 Link, sincronização Stripe, Transfer e Payout reais exigem uma conta Connect de
 teste criada especificamente pelo ambiente local.
+
+## Relatório CSV financeiro
+
+O download em `/terapeuta/financeiro` é uma leitura autenticada do mesmo
+período e dos mesmos filtros visíveis na aba ativa. O arquivo usa UTF-8 com
+BOM, separador `;` e datas/valores formatados para Brasil, permitindo abertura
+direta no Excel e no Google Sheets.
+
+O relatório organiza: informações do período, resumo financeiro,
+recebimentos, agenda/histórico de repasses e indicadores complementares. Não
+inclui identificadores internos, IDs de Stripe, metadados, URLs ou dados de
+conta. Células potencialmente interpretadas como fórmula são preservadas como
+texto antes de compor o CSV.
+
+O download não cria cobrança, reembolso, ledger, Transfer ou Payout.

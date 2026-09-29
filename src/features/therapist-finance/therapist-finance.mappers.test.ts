@@ -153,12 +153,14 @@ describe("therapist finance mappers", () => {
         availableMinutes: 420,
         capacityMinutes: 720,
         committedMinutes: 180,
+        reservedMinutes: 180,
+        reservedSessionCount: 3,
         confidence: "medium",
         conservativePotentialCents: 48000,
         estimatedBookableSlots: 6,
         expectedPotentialCents: 60000,
         maximumPotentialCents: 72000,
-        methodologyVersion: "tes-agenda-potential-v1",
+        methodologyVersion: "tes-agenda-potential-v2",
         occupancyRate: 25,
         reason: null,
         status: "available",
@@ -190,7 +192,7 @@ describe("therapist finance mappers", () => {
         sampleSize: null,
         status: "insufficient_sample",
       },
-      contractVersion: 2,
+      contractVersion: 3,
       financialEvolution: [
         {
           contractedNetCents: 8000,
@@ -340,6 +342,10 @@ describe("therapist finance mappers", () => {
     expect(dashboard.forecast.realizedNetCents).toBe(7000);
     expect(dashboard.forecast.contractedFutureNetCents).toBe(8000);
     expect(dashboard.forecast.estimatedOpenAgendaPotentialCents).toBe(60000);
+    expect(dashboard.agendaPotential.reservedSessionCount).toBe(3);
+    expect(dashboard.agendaPotential.methodologyVersion).toBe(
+      "tes-agenda-potential-v2",
+    );
     expect(dashboard.benchmark.status).toBe("insufficient_sample");
     expect(dashboard.revenueByTherapy[0]?.revenueSharePercent).toBe(100);
   });

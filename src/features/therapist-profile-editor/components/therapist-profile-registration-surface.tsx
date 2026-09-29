@@ -36,10 +36,11 @@ export function TherapistProfileRegistrationSurface({
     editor.verificationSummary?.status ?? editor.derived.verificationStatus;
 
   const fields = editor.draft?.fields ?? editor.published.fields;
-  const profileStepComplete = Boolean(
-    fields.publicName.trim() &&
-    (fields.shortIntro.trim() || fields.essenceBody.trim()),
-  );
+  const profileStepComplete = editor.completeness.percent === 100;
+  const missingProfileItems = editor.completeness.items
+    .filter((item) => !item.complete)
+    .map((item) => item.label)
+    .filter(Boolean);
   const servicesStepComplete = editor.derived.activeServiceCount > 0;
   const availabilityStepComplete = editor.derived.availabilityRuleCount > 0;
   const documentsByKind = useMemo(
@@ -65,6 +66,7 @@ export function TherapistProfileRegistrationSurface({
   const reviewStepState = reviewState({
     availabilityComplete: availabilityStepComplete,
     documentsNeedResubmission,
+    profileComplete: profileStepComplete,
     reviewOrigin: editor.verificationSummary?.reviewOrigin,
     status: verificationStatus,
   });
@@ -72,7 +74,11 @@ export function TherapistProfileRegistrationSurface({
 
   const steps = [
     {
-      description: "Preencha como você quer ser apresentado.",
+      description: profileStepComplete
+        ? "Seu perfil público está completo."
+        : missingProfileItems.length > 0
+          ? `Ainda falta completar: ${formatProfileItemList(missingProfileItems)}.`
+          : "Complete as informações obrigatórias do seu perfil.",
       href: routes.therapist.profileEdit,
       key: "profile",
       label: "Perfil profissional",
@@ -111,6 +117,7 @@ export function TherapistProfileRegistrationSurface({
       description: reviewDescription({
         availabilityComplete: availabilityStepComplete,
         documentsNeedResubmission,
+        profileComplete: profileStepComplete,
         reviewOrigin: editor.verificationSummary?.reviewOrigin,
         status: verificationStatus,
       }),
@@ -131,6 +138,7 @@ export function TherapistProfileRegistrationSurface({
     availabilityComplete: availabilityStepComplete,
     documentsComplete: documentsStepComplete,
     documentsNeedResubmission,
+    profileComplete: profileStepComplete,
     reviewOrigin: editor.verificationSummary?.reviewOrigin,
     verificationStatus,
   });
@@ -172,10 +180,11 @@ export function TherapistProfileRegistrationSurface({
                 </div>
                 <p className="mt-4 text-center text-sm font-semibold leading-6 text-tesText-secondary">
                   {progressSummaryCopy({
-                    availabilityComplete: availabilityStepComplete,
-                    documentsComplete: documentsStepComplete,
-                    documentsNeedResubmission,
-                    reviewOrigin: editor.verificationSummary?.reviewOrigin,
+                  availabilityComplete: availabilityStepComplete,
+                  documentsComplete: documentsStepComplete,
+                  documentsNeedResubmission,
+                  profileComplete: profileStepComplete,
+                  reviewOrigin: editor.verificationSummary?.reviewOrigin,
                     verificationStatus,
                   })}
                 </p>
@@ -449,12 +458,14 @@ function registrationMode({
   availabilityComplete,
   documentsComplete,
   documentsNeedResubmission,
+  profileComplete,
   reviewOrigin,
   verificationStatus,
 }: {
   availabilityComplete: boolean;
   documentsComplete: boolean;
   documentsNeedResubmission: boolean;
+  profileComplete: boolean;
   reviewOrigin?:
     | "availability_removed"
     | "connect_account_closed"
@@ -539,6 +550,23 @@ function registrationMode({
     };
   }
 
+  if (!profileComplete) {
+    return {
+      asideTitle: "Perfil público pendente",
+      banner: null,
+      checklist: [
+        "Complete os itens indicados em Perfil profissional.",
+        "Revise as terapias e os horários disponíveis.",
+        "Depois disso, a análise poderá continuar.",
+      ],
+      mode: "attention" as const,
+      subtitle:
+        "Seu perfil público ainda precisa ser completado antes de concluir a análise.",
+      supportCta: true,
+      title: "Complete seu perfil público",
+    };
+  }
+
   if (
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
@@ -607,12 +635,14 @@ function progressSummaryCopy({
   availabilityComplete,
   documentsComplete,
   documentsNeedResubmission,
+  profileComplete,
   reviewOrigin,
   verificationStatus,
 }: {
   availabilityComplete: boolean;
   documentsComplete: boolean;
   documentsNeedResubmission: boolean;
+  profileComplete: boolean;
   reviewOrigin?:
     | "availability_removed"
     | "connect_account_closed"
@@ -631,6 +661,10 @@ function progressSummaryCopy({
 
   if (documentsNeedResubmission) {
     return "A equipe TES solicitou o reenvio dos documentos. Envie-os novamente para retomarmos a análise.";
+  }
+
+  if (!profileComplete) {
+    return "Complete os itens indicados em Perfil profissional para que a análise possa avançar.";
   }
 
   if (
@@ -654,11 +688,13 @@ function progressSummaryCopy({
 function reviewState({
   availabilityComplete,
   documentsNeedResubmission,
+  profileComplete,
   reviewOrigin,
   status,
 }: {
   availabilityComplete: boolean;
   documentsNeedResubmission: boolean;
+  profileComplete: boolean;
   reviewOrigin?:
     | "availability_removed"
     | "connect_account_closed"
@@ -670,6 +706,7 @@ function reviewState({
     return availabilityComplete ? ("current" as const) : ("attention" as const);
   }
   if (documentsNeedResubmission) return "pending" as const;
+  if (!profileComplete) return "attention" as const;
   if (status === "approved") return "complete" as const;
   if (status === "submitted" || status === "in_review")
     return "current" as const;
@@ -682,11 +719,13 @@ function reviewState({
 function reviewDescription({
   availabilityComplete,
   documentsNeedResubmission,
+  profileComplete,
   reviewOrigin,
   status,
 }: {
   availabilityComplete: boolean;
   documentsNeedResubmission: boolean;
+  profileComplete: boolean;
   reviewOrigin?:
     | "availability_removed"
     | "connect_account_closed"
@@ -704,6 +743,9 @@ function reviewDescription({
   if (documentsNeedResubmission) {
     return "A análise continua assim que os documentos solicitados forem reenviados.";
   }
+  if (!profileComplete) {
+    return "Complete os itens indicados em Perfil profissional para a análise continuar.";
+  }
   if (status === "approved") return "Cadastro aprovado pela equipe TES.";
   if (status === "submitted" || status === "in_review") {
     return "Cadastro recebido e em análise.";
@@ -715,6 +757,13 @@ function reviewDescription({
     return "O cadastro não foi aprovado. Fale com o suporte para entender o próximo passo.";
   }
   return "A análise começa depois que o perfil estiver completo e os dados e documentos forem enviados.";
+}
+
+function formatProfileItemList(items: string[]) {
+  if (items.length === 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} e ${items[1]}`;
+
+  return `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`;
 }
 
 function statusLabel(state: "attention" | "complete" | "current" | "pending") {

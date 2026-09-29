@@ -150,6 +150,31 @@ liberada antes da de 60 dias; alterar a agenda hoje não reescreve métricas de
 dias já encerrados. Quando não existe capacidade ofertada sob cobertura
 completa, o estado é `empty`, nunca um sucesso fictício.
 
+### Agenda futura compartilhada — dashboard v4
+
+`get_therapist_metrics_dashboard_v4(30|60)` preserva os indicadores
+históricos selecionados e adiciona `futureAgenda` como uma leitura operacional
+independente dos **próximos 30 dias locais**. O seletor de 30/60 dias não muda
+essa janela futura.
+
+A capacidade futura é calculada uma única vez por terapeuta, unindo os
+intervalos ativos de todas as terapias. Sobreposições não são somadas. Bloqueios
+globais removem a capacidade uma vez; um bloqueio de uma terapia remove somente
+a parte que não continua coberta por outra terapia. A fórmula é:
+
+- capacidade: união da disponibilidade efetiva com as reservas ainda
+  protegidas;
+- horas reservadas: união de `occupied_during` das reservas futuras em
+  `pending_payment`, `confirmed` ou `completed`, incluindo buffers snapshot;
+- horas livres: disponibilidade efetiva menos essas reservas;
+- ocupação: horas reservadas ÷ capacidade.
+
+Cancelamentos, falhas, reagendamentos e holds temporários não participam. A
+inclusão das reservas protegidas na capacidade evita que uma edição posterior
+da agenda esconda um horário já reservado ou produza ocupação acima de 100%.
+O heatmap continua sendo histórico e é apresentado como frequência de sessões
+concluídas.
+
 ### Descoberta
 
 Com a telemetria desativada, o contrato retorna `unavailable` com

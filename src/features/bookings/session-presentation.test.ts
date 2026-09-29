@@ -190,7 +190,7 @@ describe("mapSessionPresentation", () => {
     ],
     [
       BookingStatus.CancelledByAdmin,
-      "A administração cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+      "A plataforma cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
     ],
   ])(
     "explains a %s cancellation to the therapist without exposing internal detail",

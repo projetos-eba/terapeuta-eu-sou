@@ -325,6 +325,12 @@ export function mapTherapistAdvancedFinancialDashboard(
         availableMinutes: nonNegativeInteger(agendaPotential.availableMinutes),
         capacityMinutes: nonNegativeInteger(agendaPotential.capacityMinutes),
         committedMinutes: nonNegativeInteger(agendaPotential.committedMinutes),
+        reservedMinutes: nonNegativeInteger(
+          agendaPotential.reservedMinutes ?? agendaPotential.committedMinutes,
+        ),
+        reservedSessionCount: nonNegativeInteger(
+          agendaPotential.reservedSessionCount ?? 0,
+        ),
         confidence: advancedConfidence(agendaPotential.confidence),
         conservativePotentialCents: nonNegativeInteger(
           agendaPotential.conservativePotentialCents,
@@ -338,9 +344,8 @@ export function mapTherapistAdvancedFinancialDashboard(
         maximumPotentialCents: nonNegativeInteger(
           agendaPotential.maximumPotentialCents,
         ),
-        methodologyVersion: literalString(
+        methodologyVersion: agendaMethodologyVersion(
           agendaPotential.methodologyVersion,
-          "tes-agenda-potential-v1",
         ),
         occupancyRate: nullableNumber(agendaPotential.occupancyRate),
         reason: nullableString(agendaPotential.reason),
@@ -349,7 +354,7 @@ export function mapTherapistAdvancedFinancialDashboard(
         windowStart: dateString(agendaPotential.windowStart),
       },
       benchmark: benchmarkContract(benchmark),
-      contractVersion: literalNumber(value.contractVersion, 2),
+      contractVersion: dashboardContractVersion(value.contractVersion),
       financialEvolution: array(value.financialEvolution).map(
         advancedEvolutionPoint,
       ),
@@ -855,6 +860,20 @@ function advancedAvailabilityStatus(
     return value as AdvancedFinancialAvailabilityStatus;
   }
   throw new Error("Invalid advanced availability status.");
+}
+
+function dashboardContractVersion(value: unknown): 2 | 3 {
+  if (value === 2 || value === 3) return value;
+  throw new Error("Invalid advanced dashboard contract version.");
+}
+
+function agendaMethodologyVersion(
+  value: unknown,
+): "tes-agenda-potential-v1" | "tes-agenda-potential-v2" {
+  if (value === "tes-agenda-potential-v1" || value === "tes-agenda-potential-v2") {
+    return value;
+  }
+  throw new Error("Invalid agenda methodology version.");
 }
 
 function availabilityLooseStatus(value: unknown): "available" | "unavailable" {

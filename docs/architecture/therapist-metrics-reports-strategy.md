@@ -23,6 +23,14 @@
 > separadamente os favoritos do dia local; essa projeção não altera o
 > comparativo histórico e não contém identificadores de pacientes.
 
+> Atualização de exportação — 2026-09-29:
+> o CSV passa a abrir como relatório legível em Excel e Google Sheets, com
+> BOM UTF-8 e separador `;`. A estrutura traz informações do relatório,
+> resumo das métricas, atividade por período e indicadores complementares.
+> IDs, chaves de contrato, códigos de status, metadados operacionais e motivos
+> internos não são exportados. Leituras protegidas ou ainda sem base aparecem
+> como “Sem dados suficientes”, sem expor sua causa técnica.
+
 > Nota de implementação — 2026-07-31:
 > MTR-6/Aura MVP foi implementado na rota canônica
 > `/terapeuta/assessor-ia` como mecanismo determinístico Premium Plus

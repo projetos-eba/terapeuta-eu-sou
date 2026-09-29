@@ -6,6 +6,7 @@ import {
 import { mapTherapistMetricsOverview } from "./therapist-metrics.mappers";
 import type {
   TherapistMetricsDashboard,
+  TherapistFutureAgenda,
   TherapistMetricsOccupancy,
   TherapistOccupancyHeatmapPoint,
   TherapistOccupancyPoint,
@@ -22,9 +23,13 @@ export function mapTherapistMetricsDashboard(
     const periodDays = metricsPeriod(overview.meta.periodDays);
 
     if (
-      (value.contractVersion !== 2 && value.contractVersion !== 3) ||
+      (value.contractVersion !== 2 &&
+        value.contractVersion !== 3 &&
+        value.contractVersion !== 4) ||
       (value.metricDefinitionVersion !== 2 &&
-        value.metricDefinitionVersion !== 3) ||
+        value.metricDefinitionVersion !== 3 &&
+        value.metricDefinitionVersion !== 4) ||
+      (value.contractVersion === 4 && value.futureAgenda === undefined) ||
       overview.therapist.profileId !== sessions.therapist.profileId ||
       overview.therapist.profileId !== interest.therapist.profileId
     ) {
@@ -33,6 +38,10 @@ export function mapTherapistMetricsDashboard(
 
     return {
       contractVersion: value.contractVersion,
+      futureAgenda:
+        value.contractVersion === 4
+          ? mapFutureAgenda(value.futureAgenda)
+          : undefined,
       interest,
       meta: { ...overview.meta, periodDays },
       metricDefinitionVersion: value.metricDefinitionVersion,
@@ -45,6 +54,41 @@ export function mapTherapistMetricsDashboard(
     if (error instanceof TherapistMetricsError) throw error;
     throw new TherapistMetricsError("invalid_contract");
   }
+}
+
+function mapFutureAgenda(input: unknown): TherapistFutureAgenda {
+  const value = record(input);
+  const status = value.status;
+  const reason = value.reason;
+
+  if (
+    (status !== "available" &&
+      status !== "insufficient_data" &&
+      status !== "unavailable") ||
+    (reason !== null && reason !== "no_active_services" && reason !== "no_availability")
+  ) {
+    throw new Error("Invalid future agenda status.");
+  }
+
+  const capacityMinutes = nonNegativeInteger(value.capacityMinutes);
+  const reservedMinutes = nonNegativeInteger(value.reservedMinutes);
+  const occupancyRate = nullablePercentage(value.occupancyRate);
+
+  if (reservedMinutes > capacityMinutes) {
+    throw new Error("Invalid future agenda capacity.");
+  }
+
+  return {
+    availableMinutes: nonNegativeInteger(value.availableMinutes),
+    capacityMinutes,
+    occupancyRate,
+    reason,
+    reservedMinutes,
+    reservedSessionCount: nonNegativeInteger(value.reservedSessionCount),
+    status,
+    windowEnd: date(value.windowEnd),
+    windowStart: date(value.windowStart),
+  };
 }
 
 function mapOccupancy(

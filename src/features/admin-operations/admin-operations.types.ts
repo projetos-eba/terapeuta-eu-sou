@@ -197,6 +197,16 @@ export type AdminProfessionalVerificationSummary = {
   submittedAt: string | null;
 };
 
+/**
+ * Explicação segura dos requisitos que ainda impedem a decisão de aprovação.
+ * Os valores são apresentados em linguagem de produto e nunca carregam chaves
+ * internas do read model.
+ */
+export type AdminVerificationApprovalGuidance = {
+  blockers: string[];
+  incompleteProfileItems: string[];
+};
+
 export type AdminOperationDetailPageData = {
   auditEvents: AdminOperationAuditEvent[];
   backHref: string;
@@ -220,6 +230,8 @@ export type AdminOperationDetailPageData = {
   canPublish?: boolean;
   /** Indica se a verificação pode ser aprovada com o cadastro atual. */
   canApprove?: boolean;
+  /** Pendências reais exibidas junto à ação de aprovação desabilitada. */
+  approvalGuidance?: AdminVerificationApprovalGuidance;
   privateDocuments?: AdminProfessionalDocumentReviewData | null;
   profileReview?: AdminProfessionalProfileReview | null;
   safetyNotes: string[];

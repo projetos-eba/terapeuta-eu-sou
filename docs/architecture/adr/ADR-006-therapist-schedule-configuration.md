@@ -50,6 +50,10 @@ abas sobrescrevessem a configuração de horários simultaneamente.
   de compatibilidade para read models anteriores à A3.
 - O read model `get_therapist_schedule_v1()` deriva a identidade de
   `auth.uid()` e não aceita `therapist_profile_id`.
+- O resumo de Horários usa `get_therapist_agenda_v2()`: ele preserva o
+  contrato V1 para os demais consumidores e devolve somente exceções ativas.
+  Exceções removidas continuam no histórico auditável da aba Bloqueios, mas não
+  voltam a ser apresentadas como indisponibilidade atual.
 - O preview de A3 é informativo. A5 permanece como autoridade dos slots
   reserváveis.
 

@@ -200,6 +200,14 @@ function parseCommandInput(value: unknown):
 
 function mapRpcFailure(payload: unknown) {
   if (isRecord(payload) && typeof payload.message === "string") {
+    if (payload.message.includes("THERAPIST_PROFILE_INCOMPLETE")) {
+      return "O perfil público ainda não está completo. Atualize a página e revise as pendências antes de aprovar.";
+    }
+
+    if (payload.message.includes("THERAPIST_ACTIVE_AVAILABILITY_REQUIRED")) {
+      return "É necessário manter ao menos um horário recorrente disponível antes de aprovar.";
+    }
+
     if (payload.message.includes("patient booking state transition invalid")) {
       return "A situação da conta mudou. Atualize a página antes de continuar.";
     }

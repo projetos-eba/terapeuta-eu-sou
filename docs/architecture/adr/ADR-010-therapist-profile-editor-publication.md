@@ -28,6 +28,13 @@ público existente já derivava de `therapist_profiles` e de
   ao menos uma terapia ativa e ao menos uma regra recorrente de disponibilidade
   ativa. `get_therapist_publication_eligibility_v1` é a autoridade comum para
   Admin, catálogo, perfil público, Match, slots e reserva.
+- A transição administrativa para `approved` revalida no PostgreSQL tanto a
+  completude canônica quanto a existência de disponibilidade recorrente ativa,
+  antes de qualquer alteração de estado ou gravação de auditoria. A interface
+  administrativa apenas apresenta o resultado dessa regra: em análise, mostra
+  pendências acionáveis e não antecipa o estado “Aprovado · falta publicar”.
+  No onboarding, a checklist operacional continua separada, mas a etapa de
+  perfil só conta como concluída quando os seis itens canônicos alcançam 100%.
 - Exigências temporárias de uma conta Connect preservam o estado editorial e
   apenas bloqueiam novos agendamentos até a prontidão voltar. Já o encerramento
   confirmado da conta (`v2.core.account.closed`, ou sincronização autoritativa

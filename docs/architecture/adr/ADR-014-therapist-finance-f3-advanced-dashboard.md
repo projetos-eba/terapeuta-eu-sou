@@ -35,12 +35,20 @@ realizada e do ranking por terapia. O líquido realizado é limitado a zero por
 pagamento. Nenhuma dessas regras modifica ledger, reembolso, compensação,
 Transfer ou Payout.
 
+Uma evolução aditiva publica
+`get_private_therapist_advanced_financial_dashboard_v3`. Ela preserva os
+campos financeiros realizados e contratados da V2, mas substitui a leitura de
+agenda pela capacidade operacional única dos **próximos 30 dias locais**. A
+agenda não é uma fonte de receita e não altera ledger, saldo, repasse,
+comissão, reembolso, disputa, Transfer ou Payout.
+
 ## Metodologias
 
 | Versão                           | Uso                         | Regra central                                                                                                                                                             |
 | -------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tes-financial-forecast-v1`      | Receita no mês              | Separa realizado líquido, sessões futuras já pagas e potencial estimado.                                                                                                  |
 | `tes-agenda-potential-v1`        | Potencial da agenda         | Une janelas entre terapias, aplica bloqueios no escopo global ou da terapia, subtrai a ocupação global das reservas com buffers snapshot e usa preço histórico quando há. |
+| `tes-agenda-potential-v2`        | Agenda e potencial futuros  | Usa a mesma união de disponibilidade dos próximos 30 dias em Métricas e Financeiro. Conta reservas que já bloqueiam a agenda, mesmo com pagamento pendente ou em processamento, preserva buffers snapshot e calcula o potencial somente sobre horas livres. |
 | `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                                                                                      |
 | `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.                                                                                 |
 
@@ -80,6 +88,9 @@ comprovantes, reembolsos e Conta de recebimento não são bloqueados por
   reescrever o passado como saldo real.
 - A UI e os testes precisam preservar a separação visual entre realizado,
   sessões futuras já pagas e estimado.
+- Ocupação operacional não é receita: ela representa a proporção de horários
+  futuros já protegidos. Sessões pendentes podem ocupar a agenda, mas só um
+  pagamento confirmado integra a leitura financeira realizada ou contratada.
 
 ## Referências
 

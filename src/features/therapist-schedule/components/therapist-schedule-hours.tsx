@@ -1310,14 +1310,17 @@ function UpcomingExceptionsCard({
             : "Dados da agenda indisponíveis no momento."}
         </p>
       )}
-      <p className="mt-4 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-muted">
+      <Link
+        className="mt-4 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-muted transition hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+        href={`${routes.therapist.agenda}?aba=bloqueios`}
+      >
         <Info
           aria-hidden="true"
           className="mt-0.5 shrink-0 text-brand-primary"
           size={15}
         />
-        A gestão de bloqueios será concluída na próxima etapa da Agenda.
-      </p>
+        Gerencie bloqueios na aba Bloqueios.
+      </Link>
     </article>
   );
 }

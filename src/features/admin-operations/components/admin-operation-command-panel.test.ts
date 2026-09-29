@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 
-import { getCommandOptions } from "./admin-operation-command-panel";
+import type { AdminOperationDetailPageData } from "../admin-operations.types";
+import {
+  AdminOperationCommandPanel,
+  getCommandOptions,
+} from "./admin-operation-command-panel";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 describe("admin verification command flow", () => {
   it("starts analysis before exposing decision commands", () => {
@@ -34,6 +42,27 @@ describe("admin verification command flow", () => {
     ).toEqual(expect.objectContaining({ disabled: true }));
   });
 
+  it("explains why approval is disabled and keeps request changes available", () => {
+    const html = renderToStaticMarkup(
+      createElement(AdminOperationCommandPanel, {
+        data: verificationDetailData({
+          approvalGuidance: {
+            blockers: ["perfil público ainda não está completo"],
+            incompleteProfileItems: ["Foto de perfil"],
+          },
+          canApprove: false,
+        }),
+      }),
+    );
+
+    expect(html).toContain("A aprovação ainda não está disponível");
+    expect(html).toContain("perfil público ainda não está completo");
+    expect(html).toContain("Foto de perfil");
+    expect(html).toContain("Use entre 8 e 1.000 caracteres.");
+    expect(html).toContain("Solicitar ajustes");
+    expect(html).toMatch(/Aprovar verificação[^>]*<\/button>|disabled[^>]*>.*Aprovar verificação/s);
+  });
+
   it("does not expose decisions after approval", () => {
     expect(getCommandOptions({ module: "verifications", statusLabel: "approved" })).toEqual([]);
   });
@@ -61,3 +90,21 @@ describe("admin verification command flow", () => {
     ]);
   });
 });
+
+function verificationDetailData(
+  overrides: Partial<AdminOperationDetailPageData> = {},
+): AdminOperationDetailPageData {
+  return {
+    auditEvents: [],
+    backHref: "/admin/profissionais/verificacoes",
+    generatedAt: "2026-09-29T10:00:00.000Z",
+    id: "verification-1",
+    module: "verifications",
+    safetyNotes: [],
+    sections: [],
+    statusLabel: "in_review",
+    subtitle: "",
+    title: "Terapeuta",
+    ...overrides,
+  };
+}

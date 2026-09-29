@@ -52,7 +52,7 @@ export function queryTherapistAdvancedFinancialDashboard(
   body: QueryBody,
 ) {
   return requestFinanceRpc(
-    "get_private_therapist_advanced_financial_dashboard_v2",
+    "get_private_therapist_advanced_financial_dashboard_v3",
     {
       accessToken,
       body,

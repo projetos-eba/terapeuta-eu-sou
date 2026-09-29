@@ -47,7 +47,9 @@ describe("TherapistMetricsPage", () => {
     expect(
       screen.getAllByText("Terapias mais realizadas").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Agenda e horários")).toBeInTheDocument();
+    expect(screen.getByText("Agenda nos próximos 30 dias")).toBeInTheDocument();
+    expect(screen.getByText("Resumo da agenda futura")).toBeInTheDocument();
+    expect(screen.getByText("Frequência de sessões concluídas")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Veja como as pessoas encontram seu perfil, agendam sessões e se aproximam do seu trabalho. Estas informações ajudam você a entender o que está acontecendo e decidir os próximos passos com mais clareza.",
@@ -220,9 +222,9 @@ describe("TherapistMetricsPage", () => {
         "Essa leitura vai ficando mais clara conforme novas sessões forem concluídas.",
       ),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Horário com menos sessões").parentElement,
-    ).toHaveTextContent("10h – 12h");
+    expect(screen.getByText("Horas reservadas").parentElement).toHaveTextContent(
+      "3h",
+    );
   });
 
   it("uses the dedicated initial state without demo metrics", () => {
@@ -252,6 +254,17 @@ describe("TherapistMetricsPage", () => {
     );
     data.sessions.summary.sessionsCompleted =
       data.overview.counters.sessionsCompleted;
+    data.futureAgenda = {
+      availableMinutes: 0,
+      capacityMinutes: 0,
+      occupancyRate: null,
+      reason: "no_availability",
+      reservedMinutes: 0,
+      reservedSessionCount: 0,
+      status: "insufficient_data",
+      windowEnd: "2026-08-26",
+      windowStart: "2026-07-28",
+    };
 
     render(<TherapistMetricsPage data={data} />);
 
@@ -420,7 +433,18 @@ function dashboardFixture(): TherapistMetricsDashboard {
   };
 
   return {
-    contractVersion: 2,
+    contractVersion: 4,
+    futureAgenda: {
+      availableMinutes: 420,
+      capacityMinutes: 600,
+      occupancyRate: 30,
+      reason: null,
+      reservedMinutes: 180,
+      reservedSessionCount: 3,
+      status: "available",
+      windowEnd: "2026-08-26",
+      windowStart: "2026-07-28",
+    },
     interest: {
       access: { requiredPlan: "premium_plus", status: "capability_locked" },
       contractVersion: 1,
@@ -429,7 +453,7 @@ function dashboardFixture(): TherapistMetricsDashboard {
       therapist,
     },
     meta,
-    metricDefinitionVersion: 2,
+    metricDefinitionVersion: 4,
     occupancy: {
       coverageDays: 4,
       coverageStart: "2026-07-24",

@@ -171,6 +171,7 @@ export function buildUpcomingExceptions(input: {
   return input.agenda.availability.exceptions
     .filter(
       (exception) =>
+        exception.status === "active" &&
         new Date(exception.endsAt) > now &&
         (exception.serviceId === null || exception.serviceId === input.scope),
     )

@@ -39,6 +39,25 @@ describe("parseTherapistAgendaReadModel", () => {
 
     expect(parsed.availability.rules[0]?.serviceId).toBe("service-1");
     expect(parsed.availability.exceptions[0]?.serviceId).toBeNull();
+    expect(parsed.availability.exceptions[0]?.status).toBe("active");
+  });
+
+  it("rejects an inactive exception in the current agenda contract", () => {
+    const payload = agendaPayload({
+      dayOfWeek: 1,
+      endTime: "17:00:00",
+      id: "rule-1",
+      isActive: true,
+      serviceId: "service-1",
+      startTime: "09:00:00",
+      timezone: "America/Sao_Paulo",
+    });
+    (payload.availability.exceptions[0] as Record<string, unknown>).status =
+      "cancelled";
+
+    expect(() => parseTherapistAgendaReadModel(payload)).toThrow(
+      SessionReadModelContractError,
+    );
   });
 });
 
@@ -177,6 +196,7 @@ function agendaPayload(rule: Record<string, unknown>) {
           isAvailable: false,
           serviceId: null,
           startsAt: "2026-09-01T12:00:00.000Z",
+          status: "active",
         },
       ],
       rules: [rule],

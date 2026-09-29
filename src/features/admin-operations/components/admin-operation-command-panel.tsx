@@ -61,6 +61,11 @@ export function AdminOperationCommandPanel({
   } | null>(null);
   const submitting = useRef(false);
   const options = useMemo(() => getCommandOptions(data), [data]);
+  const approvalGuidance =
+    data.module === "verifications" && data.canApprove === false
+      ? data.approvalGuidance
+      : undefined;
+  const reasonLength = reason.trim().length;
 
   if (options.length === 0) {
     return (
@@ -157,7 +162,44 @@ export function AdminOperationCommandPanel({
           placeholder="Descreva o motivo operacional da ação."
           value={reason}
         />
+        <span className="mt-2 flex justify-between gap-3 text-xs font-semibold leading-5 text-tesText-secondary">
+          <span>Use entre 8 e 1.000 caracteres.</span>
+          <span aria-live="polite">{reasonLength}/1000</span>
+        </span>
       </label>
+
+      {approvalGuidance ? (
+        <section
+          aria-labelledby="verification-approval-guidance-title"
+          className="rounded-md border border-status-warning/30 bg-status-warningBg p-3"
+          id="verification-approval-guidance"
+        >
+          <h3
+            className="text-sm font-extrabold text-brand-deep"
+            id="verification-approval-guidance-title"
+          >
+            A aprovação ainda não está disponível
+          </h3>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Complete os itens abaixo antes de registrar a aprovação. Solicitar
+            ajustes continua disponível para orientar o terapeuta.
+          </p>
+          <ul className="mt-3 grid gap-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            {approvalGuidance.blockers.map((blocker) => (
+              <li className="flex gap-2" key={blocker}>
+                <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-status-warning" />
+                <span>{blocker}</span>
+              </li>
+            ))}
+            {approvalGuidance.incompleteProfileItems.map((item) => (
+              <li className="flex gap-2" key={item}>
+                <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-status-warning" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {error ? (
         <TESFeedbackDialog message={error} onClose={() => setError(null)} />
@@ -174,6 +216,11 @@ export function AdminOperationCommandPanel({
         {options.map((option) => (
           <button
             className={commandButtonClass(option.tone)}
+            aria-describedby={
+              option.action === "verification.approve" && approvalGuidance
+                ? "verification-approval-guidance"
+                : undefined
+            }
             disabled={isSubmitting || option.disabled}
             key={option.action}
             onClick={() => {

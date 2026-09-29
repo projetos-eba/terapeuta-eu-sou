@@ -4,7 +4,6 @@ import type { ComponentProps } from "react";
 import {
   AlertTriangle,
   ArrowRight,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -12,10 +11,10 @@ import {
   Coins,
   Clock3,
   CreditCard,
+  Download,
   Info,
   Landmark,
   ReceiptText,
-  RefreshCw,
   RotateCcw,
   Search,
   ShieldAlert,
@@ -29,6 +28,7 @@ import type {
   AdminFinancePageData,
   AdminFinanceRow,
 } from "../admin-finance.types";
+import { AdminFinancePeriodFields } from "./admin-finance-period-fields";
 
 const FINANCIAL_KPI_KEYS = [
   "total-payments-amount",
@@ -60,6 +60,7 @@ const DEFAULT_PERIOD_OPTIONS = [
   { label: "Últimos 7 dias", value: "7d" },
   { label: "Últimos 30 dias", value: "30d" },
   { label: "Últimos 90 dias", value: "90d" },
+  { label: "Período personalizado", value: "custom" },
 ];
 
 export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
@@ -76,7 +77,6 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
     OPERATIONAL_INDICATOR_KEYS.includes(metric.key),
   );
   const periodOptions = data.filterOptions.period ?? DEFAULT_PERIOD_OPTIONS;
-  const activePeriod = data.query.period ?? "30d";
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -95,43 +95,13 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
             </p>
           </div>
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center lg:justify-end">
-            <form
-              action={data.listHref}
-              className="flex items-center gap-2 rounded-[18px] border border-brand-lavender/70 bg-white p-1.5 shadow-[0_18px_45px_rgba(20,16,90,0.08)]"
-              method="get"
+            <Link
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary shadow-[0_18px_45px_rgba(20,16,90,0.08)] transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+              href={buildFinanceExportHref("payments", data.query) as Route<string>}
             >
-              <input name="q" type="hidden" value={data.query.search} />
-              <input name="status" type="hidden" value={data.query.status} />
-              <input name="sort" type="hidden" value={data.query.sort} />
-              <input name="pageSize" type="hidden" value={data.query.pageSize} />
-              <CalendarDays
-                aria-hidden="true"
-                className="ml-2 size-4 text-brand-primary"
-              />
-              <label className="sr-only" htmlFor="finance-top-period">
-                Período dos indicadores financeiros
-              </label>
-              <select
-                className="min-h-10 bg-transparent pr-1 text-sm font-extrabold text-brand-deep outline-none"
-                defaultValue={activePeriod}
-                id="finance-top-period"
-                name="period"
-              >
-                {periodOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                aria-label="Atualizar período"
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
-                type="submit"
-              >
-                <RefreshCw aria-hidden="true" className="size-4" />
-                Atualizar
-              </button>
-            </form>
+              <Download aria-hidden="true" className="size-4" />
+              Baixar relatório
+            </Link>
             <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
               Atualizado em {formatDateTime(data.generatedAt)}
             </p>
@@ -191,10 +161,10 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
 
             <form
               action={data.listHref}
-              className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px_auto]"
+              className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6"
               method="get"
             >
-              <label className="relative block">
+              <label className="relative block xl:col-span-2">
                 <span className="sr-only">Buscar registros financeiros</span>
                 <Search
                   aria-hidden="true"
@@ -239,26 +209,12 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                 </select>
               </label>
 
-              <label className="relative block">
-                <span className="sr-only">Filtrar por período</span>
-                <CalendarDays
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-brand-primary"
-                />
-                <select
-                  className="min-h-12 w-full rounded-full border border-brand-lavender bg-white py-2 pl-10 pr-4 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
-                  defaultValue={activePeriod}
-                  name="period"
-                >
-                  {periodOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <AdminFinancePeriodFields
+                options={periodOptions}
+                query={data.query}
+              />
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 md:col-span-2 xl:col-span-1">
                 <input
                   name="pageSize"
                   type="hidden"
@@ -277,7 +233,9 @@ export function AdminPaymentsPage({ data }: { data: AdminFinancePageData }) {
                     period: "30d",
                     search: "",
                     sort: "",
+                    start: undefined,
                     status: "",
+                    end: undefined,
                   }) as Route<string>}
                 >
                   Limpar
@@ -849,11 +807,33 @@ function buildPaymentListHref(
   if (next.status) params.set("status", next.status);
   if (next.sort) params.set("sort", next.sort);
   if (next.period && next.period !== "30d") params.set("period", next.period);
+  if (next.period === "custom" && next.start && next.end) {
+    params.set("start", next.start);
+    params.set("end", next.end);
+  }
   if (next.page > 1) params.set("page", String(next.page));
   if (next.pageSize !== 12) params.set("pageSize", String(next.pageSize));
 
   const query = params.toString();
   return query ? `${baseHref}?${query}` : baseHref;
+}
+
+function buildFinanceExportHref(
+  module: "payments" | "subscriptions",
+  query: AdminFinanceListQuery,
+) {
+  const params = new URLSearchParams({ module });
+
+  if (query.search) params.set("q", query.search);
+  if (query.status) params.set("status", query.status);
+  if (query.sort) params.set("sort", query.sort);
+  if (query.period) params.set("period", query.period);
+  if (query.period === "custom" && query.start && query.end) {
+    params.set("start", query.start);
+    params.set("end", query.end);
+  }
+
+  return `/api/admin/finance/export?${params.toString()}`;
 }
 
 function formatDateTime(value: string) {

@@ -7,6 +7,7 @@ import {
   CircleX,
   CreditCard,
   Crown,
+  Download,
   Search,
   UserRound,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import type {
   AdminFinancePageData,
   AdminFinanceRow,
 } from "../admin-finance.types";
+import { AdminFinancePeriodFields } from "./admin-finance-period-fields";
 
 export function AdminSubscriptionsPage({
   data,
@@ -37,9 +39,18 @@ export function AdminSubscriptionsPage({
               {data.description}
             </p>
           </div>
-          <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
-            Atualizado em {formatDateTime(data.generatedAt)}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary shadow-[0_18px_45px_rgba(20,16,90,0.08)] transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+              href={buildFinanceExportHref(data) as Route<string>}
+            >
+              <Download aria-hidden="true" className="size-4" />
+              Baixar relatório
+            </Link>
+            <p className="w-fit rounded-[18px] border border-brand-lavender/70 bg-white px-4 py-3 text-sm font-bold text-tesText-secondary shadow-[0_18px_45px_rgba(20,16,90,0.08)]">
+              Atualizado em {formatDateTime(data.generatedAt)}
+            </p>
+          </div>
         </header>
 
         <section
@@ -87,10 +98,10 @@ function SubscriptionFilters({ data }: { data: AdminFinancePageData }) {
   return (
     <form
       action={data.listHref}
-      className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_165px_165px_165px_auto]"
+      className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6"
       method="get"
     >
-      <label className="relative block">
+      <label className="relative block xl:col-span-2">
         <span className="sr-only">Buscar por profissional</span>
         <Search
           aria-hidden="true"
@@ -116,13 +127,11 @@ function SubscriptionFilters({ data }: { data: AdminFinancePageData }) {
         options={data.filterOptions.status}
         value={data.query.status}
       />
-      <FilterSelect
-        label="Período"
-        name="period"
+      <AdminFinancePeriodFields
         options={data.filterOptions.period ?? []}
-        value={data.query.period ?? "30d"}
+        query={data.query}
       />
-      <div className="flex gap-2">
+      <div className="flex gap-2 md:col-span-2 xl:col-span-1">
         <input name="pageSize" type="hidden" value={data.query.pageSize} />
         <button
           className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white shadow-card outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
@@ -388,8 +397,28 @@ function buildSubscriptionHref(data: AdminFinancePageData, page: number) {
   if (data.query.plan) params.set("plan", data.query.plan);
   if (data.query.status) params.set("status", data.query.status);
   if (data.query.period) params.set("period", data.query.period);
+  if (data.query.period === "custom" && data.query.start && data.query.end) {
+    params.set("start", data.query.start);
+    params.set("end", data.query.end);
+  }
   if (data.query.sort) params.set("sort", data.query.sort);
   return `${data.listHref}?${params.toString()}`;
+}
+
+function buildFinanceExportHref(data: AdminFinancePageData) {
+  const params = new URLSearchParams({ module: "subscriptions" });
+
+  if (data.query.search) params.set("q", data.query.search);
+  if (data.query.plan) params.set("plan", data.query.plan);
+  if (data.query.status) params.set("status", data.query.status);
+  if (data.query.sort) params.set("sort", data.query.sort);
+  if (data.query.period) params.set("period", data.query.period);
+  if (data.query.period === "custom" && data.query.start && data.query.end) {
+    params.set("start", data.query.start);
+    params.set("end", data.query.end);
+  }
+
+  return `/api/admin/finance/export?${params.toString()}`;
 }
 
 function StateMessage({ text, title }: { text: string; title: string }) {

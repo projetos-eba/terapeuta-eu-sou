@@ -15,12 +15,12 @@ import {
   mapAdminFinanceDetail,
   mapAdminFinanceRows,
 } from "./admin-finance.mappers";
+import { resolveAdminFinanceDateRange } from "./admin-finance-date-range";
 import type {
   AdminFinanceDetailPageResult,
   AdminFinanceListQuery,
   AdminFinanceMetric,
   AdminFinanceModuleKey,
-  AdminFinancePeriod,
   AdminFinancePageData,
   AdminFinancePageResult,
 } from "./admin-finance.types";
@@ -38,6 +38,7 @@ const PAYMENT_PERIOD_OPTIONS: AdminListOption[] = [
   option("7d", "Últimos 7 dias"),
   option("30d", "Últimos 30 dias"),
   option("90d", "Últimos 90 dias"),
+  option("custom", "Período personalizado"),
 ];
 
 const SUBSCRIPTION_PLAN_OPTIONS: AdminListOption[] = [
@@ -541,7 +542,11 @@ async function fetchAdminFinanceReadModel({
 }): Promise<AdminFinanceReadResult> {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_finance_module_v2`,
+      `${config.url}/rest/v1/rpc/${
+        query.period === "custom"
+          ? "admin_get_finance_module_range_v1"
+          : "admin_get_finance_module_v2"
+      }`,
       {
         body: JSON.stringify({
           p_module: module,
@@ -724,9 +729,11 @@ function parseFinanceListQuery({
 
   if (module !== "payments" && module !== "subscriptions") return baseQuery;
 
-  const rawPeriod = firstSearchParam(searchParams?.period);
-  const period: AdminFinancePeriod =
-    rawPeriod === "7d" || rawPeriod === "90d" ? rawPeriod : "30d";
+  const dateRange = resolveAdminFinanceDateRange(
+    firstSearchParam(searchParams?.period),
+    firstSearchParam(searchParams?.start),
+    firstSearchParam(searchParams?.end),
+  );
 
   if (module === "subscriptions") {
     const rawPlan = firstSearchParam(searchParams?.plan);
@@ -735,10 +742,10 @@ function parseFinanceListQuery({
         ? rawPlan
         : undefined;
 
-    return { ...baseQuery, period, plan };
+    return { ...baseQuery, ...dateRange, plan };
   }
 
-  return { ...baseQuery, period };
+  return { ...baseQuery, ...dateRange };
 }
 
 function toFinanceRpcQuery({
@@ -755,8 +762,10 @@ function toFinanceRpcQuery({
       module === "payments" || module === "subscriptions"
         ? (query.period ?? "30d")
         : undefined,
+    end: query.period === "custom" ? query.end : undefined,
     plan: module === "subscriptions" ? query.plan : undefined,
     search: query.search || undefined,
+    start: query.period === "custom" ? query.start : undefined,
     sort: query.sort || undefined,
     status: query.status || undefined,
   };

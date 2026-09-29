@@ -281,12 +281,14 @@ export type TherapistAdvancedFinancialDashboard = {
     availableMinutes: number;
     capacityMinutes: number;
     committedMinutes: number;
+    reservedMinutes: number;
+    reservedSessionCount: number;
     confidence: AdvancedFinancialConfidence;
     conservativePotentialCents: number;
     estimatedBookableSlots: number;
     expectedPotentialCents: number;
     maximumPotentialCents: number;
-    methodologyVersion: "tes-agenda-potential-v1";
+    methodologyVersion: "tes-agenda-potential-v1" | "tes-agenda-potential-v2";
     occupancyRate: number | null;
     reason: string | null;
     status: AdvancedFinancialAvailabilityStatus;
@@ -318,7 +320,7 @@ export type TherapistAdvancedFinancialDashboard = {
     sampleSize: number | null;
     status: "available" | "disabled" | "insufficient_sample" | "not_comparable";
   };
-  contractVersion: 2;
+  contractVersion: 2 | 3;
   financialEvolution: Array<{
     contractedNetCents: number;
     periodEnd: string;
