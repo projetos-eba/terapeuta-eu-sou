@@ -281,60 +281,11 @@ grant execute on function public.private_therapist_future_agenda_summary_v1(uuid
 comment on function public.private_therapist_future_agenda_summary_v1(uuid, text) is
   'Service-only 30-local-day aggregate shared by therapist finance and metrics. It exposes no booking or patient details.';
 
--- Keep v2's existing 90-day callers compatible and correct the narrower
--- dashboard route that already promises 30 or 60 complete historical days.
-do $migration$
-declare
-  v_definition text;
-  v_updated_definition text;
-begin
-  select pg_catalog.pg_get_functiondef(
-    'public.get_therapist_occupancy_metrics_v2(uuid,text,integer)'::regprocedure
-  ) into v_definition;
-
-  v_updated_definition := pg_catalog.regexp_replace(
-    v_definition,
-    'p_period_days[[:space:]]+not[[:space:]]+in[[:space:]]+[(]30,[[:space:]]*90[)]',
-    'p_period_days not in (30, 60, 90)',
-    'g'
-  );
-
-  if v_updated_definition = v_definition then
-    raise exception 'THERAPIST_METRICS_OCCUPANCY_V2_DEFINITION_DRIFT'
-      using errcode = 'P0001';
-  end if;
-
-  execute v_updated_definition;
-end;
-$migration$;
-
--- Dashboard v3 delegates to dashboard v2 before replacing only its discovery
--- metadata. Keep v2 backward-compatible at 90 days while accepting the 60-day
--- period already promised by the v3/v4 route.
-do $migration$
-declare
-  v_definition text;
-  v_updated_definition text;
-begin
-  select pg_catalog.pg_get_functiondef(
-    'public.get_therapist_metrics_dashboard_v2(integer)'::regprocedure
-  ) into v_definition;
-
-  v_updated_definition := pg_catalog.regexp_replace(
-    v_definition,
-    'p_period_days[[:space:]]+not[[:space:]]+in[[:space:]]+[(]30,[[:space:]]*90[)]',
-    'p_period_days not in (30, 60, 90)',
-    'g'
-  );
-
-  if v_updated_definition = v_definition then
-    raise exception 'THERAPIST_METRICS_DASHBOARD_V2_DEFINITION_DRIFT'
-      using errcode = 'P0001';
-  end if;
-
-  execute v_updated_definition;
-end;
-$migration$;
+-- Historical V2 contracts already accept 30, 60, 90 and 120 days through
+-- 20260822153000_wave2_match_themes_and_metrics_periods.sql. V3 and V4
+-- intentionally narrow only their own public dashboard route to 30 or 60
+-- complete days. Do not rewrite versioned function definitions here: doing so
+-- is fragile across valid prior migrations and would regress 120-day callers.
 
 create or replace function public.get_private_therapist_advanced_financial_dashboard_v3(
   p_period_start date default null,
