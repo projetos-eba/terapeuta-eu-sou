@@ -72,16 +72,14 @@ export function FinancialAdvancedDashboard({
           }
         />
         <AdvancedMetricCard
-          description="Estimativa baseada nos horários disponíveis e nos valores atuais das suas terapias. Não representa receita garantida."
-          label="Potencial disponível da agenda"
+          description="Estimativa baseada nos horários livres dos próximos 30 dias e nos valores atuais das suas terapias. Não representa receita garantida."
+          label="Potencial da agenda — 30 dias"
           muted={
             !forecastReady || dashboard.agendaPotential.status !== "available"
           }
           value={
-            forecastReady
-              ? formatCurrency(
-                  dashboard.forecast.estimatedOpenAgendaPotentialCents,
-                )
+            forecastReady && dashboard.agendaPotential.status === "available"
+              ? formatCurrency(dashboard.agendaPotential.expectedPotentialCents)
               : "-"
           }
         />
@@ -255,15 +253,14 @@ function AgendaPotentialCard({
           </span>
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              Ocupação e potencial da agenda
+              Agenda e potencial — Próximos 30 dias
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Esta leitura aparece assim que houver histórico suficiente da sua
-              agenda.
+              Configure horários disponíveis para acompanhar a ocupação futura.
             </p>
           </div>
         </div>
-        <EmptyAdvancedState message="Ainda não há base suficiente para apresentar a ocupação com segurança." />
+        <EmptyAdvancedState message="Ainda não há horários disponíveis nos próximos 30 dias." />
       </div>
     );
   }
@@ -286,7 +283,7 @@ function AgendaPotentialCard({
         </span>
         <div>
           <h2 className="text-xl font-extrabold text-brand-deep">
-            Ocupação e potencial da agenda
+            Agenda e potencial — Próximos 30 dias
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
             Janela: {formatDate(potential.windowStart)} a{" "}
@@ -301,7 +298,7 @@ function AgendaPotentialCard({
           value={formatPercent(potential.occupancyRate)}
         />
         <MiniStat
-          label="Horários disponíveis estimados"
+          label="Horários livres estimados"
           value={formatInteger(potential.estimatedBookableSlots)}
         />
         <MiniStat
@@ -312,12 +309,12 @@ function AgendaPotentialCard({
 
       <div className="grid gap-3 rounded-card border border-brand-lavender bg-surface-soft p-4">
         <ProgressLine
-          label="Já comprometido"
+          label="Horas reservadas"
           percent={committedPercent}
-          value={`${formatInteger(potential.committedMinutes)} min`}
+          value={`${formatInteger(potential.reservedMinutes)} min`}
         />
         <ProgressLine
-          label="Potencial disponível"
+          label="Horas livres"
           percent={availablePercent}
           value={`${formatInteger(potential.availableMinutes)} min`}
         />

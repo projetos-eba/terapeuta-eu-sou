@@ -48,7 +48,13 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
       field("Perfil público", asText(row.public_status)),
       field("Publicado", asBooleanLabel(row.is_public)),
       field("Reservas", asBooleanLabel(row.is_accepting_bookings)),
-      field("Publicação", publicationLabel(row.publication_eligibility)),
+      field(
+        "Publicação",
+        publicationLabel(
+          row.publication_eligibility,
+          verificationStatus || asText(row.status),
+        ),
+      ),
       field(
         "Pendências de publicação",
         publicationBlockers(row.publication_blockers),
@@ -72,7 +78,7 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `verification-${index}`;
   const professionalId = asText(row.therapist_profile_id);
   const status = asText(row.status);
-  const publication = publicationLabel(row.publication_eligibility);
+  const publication = publicationLabel(row.publication_eligibility, status);
 
   return {
     avatarUrl: asText(row.therapist_photo_url) || undefined,
@@ -250,6 +256,10 @@ export function mapAdminOperationDetail({
         : undefined,
     relatedVerificationId,
     canApprove: canApproveVerification(record),
+    approvalGuidance:
+      module === "verifications"
+        ? verificationApprovalGuidance(record.publication_eligibility)
+        : undefined,
     canPublish: canPublishAdministratively(record),
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
@@ -452,7 +462,10 @@ function getDetailSections(
         ),
         field(
           "Elegibilidade pública",
-          publicationLabel(record.publication_eligibility),
+          publicationLabel(
+            record.publication_eligibility,
+            asText(record.verification_status) || asText(record.status),
+          ),
         ),
         field(
           "Bloqueadores reais",
@@ -607,7 +620,7 @@ function getDetailSections(
       field("Estado administrativo do perfil", asText(record.profile_status)),
       field(
         "Elegibilidade pública",
-        publicationLabel(record.publication_eligibility),
+        publicationLabel(record.publication_eligibility, asText(record.status)),
       ),
       field(
         "Bloqueadores reais",
@@ -671,7 +684,7 @@ function canPublishAdministratively(record: UnknownRecord) {
 
 function canApproveVerification(record: UnknownRecord) {
   const eligibility = asRecordOrNull(record.publication_eligibility);
-  if (!eligibility) return true;
+  if (!eligibility) return false;
 
   const blockers = Array.isArray(eligibility.blockers)
     ? eligibility.blockers.filter(
@@ -684,6 +697,33 @@ function canApproveVerification(record: UnknownRecord) {
       blocker === "profile_incomplete" ||
       blocker === "no_active_availability",
   );
+}
+
+function verificationApprovalGuidance(value: unknown) {
+  const eligibility = asRecordOrNull(value);
+  if (!eligibility) {
+    return {
+      blockers: [
+        "Não foi possível confirmar os requisitos do cadastro agora. Atualize a página antes de aprovar.",
+      ],
+      incompleteProfileItems: [],
+    };
+  }
+
+  const blockers = Array.isArray(eligibility.blockers)
+    ? eligibility.blockers.filter(
+        (blocker): blocker is string =>
+          blocker === "profile_incomplete" ||
+          blocker === "no_active_availability",
+      )
+    : [];
+
+  if (blockers.length === 0) return undefined;
+
+  return {
+    blockers: blockers.map(publicationBlockerLabel),
+    incompleteProfileItems: incompleteProfileItemLabels(eligibility),
+  };
 }
 
 function asRecordOrNull(value: unknown): UnknownRecord | null {
@@ -715,11 +755,13 @@ function asBooleanLabel(value: unknown) {
   return "";
 }
 
-function publicationLabel(value: unknown) {
+function publicationLabel(value: unknown, verificationStatus = "") {
   if (!isRecord(value)) return "";
-  return value.eligible === true
-    ? "Publicado e elegível"
-    : "Aprovado · falta publicar";
+  if (value.eligible === true) return "Publicado e elegível";
+
+  return verificationStatus === "approved"
+    ? "Aprovado · falta publicar"
+    : "Aguardando aprovação";
 }
 
 function verificationStatusLabel(status: string, publication: string) {
@@ -741,17 +783,44 @@ function verificationPendingLabel(status: string, blockers: unknown) {
   if (status === "rejected") return "Cadastro não aprovado";
   if (status === "approved") return publicationPending;
 
+  if (status === "in_review") {
+    return publicationPending
+      ? `Antes da aprovação · ${publicationPending}`
+      : "";
+  }
+
   return "";
 }
 
 function publicationBlockers(value: unknown) {
   if (!Array.isArray(value)) return "";
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map(publicationBlockerLabel)
+    .join(" · ");
+}
+
+function incompleteProfileItems(value: unknown) {
+  const eligibility = asRecordOrNull(value);
+  return incompleteProfileItemLabels(eligibility).join(" · ");
+}
+
+function incompleteProfileItemLabels(value: UnknownRecord | null) {
+  if (!Array.isArray(value?.incompleteItems)) return [];
+
+  return value.incompleteItems
+    .filter(isRecord)
+    .map((item) => asText(item.label))
+    .filter(Boolean);
+}
+
+function publicationBlockerLabel(blocker: string) {
   const labels: Record<string, string> = {
-    no_active_availability: "nenhum horário disponível",
+    no_active_availability: "nenhum horário recorrente disponível",
     no_active_bookable_online_service: "nenhum serviço publicável",
     not_accepting_bookings: "não aceita novos agendamentos",
     online_sessions_disabled: "atendimento online desativado",
-    profile_incomplete: "perfil ainda não está 100% completo",
+    profile_incomplete: "perfil público ainda não está completo",
     profile_not_approved: "cadastro ainda não aprovado",
     profile_not_public: "perfil público desativado",
     receiving_account_not_ready: "conta de recebimento ainda não está pronta",
@@ -759,21 +828,8 @@ function publicationBlockers(value: unknown) {
     therapy_not_public: "terapia não publicada ou não visível",
     therapy_without_active_theme: "terapia sem tema ativo",
   };
-  return value
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => labels[item] ?? item)
-    .join(" · ");
-}
 
-function incompleteProfileItems(value: unknown) {
-  const eligibility = asRecordOrNull(value);
-  if (!Array.isArray(eligibility?.incompleteItems)) return "";
-
-  return eligibility.incompleteItems
-    .filter(isRecord)
-    .map((item) => asText(item.label))
-    .filter(Boolean)
-    .join(" · ");
+  return labels[blocker] ?? "pendência de cadastro";
 }
 
 function formatMinutes(value: unknown) {

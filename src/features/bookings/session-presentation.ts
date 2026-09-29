@@ -544,8 +544,8 @@ export function getTherapistSessionCancellationNotice(
     case BookingStatus.CancelledByAdmin:
       return {
         description:
-          "A administração cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
-        summary: "Cancelada pela administração",
+          "A plataforma cancelou esta sessão. Se tiver dúvidas, fale com o Suporte TES.",
+        summary: "Cancelada pela plataforma",
       };
     case BookingStatus.CancelledByPayment:
       return {

@@ -75,7 +75,7 @@ export async function queryTherapistMetricsDashboard(
   if (!config) throw new TherapistMetricsError("unavailable");
 
   const response = await fetch(
-    `${config.url}/rest/v1/rpc/get_therapist_metrics_dashboard_v3`,
+    `${config.url}/rest/v1/rpc/get_therapist_metrics_dashboard_v4`,
     {
       body: JSON.stringify({ p_period_days: periodDays }),
       cache: "no-store",

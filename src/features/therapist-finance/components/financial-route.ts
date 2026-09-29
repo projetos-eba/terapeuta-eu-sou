@@ -63,3 +63,26 @@ export function buildFinanceHref({
     ? `${routes.therapist.finance}?${query}`
     : routes.therapist.finance;
 }
+
+export function buildFinanceExportHref({
+  dateRange,
+  filters,
+}: {
+  dateRange: { end: string; key: TherapistFinancePeriodKey; start: string };
+  filters: Partial<TherapistFinanceFilters>;
+}) {
+  const params = new URLSearchParams({ period: dateRange.key });
+
+  if (dateRange.key === "custom") {
+    params.set("start", dateRange.start);
+    params.set("end", dateRange.end);
+  }
+  if (filters.status) params.set("status", filters.status);
+  if (filters.agendaDays && filters.agendaDays !== 15) {
+    params.set("agendaDays", String(filters.agendaDays));
+  }
+  if (filters.therapyId) params.set("therapyId", filters.therapyId);
+  if (filters.search) params.set("q", filters.search);
+
+  return `/api/therapist/finance/export?${params.toString()}`;
+}

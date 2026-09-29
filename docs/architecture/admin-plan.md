@@ -2442,6 +2442,22 @@ Resultados:
 - Relatorios/exportacoes seguem ocultos/pendentes de backend server-side
   auditado, limites e protecao contra CSV injection.
 
+## Evolução de relatórios financeiros — 2026-09-29
+
+Pagamentos e Assinaturas passaram a oferecer download CSV server-side, sempre
+com a mesma permissão de leitura da tela e sem expor identificadores do
+provedor, metadados, URLs externas ou dados bancários. Os arquivos usam UTF-8
+com BOM e separador `;`, em seções legíveis para Excel e Google Sheets.
+
+O Admin mantém os filtros rápidos de 7, 30 e 90 dias em
+`admin_get_finance_module_v2`. O intervalo personalizado usa apenas a função
+aditiva `admin_get_finance_module_range_v1`, exigindo início e fim, limitado a
+um ano civil e encerrado na data local de `America/Sao_Paulo`. A função mantém
+autorização administrativa, filtros, paginação e o DTO sanitizado; ela não
+altera pagamentos, reembolsos, assinaturas, repasses ou ledger.
+
+Impacto documental: Documentação atualizada.
+
 Impacto documental: Documentacao atualizada.
 
 ## Execucao da Fase 5 - 2026-08-08

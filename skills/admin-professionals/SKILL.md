@@ -82,11 +82,16 @@ três switches que o próprio comando ativa (`public_status`, `is_public` e
 na mesma transação. Qualquer outro blocker mantém “Aprovado · publicação
 pendente” e impede a ação.
 
-O Admin não aprova verificação abaixo de 100%. A remoção da última
-disponibilidade de um perfil público cria revisão `availability_removed`,
-exibida como “Agenda sem horários”. Adicionar horários remove o bloqueio de
-completude, mas a publicação só volta após nova aprovação autoritativa; reservas
-existentes permanecem intactas.
+O Admin não aprova verificação abaixo de 100% nem sem ao menos uma regra de
+disponibilidade recorrente ativa. O banco revalida esses dois critérios antes
+de alterar a verificação; uma tentativa bloqueada não cria aprovação nem evento
+de auditoria. A interface mantém o botão de aprovação visível, explica as
+pendências em linguagem de produto e deixa `Solicitar ajustes` disponível com
+motivo de 8 a 1.000 caracteres. A fila também mostra as pendências enquanto a
+análise está em andamento. A remoção da última disponibilidade de um perfil
+público cria revisão `availability_removed`, exibida como “Agenda sem horários”.
+Adicionar horários remove o bloqueio de completude, mas a publicação só volta
+após nova aprovação autoritativa; reservas existentes permanecem intactas.
 
 ## Navegação correlacionada
 

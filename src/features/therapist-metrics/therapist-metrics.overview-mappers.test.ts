@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { TherapistMetricsError } from "./therapist-metrics.errors";
+import { buildTherapistMetricsCsv } from "./therapist-metrics.export";
 import { mapTherapistMetricsOverview } from "./therapist-metrics.mappers";
 
 describe("therapist metrics overview mapper", () => {
@@ -97,6 +98,30 @@ describe("therapist metrics overview mapper", () => {
     invalidDate.activity.points[0].date = "2026-07-28T00:00:00Z";
     expect(() => mapTherapistMetricsOverview(invalidDate)).toThrow(
       TherapistMetricsError,
+    );
+  });
+
+  it("exports the overview as a spreadsheet-friendly report without internal metadata", () => {
+    const csv = buildTherapistMetricsCsv({
+      data: mapTherapistMetricsOverview(rawOverview()),
+      generatedAt: new Date("2026-07-28T16:00:00.000Z"),
+      tab: "overview",
+    });
+
+    expect(csv.startsWith("\ufeffRelatório de métricas\r\n")).toBe(true);
+    expect(csv).toContain("Resumo das métricas\r\nMétrica;Valor;Situação");
+    expect(csv).toContain("Pessoas atendidas;7;Disponível");
+    expect(csv).toContain("Sessões realizadas;7;Disponível");
+    expect(csv).toContain("Minutos de atendimento;380;Disponível");
+    expect(csv).toContain("Atividade diária");
+    expect(csv).toContain(
+      "27/07/2026;1;Sem dados suficientes;Sem dados suficientes;Com sessões realizadas",
+    );
+    expect(csv).toContain("Indicadores complementares");
+    expect(csv).toContain("Visualizações do perfil;Sem dados suficientes");
+    expect(csv).toContain("Terapias mais realizadas");
+    expect(csv).not.toMatch(
+      /section;key;label|report_tab|period_days|fresh_through|metric_definition_version|contract_version|privacy_activation_pending/i,
     );
   });
 });

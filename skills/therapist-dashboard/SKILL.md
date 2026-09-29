@@ -127,10 +127,13 @@ Não distribuir queries pelos componentes. A entrada única da página é
   Depois que o onboarding for submetido, a análise externa pode ser exibida
   como estado do cadastro; isso não deve ser confundido com a aprovação
   administrativa do perfil.
-- A aprovação administrativa não compõe a pendência do percentual de cadastro:
-  `submitted` e `in_review` deixam o item de perfil completo, mas visivelmente
-  em análise. `changes_requested` e `rejected` voltam a ser pendência em estado
-  de atenção, e o link do perfil deve permitir ler a justificativa recebida.
+- A aprovação administrativa não compõe a pendência do percentual de cadastro,
+  mas `submitted` e `in_review` só deixam o item de perfil concluído quando a
+  completude canônica já estiver em 100%. Se faltar item do perfil público, o
+  checklist permanece em atenção, nomeia as pendências reais e leva diretamente
+  à edição; o estado de análise não pode mascarar conteúdo incompleto.
+  `changes_requested` e `rejected` também permanecem pendências em estado de
+  atenção, e o link do perfil deve permitir ler a justificativa recebida.
 - Free/Premium com checklist essencial concluído recebem dashboard base com
   estados vazios úteis; não consultar o read model Premium Plus para esses
   planos.

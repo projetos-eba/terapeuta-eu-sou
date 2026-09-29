@@ -13,7 +13,7 @@ export async function queryTherapistAgenda(input: {
   const config = getSupabaseServerRestConfig(input.accessToken);
   if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
 
-  return supabaseServerRestRpc<unknown>(config, "get_therapist_agenda_v1", {
+  return supabaseServerRestRpc<unknown>(config, "get_therapist_agenda_v2", {
     p_range_end: input.rangeEnd ?? null,
     p_range_start: input.rangeStart ?? null,
   });

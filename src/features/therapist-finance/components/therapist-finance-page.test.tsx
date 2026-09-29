@@ -217,7 +217,9 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Agenda e potencial" }),
+      screen.getByRole("heading", {
+        name: "Agenda e potencial — Próximos 30 dias",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Terapias com maior receita" }),
@@ -258,7 +260,7 @@ describe("TherapistFinancePage", () => {
       capacityMinutes: 0,
       committedMinutes: 0,
       occupancyRate: null,
-      reason: "no_availability_rules",
+      reason: "no_availability",
       status: "insufficient_data",
     };
 
@@ -276,7 +278,9 @@ describe("TherapistFinancePage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Receita prevista do mês")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Agenda e potencial" }),
+      screen.getByRole("heading", {
+        name: "Agenda e potencial — Próximos 30 dias",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Aguardando base suficiente"),
@@ -1216,12 +1220,14 @@ function advancedFixture(): TherapistAdvancedFinancialDashboard {
       availableMinutes: 420,
       capacityMinutes: 720,
       committedMinutes: 180,
+      reservedMinutes: 180,
+      reservedSessionCount: 3,
       confidence: "medium",
       conservativePotentialCents: 48000,
       estimatedBookableSlots: 6,
       expectedPotentialCents: 60000,
       maximumPotentialCents: 72000,
-      methodologyVersion: "tes-agenda-potential-v1",
+      methodologyVersion: "tes-agenda-potential-v2",
       occupancyRate: 25,
       reason: null,
       status: "available",
@@ -1253,7 +1259,7 @@ function advancedFixture(): TherapistAdvancedFinancialDashboard {
       sampleSize: null,
       status: "insufficient_sample",
     },
-    contractVersion: 2,
+    contractVersion: 3,
     financialEvolution: [
       {
         contractedNetCents: 8000,

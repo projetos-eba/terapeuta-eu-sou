@@ -181,9 +181,72 @@ describe("admin operation mappers", () => {
         { label: "Data de cadastro", value: "12/09/2026" },
         {
           label: "Pendência",
-          value: "Ajustes solicitados · perfil ainda não está 100% completo",
+          value: "Ajustes solicitados · perfil público ainda não está completo",
         },
       ]),
+    );
+  });
+
+  it("shows approval pendencies while a verification is in review", () => {
+    const [row] = mapAdminOperationRows({
+      module: "verifications",
+      rows: [
+        {
+          id: "verification-approval-pending",
+          publication_blockers: ["profile_incomplete", "no_active_availability"],
+          publication_eligibility: {
+            blockers: ["profile_incomplete", "no_active_availability"],
+            eligible: false,
+            incompleteItems: [{ label: "Foto de perfil" }],
+          },
+          status: "in_review",
+          therapist_name: "Ana Oliveira",
+          therapist_profile_id: "therapist-approval-pending",
+        },
+      ],
+    });
+
+    expect(row?.statusLabel).toBe("in_review");
+    expect(row?.fields).toContainEqual({
+      label: "Pendência",
+      value:
+        "Antes da aprovação · perfil público ainda não está completo · nenhum horário recorrente disponível",
+    });
+  });
+
+  it("provides safe, actionable approval guidance without marking review as approved", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T10:00:00.000Z",
+      module: "verifications",
+      record: {
+        id: "verification-approval-pending",
+        publication_blockers: ["profile_incomplete", "no_active_availability"],
+        publication_eligibility: {
+          blockers: ["profile_incomplete", "no_active_availability"],
+          eligible: false,
+          incompleteItems: [{ label: "Foto de perfil" }],
+        },
+        status: "in_review",
+        therapist_name: "Ana Oliveira",
+      },
+    });
+
+    expect(detail.canApprove).toBe(false);
+    expect(detail.approvalGuidance).toEqual({
+      blockers: [
+        "perfil público ainda não está completo",
+        "nenhum horário recorrente disponível",
+      ],
+      incompleteProfileItems: ["Foto de perfil"],
+    });
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "Elegibilidade pública", value: "Aguardando aprovação" },
+        ]),
+        title: "Verificação",
+      }),
     );
   });
 

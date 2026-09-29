@@ -107,6 +107,7 @@ export function parseTherapistAgendaReadModel(
           isAvailable: requiredBoolean(exception.isAvailable),
           serviceId: nullableString(exception.serviceId),
           startsAt: requiredString(exception.startsAt),
+          status: requiredAvailabilityExceptionStatus(exception.status),
         };
       }),
       rules: requiredArray(availability.rules).map((item) => {
@@ -340,6 +341,11 @@ function nullableBoolean(value: unknown): boolean | null {
 function requiredTrue(value: unknown): true {
   if (value !== true) throw new SessionReadModelContractError();
   return true;
+}
+
+function requiredAvailabilityExceptionStatus(value: unknown): "active" {
+  if (value !== "active") throw new SessionReadModelContractError();
+  return "active";
 }
 
 function version(value: unknown): 1 {

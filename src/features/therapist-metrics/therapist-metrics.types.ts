@@ -413,14 +413,27 @@ export type TherapistMetricsOccupancy =
     };
 
 export type TherapistMetricsDashboard = {
-  contractVersion: 2 | 3;
+  contractVersion: 2 | 3 | 4;
+  futureAgenda?: TherapistFutureAgenda;
   interest: TherapistInterestMetrics;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 2 | 3;
+  metricDefinitionVersion: 2 | 3 | 4;
   occupancy: TherapistMetricsOccupancy;
   overview: TherapistMetricsOverview;
   sessions: TherapistSessionMetrics;
   therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistFutureAgenda = {
+  availableMinutes: number;
+  capacityMinutes: number;
+  occupancyRate: number | null;
+  reason: "no_active_services" | "no_availability" | null;
+  reservedMinutes: number;
+  reservedSessionCount: number;
+  status: "available" | "insufficient_data" | "unavailable";
+  windowEnd: string;
+  windowStart: string;
 };
 
 export type TherapistMetricsDashboardView = TherapistMetricsDashboard & {

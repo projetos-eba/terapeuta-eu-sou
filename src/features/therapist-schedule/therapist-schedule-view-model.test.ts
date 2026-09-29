@@ -108,6 +108,29 @@ describe("therapist schedule view model", () => {
     ]);
   });
 
+  it("does not surface a cancelled exception after the agenda refreshes", () => {
+    const agenda = agendaFixture();
+    agenda.availability.exceptions.push(
+      {
+        ...agenda.availability.exceptions[0]!,
+        endsAt: "2026-08-17T14:00:00.000Z",
+        id: "f1000000-0000-4000-8000-000000000002",
+        startsAt: "2026-08-17T12:00:00.000Z",
+        status: "cancelled",
+      } as unknown as TherapistAgendaReadModel["availability"]["exceptions"][number],
+    );
+
+    const exceptions = buildUpcomingExceptions({
+      agenda,
+      referenceNow: "2026-08-15T12:00:00.000Z",
+      scope: serviceId,
+      timezone: "America/Sao_Paulo",
+    });
+
+    expect(exceptions).toHaveLength(1);
+    expect(exceptions[0]?.dateLabel).toBe("16/08");
+  });
+
   it("detects overlapping active ranges in the same effective availability", () => {
     expect(
       hasOverlappingAvailabilityRules([
@@ -199,6 +222,7 @@ function agendaFixture(): TherapistAgendaReadModel {
           isAvailable: false,
           serviceId: null,
           startsAt: "2026-08-16T12:00:00.000Z",
+          status: "active",
         },
       ],
       rules: [],

@@ -219,6 +219,47 @@ describe("admin operation command route", () => {
     );
   });
 
+  it.each([
+    [
+      "THERAPIST_PROFILE_INCOMPLETE",
+      "O perfil público ainda não está completo. Atualize a página e revise as pendências antes de aprovar.",
+    ],
+    [
+      "THERAPIST_ACTIVE_AVAILABILITY_REQUIRED",
+      "É necessário manter ao menos um horário recorrente disponível antes de aprovar.",
+    ],
+  ])(
+    "returns a safe approval message when the database rejects %s",
+    async (databaseMessage, expectedMessage) => {
+      sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
+        permissions: ["admin.professionals.verify"],
+        role: "admin",
+      });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () =>
+          jsonResponse({ message: databaseMessage }, { status: 422 }),
+        ),
+      );
+
+      const response = await POST(
+        makeJsonRequest({
+          action: "verification.approve",
+          entityId: "22222222-2222-4222-8222-222222222222",
+          reason: "Documentação validada pela operação.",
+          requestId: "verification-rejected-request",
+        }),
+      );
+      const payload = await response.json();
+
+      expect(response.status).toBe(422);
+      expect(payload).toEqual({
+        error: { message: expectedMessage },
+        ok: false,
+      });
+    },
+  );
+
   it("maps administrative publication to the verification capability", async () => {
     sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
       accessToken: "admin-token",
