@@ -345,6 +345,7 @@ function SessionOutcomeSummary({
       <div className="mt-5">
         <DistributionDonut
           centerLabel={`${total} ${total === 1 ? "sessão" : "sessões"}`}
+          compact
           empty={total === 0}
           emptyMessage="Ainda não há sessões no período selecionado."
           items={items}
