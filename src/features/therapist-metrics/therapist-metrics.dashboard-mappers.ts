@@ -36,6 +36,10 @@ export function mapTherapistMetricsDashboard(
       throw new Error("Invalid dashboard contract.");
     }
 
+    if (sessions.contractVersion !== 1) {
+      throw new Error("Invalid dashboard session contract.");
+    }
+
     return {
       contractVersion: value.contractVersion,
       futureAgenda:
