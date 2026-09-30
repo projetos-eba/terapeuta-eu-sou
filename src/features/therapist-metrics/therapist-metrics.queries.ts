@@ -104,7 +104,7 @@ export function queryTherapistSessionMetrics(
 ) {
   return queryTherapistMetricsDetail(
     accessToken,
-    "get_therapist_session_metrics_v1",
+    "get_therapist_session_metrics_v2",
     periodDays,
   );
 }
@@ -166,7 +166,7 @@ async function queryTherapistMetricsDetail(
   rpc:
     | "get_therapist_interest_metrics_v1"
     | "get_therapist_session_evolution_comparison_v1"
-    | "get_therapist_session_metrics_v1",
+    | "get_therapist_session_metrics_v2",
   periodDays: 30 | 60,
 ) {
   const config = getSupabasePublicConfig();

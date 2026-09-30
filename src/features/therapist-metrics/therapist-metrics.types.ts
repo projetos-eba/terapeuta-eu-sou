@@ -175,6 +175,7 @@ export type TherapistSessionEvolutionPoint = {
   sessionsCancelled: number;
   sessionsCompleted: number;
   sessionsRescheduled: number;
+  sessionsScheduled: number;
 };
 
 export type TherapistSessionOutcomeKey =
@@ -192,7 +193,7 @@ export type TherapistSessionMetrics = {
     reason: "cancellation_taxonomy_not_versioned";
     status: "unavailable";
   };
-  contractVersion: 1;
+  contractVersion: 2;
   evolution: {
     points: TherapistSessionEvolutionPoint[];
     status: "empty" | "ready";
@@ -249,10 +250,6 @@ export type TherapistSessionEvolutionComparison = {
   }>;
   status: "empty" | "ready";
   therapist: TherapistMetricsFoundation["therapist"];
-};
-
-export type TherapistSessionMetricsView = TherapistSessionMetrics & {
-  evolutionComparison: TherapistSessionEvolutionComparison;
 };
 
 export type TherapistInterestSegmentKey =
