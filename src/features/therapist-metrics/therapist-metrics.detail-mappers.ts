@@ -118,7 +118,7 @@ export function mapTherapistSessionMetrics(
         ),
         status: literal(cancellationReasons.status, "unavailable"),
       },
-      contractVersion: literal(value.contractVersion, 2),
+      contractVersion: oneOf(value.contractVersion, 1, 2),
       evolution: {
         points: array(evolution.points).map((point) => {
           const item = record(point);
@@ -128,7 +128,10 @@ export function mapTherapistSessionMetrics(
             sessionsCancelled: nonNegativeInteger(item.sessionsCancelled),
             sessionsCompleted: nonNegativeInteger(item.sessionsCompleted),
             sessionsRescheduled: nonNegativeInteger(item.sessionsRescheduled),
-            sessionsScheduled: nonNegativeInteger(item.sessionsScheduled),
+            sessionsScheduled:
+              value.contractVersion === 2
+                ? nonNegativeInteger(item.sessionsScheduled)
+                : undefined,
           };
         }),
         status: emptyOrReady(evolution.status),

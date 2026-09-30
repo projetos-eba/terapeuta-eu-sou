@@ -87,6 +87,18 @@ describe("therapist metric detail contracts", () => {
     );
   });
 
+  it("keeps the V1 session payload readable for the dashboard contract", () => {
+    const payload = sessionPayload();
+    payload.contractVersion = 1;
+    const evolution = payload.evolution as { points: Array<Record<string, unknown>> };
+    delete evolution.points[0].sessionsScheduled;
+
+    expect(mapTherapistSessionMetrics(payload)).toMatchObject({
+      contractVersion: 1,
+      evolution: { status: "ready" },
+    });
+  });
+
   it("combines absence classifications for the therapist chart and CSV", () => {
     const payload = sessionPayload();
     const distribution = payload.outcomeDistribution as {
