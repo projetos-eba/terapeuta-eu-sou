@@ -529,7 +529,7 @@ export function AdminTherapyEditor({
 
       <Section title="Governança">
         <Textarea
-          hint="Obrigatório para rastreabilidade administrativa."
+          hint="Obrigatório para rastreabilidade administrativa. Use pelo menos 12 caracteres."
           label="Motivo da alteração"
           name="reason"
           required

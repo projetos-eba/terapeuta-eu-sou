@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/publication-ready-local.inc
 
-select plan(15);
+select plan(27);
 
 select has_function(
   'public',
@@ -148,6 +148,149 @@ select is(
   (select is_public from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001'),
   false,
   'the first publication remains hidden until approval'
+);
+
+create temporary table submitted_review_snapshot as
+select id, submitted_at
+from public.therapist_verifications
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+select lives_ok(
+  $$select public.queue_therapist_profile_review_v1('c1000000-0000-4000-8000-000000000001')$$,
+  'queueing an already submitted verification is idempotent'
+);
+
+select is(
+  (
+    select verification.submitted_at
+    from public.therapist_verifications verification
+    where verification.therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  (select submitted_at from submitted_review_snapshot),
+  'queueing an already submitted verification preserves its metadata'
+);
+
+update public.therapist_verifications
+set status = 'in_review'
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+create temporary table active_review_snapshot as
+select id, submitted_at
+from public.therapist_verifications
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+select lives_ok(
+  $$
+    select public.save_therapist_profile_draft_v1(
+      'aaaaaaaa-0000-4000-8000-000000000001',
+      'b9800000-0000-4000-8000-000000000106',
+      (select profile_version from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001'),
+      jsonb_build_object(
+        'publicName', 'Ana Oliveira Durante Análise',
+        'shortIntro', 'Uma apresentação atualizada enquanto a análise está em andamento.',
+        'essenceBody', 'Cuidado online com presença, clareza e responsabilidade.',
+        'bio', 'Atendimento online com linguagem clara e responsável.',
+        'photoUrl', '/images/avatar-terapeuta.jpeg',
+        'guideItems', jsonb_build_array(jsonb_build_object('icon', 'sparkles', 'label', 'Escuta acolhedora')),
+        'reflections', '[]'::jsonb
+      )
+    )
+  $$,
+  'a profile under active review can save a new draft'
+);
+
+select lives_ok(
+  $$
+    select public.publish_therapist_profile_draft_v1(
+      'aaaaaaaa-0000-4000-8000-000000000001',
+      'b9800000-0000-4000-8000-000000000107',
+      (select profile_version from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001')
+    )
+  $$,
+  'a profile under active review can publish without regressing its verification'
+);
+
+select is(
+  (select status::text from public.therapist_verifications where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'),
+  'in_review',
+  'the active verification remains in review after publication'
+);
+
+select is(
+  (select count(*)::integer from public.therapist_verifications where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'),
+  1,
+  'publication during review does not create another verification'
+);
+
+select is(
+  (
+    select verification.submitted_at
+    from public.therapist_verifications verification
+    where verification.therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  (select submitted_at from active_review_snapshot),
+  'publication during review keeps the active verification metadata'
+);
+
+select ok(
+  (
+    select status = 'in_review'::public.therapist_status
+      and public_status = 'unpublished'
+      and not is_public
+      and not is_accepting_bookings
+      and public_name = 'Ana Oliveira Durante Análise'
+    from public.therapist_profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'the updated content remains hidden and unavailable for bookings during review'
+);
+
+update public.therapist_verifications
+set status = 'changes_requested',
+    changes_requested = 'Atualize a apresentação.'
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+select lives_ok(
+  $$select public.queue_therapist_profile_review_v1('c1000000-0000-4000-8000-000000000001')$$,
+  'a changes-requested verification can be resubmitted'
+);
+
+select ok(
+  (
+    select status = 'submitted'::public.therapist_status
+      and changes_requested is null
+      and rejection_reason is null
+      and reviewed_at is null
+    from public.therapist_verifications
+    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'resubmitting changes-requested verification clears its prior decision metadata'
+);
+
+update public.therapist_verifications
+set status = 'in_review'
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+update public.therapist_verifications
+set status = 'rejected',
+    rejection_reason = 'Envie informações atualizadas.'
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+select lives_ok(
+  $$select public.queue_therapist_profile_review_v1('c1000000-0000-4000-8000-000000000001')$$,
+  'a rejected verification can be resubmitted'
+);
+
+select ok(
+  (
+    select status = 'submitted'::public.therapist_status
+      and changes_requested is null
+      and rejection_reason is null
+      and reviewed_at is null
+    from public.therapist_verifications
+    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'resubmitting rejected verification clears its prior decision metadata'
 );
 
 update public.therapist_verifications
