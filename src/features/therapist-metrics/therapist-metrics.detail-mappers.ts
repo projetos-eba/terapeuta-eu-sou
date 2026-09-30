@@ -71,7 +71,7 @@ export function mapTherapistSessionEvolutionComparison(
     }
 
     return {
-      contractVersion: literal(value.contractVersion, 2),
+      contractVersion: literal(value.contractVersion, 1),
       meta,
       metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
       points,
@@ -118,7 +118,7 @@ export function mapTherapistSessionMetrics(
         ),
         status: literal(cancellationReasons.status, "unavailable"),
       },
-      contractVersion: literal(value.contractVersion, 1),
+      contractVersion: literal(value.contractVersion, 2),
       evolution: {
         points: array(evolution.points).map((point) => {
           const item = record(point);

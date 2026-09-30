@@ -106,12 +106,15 @@ export function MetricSparkline({
 }
 
 export function SessionsEvolutionChart({
+  completedLabel = "Sessões concluídas",
   currentPeriodLabel = "Período atual",
   empty = false,
   points,
   previousPeriodLabel = "Período anterior",
+  scheduledLabel = "Sessões agendadas",
   variant = "area",
 }: {
+  completedLabel?: string;
   currentPeriodLabel?: string;
   empty?: boolean;
   points: Array<{
@@ -119,8 +122,10 @@ export function SessionsEvolutionChart({
     previousDate?: string;
     previous?: number;
     sessionsCompleted: number;
+    sessionsScheduled?: number;
   }>;
   previousPeriodLabel?: string;
+  scheduledLabel?: string;
   variant?: "area" | "columns";
 }) {
   const visualPoints =
@@ -128,10 +133,16 @@ export function SessionsEvolutionChart({
       ? Array.from({ length: 7 }, (_, index) => ({
           date: `referência-${index + 1}`,
           sessionsCompleted: 0,
+          sessionsScheduled: 0,
         }))
       : points;
+  const isColumns = variant === "columns";
   const completedTotal = points.reduce(
     (total, point) => total + point.sessionsCompleted,
+    0,
+  );
+  const scheduledTotal = points.reduce(
+    (total, point) => total + (point.sessionsScheduled ?? 0),
     0,
   );
   const weeklyAverage =
@@ -143,7 +154,7 @@ export function SessionsEvolutionChart({
         : best,
     null,
   );
-  const hasPreviousPeriod = points.some(
+  const hasPreviousPeriod = !isColumns && points.some(
     (point) => typeof point.previous === "number",
   );
 
@@ -153,18 +164,27 @@ export function SessionsEvolutionChart({
         aria-hidden="true"
         className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-tesText-secondary"
       >
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
-          {currentPeriodLabel}
-        </span>
+        {isColumns ? (
+          <>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
+              {scheduledLabel}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-5 rounded-full bg-status-success" />
+              {completedLabel}
+            </span>
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
+            {currentPeriodLabel}
+          </span>
+        )}
         {hasPreviousPeriod ? (
           <span className="inline-flex items-center gap-2">
             <span
-              className={
-                variant === "columns"
-                  ? "h-2.5 w-5 rounded-full bg-status-success"
-                  : "h-0 w-5 border-t-2 border-dashed border-brand-cyan"
-              }
+              className="h-0 w-5 border-t-2 border-dashed border-brand-cyan"
             />
             {previousPeriodLabel}
           </span>
@@ -173,8 +193,12 @@ export function SessionsEvolutionChart({
       <div
         aria-label={
           empty
-            ? "Evolução diária das sessões concluídas: ainda sem dados"
-            : "Evolução diária das sessões concluídas no período"
+            ? isColumns
+              ? "Evolução diária das sessões agendadas e concluídas: ainda sem dados"
+              : "Evolução diária das sessões concluídas: ainda sem dados"
+            : isColumns
+              ? "Evolução diária das sessões agendadas e concluídas no período"
+              : "Evolução diária das sessões concluídas no período"
         }
         className="h-[238px] w-full sm:h-[260px]"
         role="img"
@@ -223,21 +247,19 @@ export function SessionsEvolutionChart({
                 isAnimationActive={false}
               />
               <Bar
-                dataKey="sessionsCompleted"
+                dataKey="sessionsScheduled"
                 fill={colors.primary}
                 isAnimationActive={false}
-                name={currentPeriodLabel}
+                name={scheduledLabel}
                 radius={[7, 7, 0, 0]}
               />
-              {hasPreviousPeriod ? (
-                <Bar
-                  dataKey="previous"
-                  fill={colors.success}
-                  isAnimationActive={false}
-                  name={previousPeriodLabel}
-                  radius={[7, 7, 0, 0]}
-                />
-              ) : null}
+              <Bar
+                dataKey="sessionsCompleted"
+                fill={colors.success}
+                isAnimationActive={false}
+                name={completedLabel}
+                radius={[7, 7, 0, 0]}
+              />
             </BarChart>
           ) : (
             <AreaChart
@@ -344,20 +366,28 @@ export function SessionsEvolutionChart({
         <dl className="mt-4 grid grid-cols-1 gap-2 border-t border-brand-lavender/55 pt-4 sm:grid-cols-3">
           <div className="rounded-card bg-brand-lavenderSoft/70 px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Sessões concluídas
+              {isColumns ? scheduledLabel : "Sessões concluídas"}
             </dt>
             <dd className="mt-1 text-lg font-extrabold text-brand-deep">
-              {completedTotal}
+              {isColumns ? scheduledTotal : completedTotal}
             </dd>
           </div>
           <div className="rounded-card bg-brand-cyanSoft px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Média por semana
+              {isColumns ? completedLabel : "Média por semana"}
             </dt>
-            <dd className="mt-1 text-lg font-extrabold text-status-info">
-              {new Intl.NumberFormat("pt-BR", {
-                maximumFractionDigits: 1,
-              }).format(weeklyAverage)}
+            <dd
+              className={
+                isColumns
+                  ? "mt-1 text-lg font-extrabold text-status-success"
+                  : "mt-1 text-lg font-extrabold text-status-info"
+              }
+            >
+              {isColumns
+                ? completedTotal
+                : new Intl.NumberFormat("pt-BR", {
+                    maximumFractionDigits: 1,
+                  }).format(weeklyAverage)}
             </dd>
           </div>
           <div className="rounded-card bg-status-successBg px-3 py-2.5">
@@ -378,7 +408,9 @@ export function SessionsEvolutionChart({
       <figcaption className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         {empty
           ? "O gráfico será preenchido conforme as sessões forem concluídas no período."
-          : "O gráfico mostra quantas sessões foram concluídas em cada dia completo."}
+          : isColumns
+            ? "O gráfico mostra, em cada dia completo, as sessões agendadas e as concluídas."
+            : "O gráfico mostra quantas sessões foram concluídas em cada dia completo."}
       </figcaption>
     </figure>
   );

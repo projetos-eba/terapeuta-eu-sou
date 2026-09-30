@@ -503,7 +503,7 @@ function dashboardFixture(): TherapistMetricsDashboard {
         reason: "cancellation_taxonomy_not_versioned",
         status: "unavailable",
       },
-      contractVersion: 1,
+      contractVersion: 2,
       evolution: { points: [], status: "empty" },
       heatmap: ownHistory([]),
       meta,
