@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
 import { TherapistProfilePage } from "@/features/therapist-profile/components/profile-page";
 import { PublicProfileMetricsTracker } from "@/features/public-metrics";
 import {
-  getPublicTherapistProfile,
   getPublicTherapistProfileResult,
   resolvePublicTherapistSlug,
 } from "@/features/therapist-profile";
@@ -18,11 +18,15 @@ type TherapistProfilePageProps = {
 
 export const revalidate = 900;
 
+const getCachedPublicTherapistProfileResult = cache(async (slug: string) =>
+  getPublicTherapistProfileResult(slug),
+);
+
 export async function generateMetadata({
   params,
 }: TherapistProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getPublicTherapistProfileResult(slug);
+  const result = await getCachedPublicTherapistProfileResult(slug);
 
   if (result.status !== "success" && result.status !== "demo") {
     return {
@@ -56,7 +60,7 @@ export default async function PublicTherapistProfilePage({
   params,
 }: TherapistProfilePageProps) {
   const { slug } = await params;
-  const result = await getPublicTherapistProfileResult(slug);
+  const result = await getCachedPublicTherapistProfileResult(slug);
 
   if (result.status === "degraded") {
     return <TherapistProfileUnavailable correlationId={result.correlationId} />;
