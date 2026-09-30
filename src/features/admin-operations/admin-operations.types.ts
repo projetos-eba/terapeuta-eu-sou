@@ -19,6 +19,8 @@ export type AdminOperationMetric = {
 };
 
 export type AdminOperationField = {
+  /** Use the full detail grid for longer, allowlisted operational text. */
+  fullWidth?: boolean;
   label: string;
   value: string;
 };

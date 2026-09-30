@@ -109,13 +109,13 @@ export function TherapistMetricsPage({
   const occupancyKpi =
     futureAgenda?.status === "available" && futureAgenda.occupancyRate !== null
       ? {
-          copy: "Horários reservados sobre a capacidade única da agenda nos próximos 30 dias.",
+          copy: "Horários reservados sobre a capacidade única da agenda nos próximos 30 dias, a partir de amanhã.",
           state: "ready" as const,
           value: `${formatNumber(futureAgenda.occupancyRate)}%`,
         }
       : futureAgenda?.status === "insufficient_data"
         ? {
-            copy: "Não há horários disponíveis nos próximos 30 dias.",
+            copy: "Não há horários disponíveis nos próximos 30 dias, a partir de amanhã.",
             state: "empty" as const,
             value: "Sem dados",
           }
@@ -270,6 +270,12 @@ export function TherapistMetricsPage({
       </section>
 
       <MetricsAgendaSummary data={data} />
+      <MetricsSessionFrequency
+        heatmap={sessions.heatmap}
+        periodDays={data.meta.periodDays}
+        periodEnd={data.meta.periodEnd}
+        periodStart={data.meta.periodStart}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <MetricPanel
@@ -588,16 +594,7 @@ function aggregateToThree<T extends { label: string; value: number }>(
 }
 
 function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
-  const { futureAgenda, sessions } = data;
-  const heatmapPoints =
-    sessions.heatmap.status === "ready"
-      ? sessions.heatmap.items.map((point) => ({
-          ...point,
-          value: point.sessions,
-        }))
-      : [];
-  const isInitialSessionReading =
-    sessions.heatmap.status === "ready" && sessions.heatmap.observedSample < 10;
+  const { futureAgenda } = data;
   const occupancyPercentage =
     futureAgenda?.status === "available" &&
     futureAgenda.occupancyRate !== null &&
@@ -619,8 +616,8 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             </h2>
             <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
               {futureAgenda
-                ? `${formatInclusiveDateRange(futureAgenda.windowStart, futureAgenda.windowEnd)}. A ocupação considera uma única capacidade entre todas as suas terapias.`
-                : "Acompanhe horários reservados e livres para organizar sua agenda futura."}
+                ? `${formatInclusiveDateRange(futureAgenda.windowStart, futureAgenda.windowEnd)}. A leitura começa amanhã e considera uma única capacidade entre todas as suas terapias.`
+                : "Acompanhe horários reservados e livres para organizar sua agenda futura, a partir de amanhã."}
             </p>
           </div>
         </div>
@@ -633,7 +630,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
         </Link>
       </div>
 
-      <div className="grid divide-y divide-brand-lavender/70 lg:grid-cols-[minmax(220px,0.72fr)_minmax(0,1.35fr)_minmax(210px,0.72fr)] lg:divide-x lg:divide-y-0">
+      <div className="grid divide-y divide-brand-lavender/70 lg:grid-cols-[minmax(220px,1fr)_minmax(210px,1fr)] lg:divide-x lg:divide-y-0">
         <div className="min-w-0 py-4 lg:py-0 lg:pr-6">
           <p className="text-sm font-extrabold text-brand-deep">
             Ocupação da agenda
@@ -645,7 +642,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             emptyMessage={
               futureAgenda?.reason === "no_active_services"
                 ? "Ative uma terapia e publique horários para acompanhar sua agenda futura."
-                : "Não há horários disponíveis nos próximos 30 dias."
+                : "Não há horários disponíveis nos próximos 30 dias, a partir de amanhã."
             }
             items={
               occupancyPercentage === null
@@ -662,26 +659,6 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             palette="occupancy"
             valueSuffix="%"
           />
-        </div>
-
-        <div className="min-w-0 py-5 lg:px-6 lg:py-0">
-          <p className="mb-3 text-sm font-extrabold text-brand-deep">
-            Frequência de sessões concluídas
-          </p>
-          <p className="-mt-1 mb-3 text-sm font-semibold leading-5 text-tesText-secondary">
-            Histórico do período selecionado.
-          </p>
-          <MetricsHeatmap
-            emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período."
-            points={heatmapPoints}
-            valueLabel="sessões"
-          />
-          {isInitialSessionReading ? (
-            <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
-              Essa leitura vai ficando mais clara conforme novas sessões forem
-              concluídas.
-            </p>
-          ) : null}
         </div>
 
         <div className="min-w-0 py-4 lg:py-0 lg:pl-6">
@@ -706,6 +683,56 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             />
           </dl>
         </div>
+      </div>
+    </AppPageSection>
+  );
+}
+
+function MetricsSessionFrequency({
+  heatmap,
+  periodDays,
+  periodEnd,
+  periodStart,
+}: {
+  heatmap: TherapistMetricsDashboard["sessions"]["heatmap"];
+  periodDays: 30 | 60;
+  periodEnd: string;
+  periodStart: string;
+}) {
+  const points =
+    heatmap.status === "ready"
+      ? heatmap.items.map((point) => ({ ...point, value: point.sessions }))
+      : [];
+  const isInitialReading =
+    heatmap.status === "ready" && heatmap.observedSample < 10;
+
+  return (
+    <AppPageSection className="min-w-0 border-brand-lavender/80 bg-white p-4 sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-brand-lavenderSoft text-brand-primary">
+          <CalendarCheck2 aria-hidden="true" size={21} />
+        </span>
+        <div>
+          <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
+            Frequência de sessões concluídas
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            Histórico de {periodDays} dias completos · {formatPeriodRange(periodStart, periodEnd)}. Este quadro acompanha o período selecionado, sem incluir hoje.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5">
+        <MetricsHeatmap
+          emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período selecionado."
+          points={points}
+          valueLabel="sessões"
+        />
+        {isInitialReading ? (
+          <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
+            Essa leitura vai ficando mais clara conforme novas sessões forem
+            concluídas.
+          </p>
+        ) : null}
       </div>
     </AppPageSection>
   );

@@ -534,7 +534,7 @@ function getDetailSections(
       section("Participantes", [
         field("Terapeuta", asText(record.therapist_name)),
         field("ID do terapeuta", asText(record.therapist_profile_id)),
-        field("Cliente", asText(record.patient_name)),
+        field("Cliente", asText(record.patient_name).trim()),
         field("ID do cliente", asText(record.patient_profile_id)),
         field("Formato", formatMeetingMode(record.meeting_provider)),
       ]),
@@ -576,10 +576,12 @@ function getDetailSections(
     return [
       section("Avaliação", [
         field("Avaliação", asText(record.id)),
+        field("Cliente", asText(record.patient_name)),
         field("Nota", asText(record.rating)),
         field("Status", asText(record.status)),
         field("Motivo de moderação", asText(record.moderation_reason)),
         field("Publicada em", formatDate(record.published_at)),
+        field("Observação", asText(record.comment).trim(), true),
       ]),
       section("Relacionamentos", [
         field("Terapeuta", asText(record.therapist_name)),
@@ -658,8 +660,10 @@ function timestampSection(record: UnknownRecord) {
   ]);
 }
 
-function field(label: string, value: string) {
-  return value ? { label, value } : null;
+function field(label: string, value: string, fullWidth = false) {
+  return value
+    ? { ...(fullWidth ? { fullWidth: true } : {}), label, value }
+    : null;
 }
 
 function canPublishAdministratively(record: UnknownRecord) {
@@ -1269,7 +1273,7 @@ function getDetailSafetyNotes(module: AdminOperationModuleKey) {
   if (module === "reviews") {
     return [
       ...common,
-      "Comentário completo da avaliação não aparece no detalhe operacional desta fase.",
+      "A observação da avaliação fica disponível somente neste detalhe administrativo autorizado.",
     ];
   }
 

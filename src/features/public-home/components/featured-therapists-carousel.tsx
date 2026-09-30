@@ -70,9 +70,6 @@ function FeaturedTherapistCard({
         <h3 className="min-h-[3.5rem] text-[1.45rem] font-extrabold leading-tight text-brand-deep min-[1360px]:text-[1.55rem] 2xl:text-[1.65rem]">
           {therapist.name}
         </h3>
-        <p className="mt-2 line-clamp-2 min-h-10 text-sm font-extrabold leading-5 text-brand-primary">
-          {therapist.serviceTitle}
-        </p>
         <div className="mt-3 min-h-[34px]">
           {therapyChips.length ? (
             <ul
@@ -96,6 +93,12 @@ function FeaturedTherapistCard({
             </p>
           )}
         </div>
+
+        {therapist.essence ? (
+          <p className="mt-4 line-clamp-3 min-h-[60px] text-sm font-semibold leading-5 text-tesText-secondary">
+            {therapist.essence}
+          </p>
+        ) : null}
 
         <div className="mt-5 h-[60px] min-h-[60px] overflow-hidden border-y border-brand-lavender/35 py-3">
           {tags.length ? (

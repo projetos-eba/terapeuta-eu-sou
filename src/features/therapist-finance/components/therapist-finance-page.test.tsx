@@ -222,6 +222,9 @@ describe("TherapistFinancePage", () => {
       }),
     ).toBeInTheDocument();
     expect(
+      screen.getByText(/já estão reservadas nos próximos 30 dias, a partir de amanhã/i),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("heading", { name: "Terapias com maior receita" }),
     ).toBeInTheDocument();
     expect(

@@ -29,4 +29,30 @@ describe("PatientFavoriteTherapistCard", () => {
     );
     expect(screen.queryByRole("link", { name: "Agendar" })).toBeNull();
   });
+
+  it("shows the therapist presentation only once and uses a taller portrait frame", () => {
+    render(
+      <PatientFavoriteTherapistCard
+        professional={{
+          averageRating: 5,
+          avatarUrl: "/therapists/ana-oliveira.png",
+          id: "therapist-1",
+          name: "Ana Oliveira",
+          profileHref: "/terapeutas/ana-oliveira",
+          reviewCount: 1,
+          specialty: "Acolhimento e cuidado no seu tempo.",
+          summary: "Acolhimento e cuidado no seu tempo.",
+          techniques: ["Reiki"],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getAllByText("Acolhimento e cuidado no seu tempo."),
+    ).toHaveLength(1);
+    expect(screen.getByText("Reiki")).toBeInTheDocument();
+    expect(screen.getByRole("presentation").parentElement).toHaveClass(
+      "aspect-[1.25]",
+    );
+  });
 });

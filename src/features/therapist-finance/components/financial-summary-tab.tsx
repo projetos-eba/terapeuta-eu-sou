@@ -430,7 +430,7 @@ function AgendaPotentialPanel({
           </h2>
           <FinancialInfoTooltip
             label="Agenda e potencial nos próximos 30 dias"
-            text="Aqui você acompanha quanto da sua agenda está ocupada, quantas horas ainda estão disponíveis e o potencial estimado de faturamento no período. Os valores de potencial são estimativas e não representam receita garantida.​"
+            text="Aqui você acompanha quanto da sua agenda está ocupada, quantas horas ainda estão disponíveis e o potencial estimado de faturamento nos 30 dias completos a partir de amanhã. Os valores de potencial são estimativas e não representam receita garantida.​"
           />
         </div>
       </div>
@@ -438,7 +438,7 @@ function AgendaPotentialPanel({
       <p className="-mt-2 text-sm font-semibold text-tesText-secondary">
         {agenda
           ? `${formatDate(agenda.windowStart)} a ${formatDate(agenda.windowEnd)}`
-          : "Leitura dos próximos 30 dias"}
+          : "Leitura dos próximos 30 dias, a partir de amanhã"}
       </p>
 
       <div className="rounded-xl bg-surface-soft px-4 py-4">
@@ -527,10 +527,10 @@ function agendaCapacityMessage(
     if (agenda.reason === "no_active_services") {
       return "Há horários configurados, mas falta uma terapia ativa para estimar o potencial.";
     }
-    return `${formatMinutes(agenda.reservedMinutes)} já estão reservadas nos próximos 30 dias.`;
+    return `${formatMinutes(agenda.reservedMinutes)} já estão reservadas nos próximos 30 dias, a partir de amanhã.`;
   }
   if (agenda.reason === "no_availability") {
-    return "Sem horários disponíveis nos próximos 30 dias.";
+    return "Sem horários disponíveis nos próximos 30 dias, a partir de amanhã.";
   }
   return "Não foi possível calcular a ocupação da agenda neste período.";
 }

@@ -154,8 +154,13 @@ completa, o estado é `empty`, nunca um sucesso fictício.
 
 `get_therapist_metrics_dashboard_v4(30|60)` preserva os indicadores
 históricos selecionados e adiciona `futureAgenda` como uma leitura operacional
-independente dos **próximos 30 dias locais**. O seletor de 30/60 dias não muda
-essa janela futura.
+independente dos **próximos 30 dias locais completos, a partir de amanhã à
+meia-noite no fuso do terapeuta**. O seletor de 30/60 dias não muda essa
+janela futura.
+
+A frequência de sessões concluídas usa exclusivamente `sessions.heatmap` do
+período histórico selecionado (30 ou 60 dias completos, sem o dia atual). Ela
+não usa nem é afetada por `futureAgenda`.
 
 A capacidade futura é calculada uma única vez por terapeuta, unindo os
 intervalos ativos de todas as terapias. Sobreposições não são somadas. Bloqueios

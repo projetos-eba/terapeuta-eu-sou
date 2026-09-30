@@ -156,5 +156,22 @@ Deno.test("maps therapy content limits to clear product messages", () => {
   }
 
   assertEquals(mapped.code, "short_description_too_long");
-  assertEquals(mapped.message, "O resumo deve ter no máximo 100 caracteres.");
+  assertEquals(mapped.message, "O resumo deve ter no máximo 150 caracteres.");
+
+  const introduction = mapAdminTherapyCatalogDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "ADMIN_THERAPY_CATALOG_INTRODUCTION_TOO_LONG",
+    ),
+  );
+
+  if (!(introduction instanceof DomainError)) {
+    throw new Error("Expected DomainError.");
+  }
+
+  assertEquals(introduction.code, "introduction_too_long");
+  assertEquals(
+    introduction.message,
+    "O campo O que é deve ter no máximo 240 caracteres.",
+  );
 });

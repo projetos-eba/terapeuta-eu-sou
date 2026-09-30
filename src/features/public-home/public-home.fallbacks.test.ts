@@ -154,6 +154,48 @@ describe("public home fallback contract", () => {
     ).toBe(true);
   });
 
+  it("uses the published essence from the public profile content in featured cards", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string | URL) => {
+        const url = String(input);
+
+        if (url.includes("public_therapist_profiles_v")) {
+          return Promise.resolve(
+            jsonResponse([{ plan: "premium", slug: "ana-oliveira" }], 1),
+          );
+        }
+
+        if (url.includes("public_home_therapists")) {
+          return Promise.resolve(jsonResponse([therapistRow("ana-oliveira")]));
+        }
+
+        if (url.includes("public_therapist_profile_content_v")) {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                essence_body:
+                  "Uma apresentação publicada que vem da mesma fonte do catálogo.",
+                guide_items: [],
+                slug: "ana-oliveira",
+              },
+            ]),
+          );
+        }
+
+        return Promise.resolve(jsonResponse([]));
+      }),
+    );
+
+    const page = await getPublicHomeFeaturedTherapistsPage();
+
+    expect(page.therapists[0]?.essence).toBe(
+      "Uma apresentação publicada que vem da mesma fonte do catálogo.",
+    );
+  });
+
   it("does not repeat the same public name and photo when separate records represent the same displayed professional", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");

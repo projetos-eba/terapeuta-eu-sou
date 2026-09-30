@@ -29,9 +29,9 @@ import type {
 const contentLimits = {
   complementaryDescription: 200,
   description: 200,
-  introduction: 160,
+  introduction: 240,
   safetyNote: 150,
-  shortDescription: 100,
+  shortDescription: 150,
   benefitDescription: 100,
 } as const;
 

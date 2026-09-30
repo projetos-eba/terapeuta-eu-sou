@@ -129,6 +129,8 @@ export const fallbackTherapies: PublicHomeTherapy[] = [
 
 export const fallbackTherapists: PublicHomeTherapist[] = [
   {
+    essence:
+      "Um espaço de escuta e presença para acolher seu momento com cuidado.",
     name: "Ana Oliveira",
     slug: "ana-oliveira",
     headline: "Terapeuta Integrativa",
@@ -150,6 +152,8 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     href: routes.public.therapistProfile("ana-oliveira"),
   },
   {
+    essence:
+      "Uma leitura sensível para refletir sobre escolhas e caminhos possíveis.",
     name: "Rafael Santos",
     slug: "rafael-santos",
     headline: "Terapeuta Holístico",
@@ -163,6 +167,8 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     href: routes.public.therapistProfile("rafael-santos"),
   },
   {
+    essence:
+      "Acompanhamento acolhedor para olhar relações e transformações com calma.",
     name: "Célia Martins",
     slug: "celia-martins",
     headline: "Terapeuta Integrativa",
@@ -176,6 +182,8 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     href: routes.public.therapistProfile("celia-martins"),
   },
   {
+    essence:
+      "Uma presença atenta para apoiar conversas e mudanças no seu ritmo.",
     name: "Juliana Costa",
     slug: "juliana-costa",
     headline: "Terapeuta Holística",
@@ -189,6 +197,8 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     href: routes.public.therapistProfile("juliana-costa"),
   },
   {
+    essence:
+      "Um convite para se aproximar das próprias perguntas com mais clareza.",
     name: "Lucas Pereira",
     slug: "lucas-pereira",
     headline: "Tarô",
