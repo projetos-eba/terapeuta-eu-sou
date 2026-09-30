@@ -29,7 +29,7 @@ import type {
   TherapistMetricsPeriodDays,
   TherapistMetricsTab,
   TherapistMetricsTodayActivityState,
-  TherapistSessionMetricsView,
+  TherapistSessionMetrics,
 } from "./therapist-metrics.types";
 
 export type TherapistMetricsPageResult =
@@ -86,7 +86,7 @@ export type TherapistMetricsViewResult =
       tab: "overview";
     }
   | {
-      data: TherapistSessionMetricsView;
+      data: TherapistSessionMetrics;
       status: "success";
       tab: "sessions";
     }
@@ -116,17 +116,14 @@ export const getTherapistMetricsView = cache(
   }): Promise<TherapistMetricsViewResult> {
     try {
       if (tab === "sessions") {
-        const [rawMetrics, rawComparison] = await Promise.all([
-          queryTherapistSessionMetrics(accessToken, periodDays),
-          queryTherapistSessionEvolutionComparison(accessToken, periodDays),
-        ]);
+        const rawMetrics = await queryTherapistSessionMetrics(
+          accessToken,
+          periodDays,
+        );
         const data = mapTherapistSessionMetrics(rawMetrics);
-        const evolutionComparison =
-          mapTherapistSessionEvolutionComparison(rawComparison);
         enforceProfile(data.therapist.profileId, profileId);
-        enforceProfile(evolutionComparison.therapist.profileId, profileId);
         return {
-          data: { ...data, evolutionComparison },
+          data,
           status: "success",
           tab,
         };

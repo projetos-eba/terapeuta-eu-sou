@@ -71,7 +71,7 @@ export function mapTherapistSessionEvolutionComparison(
     }
 
     return {
-      contractVersion: literal(value.contractVersion, 1),
+      contractVersion: literal(value.contractVersion, 2),
       meta,
       metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
       points,
@@ -128,6 +128,7 @@ export function mapTherapistSessionMetrics(
             sessionsCancelled: nonNegativeInteger(item.sessionsCancelled),
             sessionsCompleted: nonNegativeInteger(item.sessionsCompleted),
             sessionsRescheduled: nonNegativeInteger(item.sessionsRescheduled),
+            sessionsScheduled: nonNegativeInteger(item.sessionsScheduled),
           };
         }),
         status: emptyOrReady(evolution.status),
