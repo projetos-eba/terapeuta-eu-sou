@@ -20,7 +20,6 @@ import type {
   TherapistMetricProtectedCollection,
   TherapistMetricSampledValue,
   TherapistSessionMetrics,
-  TherapistSessionMetricsView,
 } from "../therapist-metrics.types";
 import { formatMetricValue } from "./therapist-metric-card";
 import {
@@ -36,7 +35,7 @@ const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export function TherapistSessionMetricsPage({
   data,
 }: {
-  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+  data: TherapistSessionMetrics;
 }) {
   return (
     <TherapistMetricsLayout meta={data.meta} tab="sessions">
@@ -196,29 +195,8 @@ function SampledSummary({
 function SessionEvolution({
   data,
 }: {
-  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+  data: TherapistSessionMetrics;
 }) {
-  const comparison =
-    "evolutionComparison" in data
-      ? data.evolutionComparison
-      : {
-          meta: data.meta,
-          points: data.evolution.points.map((point, index) => ({
-            current: point.sessionsCompleted,
-            currentDate: point.date,
-            index,
-            previous: 0,
-            previousDate: point.date,
-          })),
-          status: data.evolution.status,
-        };
-  const points = comparison.points.map((point) => ({
-    date: point.currentDate,
-    previous: point.previous,
-    previousDate: point.previousDate,
-    sessionsCompleted: point.current,
-  }));
-
   return (
     <AppPageSection
       className="relative min-w-0 overflow-hidden border-brand-cyan/25 bg-[radial-gradient(circle_at_94%_0%,var(--tes-color-brand-cyan-soft)_0%,transparent_34%),linear-gradient(180deg,#fff_0%,#fff_100%)] shadow-[0_14px_34px_rgba(57,45,90,0.06)]"
@@ -231,16 +209,16 @@ function SessionEvolution({
         Evolução das sessões no período
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Acompanhe as sessões concluídas em cada dia do período selecionado. O
-        verde mostra o período anterior de mesma duração.
+        Acompanhe, em cada dia do período selecionado, as sessões que chegaram
+        à agenda e as que foram concluídas.
       </p>
 
       <div className="mt-5">
         <SessionsEvolutionChart
-          currentPeriodLabel={`Atual · ${formatPeriodRange(comparison.meta.periodStart, comparison.meta.periodEnd)}`}
-          empty={comparison.status === "empty"}
-          points={points}
-          previousPeriodLabel={`Anterior · ${formatPeriodRange(comparison.meta.previousPeriodStart, comparison.meta.previousPeriodEnd)}`}
+          completedLabel="Sessões concluídas"
+          empty={data.evolution.status === "empty"}
+          points={data.evolution.points}
+          scheduledLabel="Sessões agendadas"
           variant="columns"
         />
       </div>
@@ -297,7 +275,7 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
 function SessionOutcomeSummary({
   data,
 }: {
-  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+  data: TherapistSessionMetrics;
 }) {
   const totals = data.evolution.points.reduce(
     (result, point) => ({
@@ -505,16 +483,4 @@ function formatPercent(value: number) {
   return `${new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 1,
   }).format(value)}%`;
-}
-
-function formatPeriodRange(start: string, endExclusive: string) {
-  const startDate = new Date(start);
-  const endDate = new Date(endExclusive);
-  endDate.setUTCDate(endDate.getUTCDate() - 1);
-  const formatter = new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    timeZone: "UTC",
-  });
-  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }

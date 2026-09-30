@@ -6,6 +6,7 @@ create or replace function public.get_therapist_session_metrics_v2(
 )
 returns jsonb
 language plpgsql
+stable
 security definer
 set search_path = ''
 as $$
@@ -59,8 +60,10 @@ begin
         'cancelled_by_patient',
         'cancelled_by_therapist',
         'cancelled_by_admin',
+        'cancelled_by_payment',
         'no_show_patient',
         'no_show_therapist',
+        'no_show_both',
         'refunded'
       )
     group by (booking.starts_at at time zone v_timezone)::date

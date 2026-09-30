@@ -180,6 +180,24 @@ da agenda esconda um horário já reservado ou produza ocupação acima de 100%.
 O heatmap continua sendo histórico e é apresentado como frequência de sessões
 concluídas.
 
+### Sessões agendadas e concluídas — MTR-4 V2
+
+`get_therapist_session_metrics_v2(30|60)` é um contrato aditivo usado pela
+aba **Sessões**. A V1 continua disponível, sem alteração, para consumidores
+compatíveis. A V2 preserva todos os agregados da V1 e acrescenta
+`evolution.points[].sessionsScheduled`.
+
+Essa série conta, por data local marcada, os bookings que efetivamente chegaram
+à agenda: `confirmed`, `completed`, cancelados pela pessoa, terapeuta,
+plataforma ou pagamento, ausências e `refunded`. Rascunhos e tentativas ainda
+em pagamento não entram. A série é sempre agregada — não devolve IDs, nomes ou
+qualquer dado de paciente.
+
+Na interface, a evolução usa somente o período histórico selecionado, formado
+por dias locais completos e sem o dia atual: roxo representa sessões agendadas;
+verde representa sessões concluídas. Não há comparação com o período anterior
+neste gráfico.
+
 ### Descoberta
 
 Com a telemetria desativada, o contrato retorna `unavailable` com

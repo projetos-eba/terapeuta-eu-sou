@@ -82,28 +82,28 @@ describe("therapist metrics charts", () => {
     expect(screen.getByText("em 02/09")).toBeInTheDocument();
   });
 
-  it("renders the selected and previous periods as grouped columns", () => {
+  it("renders scheduled and completed sessions as grouped columns", () => {
     render(
       <SessionsEvolutionChart
-        currentPeriodLabel="Selecionado"
+        completedLabel="Concluídas"
         points={[
           {
             date: "2026-09-01",
-            previous: 1,
             sessionsCompleted: 2,
+            sessionsScheduled: 3,
           },
         ]}
-        previousPeriodLabel="Período anterior"
+        scheduledLabel="Agendadas"
         variant="columns"
       />,
     );
 
-    expect(screen.getByText("Selecionado")).toBeInTheDocument();
-    const previousLegend = screen.getByText("Período anterior");
-    expect(previousLegend.firstElementChild).toHaveClass("bg-status-success");
+    expect(screen.getAllByText("Agendadas")[0]).toBeInTheDocument();
+    const completedLegend = screen.getAllByText("Concluídas")[0];
+    expect(completedLegend.firstElementChild).toHaveClass("bg-status-success");
     expect(
       screen.getByRole("img", {
-        name: "Evolução diária das sessões concluídas no período",
+        name: "Evolução diária das sessões agendadas e concluídas no período",
       }),
     ).toBeInTheDocument();
   });

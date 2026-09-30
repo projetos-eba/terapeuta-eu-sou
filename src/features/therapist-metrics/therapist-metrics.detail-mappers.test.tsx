@@ -69,6 +69,10 @@ describe("therapist metric detail contracts", () => {
     const mapped = mapTherapistSessionMetrics(sessionPayload());
 
     expect(mapped.summary.sessionsCompleted.value).toBe(12);
+    expect(mapped.evolution.points[0]).toMatchObject({
+      sessionsCompleted: 12,
+      sessionsScheduled: 15,
+    });
     expect(mapped.summary.operationalPresence).toMatchObject({
       minimumSample: 10,
       status: "ready",
@@ -512,7 +516,7 @@ export function sessionPayload(): Record<string, unknown> {
       reason: "cancellation_taxonomy_not_versioned",
       status: "unavailable",
     },
-    contractVersion: 1,
+    contractVersion: 2,
     evolution: {
       points: [
         {
@@ -521,6 +525,7 @@ export function sessionPayload(): Record<string, unknown> {
           sessionsCancelled: 2,
           sessionsCompleted: 12,
           sessionsRescheduled: 1,
+          sessionsScheduled: 15,
         },
       ],
       status: "ready",

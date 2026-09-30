@@ -13,6 +13,7 @@ import {
   queryTherapistMetricsDashboard,
   queryTherapistMetricsOverview,
   queryTherapistMetricsTodayActivity,
+  queryTherapistSessionMetrics,
 } from "./therapist-metrics.queries";
 
 afterEach(() => {
@@ -84,6 +85,28 @@ describe("discovery metrics contracts", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "https://example.supabase.co/rest/v1/rpc/get_therapist_metrics_dashboard_v4",
+      expect.objectContaining({
+        body: JSON.stringify({ p_period_days: 60 }),
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it("uses the additive V2 session contract for the selected historical period", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ contractVersion: 2 }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await queryTherapistSessionMetrics("access-token", 60);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/rest/v1/rpc/get_therapist_session_metrics_v2",
       expect.objectContaining({
         body: JSON.stringify({ p_period_days: 60 }),
         cache: "no-store",
