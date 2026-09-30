@@ -116,7 +116,6 @@ export function TherapistInterestMetricsPage({
 
         <AppPageAside>
           <Segments data={data} />
-          <UnavailableSignals />
         </AppPageAside>
       </AppPageGrid>
     </TherapistMetricsLayout>
@@ -707,48 +706,6 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
       ) : (
         <ProtectedCollection collection={data.therapyReturn} />
       )}
-    </AppPageSection>
-  );
-}
-
-function UnavailableSignals() {
-  const items = [
-    {
-      label: "Favoritos que levaram a uma sessão",
-      reason:
-        "Ainda não é possível relacionar favoritos e sessões com segurança.",
-    },
-    {
-      label: "Sentimento depois da sessão",
-      reason: "Essa leitura aparecerá quando houver dados suficientes.",
-    },
-    {
-      label: "Procura sem horário disponível",
-      reason:
-        "Essa leitura mostra quando houve procura sem disponibilidade e aparecerá quando esse sinal estiver disponível.",
-    },
-  ];
-
-  return (
-    <AppPageSection>
-      <h2 className="text-lg font-extrabold text-brand-deep">
-        Leituras em preparação
-      </h2>
-      <div className="mt-4 grid gap-4">
-        {items.map((item) => (
-          <div
-            className="border-l-2 border-brand-lavender pl-4"
-            key={item.label}
-          >
-            <p className="text-sm font-extrabold text-brand-deep">
-              {item.label}
-            </p>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              {item.reason}
-            </p>
-          </div>
-        ))}
-      </div>
     </AppPageSection>
   );
 }

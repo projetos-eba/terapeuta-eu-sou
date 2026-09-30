@@ -80,6 +80,11 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
+- No detalhe da sessão do terapeuta, o CTA de abrir a sala pede confirmação
+  somente de T-15 (inclusive) até T-1 minuto (exclusivo) do início agendado.
+  A confirmação usa os campos de tempo já presentes no read model, não consulta
+  a prévia da sala e não registra chegada. A partir de T-1 minuto, o CTA
+  direciona diretamente para a mesma rota da sala.
 - A chegada do paciente é registrada ao abrir a espera autenticada entre T-15 e
   T+10, inclusive, por booking e versão. Essa chegada ou uma participação
   confiável anterior permite reconexão de ambos antes de `scheduled_ends_at`;
@@ -174,6 +179,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
 - Confirmar que o CTA do detalhe abre a sala do mesmo booking e continua
   acessível durante a janela ativa mesmo sem presença do terapeuta; o bloqueio
   host-first ocorre dentro da sala, antes da emissão de JWT do paciente.
+- Validar no detalhe do terapeuta as fronteiras antes de T-15, T-15, T-1 minuto
+  e início agendado, incluindo retorno à aba. Fechar a confirmação antecipada
+  não pode navegar, consultar a sala ou registrar chegada.
 - Confirmar que a sala não exibe sidebar nem topbar.
 - Confirmar retorno ao detalhe e foco visível.
 - Validar waiting room, preflight, áudio, vídeo, reconexão, saída e

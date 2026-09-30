@@ -36,6 +36,13 @@ modelo host-first: entra primeiro e o paciente permanece aguardando até que o
 webhook confiável `session.user_joined` confirme a presença do terapeuta. O
 preflight não é presença e não libera feedback de qualidade.
 
+No detalhe da sessão do terapeuta, o CTA pede uma confirmação visual somente
+de T-15 (inclusive) até T-1 minuto (exclusivo) do início agendado. A partir de
+T-1 minuto, ele abre a mesma rota da sala diretamente. Fechar essa confirmação
+não consulta a sala, não registra chegada e não muda a sessão; somente a
+abertura efetiva da sala preserva o fluxo host-first e as regras de chegada já
+existentes.
+
 Enquanto a sala estiver aberta ou reconectando, o browser solicita a renovação
 da sessão TES em `POST /api/auth/session/refresh`. O endpoint lê somente
 cookies HTTP-only, rotaciona o refresh token apenas nos últimos 15 minutos do

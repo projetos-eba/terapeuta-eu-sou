@@ -332,8 +332,8 @@ describe("therapist metric detail contracts", () => {
       screen.getByText(/ainda não há temas registrados para mostrar/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Favoritos que levaram a uma sessão"),
-    ).toBeInTheDocument();
+      screen.queryByText("Favoritos que levaram a uma sessão"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "Temas mais recorrentes na jornada",

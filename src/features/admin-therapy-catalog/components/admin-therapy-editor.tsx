@@ -27,9 +27,9 @@ import type {
 } from "../admin-therapy-catalog.types";
 
 const contentLimits = {
-  complementaryDescription: 200,
+  complementaryDescription: 1000,
   description: 200,
-  introduction: 240,
+  introduction: 1000,
   safetyNote: 150,
   shortDescription: 150,
   benefitDescription: 100,

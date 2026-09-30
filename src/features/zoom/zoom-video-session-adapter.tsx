@@ -30,6 +30,7 @@ import {
   type ZoomJoinParticipantIdentity,
   type ZoomOperationPhase,
 } from "./zoom-video-recovery";
+import { getZoomServerClockOffsetMs } from "./zoom-access-time";
 
 type VideoSessionPayload = {
   access: ZoomAccessState;
@@ -286,7 +287,7 @@ export function ZoomVideoSessionAdapter({
   }, []);
   const [currentAccess, setCurrentAccess] = useState(access);
   const [serverClockOffsetMs, setServerClockOffsetMs] = useState(() =>
-    getServerClockOffsetMs(access),
+    getZoomServerClockOffsetMs(access),
   );
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine !== false,
@@ -414,7 +415,7 @@ export function ZoomVideoSessionAdapter({
     (nextAccess: ZoomAccessState | null) => {
       currentAccessRef.current = nextAccess;
       setCurrentAccess(nextAccess);
-      setServerClockOffsetMs(getServerClockOffsetMs(nextAccess));
+      setServerClockOffsetMs(getZoomServerClockOffsetMs(nextAccess));
     },
     [],
   );
@@ -4084,13 +4085,6 @@ function formatRoomOpeningCountdown(
   return minutes === 0
     ? `A sala abre em cerca de ${hours}h.`
     : `A sala abre em cerca de ${hours}h ${minutes}min.`;
-}
-
-function getServerClockOffsetMs(access: ZoomAccessState | null) {
-  if (!access?.serverNow) return 0;
-
-  const serverNowMs = Date.parse(access.serverNow);
-  return Number.isFinite(serverNowMs) ? serverNowMs - Date.now() : 0;
 }
 
 function isMobileBrowser() {

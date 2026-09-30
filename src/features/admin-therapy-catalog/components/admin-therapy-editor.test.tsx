@@ -209,8 +209,8 @@ describe("AdminTherapyEditor", () => {
 
     expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('textarea[name="description"]')).toHaveAttribute("maxLength", "200");
-    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "240");
-    expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "200");
+    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "1000");
+    expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "1000");
     expect(document.querySelector('textarea[name="safetyNote"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('input[name="benefitDescription"]')).toHaveAttribute("maxLength", "100");
 

@@ -66,8 +66,9 @@ navegam para `/terapeuta/avaliacoes?tab=session#pending-session-confirmations`.
   terapias. Ela usa a Edge Function `admin-therapy-catalog-command` para
   mutações transacionais, registra auditoria, resolve solicitações e revalida
   catálogo público, Match, busca, perfil e serviços afetados. O resumo curto
-  aceita até 150 caracteres e a explicação pública “O que é” até 240; os
-  demais limites editoriais permanecem inalterados.
+  aceita até 150 caracteres; “O que é” e “Descrição complementar” aceitam até
+  1.000 caracteres e usam uma prévia expansível no detalhe público; os demais
+  limites editoriais permanecem inalterados.
 - Paciente usa `/app/encontros` e `/app/encontros/:bookingId` como namespace
   canônico. `/app/sessoes`, `/app/sessoes/:bookingId`,
   `/app/sessoes/proximas` e `/app/sessoes/historico` são apenas aliases de

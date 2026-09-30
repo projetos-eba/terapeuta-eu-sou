@@ -82,6 +82,11 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
 
 ## Migrations
 
+- `20260930153000_expand_public_therapy_editorial_limits.sql`
+  - eleva para 1.000 caracteres os campos públicos “O que é” e “Descrição
+    complementar”, mantendo os demais limites editoriais;
+  - preserva os registros existentes e mantém formulário, contrato de
+    salvamento e detalhe público alinhados.
 - `20260728103000_admin_therapy_catalog_phase3.sql`
   - adiciona `deprecated_at`, `archived_at` e `replacement_therapy_id`;
   - cria `therapy_slug_redirects`, `therapy_catalog_requests` e
