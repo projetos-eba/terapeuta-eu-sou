@@ -9,6 +9,7 @@ export type PublicHomeTherapy = {
 };
 
 export type PublicHomeTherapist = {
+  essence?: string;
   guideItems?: string[];
   headline: string;
   href: string;

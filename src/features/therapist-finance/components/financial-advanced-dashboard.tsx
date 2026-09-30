@@ -72,7 +72,7 @@ export function FinancialAdvancedDashboard({
           }
         />
         <AdvancedMetricCard
-          description="Estimativa baseada nos horários livres dos próximos 30 dias e nos valores atuais das suas terapias. Não representa receita garantida."
+          description="Estimativa baseada nos horários livres dos próximos 30 dias, a partir de amanhã, e nos valores atuais das suas terapias. Não representa receita garantida."
           label="Potencial da agenda — 30 dias"
           muted={
             !forecastReady || dashboard.agendaPotential.status !== "available"
@@ -260,7 +260,7 @@ function AgendaPotentialCard({
             </p>
           </div>
         </div>
-        <EmptyAdvancedState message="Ainda não há horários disponíveis nos próximos 30 dias." />
+        <EmptyAdvancedState message="Ainda não há horários disponíveis nos próximos 30 dias, a partir de amanhã." />
       </div>
     );
   }
@@ -286,7 +286,7 @@ function AgendaPotentialCard({
             Agenda e potencial — Próximos 30 dias
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Janela: {formatDate(potential.windowStart)} a{" "}
+            Janela a partir de amanhã: {formatDate(potential.windowStart)} a{" "}
             {formatDate(potential.windowEnd)}.
           </p>
         </div>

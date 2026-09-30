@@ -78,9 +78,9 @@ const userMessages: Record<string, string> = {
   theme_required: "Selecione pelo menos um tema do Match.",
   unsafe_copy:
     "Revise o conteúdo para remover promessas de cura, diagnóstico ou resultado garantido.",
-  short_description_too_long: "O resumo deve ter no máximo 100 caracteres.",
+  short_description_too_long: "O resumo deve ter no máximo 150 caracteres.",
   description_too_long: "A abordagem deve ter no máximo 200 caracteres.",
-  introduction_too_long: "O campo O que é deve ter no máximo 160 caracteres.",
+  introduction_too_long: "O campo O que é deve ter no máximo 240 caracteres.",
   complementary_description_too_long:
     "A descrição complementar deve ter no máximo 200 caracteres.",
   safety_note_too_long: "A nota responsável deve ter no máximo 150 caracteres.",

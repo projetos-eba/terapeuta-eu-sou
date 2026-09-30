@@ -110,6 +110,7 @@ export function SessionsEvolutionChart({
   empty = false,
   points,
   previousPeriodLabel = "Período anterior",
+  variant = "area",
 }: {
   currentPeriodLabel?: string;
   empty?: boolean;
@@ -120,6 +121,7 @@ export function SessionsEvolutionChart({
     sessionsCompleted: number;
   }>;
   previousPeriodLabel?: string;
+  variant?: "area" | "columns";
 }) {
   const visualPoints =
     empty || points.length === 0
@@ -141,6 +143,9 @@ export function SessionsEvolutionChart({
         : best,
     null,
   );
+  const hasPreviousPeriod = points.some(
+    (point) => typeof point.previous === "number",
+  );
 
   return (
     <figure>
@@ -152,9 +157,15 @@ export function SessionsEvolutionChart({
           <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
           {currentPeriodLabel}
         </span>
-        {points.some((point) => typeof point.previous === "number") ? (
+        {hasPreviousPeriod ? (
           <span className="inline-flex items-center gap-2">
-            <span className="h-0 w-5 border-t-2 border-dashed border-brand-cyan" />
+            <span
+              className={
+                variant === "columns"
+                  ? "h-2.5 w-5 rounded-full bg-status-success"
+                  : "h-0 w-5 border-t-2 border-dashed border-brand-cyan"
+              }
+            />
             {previousPeriodLabel}
           </span>
         ) : null}
@@ -170,101 +181,163 @@ export function SessionsEvolutionChart({
         tabIndex={0}
       >
         <ResponsiveContainer height="100%" width="100%">
-          <AreaChart
-            accessibilityLayer
-            data={visualPoints}
-            margin={{ left: -22, right: 8, top: 12 }}
-          >
-            <defs>
-              <linearGradient id="sessionsArea" x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={colors.primary}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="58%"
-                  stopColor={colors.lavender}
-                  stopOpacity={0.16}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={colors.cyan}
-                  stopOpacity={0.02}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              stroke={colors.lavender}
-              strokeDasharray="3 5"
-              vertical={false}
-            />
-            <XAxis
-              axisLine={false}
-              dataKey="date"
-              minTickGap={28}
-              tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
-              tickFormatter={(value) =>
-                String(value).startsWith("referência") ? "" : shortDate(value)
-              }
-              tickLine={false}
-            />
-            <YAxis
-              allowDecimals={false}
-              axisLine={false}
-              tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
-              tickLine={false}
-              width={34}
-            />
-            <Tooltip
-              content={
-                <TherapistChartTooltip
-                  labelFormatter={(value) => fullDate(String(value))}
-                />
-              }
-              cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
-              isAnimationActive={false}
-            />
-            <Area
-              dataKey="sessionsCompleted"
-              dot={{
-                fill: "white",
-                r: 3,
-                stroke: colors.primary,
-                strokeWidth: 2,
-              }}
-              fill="url(#sessionsArea)"
-              isAnimationActive={false}
-              name={currentPeriodLabel}
-              activeDot={{
-                fill: colors.primary,
-                r: 6,
-                stroke: "white",
-                strokeWidth: 2,
-              }}
-              stroke={colors.primary}
-              strokeWidth={3}
-              type="monotone"
-            />
-            {points.some((point) => typeof point.previous === "number") ? (
-              <Line
-                dataKey="previous"
-                dot={false}
+          {variant === "columns" ? (
+            <BarChart
+              accessibilityLayer
+              barCategoryGap="26%"
+              barGap={4}
+              data={visualPoints}
+              margin={{ left: -22, right: 8, top: 12 }}
+            >
+              <CartesianGrid
+                stroke={colors.lavender}
+                strokeDasharray="3 5"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={false}
+                dataKey="date"
+                minTickGap={28}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickFormatter={(value) =>
+                  String(value).startsWith("referência")
+                    ? ""
+                    : shortDate(value)
+                }
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickLine={false}
+                width={34}
+              />
+              <Tooltip
+                content={
+                  <TherapistChartTooltip
+                    labelFormatter={(value) => fullDate(String(value))}
+                  />
+                }
+                cursor={{ fill: "var(--tes-color-surface-soft)" }}
                 isAnimationActive={false}
-                name={previousPeriodLabel}
+              />
+              <Bar
+                dataKey="sessionsCompleted"
+                fill={colors.primary}
+                isAnimationActive={false}
+                name={currentPeriodLabel}
+                radius={[7, 7, 0, 0]}
+              />
+              {hasPreviousPeriod ? (
+                <Bar
+                  dataKey="previous"
+                  fill={colors.success}
+                  isAnimationActive={false}
+                  name={previousPeriodLabel}
+                  radius={[7, 7, 0, 0]}
+                />
+              ) : null}
+            </BarChart>
+          ) : (
+            <AreaChart
+              accessibilityLayer
+              data={visualPoints}
+              margin={{ left: -22, right: 8, top: 12 }}
+            >
+              <defs>
+                <linearGradient id="sessionsArea" x1="0" x2="0" y1="0" y2="1">
+                  <stop
+                    offset="0%"
+                    stopColor={colors.primary}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="58%"
+                    stopColor={colors.lavender}
+                    stopOpacity={0.16}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={colors.cyan}
+                    stopOpacity={0.02}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke={colors.lavender}
+                strokeDasharray="3 5"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={false}
+                dataKey="date"
+                minTickGap={28}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickFormatter={(value) =>
+                  String(value).startsWith("referência")
+                    ? ""
+                    : shortDate(value)
+                }
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickLine={false}
+                width={34}
+              />
+              <Tooltip
+                content={
+                  <TherapistChartTooltip
+                    labelFormatter={(value) => fullDate(String(value))}
+                  />
+                }
+                cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
+                isAnimationActive={false}
+              />
+              <Area
+                dataKey="sessionsCompleted"
+                dot={{
+                  fill: "white",
+                  r: 3,
+                  stroke: colors.primary,
+                  strokeWidth: 2,
+                }}
+                fill="url(#sessionsArea)"
+                isAnimationActive={false}
+                name={currentPeriodLabel}
                 activeDot={{
-                  fill: colors.cyan,
-                  r: 5,
+                  fill: colors.primary,
+                  r: 6,
                   stroke: "white",
                   strokeWidth: 2,
                 }}
-                stroke={colors.cyan}
-                strokeDasharray="6 5"
-                strokeWidth={2}
+                stroke={colors.primary}
+                strokeWidth={3}
                 type="monotone"
               />
-            ) : null}
-          </AreaChart>
+              {hasPreviousPeriod ? (
+                <Line
+                  dataKey="previous"
+                  dot={false}
+                  isAnimationActive={false}
+                  name={previousPeriodLabel}
+                  activeDot={{
+                    fill: colors.cyan,
+                    r: 5,
+                    stroke: "white",
+                    strokeWidth: 2,
+                  }}
+                  stroke={colors.cyan}
+                  strokeDasharray="6 5"
+                  strokeWidth={2}
+                  type="monotone"
+                />
+              ) : null}
+            </AreaChart>
+          )}
         </ResponsiveContainer>
       </div>
       {!empty && points.length > 0 ? (
@@ -305,7 +378,7 @@ export function SessionsEvolutionChart({
       <figcaption className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         {empty
           ? "O gráfico será preenchido conforme as sessões forem concluídas no período."
-          : "Cada ponto mostra quantas sessões foram concluídas em um dia completo"}
+          : "O gráfico mostra quantas sessões foram concluídas em cada dia completo."}
       </figcaption>
     </figure>
   );
@@ -532,6 +605,7 @@ export function DistributionDonut({
   items,
   label,
   palette = "default",
+  showPercentage = false,
   showLegend = true,
   valueSuffix = "",
 }: {
@@ -541,7 +615,8 @@ export function DistributionDonut({
   emptyMessage?: string;
   items: Array<{ label: string; value: number }>;
   label: string;
-  palette?: "continuity" | "default" | "occupancy";
+  palette?: "continuity" | "default" | "occupancy" | "outcomes";
+  showPercentage?: boolean;
   showLegend?: boolean;
   valueSuffix?: string;
 }) {
@@ -550,6 +625,8 @@ export function DistributionDonut({
       ? [colors.primary, colors.lavender]
       : palette === "continuity"
         ? [colors.success, colors.mint]
+        : palette === "outcomes"
+          ? [colors.success, colors.danger, colors.cyan, colors.warning]
         : [
             colors.primary,
             colors.cyan,
@@ -559,11 +636,15 @@ export function DistributionDonut({
           ];
   const hasValues = items.some((item) => item.value > 0);
   const isReference = empty || !hasValues;
+  const total = items.reduce((sum, item) => sum + item.value, 0);
   const visualItems = isReference ? [{ label: "Sem dados", value: 1 }] : items;
   const accessibleLabel = isReference
     ? `${label}: ainda sem dados`
     : `${label}: ${items
-        .map((item) => `${item.label}, ${item.value}${valueSuffix}`)
+        .map(
+          (item) =>
+            `${item.label}, ${item.value}${valueSuffix}${showPercentage ? ` (${formatPercentageOfTotal(item.value, total)}%)` : ""}`,
+        )
         .join("; ")}`;
 
   return (
@@ -649,6 +730,9 @@ export function DistributionDonut({
                 <strong className="shrink-0 text-brand-deep">
                   {String(item.value).replace(".", ",")}
                   {valueSuffix}
+                  {showPercentage && total > 0
+                    ? ` (${formatPercentageOfTotal(item.value, total)}%)`
+                    : null}
                 </strong>
               </li>
             ))
@@ -661,6 +745,14 @@ export function DistributionDonut({
       ) : null}
     </div>
   );
+}
+
+function formatPercentageOfTotal(value: number, total: number) {
+  if (total === 0) return "0";
+
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 1,
+  }).format((value / total) * 100);
 }
 
 export function MetricsHeatmap({

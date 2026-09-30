@@ -418,7 +418,9 @@ export function AdminOperationDetailPage({
                 <dl className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {section.fields.map((field) => (
                     <div
-                      className="rounded-md border border-border bg-surface-muted p-3"
+                      className={`rounded-md border border-border bg-surface-muted p-3${
+                        field.fullWidth ? " md:col-span-2 xl:col-span-3" : ""
+                      }`}
                       key={`${section.title}-${field.label}`}
                     >
                       <dt className="text-xs font-bold text-tesText-secondary">

@@ -202,9 +202,9 @@ describe("AdminTherapyEditor", () => {
       />,
     );
 
-    expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "100");
+    expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('textarea[name="description"]')).toHaveAttribute("maxLength", "200");
-    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "160");
+    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "240");
     expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "200");
     expect(document.querySelector('textarea[name="safetyNote"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('input[name="benefitDescription"]')).toHaveAttribute("maxLength", "100");
@@ -214,10 +214,10 @@ describe("AdminTherapyEditor", () => {
     fireEvent.change(screen.getByLabelText("Benefício 1"), { target: { value: "Pausa" } });
     fireEvent.change(screen.getByLabelText("Benefício 2"), { target: { value: "Cuidado" } });
     fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!, { target: { value: "Cadastro inicial." } });
-    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, { target: { value: "r".repeat(101) } });
+    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, { target: { value: "r".repeat(151) } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
 
-    expect(await screen.findByText("O resumo deve ter no máximo 100 caracteres.")).toBeInTheDocument();
+    expect(await screen.findByText("O resumo deve ter no máximo 150 caracteres.")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });
 

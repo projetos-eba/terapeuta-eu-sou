@@ -296,7 +296,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "short_description_too_long",
       422,
-      "O resumo deve ter no máximo 100 caracteres.",
+      "O resumo deve ter no máximo 150 caracteres.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_DESCRIPTION_TOO_LONG")) {
@@ -310,7 +310,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "introduction_too_long",
       422,
-      "O campo O que é deve ter no máximo 160 caracteres.",
+      "O campo O que é deve ter no máximo 240 caracteres.",
     );
   }
   if (

@@ -48,6 +48,7 @@ type PublicHomeTherapistPlanRow = {
 };
 
 type PublicHomeTherapistContentRow = {
+  essence_body: string | null;
   guide_items: Array<{ label?: string | null }> | null;
   slug: string;
 };
@@ -247,19 +248,26 @@ function applyTherapistContent(
   contentRows: PublicHomeTherapistContentRow[],
 ) {
   const contentBySlug = new Map(
-    contentRows.map((row) => [row.slug, normalizeGuideItems(row.guide_items)]),
+    contentRows.map((row) => [
+      row.slug,
+      {
+        essence: row.essence_body?.trim() || undefined,
+        guideItems: normalizeGuideItems(row.guide_items),
+      },
+    ]),
   );
 
   return therapists.map((therapist) => {
-    const guideItems = contentBySlug.get(therapist.slug);
+    const content = contentBySlug.get(therapist.slug);
 
-    if (!guideItems?.length) {
+    if (!content) {
       return therapist;
     }
 
     return {
       ...therapist,
-      guideItems,
+      ...(content.essence ? { essence: content.essence } : {}),
+      ...(content.guideItems.length ? { guideItems: content.guideItems } : {}),
     };
   });
 }
@@ -355,7 +363,7 @@ async function hydrateFeaturedTherapists(
       ),
       fetchPublicHomeRows<PublicHomeTherapistContentRow>(
         "public_therapist_profile_content_v",
-        `select=slug,guide_items&slug=in.(${slugs})`,
+        `select=slug,essence_body,guide_items&slug=in.(${slugs})`,
       ),
       fetchPublicHomeRows<PublicHomeTherapistServiceRow>(
         "public_therapist_profile_services_v",

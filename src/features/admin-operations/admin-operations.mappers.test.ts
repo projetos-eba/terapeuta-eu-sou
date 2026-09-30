@@ -354,6 +354,56 @@ describe("admin operation mappers", () => {
     expect(row.title).toBe("Avaliação operacional");
   });
 
+  it("shows the client and observation only in the authorized review detail", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T23:30:00.000Z",
+      module: "reviews",
+      record: {
+        comment: "A condução foi clara e acolhedora.",
+        id: "review-1",
+        patient_name: "Mariana Souza",
+        rating: 5,
+        status: "published",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "Cliente", value: "Mariana Souza" },
+          {
+            fullWidth: true,
+            label: "Observação",
+            value: "A condução foi clara e acolhedora.",
+          },
+        ]),
+        title: "Avaliação",
+      }),
+    );
+  });
+
+  it("keeps an absent review observation out of the detail", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T23:30:00.000Z",
+      module: "reviews",
+      record: {
+        comment: "   ",
+        id: "review-1",
+        rating: 5,
+        status: "published",
+      },
+    });
+
+    const reviewSection = detail.sections.find(
+      (section) => section.title === "Avaliação",
+    );
+    expect(reviewSection?.fields).not.toContainEqual(
+      expect.objectContaining({ label: "Observação" }),
+    );
+  });
+
   it("does not expose meeting urls in session rows", () => {
     const [row] = mapAdminOperationRows({
       module: "sessions",

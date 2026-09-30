@@ -7,6 +7,7 @@ import { AdminProfessionalDetailPage } from "./admin-professional-detail-page";
 import { AdminSessionDetailPage } from "./admin-session-detail-page";
 import { AdminSupportDetailPage } from "./admin-support-detail-page";
 import { AdminVerificationDetailPage } from "./admin-verification-detail-page";
+import { AdminOperationDetailPage } from "./admin-operation-page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -35,6 +36,35 @@ function detailData(
 }
 
 describe("admin operation detail pages", () => {
+  it("renders the review client and observation in the authorized detail", () => {
+    const html = renderToStaticMarkup(
+      <AdminOperationDetailPage
+        data={detailData({
+          backHref: "/admin/avaliacoes",
+          module: "reviews",
+          sections: [
+            {
+              fields: [
+                { label: "Cliente", value: "Mariana Souza" },
+                {
+                  fullWidth: true,
+                  label: "Observação",
+                  value: "A condução foi clara e acolhedora.",
+                },
+              ],
+              title: "Avaliação",
+            },
+          ],
+          title: "Avaliação operacional",
+        })}
+      />,
+    );
+
+    expect(html).toContain("Mariana Souza");
+    expect(html).toContain("A condução foi clara e acolhedora.");
+    expect(html).toContain("xl:col-span-3");
+  });
+
   it("renders the professional profile as a safe published projection", () => {
     const html = renderToStaticMarkup(
       <AdminProfessionalDetailPage

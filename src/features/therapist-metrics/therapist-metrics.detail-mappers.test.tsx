@@ -236,6 +236,7 @@ describe("therapist metric detail contracts", () => {
     expect(
       screen.getByRole("heading", { name: "Movimento das sessões" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("vs. período anterior")).not.toBeInTheDocument();
     expect(screen.getByText("Comparecimento às sessões")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -243,7 +244,7 @@ describe("therapist metric detail contracts", () => {
       }),
     ).toBeInTheDocument();
     const outcomeDonut = screen.getByRole("img", {
-      name: /Como as sessões terminaram: Compareceram, 12/,
+      name: /Desfechos das sessões: Concluídas, 12 \(75%\); Canceladas, 2 \(12,5%\); Ausências, 1 \(6,3%\); Reagendadas, 1 \(6,3%\)/,
     });
     expect(
       outcomeDonut.querySelector("[data-chart-graphics-layer]"),
