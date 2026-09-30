@@ -187,6 +187,11 @@ describe("AdminTherapyEditor", () => {
     expect(screen.getByText("Cuidado complementar com presença e escuta.")).toBeInTheDocument();
     expect(screen.getByText("Também encontrada por: Reiki Usui, Terapia Reiki.")).toBeInTheDocument();
     expect(screen.getByText("Uma explicação pública sobre a prática.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Obrigatório para rastreabilidade administrativa. Use pelo menos 12 caracteres.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows the configured limits and blocks an overlong field", async () => {

@@ -216,6 +216,30 @@ Deno.test("maps profile database conflicts", () => {
   assertEquals((result as DomainError).status, 409);
 });
 
+Deno.test("maps an unexpected active-review transition without exposing database details", () => {
+  const result = mapTherapistProfileDatabaseError(
+    new SupabaseHttpError(400, "invalid therapist verification status transition"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "PROFILE_REVIEW_IN_PROGRESS");
+  assertEquals((result as DomainError).status, 409);
+  assertEquals(
+    (result as DomainError).message,
+    "Seu perfil já está em análise. Atualize a página para acompanhar a situação.",
+  );
+});
+
+Deno.test("maps suspended profile publication to the existing locked-profile contract", () => {
+  const result = mapTherapistProfileDatabaseError(
+    new SupabaseHttpError(400, "PROFILE_SUSPENDED"),
+  );
+
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "PROFILE_LOCKED");
+  assertEquals((result as DomainError).status, 403);
+});
+
 Deno.test("maps profile capability denials", () => {
   const result = mapTherapistProfileDatabaseError(
     new SupabaseHttpError(400, "CAPABILITY_NOT_ALLOWED: video"),
