@@ -1,6 +1,6 @@
 begin;
 
-select plan(4);
+select plan(6);
 
 select lives_ok(
   $$
@@ -27,11 +27,11 @@ select lives_ok(
     select public.admin_assert_therapy_content_lengths_v1(
       jsonb_build_object(
         'publicContent',
-        jsonb_build_object('introduction', repeat('i', 240))
+        jsonb_build_object('introduction', repeat('i', 1000))
       )
     )
   $$,
-  'a 240-character public introduction is accepted'
+  'a 1000-character public introduction is accepted'
 );
 
 select throws_ok(
@@ -39,13 +39,39 @@ select throws_ok(
     select public.admin_assert_therapy_content_lengths_v1(
       jsonb_build_object(
         'publicContent',
-        jsonb_build_object('introduction', repeat('i', 241))
+        jsonb_build_object('introduction', repeat('i', 1001))
       )
     )
   $$,
   'P0001',
   'ADMIN_THERAPY_CATALOG_INTRODUCTION_TOO_LONG',
-  'a public introduction above 240 characters is rejected'
+  'a public introduction above 1000 characters is rejected'
+);
+
+select lives_ok(
+  $$
+    select public.admin_assert_therapy_content_lengths_v1(
+      jsonb_build_object(
+        'publicContent',
+        jsonb_build_object('complementaryDescription', repeat('c', 1000))
+      )
+    )
+  $$,
+  'a 1000-character complementary description is accepted'
+);
+
+select throws_ok(
+  $$
+    select public.admin_assert_therapy_content_lengths_v1(
+      jsonb_build_object(
+        'publicContent',
+        jsonb_build_object('complementaryDescription', repeat('c', 1001))
+      )
+    )
+  $$,
+  'P0001',
+  'ADMIN_THERAPY_CATALOG_COMPLEMENTARY_DESCRIPTION_TOO_LONG',
+  'a complementary description above 1000 characters is rejected'
 );
 
 select * from finish();

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PublicTherapyDetail } from "../../types/therapy-detail";
@@ -54,5 +54,31 @@ describe("TherapyDetailPage", () => {
       screen.queryByText("Cada pessoa é única, e cada caminho também."),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Perguntas frequentes")).not.toBeInTheDocument();
+  });
+
+  it("abre o texto completo quando a apresentação é extensa", () => {
+    const longIntroduction = "Texto público ".repeat(20);
+
+    render(
+      <TherapyDetailPage
+        relatedTherapists={[]}
+        source="directory"
+        sort="az"
+        therapy={{
+          ...therapy,
+          complementaryDescription: "Detalhe complementar.",
+          introduction: longIntroduction,
+        }}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver mais sobre Reiki" }),
+    );
+
+    expect(screen.getByRole("dialog")).toHaveTextContent(longIntroduction);
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "Detalhe complementar.",
+    );
   });
 });

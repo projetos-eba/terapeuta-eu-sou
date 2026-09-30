@@ -1,9 +1,17 @@
+import { PublicServiceDescription } from "@/features/therapist-profile/components/public-service-description";
+
 import type { PublicTherapyDetail } from "../../types/therapy-detail";
 import { DetailIcon } from "./detail-icons";
 import { therapyVisualThemes } from "./therapy-visual-theme";
 
 export function TherapyOverview({ therapy }: { therapy: PublicTherapyDetail }) {
   const visualTheme = therapyVisualThemes[therapy.visualThemeKey];
+  const description = [
+    therapy.introduction || therapy.description,
+    therapy.complementaryDescription,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return (
     <article
@@ -18,12 +26,12 @@ export function TherapyOverview({ therapy }: { therapy: PublicTherapyDetail }) {
         </h2>
       </div>
 
-      <div className="mt-7 space-y-5 text-base font-semibold leading-8 text-[#4d456f]">
-        <p>{therapy.introduction || therapy.description}</p>
-        {therapy.complementaryDescription ? (
-          <p>{therapy.complementaryDescription}</p>
-        ) : null}
-      </div>
+      <PublicServiceDescription
+        containerClassName="mt-7"
+        description={description}
+        serviceName={therapy.name}
+        textClassName="min-h-0 whitespace-pre-line text-base font-semibold leading-8 text-tesText-secondary"
+      />
     </article>
   );
 }

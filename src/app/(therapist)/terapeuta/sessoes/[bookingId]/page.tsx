@@ -23,6 +23,7 @@ import {
 import { canUseTherapistCapability } from "@/domain/tes";
 import {
   BookingReference,
+  formatSessionDateTime,
   formatSessionMoney,
   getSessionOperationDisabledReason,
   getZoomAccessLabel,
@@ -51,6 +52,7 @@ import {
   type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
 import { getTherapistPostSessionAction } from "@/features/therapist-sessions/session-feedback-action";
+import { TherapistEarlyRoomEntry } from "@/features/therapist-sessions/components/therapist-early-room-entry";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
@@ -826,13 +828,17 @@ function SessionPrimaryAction({
   }
 
   return (
-    <Link
-      className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-6 text-base font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+    <TherapistEarlyRoomEntry
+      access={booking.zoomAccess}
       href={routes.therapist.sessionVideo(booking.bookingId)}
-    >
-      <Video aria-hidden="true" className="size-5" />
-      {presentation.actions.canAccessZoom ? "Abrir sala" : "Acompanhar a sala"}
-    </Link>
+      label={
+        presentation.actions.canAccessZoom ? "Abrir sala" : "Acompanhar a sala"
+      }
+      scheduleLabel={formatSessionDateTime(
+        booking.zoomAccess.scheduledStartsAt ?? booking.startsAt,
+        booking.timezone,
+      )}
+    />
   );
 }
 

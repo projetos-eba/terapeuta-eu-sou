@@ -51,6 +51,14 @@ O fluxo real e host-first: paciente abre a tela primeiro e fica em sala de
 espera sem receber JWT; terapeuta entra; webhook `session.user_joined` confirma
 presenca; paciente e liberado por `preview` e so entao consome um token.
 
+No detalhe do terapeuta, validar também a confirmação de entrada antecipada:
+antes de T-15 o CTA mantém o direcionamento atual; de T-15 (inclusive) até
+T-1 minuto (exclusivo) ele abre o modal; a partir de T-1 minuto o CTA segue
+diretamente para a sala. Para uma sessão às 14h30, a última confirmação ocorre
+às 14h28:59. Fechar o modal não pode fazer request nem registrar chegada. O
+relógio usa o `serverNow` já entregue pelo read model, deve ser reavaliado no
+retorno à aba e na fronteira de entrada direta.
+
 A matriz local também cobre a janela anterior a T-15, a sala visual em T-15,
 terapeuta ausente, terapeuta presente aguardando paciente, ambos presentes,
 encerramento, reconexão e indisponibilidade de rede. O acesso por `feedback=1`
