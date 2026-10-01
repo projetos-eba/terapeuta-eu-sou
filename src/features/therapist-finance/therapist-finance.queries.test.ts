@@ -11,6 +11,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/public-config", () => configMocks);
 
 import {
+  queryTherapistFinancialMetrics,
   queryTherapistPayouts,
   queryTherapistReceipts,
 } from "./therapist-finance.queries";
@@ -82,6 +83,40 @@ describe("queryTherapistPayouts", () => {
           p_start_date: "2026-08-29",
           p_timezone: "America/Sao_Paulo",
           p_upcoming_days: 15,
+        }),
+        cache: "no-store",
+        headers: expect.objectContaining({
+          Authorization: "Bearer access-token",
+        }),
+        method: "POST",
+      }),
+    );
+  });
+});
+
+describe("queryTherapistFinancialMetrics", () => {
+  it("loads the V3 operational completed-session count without changing financial RPC inputs", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ contractVersion: 3 }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await queryTherapistFinancialMetrics("access-token", {
+      p_period_end: "2026-09-27",
+      p_period_start: "2026-08-29",
+      p_timezone: "America/Sao_Paulo",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/rest/v1/rpc/get_private_therapist_financial_metrics_v3",
+      expect.objectContaining({
+        body: JSON.stringify({
+          p_period_end: "2026-09-27",
+          p_period_start: "2026-08-29",
+          p_timezone: "America/Sao_Paulo",
         }),
         cache: "no-store",
         headers: expect.objectContaining({

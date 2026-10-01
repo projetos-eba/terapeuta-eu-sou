@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return failure("Envie os dados em formato valido.", 400);
+    return failure("invalid_payload", "Envie os dados em formato válido.", 400);
   }
 
   const config = getSupabasePublicConfig();
@@ -25,14 +25,18 @@ export async function POST(request: Request) {
   const accessToken = cookieStore.get("tes_admin_access_token")?.value;
 
   if (!config || !accessToken) {
-    return failure("Entre com uma conta administrativa para continuar.", 401);
+    return failure(
+      "admin_session_required",
+      "Entre com uma conta administrativa para continuar.",
+      401,
+    );
   }
 
   const permission = permissionForCommand(body);
   const session = await readAdminApiSession(config, accessToken);
 
   if (!session || !canUseAdminPermission(session.permissions, permission)) {
-    return failure("Acesso administrativo necessário.", 403);
+    return failure("admin_required", "Acesso administrativo necessário.", 403);
   }
 
   try {
@@ -59,7 +63,11 @@ export async function POST(request: Request) {
       status: response.status,
     });
   } catch {
-    return failure("Nao foi possivel atualizar o catalogo agora.", 503);
+    return failure(
+      "catalog_unavailable",
+      "Não foi possível atualizar o catálogo agora.",
+      503,
+    );
   }
 }
 
@@ -105,9 +113,9 @@ function permissionForCommand(value: unknown): AdminPermission {
   return "admin.therapies.manage";
 }
 
-function failure(message: string, status: number) {
+function failure(code: string, message: string, status: number) {
   return NextResponse.json(
-    { ok: false, error: { message } },
+    { ok: false, error: { code, message } },
     { headers: noStoreHeaders, status },
   );
 }

@@ -87,6 +87,15 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
     complementar”, mantendo os demais limites editoriais;
   - preserva os registros existentes e mantém formulário, contrato de
     salvamento e detalhe público alinhados.
+- `20261001153000_refine_admin_therapy_responsible_copy.sql`
+  - mantém o bloqueio de promessas editoriais afirmativas de cura, diagnóstico
+    ou resultado garantido;
+  - permite que a nota responsável registre limites legítimos, como informar
+    que uma prática não substitui diagnóstico, tratamento ou acompanhamento
+    profissional.
+  - a Edge Function descarta exclusivamente a propriedade legada de FAQ em
+    salvamentos antigos; FAQs não são persistidos nem apresentados pelo
+    catálogo atual.
 - `20260728103000_admin_therapy_catalog_phase3.sql`
   - adiciona `deprecated_at`, `archived_at` e `replacement_therapy_id`;
   - cria `therapy_slug_redirects`, `therapy_catalog_requests` e

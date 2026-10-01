@@ -228,8 +228,8 @@ select is(
 select is(
   public.get_session_attempt_attendance_batch_v1(array['b8000000-0000-4000-8000-000000000002'::uuid])
     #>> '{b8000000-0000-4000-8000-000000000002,actorRealized}',
-  'true',
-  'day-seven confirmation marks the patient encounter as realized'
+  'false',
+  'automatic confirmation does not mark the patient encounter as realized without bilateral quality feedback'
 );
 select ok(
   not exists (
