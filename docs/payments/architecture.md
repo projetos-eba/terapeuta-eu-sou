@@ -372,6 +372,16 @@ idempotente quando o slot já foi reivindicado. Se o horário tiver sido ocupado
 por outra reserva, o claim falha fechado: o webhook não confirma a reserva, não
 cria obrigação de Transfer e exige conciliação do pagamento capturado, sem
 reabrir uma sessão sobreposta. O
+mesmo Checkout pode emitir primeiro uma falha e depois um sucesso quando a
+pessoa troca o cartão sem sair da página. Nesse caso, a recuperação é aceita
+somente para o Checkout e PaymentIntent atuais e já vinculados, com evento mais
+novo, reserva futura, horário ainda disponível e ausência de setup, cobrança
+agendada, Transfer, reembolso ou disputa. Para `initial_hold`, o sucesso também
+precisa ter sido criado pela Stripe dentro dos cinco minutos originais; atraso
+de entrega do webhook não invalida esse instante do provedor. A recuperação
+reabre apenas o estado de pagamento e então reutiliza a confirmação V10
+canônica, que grava ledger e uma única obrigação de Transfer. Qualquer
+divergência falha fechada e permanece para conciliação administrativa. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
