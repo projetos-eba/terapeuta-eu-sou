@@ -895,19 +895,19 @@ begin
   )
   select coalesce(jsonb_agg(
     jsonb_build_object(
-      'index', offset.value,
-      'currentDate', v_current_local_start + offset.value,
-      'previousDate', v_previous_local_start + offset.value,
+      'index', date_offset.value,
+      'currentDate', v_current_local_start + date_offset.value,
+      'previousDate', v_previous_local_start + date_offset.value,
       'current', coalesce(current_day.completed_count, 0),
       'previous', coalesce(previous_day.completed_count, 0)
-    ) order by offset.value
+    ) order by date_offset.value
   ), '[]'::jsonb)
     into v_points
-  from generate_series(0, p_period_days - 1) as offset(value)
+  from generate_series(0, p_period_days - 1) as date_offset(value)
   left join realized_by_day as current_day
-    on current_day.metric_date = v_current_local_start + offset.value
+    on current_day.metric_date = v_current_local_start + date_offset.value
   left join realized_by_day as previous_day
-    on previous_day.metric_date = v_previous_local_start + offset.value;
+    on previous_day.metric_date = v_previous_local_start + date_offset.value;
 
   return v_base || jsonb_build_object(
     'contractVersion', 2,
