@@ -144,9 +144,12 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
-- Música é opcional, sem autoplay e sem asset fictício; sem fonte licenciada,
-  manter o card visual com play inativo. A interface opcional `ambientAudioSrc`
-  só toca após gesto explícito do usuário.
+- A música ambiente da espera usa o recurso local versionado
+  `/zoom/waiting-room-ambient.mp3` e é iniciada por padrão, com opção de
+  pausar. Se o navegador bloquear reprodução audível sem gesto, manter o
+  controle em “Ativar áudio ambiente”, sem indicar falsamente que a música
+  está tocando. Esse áudio não solicita microfone nem participa do join do
+  Video SDK.
 - O feedback bilateral usa `skills/session-feedback`, é privado, independente
   de `reviews` públicos e também aparece somente como leitura no detalhe Admin.
 - Pela ADR-024, resposta privada não confirma presença. Após persistir, atualizar

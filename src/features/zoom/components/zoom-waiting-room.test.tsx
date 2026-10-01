@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ZoomWaitingRoom } from "./zoom-waiting-room";
@@ -308,7 +314,43 @@ describe("ZoomWaitingRoom", () => {
     );
   });
 
-  it("enables the play control only when an ambient audio source is provided", () => {
+  it("starts the provided ambient audio and lets the person pause it", async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockResolvedValue();
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, "pause")
+      .mockImplementation(() => undefined);
+
+    render(
+      <ZoomWaitingRoom
+        {...baseProps}
+        ambientAudioSrc="/zoom/ambient-waiting-room.mp3"
+      />,
+    );
+
+    await waitFor(() => expect(play).toHaveBeenCalled());
+    const pauseButton = await screen.findByRole("button", {
+      name: "Pausar áudio ambiente",
+    });
+    expect(pauseButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("waiting-room-ambient-audio")).toHaveAttribute(
+      "src",
+      "/zoom/ambient-waiting-room.mp3",
+    );
+
+    fireEvent.click(pauseButton);
+
+    expect(pause).toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Ativar áudio ambiente" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("keeps an activation control when the browser blocks audible autoplay", async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockRejectedValue(new Error("autoplay blocked"));
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
       () => undefined,
     );
@@ -320,8 +362,9 @@ describe("ZoomWaitingRoom", () => {
       />,
     );
 
+    await waitFor(() => expect(play).toHaveBeenCalled());
     expect(
-      screen.getByRole("button", { name: "Ouvir áudio ambiente" }),
-    ).toBeEnabled();
+      screen.getByRole("button", { name: "Ativar áudio ambiente" }),
+    ).toHaveAttribute("aria-pressed", "false");
   });
 });

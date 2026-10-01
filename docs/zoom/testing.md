@@ -70,8 +70,11 @@ ausência de telemetria não bloqueia a resposta nem os prazos automáticos.
 A sala de espera também deve comprovar que as três capas locais aparecem nos
 estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
 áudio solicita apenas microfone, e que os tracks de prévia são liberados ao
-entrar ou sair. Áudio ambiente sem fonte licenciada permanece visível, porém
-inativo e sem autoplay.
+entrar ou sair. O áudio ambiente local em
+`/zoom/waiting-room-ambient.mp3` inicia por padrão e pode ser pausado. Quando
+o navegador bloquear reprodução audível sem gesto, o controle deve permanecer
+em “Ativar áudio ambiente”, sem indicar falsamente que a música está tocando.
+Ele não solicita microfone nem participa do join do Video SDK.
 
 O teste do adapter deve cobrir os dois papéis: com câmera e microfone ligados
 na sala de espera, o `join` deve chamar a ativação das duas mídias na sala
