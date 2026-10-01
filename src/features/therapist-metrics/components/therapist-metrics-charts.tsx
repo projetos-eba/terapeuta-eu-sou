@@ -128,8 +128,9 @@ export function SessionsEvolutionChart({
   scheduledLabel?: string;
   variant?: "area" | "columns";
 }) {
+  const isReference = empty || points.length === 0;
   const visualPoints =
-    empty || points.length === 0
+    isReference
       ? Array.from({ length: 7 }, (_, index) => ({
           date: `referência-${index + 1}`,
           sessionsCompleted: 0,
@@ -239,9 +240,11 @@ export function SessionsEvolutionChart({
               />
               <Tooltip
                 content={
-                  <TherapistChartTooltip
-                    labelFormatter={(value) => fullDate(String(value))}
-                  />
+                  isReference ? () => null : (
+                    <TherapistChartTooltip
+                      labelFormatter={(value) => fullDate(String(value))}
+                    />
+                  )
                 }
                 cursor={{ fill: "var(--tes-color-surface-soft)" }}
                 isAnimationActive={false}
@@ -312,9 +315,11 @@ export function SessionsEvolutionChart({
               />
               <Tooltip
                 content={
-                  <TherapistChartTooltip
-                    labelFormatter={(value) => fullDate(String(value))}
-                  />
+                  isReference ? () => null : (
+                    <TherapistChartTooltip
+                      labelFormatter={(value) => fullDate(String(value))}
+                    />
+                  )
                 }
                 cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
                 isAnimationActive={false}
@@ -423,8 +428,9 @@ export function PeopleEvolutionChart({
   empty?: boolean;
   points: Array<{ date: string; newPeople: number; totalPeople: number }>;
 }) {
+  const isReference = empty || points.length === 0;
   const visualPoints =
-    empty || points.length === 0
+    isReference
       ? Array.from({ length: 7 }, (_, index) => ({
           date: `referência-${index + 1}`,
           newPeople: 0,
@@ -501,9 +507,11 @@ export function PeopleEvolutionChart({
             />
             <Tooltip
               content={
-                <TherapistChartTooltip
-                  labelFormatter={(value) => fullDate(String(value))}
-                />
+                isReference ? () => null : (
+                  <TherapistChartTooltip
+                    labelFormatter={(value) => fullDate(String(value))}
+                  />
+                )
               }
               cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
               isAnimationActive={false}
@@ -980,10 +988,28 @@ function shortDate(value: string) {
 }
 
 function fullDate(value: string) {
+  if (!isCalendarDate(value)) return "Detalhes do ponto";
+
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "long",
     timeZone: "UTC",
   }).format(new Date(`${value}T12:00:00Z`));
+}
+
+function isCalendarDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 function formatChartValue(

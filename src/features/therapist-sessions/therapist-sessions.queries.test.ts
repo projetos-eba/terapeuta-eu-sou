@@ -40,7 +40,7 @@ describe("therapist quality feedback query", () => {
 
     expect(supabaseServerRestRpc).toHaveBeenCalledWith(
       expect.objectContaining({ accessToken: "therapist-token" }),
-      "get_therapist_sessions_v2",
+      "get_therapist_sessions_v3",
       expect.objectContaining({
         p_include_future_terminal: true,
         p_limit: 5,

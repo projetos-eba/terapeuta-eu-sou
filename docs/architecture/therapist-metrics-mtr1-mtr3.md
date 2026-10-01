@@ -10,8 +10,12 @@ Status revisado em 2026-09-27:
 
 ## Autoridades
 
-- Sessões, pessoas atendidas e minutos: `bookings.status = completed`, usando
-  `service_duration_minutes_snapshot`.
+- Sessões realizadas, pessoas atendidas e minutos:
+  `is_session_realized_for_reporting_v1(booking_id)`, que exige presença
+  bilateral encerrada e duas avaliações de qualidade positivas no mesmo
+  `session_attempt`; usa `service_duration_minutes_snapshot`. Essa leitura é
+  exclusivamente analítica e não muda `bookings.status`, confirmações,
+  pagamento, ledger ou repasse.
 - Favoritos: `favorite_therapists`, sempre associados ao perfil do terapeuta.
 - Impressão na busca, abertura do perfil e início do agendamento:
   `therapist_metric_events`.
@@ -89,9 +93,11 @@ O RPC privado `get_therapist_metrics_overview_v1(period)`:
 - distingue `ready`, `empty`, `insufficient_sample`, `processing` e
   `unavailable`.
 
-`get_therapist_metrics_overview_v2(period)` é aditivo e usado pela interface
-atual. Ele aceita somente 30 ou 60 dias locais completos. A V1 mantém os
-períodos históricos de compatibilidade para consumidores já existentes.
+`get_therapist_metrics_overview_v2(period)` permanece compatível. A interface
+atual usa `get_therapist_metrics_overview_v3(period)`, que conserva os períodos
+locais completos de 30 ou 60 dias e alinha os contadores, série diária e ranking
+à avaliação bilateral positiva. As V1/V2 continuam disponíveis para consumidores
+compatíveis.
 
 Read models:
 
@@ -180,11 +186,23 @@ da agenda esconda um horário já reservado ou produza ocupação acima de 100%.
 O heatmap continua sendo histórico e é apresentado como frequência de sessões
 concluídas.
 
+### Realização bilateral — overview V3 e dashboard V5
+
+`get_therapist_metrics_dashboard_v5(30|60)` preserva a agenda futura da V4 e
+compõe os contratos V3 de visão geral e sessões. Uma sessão passa a integrar
+Métricas quando as duas pessoas registram **Sim** na avaliação de qualidade da
+mesma tentativa, depois de presença bilateral e encerramento confiáveis. Uma
+resposta negativa, ausência, incidente ou avaliação de tentativa anterior não
+entra na contagem. Essa regra não publica nem altera o status operacional da
+sessão e não tem qualquer efeito financeiro.
+
 ### Sessões agendadas e concluídas — MTR-4 V2
 
-`get_therapist_session_metrics_v2(30|60)` é um contrato aditivo usado pela
-aba **Sessões**. A V1 continua disponível, sem alteração, para consumidores
-compatíveis. A V2 preserva todos os agregados da V1 e acrescenta
+`get_therapist_session_metrics_v2(30|60)` continua disponível para consumidores
+compatíveis. A aba **Sessões** usa `get_therapist_session_metrics_v3(30|60)`,
+que preserva a série de sessões agendadas da V2 e aplica a regra bilateral de
+realização aos contadores, evolução, frequência, presença e distribuição. A V2
+preserva todos os agregados da V1 e acrescenta
 `evolution.points[].sessionsScheduled`.
 
 Essa série conta, por data local marcada, os bookings que efetivamente chegaram

@@ -668,7 +668,7 @@ Read models privados:
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
-- `get_private_therapist_financial_metrics_v2` para métricas F2 Premium e
+- `get_private_therapist_financial_metrics_v3` para métricas F2 Premium e
   Premium Plus;
 - `get_private_therapist_advanced_financial_dashboard_v2` e contratos
   segmentados F3 para Premium Plus.

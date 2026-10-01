@@ -208,6 +208,25 @@ test.describe("therapist metrics visual states", () => {
     ).toHaveCount(1);
   });
 
+  test("keeps reference session charts stable on desktop hover", async ({
+    page,
+  }) => {
+    await loginAsTherapist(page, metricsEmptyEmail, therapistPassword);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/terapeuta/insights?tab=sessions&period=30");
+
+    const chart = page.getByLabel(
+      "Evolução diária das sessões agendadas e concluídas: ainda sem dados",
+    );
+    await expect(chart).toBeVisible();
+    await chart.locator(".recharts-bar-rectangle").first().hover();
+
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Movimento das sessões" }),
+    ).toBeVisible();
+  });
+
   test("renders accumulated data and changes real values between 30 and 90 days", async ({
     page,
   }) => {

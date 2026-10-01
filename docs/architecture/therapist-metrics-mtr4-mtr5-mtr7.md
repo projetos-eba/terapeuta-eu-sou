@@ -13,10 +13,16 @@ O read model privado `get_therapist_session_metrics_v1` oferece períodos de 30,
 60, 90 ou 120 dias locais completos e deriva a identidade exclusivamente de
 `auth.uid()`.
 
+Na interface atual, a versão V3 é a autoridade para sessões realizadas. Ela
+não altera o ciclo operacional nem financeiro: usa somente respostas de
+qualidade positivas de paciente e terapeuta na tentativa vigente, depois da
+presença bilateral encerrada. Uma resposta negativa mantém a sessão fora das
+leituras de realização, mesmo que outros processos administrativos continuem.
+
 | Leitura                     | Fonte autoritativa                             | Regra                                        |
 | --------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| Sessões realizadas          | `bookings.status = completed`                  | sem duplicar “concluídas”                    |
-| Presença operacional        | completed / (completed + no-show)              | mínimo de 10 desfechos elegíveis             |
+| Sessões realizadas          | `is_session_realized_for_reporting_v1`         | duas avaliações positivas na tentativa atual, com presença bilateral encerrada |
+| Presença operacional        | realizadas / (realizadas + no-show)            | mínimo de 10 desfechos elegíveis             |
 | Cancelamentos               | estados cancelados de `bookings`               | paciente e terapeuta preservados no agregado |
 | Reagendamentos aplicados    | `booking_reschedule_requests.status = applied` | contabiliza aplicação, não intenção          |
 | Duração média reservada     | `service_duration_minutes_snapshot`            | não representa tempo clínico real            |

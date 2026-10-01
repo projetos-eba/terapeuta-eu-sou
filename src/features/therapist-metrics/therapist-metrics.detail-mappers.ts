@@ -71,9 +71,9 @@ export function mapTherapistSessionEvolutionComparison(
     }
 
     return {
-      contractVersion: literal(value.contractVersion, 1),
+      contractVersion: oneOf(value.contractVersion, 1, 2),
       meta,
-      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
+      metricDefinitionVersion: oneOf(value.metricDefinitionVersion, 1, 2),
       points,
       status: emptyOrReady(value.status),
       therapist: therapist(value.therapist),
@@ -92,7 +92,7 @@ export function mapTherapistSessionMetrics(
     const summary = record(value.summary);
     const evolution = record(value.evolution);
     const cancellationReasons = record(value.cancellationReasons);
-    const metricDefinitionVersion = oneOf(value.metricDefinitionVersion, 1, 2);
+    const metricDefinitionVersion = oneOf(value.metricDefinitionVersion, 1, 2, 3);
     const mapSessionDayOfWeek =
       metricDefinitionVersion === 1 ? legacyDayOfWeek : dayOfWeek;
     const heatmapItem = (item: Record<string, unknown>) => ({
@@ -118,7 +118,7 @@ export function mapTherapistSessionMetrics(
         ),
         status: literal(cancellationReasons.status, "unavailable"),
       },
-      contractVersion: oneOf(value.contractVersion, 1, 2),
+      contractVersion: oneOf(value.contractVersion, 1, 2, 3),
       evolution: {
         points: array(evolution.points).map((point) => {
           const item = record(point);
@@ -129,7 +129,7 @@ export function mapTherapistSessionMetrics(
             sessionsCompleted: nonNegativeInteger(item.sessionsCompleted),
             sessionsRescheduled: nonNegativeInteger(item.sessionsRescheduled),
             sessionsScheduled:
-              value.contractVersion === 2
+              value.contractVersion === 2 || value.contractVersion === 3
                 ? nonNegativeInteger(item.sessionsScheduled)
                 : undefined,
           };
@@ -547,9 +547,23 @@ function nullableDateTime(value: unknown) {
 
 function metricDate(value: unknown) {
   const parsed = nonEmptyString(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(parsed);
+  if (!match) {
     throw new Error("Invalid metric date.");
   }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error("Invalid metric date.");
+  }
+
   return parsed;
 }
 

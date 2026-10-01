@@ -5,6 +5,7 @@ import { DomainError } from "../_shared/payments/http.ts";
 import {
   assertAdminCatalogPermission,
   mapAdminTherapyCatalogDatabaseError,
+  omitRetiredTherapyFaqs,
   permissionForAdminTherapyCatalogCommand,
   validateAdminTherapyCatalogCommand,
 } from "./catalog-command.ts";
@@ -68,6 +69,20 @@ Deno.test(
     assertEquals(command.action, "save");
   },
 );
+
+Deno.test("keeps legacy FAQ input out of a therapy draft command", () => {
+  assertEquals(
+    omitRetiredTherapyFaqs({
+      faqs: [{ answer: "Texto antigo", question: "Pergunta antiga" }],
+      name: "Nova terapia",
+      slug: "nova-terapia",
+    }),
+    {
+      name: "Nova terapia",
+      slug: "nova-terapia",
+    },
+  );
+});
 
 Deno.test("rejects unknown admin catalog actions", () => {
   assertThrows(
@@ -172,6 +187,6 @@ Deno.test("maps therapy content limits to clear product messages", () => {
   assertEquals(introduction.code, "introduction_too_long");
   assertEquals(
     introduction.message,
-    "O campo O que é deve ter no máximo 240 caracteres.",
+    "O campo O que é deve ter no máximo 1.000 caracteres.",
   );
 });

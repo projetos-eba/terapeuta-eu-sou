@@ -87,6 +87,25 @@ describe("therapist metric detail contracts", () => {
     );
   });
 
+  it("maps the V3 bilateral-reporting session contract and its scheduled series", () => {
+    const payload = sessionPayload();
+    payload.contractVersion = 3;
+    payload.metricDefinitionVersion = 3;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 1, hourBucketStart: 18, sessions: 12 }],
+      observedSample: 12,
+      status: "ready",
+    };
+
+    expect(mapTherapistSessionMetrics(payload)).toMatchObject({
+      contractVersion: 3,
+      evolution: {
+        points: [{ sessionsScheduled: 15 }],
+      },
+      metricDefinitionVersion: 3,
+    });
+  });
+
   it("keeps the V1 session payload readable for the dashboard contract", () => {
     const payload = sessionPayload();
     payload.contractVersion = 1;
@@ -97,6 +116,16 @@ describe("therapist metric detail contracts", () => {
       contractVersion: 1,
       evolution: { status: "ready" },
     });
+  });
+
+  it("rejects an impossible calendar date before it can reach the chart", () => {
+    const payload = sessionPayload();
+    const evolution = payload.evolution as {
+      points: Array<Record<string, unknown>>;
+    };
+    evolution.points[0].date = "2026-02-30";
+
+    expect(() => mapTherapistSessionMetrics(payload)).toThrow();
   });
 
   it("combines absence classifications for the therapist chart and CSV", () => {

@@ -368,8 +368,8 @@ export function AdminTherapyEditor({
         />
         <Textarea
           defaultValue={therapy?.publicContent.safetyNote}
-          help="Registre um cuidado importante sobre a linguagem da terapia, sem prometer cura, diagnóstico ou resultado. Nesta versão, esse texto orienta a curadoria do catálogo e não aparece na página pública."
-          hint="Ex.: Esta prática complementar não substitui acompanhamento médico, psicológico ou tratamento de saúde."
+          help="Registre um limite importante da prática. Você pode esclarecer que ela não substitui diagnóstico, tratamento ou acompanhamento profissional. Não use afirmações de resultado. Nesta versão, esse texto orienta a curadoria do catálogo e não aparece na página pública."
+          hint="Ex.: Esta prática complementar não substitui diagnóstico, tratamento ou acompanhamento profissional de saúde."
           label="Nota responsável"
           maxLength={contentLimits.safetyNote}
           name="safetyNote"

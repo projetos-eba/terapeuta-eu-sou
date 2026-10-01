@@ -15,6 +15,7 @@ import {
 import {
   assertAdminCatalogPermission,
   mapAdminTherapyCatalogDatabaseError,
+  omitRetiredTherapyFaqs,
   permissionForAdminTherapyCatalogCommand,
   type AdminTherapyCatalogCommandBody,
   validateAdminTherapyCatalogCommand,
@@ -131,7 +132,7 @@ runtime.serve(async (request) => {
         return success(
           await client.rpc("admin_upsert_therapy_draft_with_matching_v1", {
             p_actor_user_id: user.id,
-            p_payload: command.payload,
+            p_payload: omitRetiredTherapyFaqs(command.payload),
             p_request_id: command.requestId,
           }),
         );

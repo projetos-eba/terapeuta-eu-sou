@@ -311,6 +311,9 @@ the related demand tip is not rendered without `agenda_insights`.
   `get_therapist_blocks_v1` e a Edge `therapist-blocks-update`.
 - Bloqueios usa lista compacta, right rail contextual, visão mensal e regras
   reais. Não substituir essa composição por uma grade genérica de KPIs.
+- A leitura padrão de Bloqueios deve percorrer todas as páginas por cursor do
+  período antes de compor a lista ou a visão mensal. O limite de uma requisição
+  não pode fazer a visão mensal omitir dias que o resumo já contabiliza.
 - Pop-ups de Horários e Bloqueios usam `TESDialog`; não criar overlay local
   dentro da feature.
 - A aba Horários apresenta informações contextuais acessíveis para intervalo

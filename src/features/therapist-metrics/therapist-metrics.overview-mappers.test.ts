@@ -52,6 +52,17 @@ describe("therapist metrics overview mapper", () => {
     });
   });
 
+  it("maps the V3 bilateral-reporting overview contract", () => {
+    const input = rawOverview();
+    input.contractVersion = 3;
+    input.metricDefinitionVersion = 3;
+
+    expect(mapTherapistMetricsOverview(input)).toMatchObject({
+      contractVersion: 3,
+      metricDefinitionVersion: 3,
+    });
+  });
+
   it("maps a ready cohort rate with its directional copy key", () => {
     const input = rawOverview();
     input.discovery.status = "ready";

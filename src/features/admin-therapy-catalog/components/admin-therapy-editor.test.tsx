@@ -192,6 +192,14 @@ describe("AdminTherapyEditor", () => {
         "Obrigatório para rastreabilidade administrativa. Use pelo menos 12 caracteres.",
       ),
     ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Entenda o campo Nota responsável" }),
+    );
+    expect(
+      screen.getByText(
+        "Registre um limite importante da prática. Você pode esclarecer que ela não substitui diagnóstico, tratamento ou acompanhamento profissional. Não use afirmações de resultado. Nesta versão, esse texto orienta a curadoria do catálogo e não aparece na página pública.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows the configured limits and blocks an overlong field", async () => {

@@ -25,25 +25,30 @@ export function mapTherapistMetricsDashboard(
     if (
       (value.contractVersion !== 2 &&
         value.contractVersion !== 3 &&
-        value.contractVersion !== 4) ||
+        value.contractVersion !== 4 &&
+        value.contractVersion !== 5) ||
       (value.metricDefinitionVersion !== 2 &&
         value.metricDefinitionVersion !== 3 &&
-        value.metricDefinitionVersion !== 4) ||
-      (value.contractVersion === 4 && value.futureAgenda === undefined) ||
+        value.metricDefinitionVersion !== 4 &&
+        value.metricDefinitionVersion !== 5) ||
+      (value.contractVersion >= 4 && value.futureAgenda === undefined) ||
       overview.therapist.profileId !== sessions.therapist.profileId ||
       overview.therapist.profileId !== interest.therapist.profileId
     ) {
       throw new Error("Invalid dashboard contract.");
     }
 
-    if (sessions.contractVersion !== 1) {
+    if (
+      (value.contractVersion === 5 && sessions.contractVersion !== 3) ||
+      (value.contractVersion !== 5 && sessions.contractVersion !== 1)
+    ) {
       throw new Error("Invalid dashboard session contract.");
     }
 
     return {
       contractVersion: value.contractVersion,
       futureAgenda:
-        value.contractVersion === 4
+        value.contractVersion >= 4
           ? mapFutureAgenda(value.futureAgenda)
           : undefined,
       interest,

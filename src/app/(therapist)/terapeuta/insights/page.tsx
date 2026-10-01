@@ -8,6 +8,10 @@ import { getTherapistMetricsView } from "@/features/therapist-metrics/therapist-
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
+// The tab is selected from searchParams. Rendering this route dynamically
+// prevents a cached overview document from being served for ?tab=sessions.
+export const dynamic = "force-dynamic";
+
 export default async function TherapistInsightsPage({
   searchParams,
 }: {
