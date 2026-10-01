@@ -430,7 +430,7 @@ function AgendaPotentialPanel({
           </h2>
           <FinancialInfoTooltip
             label="Agenda e potencial nos próximos 30 dias"
-            text="Aqui você acompanha quanto da sua agenda está ocupada, quantas horas ainda estão disponíveis e o potencial estimado de faturamento nos 30 dias completos a partir de amanhã. Os valores de potencial são estimativas e não representam receita garantida.​"
+            text="Esse valor é uma estimativa do potencial da sua agenda para os próximos 30 dias, considerando seus horários disponíveis e o valor médio dos atendimentos que você já realizou. Não representa uma receita garantida.​"
           />
         </div>
       </div>

@@ -107,14 +107,33 @@ export function ZoomWaitingRoom({
   const hasAmbientAudio = Boolean(ambientAudioSrc);
 
   useEffect(() => {
-    const ambientAudio = audioRef.current;
-
     return () => {
       stopCameraPreview();
       stopAudioPreview();
-      ambientAudio?.pause();
     };
   }, []);
+
+  useEffect(() => {
+    const ambientAudio = audioRef.current;
+    if (!ambientAudio || !ambientAudioSrc) return;
+
+    let isCurrent = true;
+    void ambientAudio.play().then(
+      () => {
+        if (isCurrent) setIsMusicPlaying(true);
+      },
+      () => {
+        // Browsers can require a user gesture before allowing audible autoplay.
+        // Keep the play control available instead of showing a false active state.
+        if (isCurrent) setIsMusicPlaying(false);
+      },
+    );
+
+    return () => {
+      isCurrent = false;
+      ambientAudio.pause();
+    };
+  }, [ambientAudioSrc]);
 
   async function startCameraPreview() {
     if (cameraStreamRef.current) {
@@ -268,12 +287,15 @@ export function ZoomWaitingRoom({
     const audio = audioRef.current;
     if (!audio || !ambientAudioSrc) return;
 
-    if (audio.paused) {
+    if (!isMusicPlaying) {
       try {
         await audio.play();
         setIsMusicPlaying(true);
       } catch {
-        setDeviceMessage("Não foi possível iniciar o áudio ambiente agora.");
+        setIsMusicPlaying(false);
+        setDeviceMessage(
+          "Para ouvir o áudio ambiente, selecione o botão de reproduzir.",
+        );
       }
       return;
     }
@@ -464,7 +486,7 @@ export function ZoomWaitingRoom({
                       hasAmbientAudio
                         ? isMusicPlaying
                           ? "Pausar áudio ambiente"
-                          : "Ouvir áudio ambiente"
+                          : "Ativar áudio ambiente"
                         : "Áudio ambiente indisponível"
                     }
                     aria-pressed={isMusicPlaying}
@@ -481,6 +503,8 @@ export function ZoomWaitingRoom({
                   </button>
                   {ambientAudioSrc ? (
                     <audio
+                      autoPlay
+                      data-testid="waiting-room-ambient-audio"
                       loop
                       onPause={() => setIsMusicPlaying(false)}
                       onPlay={() => setIsMusicPlaying(true)}
