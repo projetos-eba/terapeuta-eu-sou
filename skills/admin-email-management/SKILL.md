@@ -9,9 +9,11 @@ Fontes: `AGENTS.md`, `skills/email-delivery/SKILL.md`,
 `docs/product/routes-map.md`. Referência Figma de Configurações Admin:
 node `13425:778`; padrões administrativos: node `12857:666`.
 
-Regras: defaults vivem no código; o banco armazena apenas overrides. O preview
-usa fixtures fictícias e iframe sandboxed. Nunca permitir destinatário livre,
-tokens fora da allowlist, HTML executável, credenciais ou edição de provider.
+Regras: defaults vivem no código; o banco armazena apenas overrides. O editor
+administrativo altera somente o HTML visual, e o preview automático usa
+fixtures fictícias e iframe sandboxed. O texto de compatibilidade não é
+editável na interface. Nunca permitir destinatário livre, tokens fora da
+allowlist, HTML executável, credenciais ou edição de provider.
 Admin usa `admin.settings.read/manage`; paciente e terapeuta não acessam rota,
 API ou Edge Function. O provider global é Hostinger Mail API; a UI pode apenas
 escolher remetentes ativos sincronizados. O registry determina categorias,

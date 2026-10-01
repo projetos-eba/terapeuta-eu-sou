@@ -5,9 +5,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   CircleAlert,
-  Code2,
   Eye,
-  FileText,
   LockKeyhole,
   Mail,
   RotateCcw,
@@ -26,7 +24,6 @@ import { TESButton, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 type ProviderKey = "hostinger_mail_api";
-type ContentMode = "html" | "text";
 type TemplateMode = "custom" | "default";
 
 type Sender = {
@@ -89,7 +86,6 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
   >("idle");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [contentMode, setContentMode] = useState<ContentMode>("text");
   const [templateMode, setTemplateMode] = useState<TemplateMode>("default");
   const [hasEdited, setHasEdited] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -225,13 +221,12 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
 
   function insertToken(token: string) {
     if (!draft || templateMode !== "custom") return;
-    const field = contentMode;
     const textArea = textAreaRef.current;
-    const current = draft[field];
+    const current = draft.html;
     const start = textArea?.selectionStart ?? current.length;
     const end = textArea?.selectionEnd ?? current.length;
     const next = `${current.slice(0, start)}${token}${current.slice(end)}`;
-    updateDraft({ [field]: next });
+    updateDraft({ html: next });
     window.requestAnimationFrame(() => {
       textArea?.focus();
       const cursor = start + token.length;
@@ -425,41 +420,21 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
 
               <div>
                 <p className="text-sm font-extrabold text-brand-deep">
-                  Conteúdo do e-mail
+                  Conteúdo visual do e-mail
                 </p>
-                <div
-                  aria-label="Formato do conteúdo"
-                  className="mt-2 inline-flex rounded-full border border-brand-lavender/70 bg-surface-soft p-1"
-                  role="group"
-                >
-                  <ModeButton
-                    active={contentMode === "text"}
-                    onClick={() => setContentMode("text")}
-                  >
-                    <FileText aria-hidden="true" className="size-4" />
-                    Texto
-                  </ModeButton>
-                  <ModeButton
-                    active={contentMode === "html"}
-                    onClick={() => setContentMode("html")}
-                  >
-                    <Code2 aria-hidden="true" className="size-4" />
-                    HTML
-                  </ModeButton>
-                </div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                  Edite o HTML que será exibido no e-mail. A visualização ao
+                  lado é atualizada automaticamente.
+                </p>
                 <textarea
-                  aria-label={
-                    contentMode === "html"
-                      ? "Conteúdo HTML do e-mail"
-                      : "Conteúdo em texto do e-mail"
-                  }
+                  aria-label="Conteúdo visual do e-mail"
                   className="mt-3 min-h-64 w-full resize-y rounded-xl border border-brand-lavender bg-white p-3 font-mono text-sm font-medium leading-6 text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft"
                   disabled={!canEditTemplate}
                   onChange={(event) =>
-                    updateDraft({ [contentMode]: event.target.value })
+                    updateDraft({ html: event.target.value })
                   }
                   ref={textAreaRef}
-                  value={displayedTemplate[contentMode]}
+                  value={displayedTemplate.html}
                 />
               </div>
             </div>
@@ -518,7 +493,8 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
                 Visualização
               </h2>
               <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-                Dados fictícios para conferência
+                Prévia automática do conteúdo visual, com dados fictícios para
+                conferência
               </p>
             </div>
           </div>
