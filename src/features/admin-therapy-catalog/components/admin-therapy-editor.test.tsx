@@ -133,6 +133,75 @@ describe("AdminTherapyEditor", () => {
     );
   });
 
+  it("keeps the picker aligned with the catalog colors and normalizes legacy selections", () => {
+    render(
+      <AdminTherapyEditor
+        isSaving={false}
+        matchingThemes={[]}
+        onCancel={() => undefined}
+        onSave={async () => undefined}
+        therapy={{
+          aliases: [],
+          archivedAt: null,
+          calendarColorKey: "lavender",
+          deprecatedAt: null,
+          description: null,
+          hasPublishedMatchWeights: false,
+          history: [],
+          id: "therapy-1",
+          imageUrl: null,
+          impact: {
+            activeServiceCount: 0,
+            futureBookingCount: 0,
+            isAvailableForServices: false,
+            isPubliclyVisible: false,
+            isVisibleInMatching: false,
+            publicProfileCount: 0,
+            serviceCount: 0,
+            therapistCount: 0,
+          },
+          isAvailableForServices: false,
+          isFeatured: false,
+          isPubliclyVisible: false,
+          isVisibleInMatching: false,
+          matchingThemeIds: [],
+          name: "Terapia",
+          publicContent: {
+            approachIconKey: null,
+            approachLabel: null,
+            benefits: [],
+            complementaryDescription: null,
+            heroFocalPoint: "center",
+            heroImageUrl: null,
+            highlights: [],
+            introduction: null,
+            safetyNote: null,
+            seoDescription: null,
+            seoTitle: null,
+            subtitle: null,
+            visualThemeKey: "energy",
+          },
+          publishedAt: null,
+          replacementTherapyId: null,
+          shortDescription: "Resumo",
+          slug: "terapia",
+          status: "draft",
+          updatedAt: "2026-10-01T00:00:00.000Z",
+        }}
+      />,
+    );
+
+    const colorPicker = screen.getByRole("combobox", {
+      name: /cor de identificação/i,
+    });
+
+    expect(colorPicker).toHaveValue("purple");
+    expect(colorPicker).toHaveTextContent("Roxo");
+    expect(colorPicker).not.toHaveTextContent("Lavanda");
+    expect(colorPicker).not.toHaveTextContent("Ciano");
+    expect(colorPicker).not.toHaveTextContent("Menta");
+  });
+
   it("explains the catalog fields in plain language and previews their use", () => {
     render(
       <AdminTherapyEditor

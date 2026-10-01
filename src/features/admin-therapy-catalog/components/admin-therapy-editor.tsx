@@ -101,7 +101,9 @@ export function AdminTherapyEditor({
     await onSave({
       aliases: splitLines(String(form.get("aliases") ?? "")),
       benefits: collectBenefits(form),
-      calendarColorKey: String(form.get("calendarColorKey") || "neutral"),
+      calendarColorKey: normalizeColorKey(
+        String(form.get("calendarColorKey") || "neutral"),
+      ),
       description: nullable(String(form.get("description") ?? "")),
       highlights: splitLines(String(form.get("highlights") ?? "")).map(
         (title) => ({
@@ -1101,23 +1103,25 @@ function Field({
 
 const colorOptions = [
   { label: "Roxo", value: "purple" },
-  { label: "Lavanda", value: "lavender" },
   { label: "Azul", value: "blue" },
-  { label: "Ciano", value: "cyan" },
   { label: "Verde", value: "green" },
-  { label: "Menta", value: "mint" },
   { label: "Laranja", value: "orange" },
   { label: "Rosa", value: "pink" },
   { label: "Neutro", value: "neutral" },
 ] as const;
 
+type CalendarColorKey = (typeof colorOptions)[number]["value"];
+
+const legacyColorAliases: Record<string, CalendarColorKey> = {
+  cyan: "blue",
+  lavender: "purple",
+  mint: "green",
+};
+
 function calendarColorPreviewClass(colorKey: string) {
   const previewClasses: Record<string, string> = {
     blue: "bg-blue-500",
-    cyan: "bg-cyan-500",
     green: "bg-emerald-500",
-    lavender: "bg-violet-300",
-    mint: "bg-teal-400",
     orange: "bg-orange-400",
     pink: "bg-pink-400",
     purple: "bg-brand-primary",
@@ -1161,7 +1165,7 @@ function ColorSelect({
   onChange,
 }: {
   defaultValue?: string | null;
-  onChange?: (value: string) => void;
+  onChange?: (value: CalendarColorKey) => void;
 }) {
   const selectId = useId();
 
@@ -1177,7 +1181,7 @@ function ColorSelect({
         defaultValue={normalizeColorKey(defaultValue)}
         id={selectId}
         name="calendarColorKey"
-        onChange={(event) => onChange?.(event.target.value)}
+        onChange={(event) => onChange?.(normalizeColorKey(event.target.value))}
       >
         {colorOptions.map((option) => (
           <option key={option.value} value={option.value}>
@@ -1326,10 +1330,12 @@ function nullable(value: string) {
   return trimmed ? trimmed : null;
 }
 
-function normalizeColorKey(value?: string | null) {
-  return typeof value === "string" &&
-    colorOptions.some((option) => option.value === value)
-    ? value
+function normalizeColorKey(value?: string | null): CalendarColorKey {
+  const normalized =
+    typeof value === "string" ? (legacyColorAliases[value] ?? value) : "neutral";
+
+  return colorOptions.some((option) => option.value === normalized)
+    ? normalized
     : "neutral";
 }
 

@@ -70,6 +70,7 @@ const userMessages: Record<string, string> = {
   incomplete_public_content:
     "Complete o conteúdo público, incluindo imagem e pelo menos um destaque e dois benefícios, antes de publicar.",
   invalid_payload: "Revise os campos obrigatórios da terapia e tente novamente.",
+  invalid_calendar_color: "Escolha uma cor disponível para a agenda.",
   invalid_slug:
     "Use no endereço somente letras minúsculas, números e hífens.",
   invalid_theme: "Selecione apenas temas ativos do Match.",
