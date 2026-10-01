@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/publication-ready-local.inc
 
-select plan(8);
+select plan(9);
 
 insert into public.profiles (id, role, display_name)
 values ('f9600000-0000-4000-8000-000000000001', 'therapist', 'Agenda 90 dias')
@@ -167,6 +167,19 @@ select ok(
   ),
   'anonymous visitors can read the safe month availability endpoint'
 );
+
+set local statement_timeout = '3s';
+set local role anon;
+
+select ok(
+  public.get_service_available_days_v1(
+    'f9600000-0000-4000-8000-000000000003',
+    date_trunc('month', now())::date
+  ) ?& array['days', 'horizonEndsAt', 'timezone'],
+  'anonymous month availability completes within the public statement timeout'
+);
+
+reset role;
 
 select ok(
   has_function_privilege(
