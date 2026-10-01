@@ -166,6 +166,15 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   a missing or out-of-order capturable event can recover a still-free session.
   The replay is idempotent after a successful claim and must fail closed,
   without Transfer, when another booking already occupies the interval.
+- The same current Checkout may report a failed charge and later succeed after
+  the patient replaces the card in place. Recover this only for the exact
+  persisted Checkout and PaymentIntent, a newer signed provider event, a future
+  booking with no conflicting therapist or patient slot, and no setup,
+  schedule, Transfer, refund, or dispute artifact. An `initial_hold` success
+  must have been created within its original five-minute provider window even
+  when webhook delivery is late. Reopen only to `pending_payment`, then reuse
+  the canonical V10 confirmation; every mismatch stays closed for manual
+  reconciliation and must not create a Transfer obligation.
 - A signed session dispute blocks new releases immediately but never rewrites
   completed Transfer/payout history. Therapist recovery is V10-only and starts
   only after a definitive `lost`: reconcile one exact proportional Transfer
