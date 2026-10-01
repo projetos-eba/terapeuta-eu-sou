@@ -32,7 +32,11 @@ agenda e métricas usando as mesmas fontes de verdade.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e
    conteúdo inicial; nenhuma tela de terapeuta cria terapia canônica.
 4. Edição salva identidade, editorial e disponibilidade usando chaves
-   semânticas, sem classes Tailwind/CSS no banco.
+   semânticas, sem classes Tailwind/CSS no banco. A cor de identificação é
+   escolhida em uma lista fechada compatível com a agenda (`purple`, `blue`,
+   `green`, `orange`, `pink` e `neutral`); seleções legadas `lavender`, `cyan`
+   e `mint` são normalizadas, respectivamente, para `purple`, `blue` e
+   `green` antes de persistir.
 5. Publicação chama `admin_transition_therapy_v1` e valida slug único,
    conteúdo mínimo, copy responsável, de 1 a 3 temas ativos do Match e
    integridade editorial.

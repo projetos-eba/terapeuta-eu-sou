@@ -20,6 +20,21 @@ const requestStatuses = new Set([
   "under_review",
 ]);
 
+const calendarColorKeys = new Set([
+  "blue",
+  "green",
+  "neutral",
+  "orange",
+  "pink",
+  "purple",
+]);
+
+const legacyCalendarColorAliases: Record<string, string> = {
+  cyan: "blue",
+  lavender: "purple",
+  mint: "green",
+};
+
 export type AdminCatalogPermission =
   | "admin.matching.manage"
   | "admin.matching.read"
@@ -175,7 +190,7 @@ export function validateAdminTherapyCatalogCommand(
     if (!isUuid(body.requestId) || !isRecord(body.payload)) invalid();
     return {
       action: "save",
-      payload: body.payload,
+      payload: normalizeTherapyCalendarColor(body.payload),
       requestId: body.requestId,
     };
   }
@@ -290,6 +305,13 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "invalid_payload",
       422,
       "Revise os campos obrigatórios da terapia e tente novamente.",
+    );
+  }
+  if (details.includes("therapies_calendar_color_key_valid")) {
+    return new DomainError(
+      "invalid_calendar_color",
+      422,
+      "Escolha uma cor disponível para a agenda.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_SLUG")) {
@@ -474,6 +496,27 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
 
 function invalid(): never {
   throw new DomainError("invalid_payload", 422, "Revise os dados enviados.");
+}
+
+function normalizeTherapyCalendarColor(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  const submittedColor =
+    typeof payload.calendarColorKey === "string"
+      ? payload.calendarColorKey
+      : "neutral";
+  const calendarColorKey =
+    legacyCalendarColorAliases[submittedColor] ?? submittedColor;
+
+  if (!calendarColorKeys.has(calendarColorKey)) {
+    throw new DomainError(
+      "invalid_calendar_color",
+      422,
+      "Escolha uma cor disponível para a agenda.",
+    );
+  }
+
+  return { ...payload, calendarColorKey };
 }
 
 function isUuid(value: unknown): value is string {
