@@ -16251,6 +16251,10 @@ export type Database = {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
+      admin_get_finance_module_range_v1: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
       admin_get_finance_module_v1: {
         Args: { p_limit?: number; p_module: string; p_offset?: number }
         Returns: Json
@@ -16277,6 +16281,10 @@ export type Database = {
         Returns: Json
       }
       admin_get_operation_detail_v1_before_professional_main_data: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
+      admin_get_operation_detail_v1_before_review_observation: {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
@@ -17642,6 +17650,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_advanced_financial_dashboard_v3: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_agenda_revenue_potential_v1: {
         Args: {
           p_period_end?: string
@@ -18023,6 +18039,10 @@ export type Database = {
           stripe_charge_id: string
         }[]
       }
+      get_session_payment_checkout_resume_v1: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
       get_session_payment_retry_slot_eligibility_v1: {
         Args: { p_booking_id: string; p_reference_at: string }
         Returns: Json
@@ -18032,6 +18052,10 @@ export type Database = {
         Returns: Json
       }
       get_therapist_agenda_v1: {
+        Args: { p_range_end?: string; p_range_start?: string }
+        Returns: Json
+      }
+      get_therapist_agenda_v2: {
         Args: { p_range_end?: string; p_range_start?: string }
         Returns: Json
       }
@@ -18127,6 +18151,10 @@ export type Database = {
         Args: { p_period_days?: number }
         Returns: Json
       }
+      get_therapist_metrics_dashboard_v4: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
       get_therapist_metrics_foundation_v1: { Args: never; Returns: Json }
       get_therapist_metrics_overview_v1: {
         Args: { p_period_days?: number }
@@ -18216,6 +18244,10 @@ export type Database = {
         Args: { p_period_days?: number }
         Returns: Json
       }
+      get_therapist_session_metrics_v2: {
+        Args: { p_period_days: number }
+        Returns: Json
+      }
       get_therapist_sessions_v1: {
         Args: {
           p_booking_status?: Database["public"]["Enums"]["booking_status"]
@@ -18291,6 +18323,14 @@ export type Database = {
       }
       is_public_service_booking_eligible_v1: {
         Args: { p_service_id: string }
+        Returns: boolean
+      }
+      is_public_therapist_profile_content_version_v1: {
+        Args: { p_content_version_id: string }
+        Returns: boolean
+      }
+      is_public_therapist_profile_visible_v1: {
+        Args: { p_therapist_profile_id: string }
         Returns: boolean
       }
       is_related_patient_to_current_therapist: {
@@ -18573,6 +18613,21 @@ export type Database = {
           scheduled_minutes: number
         }[]
       }
+      private_therapist_agenda_capacity_v2: {
+        Args: {
+          p_therapist_profile_id: string
+          p_timezone: string
+          p_window_ends_at: string
+          p_window_starts_at: string
+        }
+        Returns: {
+          available_minutes: number
+          capacity_minutes: number
+          offered_minutes: number
+          reserved_minutes: number
+          reserved_session_count: number
+        }[]
+      }
       private_therapist_charge_status_v3: {
         Args: { p_session_payment_id: string }
         Returns: string
@@ -18615,6 +18670,18 @@ export type Database = {
       private_therapist_finance_refunded_cents_v1: {
         Args: { p_session_payment_id: string }
         Returns: number
+      }
+      private_therapist_future_agenda_summary_v1: {
+        Args: { p_therapist_profile_id: string; p_timezone: string }
+        Returns: Json
+      }
+      private_therapist_future_agenda_summary_v2: {
+        Args: {
+          p_as_of?: string
+          p_therapist_profile_id: string
+          p_timezone: string
+        }
+        Returns: Json
       }
       private_therapist_payout_groups_v10: {
         Args: {
@@ -19029,6 +19096,16 @@ export type Database = {
           p_now?: string
           p_participant_profile_id: string
           p_participant_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: Json
+      }
+      recover_failed_session_payment_authorization_v10: {
+        Args: {
+          p_session_payment_id: string
+          p_stripe_checkout_session_id: string
+          p_stripe_event_created_at: string
+          p_stripe_event_id: string
+          p_stripe_payment_intent_id: string
         }
         Returns: Json
       }

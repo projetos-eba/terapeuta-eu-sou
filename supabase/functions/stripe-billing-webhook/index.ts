@@ -18,7 +18,7 @@ import {
   syncTherapistSubscriptionFromStripe,
 } from "../_shared/payments/subscription-sync.ts";
 import { normalizeStripeBillingWebhookError } from "./errors.ts";
-import { ensurePaidPaymentRetryAuthorization } from "./session-payment-authorization-recovery.ts";
+import { ensurePaidSessionPaymentAuthorization } from "./session-payment-authorization-recovery.ts";
 import { ensureVideoSessionForPaidSessionPayment } from "./session-payment-side-effects.ts";
 import {
   type CheckoutFinancialSnapshot,
@@ -436,7 +436,7 @@ async function handleCheckoutEvent(
     });
     if (!claim.claimed) return;
   }
-  await ensurePaidPaymentRetryAuthorization(client, {
+  await ensurePaidSessionPaymentAuthorization(client, {
     checkoutMode: metadata.tes_checkout_mode,
     checkoutSessionId: stringOrNull(session.id),
     eventId,
@@ -762,7 +762,7 @@ async function applyPaymentIntentState(
     paymentIntent,
   );
   if (status === "paid") {
-    await ensurePaidPaymentRetryAuthorization(client, {
+    await ensurePaidSessionPaymentAuthorization(client, {
       checkoutMode: metadata.tes_checkout_mode,
       checkoutSessionId: resolvedCheckout.checkoutSessionId,
       eventId,
