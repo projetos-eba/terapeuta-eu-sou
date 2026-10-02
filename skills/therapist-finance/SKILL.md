@@ -47,14 +47,14 @@ Private RPCs:
 
 - `get_private_therapist_financial_overview_v3` (current UI consumer; v1/v2
   remain compatibility contracts);
-- `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
+- `get_private_therapist_receipts_v6` (current UI consumer; v1-v5 remain
   compatibility contracts);
 - `get_private_therapist_payouts_v10` (current UI consumer; V9 and earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
-- `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
+- `get_private_therapist_financial_metrics_v3` for F2 Premium/Premium Plus
   summary metrics.
-- `get_private_therapist_advanced_financial_dashboard_v2` for F3 Premium Plus
+- `get_private_therapist_advanced_financial_dashboard_v3` for F3 Premium Plus
   advanced dashboard.
 - Segmented F3 contracts:
   `get_private_therapist_financial_forecast_v1`,

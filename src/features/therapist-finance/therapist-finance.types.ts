@@ -436,7 +436,7 @@ export type AdvancedFinancialInsight = {
 };
 
 export type TherapistFinancialMetrics = {
-  contractVersion: 2;
+  contractVersion: 3;
   financialEvolution: Array<{
     grossAmountCents: number;
     periodEnd: string;
@@ -444,7 +444,7 @@ export type TherapistFinancialMetrics = {
     previousPeriodNetAmountCents: number | null;
     therapistNetAmountCents: number;
   }>;
-  metricDefinitionVersion: 2;
+  metricDefinitionVersion: 3;
   period: {
     end: string;
     generatedAt: string;

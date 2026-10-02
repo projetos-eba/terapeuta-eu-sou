@@ -959,7 +959,7 @@ function fixture(): TherapistFinancePageData {
     },
     analytics: {
       metrics: {
-        contractVersion: 2,
+        contractVersion: 3,
         financialEvolution: [
           {
             grossAmountCents: 10000,
@@ -969,7 +969,7 @@ function fixture(): TherapistFinancePageData {
             therapistNetAmountCents: 7000,
           },
         ],
-        metricDefinitionVersion: 2,
+        metricDefinitionVersion: 3,
         period: {
           end: "2026-07-28",
           generatedAt: "2026-07-28T12:00:00.000Z",

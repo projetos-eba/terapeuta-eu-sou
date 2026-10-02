@@ -158,6 +158,11 @@ bruto e da comissão realizados. A interface não volta a subtrair o total.
 continua informando que não haverá depósito; compensação parcial informa
 separadamente quanto abateu a dívida e quanto segue para a conta.
 
+`get_private_therapist_receipts_v6` é o consumidor atual e preserva essa
+semântica financeira. A evolução acrescenta cobranças futuras agendadas à
+projeção operacional, sem tratá-las como pagamento confirmado, saldo elegível,
+Transfer ou Payout. V5 e anteriores permanecem instalados para compatibilidade.
+
 Comprovantes Stripe ausentes são recuperados por uma fila service-role que
 distingue `needs_settlement` de `needs_receipt`. Quando somente a URL está
 ausente, `record_session_payment_receipt_url_v1` valida a Charge imutável e
@@ -245,7 +250,7 @@ Comparações retornam estado discriminado: `available`, `no_previous_data`,
 
 Todos exigem `advanced_financials` via plano `premium_plus`:
 
-- `get_private_therapist_advanced_financial_dashboard_v2`;
+- `get_private_therapist_advanced_financial_dashboard_v3`;
 - `get_private_therapist_financial_forecast_v1`;
 - `get_private_therapist_agenda_revenue_potential_v1`;
 - `get_private_therapist_financial_opportunities_v1`;
@@ -293,8 +298,8 @@ política real.
 | A receber                 | Valores previstos na janela de 7, 15 ou 30 dias, mais repasses sem data bancária.                                                            | `get_private_therapist_payouts_v10.summary.expectedCents`                                             | R$ 0,00.                                               | `operation_essentials` |
 | A caminho da sua conta    | Valores que já iniciaram o depósito, inclusive Payout pago pelo provedor cuja data civil de chegada ainda não ocorreu.                       | `get_private_therapist_payouts_v10.summary.inTransitCents`                                            | R$ 0,00.                                               | `operation_essentials` |
 | Recebido                  | Chegada bancária confirmada no período histórico, sem converter a data civil `arrival_at` por fuso.                                          | `get_private_therapist_payouts_v10.summary.receivedCents`                                             | R$ 0,00.                                               | `operation_essentials` |
-| Indicadores de cobrança   | Aprovados, processando, agendados e reembolsos.                                                                                              | `get_private_therapist_receipts_v5.summary`                                                           | R$ 0,00.                                               | `operation_essentials` |
-| Movimentações por sessão  | Cobrança, valor da sessão, Comissão TES, valor do terapeuta, compensação e próxima etapa.                                                    | `get_private_therapist_receipts_v5`                                                                   | Estado vazio honesto.                                  | `operation_essentials` |
+| Indicadores de cobrança   | Aprovados, processando, agendados e reembolsos.                                                                                              | `get_private_therapist_receipts_v6.summary`                                                           | R$ 0,00.                                               | `operation_essentials` |
+| Movimentações por sessão  | Cobrança, valor da sessão, Comissão TES, valor do terapeuta, compensação e próxima etapa.                                                    | `get_private_therapist_receipts_v6`                                                                   | Estado vazio honesto.                                  | `operation_essentials` |
 | Agenda de repasses        | Depósito em andamento, chegada prevista, disponibilidade do saldo e valores sem data bancária; nunca confundir disponibilidade com depósito. | `get_private_therapist_payouts_v10.agenda`                                                            | Nenhum repasse previsto.                               | `operation_essentials` |
 | Histórico de repasses     | Valores recebidos após a chegada bancária e exceções discretas em análise.                                                                   | `get_private_therapist_payouts_v10.historyItems`                                                      | Nenhum valor recebido no período.                      | `operation_essentials` |
 | Conta de recebimento      | Estado Connect hospedado.                                                                                                                    | `get_private_therapist_connect_account_v1` + Edge Functions Connect                                   | CTA para conectar.                                     | `operation_essentials` |
@@ -306,7 +311,7 @@ política real.
 | Reagendamentos            | Reagendamentos aplicados no período.                                                                                                         | `booking_reschedule_requests.status = applied`                                                        | 0 ou taxa indisponível.                                | `advanced_metrics`     |
 | Terapias que mais faturam | Faturamento agrupado por terapia.                                                                                                            | `session_payments` + `therapist_services` + `therapies`                                               | Estado vazio honesto.                                  | `advanced_metrics`     |
 | Evolução financeira       | Realizado versus período anterior.                                                                                                           | `session_payments`                                                                                    | Série vazia honesta.                                   | `advanced_metrics`     |
-| Receita no mês            | Realizado líquido + sessões futuras já pagas e válidas, sem receita de pagamentos integralmente reembolsados.                                | `get_private_therapist_advanced_financial_dashboard_v2`                                               | R$ 0,00. Independe da disponibilidade para estimativa. | `advanced_financials`  |
+| Receita no mês            | Realizado líquido + sessões futuras já pagas e válidas, sem receita de pagamentos integralmente reembolsados.                                | `get_private_therapist_advanced_financial_dashboard_v3`                                               | R$ 0,00. Independe da disponibilidade para estimativa. | `advanced_financials`  |
 
 A V3 preserva integralmente as receitas, sessões pagas, descontos, ledger,
 transferências e repasses da V2. Ela substitui apenas `sessions.completedCount`

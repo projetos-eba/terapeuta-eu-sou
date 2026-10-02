@@ -662,7 +662,8 @@ para confirmar pagamento, onboarding ou repasse.
 Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
-- `get_private_therapist_receipts_v5`;
+- `get_private_therapist_receipts_v6` (consumidor atual; V5 e anteriores
+  permanecem contratos de compatibilidade);
 - `get_private_therapist_payouts_v10` (consumidor atual; V9 e anteriores
   permanecem contratos de compatibilidade);
 - `get_private_therapist_bank_payouts_v1`;
@@ -670,7 +671,7 @@ Read models privados:
 - `get_private_therapist_connect_account_v1`;
 - `get_private_therapist_financial_metrics_v3` para métricas F2 Premium e
   Premium Plus;
-- `get_private_therapist_advanced_financial_dashboard_v2` e contratos
+- `get_private_therapist_advanced_financial_dashboard_v3` e contratos
   segmentados F3 para Premium Plus.
 
 Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não

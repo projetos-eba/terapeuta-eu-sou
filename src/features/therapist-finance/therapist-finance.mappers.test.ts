@@ -50,9 +50,9 @@ describe("therapist finance mappers", () => {
     ).toThrow(TherapistFinanceError);
   });
 
-  it("maps F2 financial metrics with comparisons and insufficient-data states", () => {
+  it("maps F2 V3 financial metrics with comparisons and bilateral realized-session counts", () => {
     const metrics = mapTherapistFinancialMetrics({
-      contractVersion: 2,
+      contractVersion: 3,
       financialEvolution: [
         {
           grossAmountCents: 10000,
@@ -62,7 +62,7 @@ describe("therapist finance mappers", () => {
           therapistNetAmountCents: 7000,
         },
       ],
-      metricDefinitionVersion: 2,
+      metricDefinitionVersion: 3,
       period: {
         end: "2026-07-28",
         generatedAt: "2026-07-28T12:00:00.000Z",
@@ -140,11 +140,22 @@ describe("therapist finance mappers", () => {
     });
 
     expect(metrics.period.isPartial).toBe(true);
+    expect(metrics.contractVersion).toBe(3);
+    expect(metrics.metricDefinitionVersion).toBe(3);
     expect(metrics.revenue.netAverageTicketCents).toBe(7000);
     expect(metrics.retention.status).toBe("insufficient_data");
     expect(
       metrics.financialEvolution[0]?.previousPeriodNetAmountCents,
     ).toBeNull();
+  });
+
+  it("rejects the legacy F2 V2 payload after the consumer switches to the V3 RPC", () => {
+    expect(() =>
+      mapTherapistFinancialMetrics({
+        contractVersion: 2,
+        metricDefinitionVersion: 2,
+      }),
+    ).toThrow(TherapistFinanceError);
   });
 
   it("maps F3 advanced financial dashboard with separated forecast and privacy benchmark status", () => {

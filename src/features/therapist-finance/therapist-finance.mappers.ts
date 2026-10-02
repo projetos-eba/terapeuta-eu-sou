@@ -248,11 +248,11 @@ export function mapTherapistFinancialMetrics(
     const retention = record(value.retention);
 
     return {
-      contractVersion: literalNumber(value.contractVersion, 2),
+      contractVersion: literalNumber(value.contractVersion, 3),
       financialEvolution: array(value.financialEvolution).map(
         financialEvolutionPoint,
       ),
-      metricDefinitionVersion: literalNumber(value.metricDefinitionVersion, 2),
+      metricDefinitionVersion: literalNumber(value.metricDefinitionVersion, 3),
       period: {
         end: dateString(period.end),
         generatedAt: dateTime(period.generatedAt),
