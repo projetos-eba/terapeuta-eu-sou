@@ -42,7 +42,7 @@ export async function queryTherapistMetricsOverview(
   if (!config) throw new TherapistMetricsError("unavailable");
 
   const response = await fetch(
-    `${config.url}/rest/v1/rpc/get_therapist_metrics_overview_v2`,
+    `${config.url}/rest/v1/rpc/get_therapist_metrics_overview_v3`,
     {
       body: JSON.stringify({ p_period_days: periodDays }),
       cache: "no-store",
@@ -75,7 +75,7 @@ export async function queryTherapistMetricsDashboard(
   if (!config) throw new TherapistMetricsError("unavailable");
 
   const response = await fetch(
-    `${config.url}/rest/v1/rpc/get_therapist_metrics_dashboard_v3`,
+    `${config.url}/rest/v1/rpc/get_therapist_metrics_dashboard_v5`,
     {
       body: JSON.stringify({ p_period_days: periodDays }),
       cache: "no-store",
@@ -104,7 +104,7 @@ export function queryTherapistSessionMetrics(
 ) {
   return queryTherapistMetricsDetail(
     accessToken,
-    "get_therapist_session_metrics_v1",
+    "get_therapist_session_metrics_v3",
     periodDays,
   );
 }
@@ -115,7 +115,7 @@ export function queryTherapistSessionEvolutionComparison(
 ) {
   return queryTherapistMetricsDetail(
     accessToken,
-    "get_therapist_session_evolution_comparison_v1",
+    "get_therapist_session_evolution_comparison_v2",
     periodDays,
   );
 }
@@ -165,8 +165,8 @@ async function queryTherapistMetricsDetail(
   accessToken: string,
   rpc:
     | "get_therapist_interest_metrics_v1"
-    | "get_therapist_session_evolution_comparison_v1"
-    | "get_therapist_session_metrics_v1",
+    | "get_therapist_session_evolution_comparison_v2"
+    | "get_therapist_session_metrics_v3",
   periodDays: 30 | 60,
 ) {
   const config = getSupabasePublicConfig();

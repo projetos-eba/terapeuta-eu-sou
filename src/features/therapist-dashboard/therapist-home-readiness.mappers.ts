@@ -142,8 +142,15 @@ function profileItem(
     verificationStatus === "changes_requested" ||
     verificationStatus === "rejected";
   const inReview = ["submitted", "in_review"].includes(verificationStatus);
+  const profileIsComplete = editor.completeness.percent === 100;
+  const missingProfileItems = editor.completeness.items
+    .filter((item) => !item.complete)
+    .map((item) => item.label)
+    .filter(Boolean);
   const complete =
-    editor.derived.publicStatus === "published" && !needsCorrections;
+    editor.derived.publicStatus === "published" &&
+    profileIsComplete &&
+    !needsCorrections;
 
   if (needsCorrections) {
     return {
@@ -161,6 +168,19 @@ function profileItem(
   }
 
   if (inReview) {
+    if (!profileIsComplete) {
+      return {
+        actionLabel: "Completar perfil",
+        complete: false,
+        description: missingProfileDescription(missingProfileItems),
+        href: routes.therapist.profileEdit,
+        id: "profile",
+        required: true,
+        state: "attention",
+        title: "Perfil público",
+      };
+    }
+
     return {
       actionLabel: "Acompanhar análise",
       complete: true,
@@ -181,13 +201,28 @@ function profileItem(
     complete,
     description: complete
       ? "Seu perfil público já está publicado e visível para as pessoas."
-      : "Complete sua apresentação e envie seus dados e documentos em Configurações.",
+      : missingProfileDescription(missingProfileItems),
     href: complete ? routes.therapist.profile : routes.therapist.profileEdit,
     id: "profile",
     required: true,
     state: complete ? "complete" : "pending",
     title: "Perfil público",
   };
+}
+
+function missingProfileDescription(items: string[]) {
+  if (items.length === 0) {
+    return "Complete as informações do seu perfil antes de enviá-lo para análise.";
+  }
+
+  return `Ainda falta completar: ${formatProfileItemList(items)}.`;
+}
+
+function formatProfileItemList(items: string[]) {
+  if (items.length === 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} e ${items[1]}`;
+
+  return `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`;
 }
 
 function servicesItem(

@@ -109,7 +109,7 @@ export function mapTherapistMetricsOverview(
         points: array(activity.points).map(activityPoint),
         status: emptyOrReady(activity.status),
       },
-      contractVersion: literalOneOrTwo(value.contractVersion),
+      contractVersion: literalOneToThree(value.contractVersion),
       counters: {
         peopleServed: metricCounter(
           counters.peopleServed,
@@ -165,7 +165,7 @@ export function mapTherapistMetricsOverview(
         previousPeriodStart: dateTime(meta.previousPeriodStart),
         timezone: nonEmptyString(meta.timezone),
       },
-      metricDefinitionVersion: literalOneOrTwo(value.metricDefinitionVersion),
+      metricDefinitionVersion: literalOneToThree(value.metricDefinitionVersion),
       occupancy: {
         reason: occupancyReason(occupancy.reason),
         status: unavailable(occupancy.status),
@@ -308,8 +308,8 @@ function literalOne(value: unknown): 1 {
   return 1;
 }
 
-function literalOneOrTwo(value: unknown): 1 | 2 {
-  if (value !== 1 && value !== 2) {
+function literalOneToThree(value: unknown): 1 | 2 | 3 {
+  if (value !== 1 && value !== 2 && value !== 3) {
     throw new Error("Invalid contract version.");
   }
   return value;

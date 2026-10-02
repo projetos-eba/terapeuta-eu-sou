@@ -69,6 +69,10 @@ describe("therapist metric detail contracts", () => {
     const mapped = mapTherapistSessionMetrics(sessionPayload());
 
     expect(mapped.summary.sessionsCompleted.value).toBe(12);
+    expect(mapped.evolution.points[0]).toMatchObject({
+      sessionsCompleted: 12,
+      sessionsScheduled: 15,
+    });
     expect(mapped.summary.operationalPresence).toMatchObject({
       minimumSample: 10,
       status: "ready",
@@ -81,6 +85,47 @@ describe("therapist metric detail contracts", () => {
     expect(JSON.stringify(mapped)).not.toMatch(
       /patientProfileId|cancellation_reason|reason text/i,
     );
+  });
+
+  it("maps the V3 bilateral-reporting session contract and its scheduled series", () => {
+    const payload = sessionPayload();
+    payload.contractVersion = 3;
+    payload.metricDefinitionVersion = 3;
+    payload.heatmap = {
+      items: [{ dayOfWeek: 1, hourBucketStart: 18, sessions: 12 }],
+      observedSample: 12,
+      status: "ready",
+    };
+
+    expect(mapTherapistSessionMetrics(payload)).toMatchObject({
+      contractVersion: 3,
+      evolution: {
+        points: [{ sessionsScheduled: 15 }],
+      },
+      metricDefinitionVersion: 3,
+    });
+  });
+
+  it("keeps the V1 session payload readable for the dashboard contract", () => {
+    const payload = sessionPayload();
+    payload.contractVersion = 1;
+    const evolution = payload.evolution as { points: Array<Record<string, unknown>> };
+    delete evolution.points[0].sessionsScheduled;
+
+    expect(mapTherapistSessionMetrics(payload)).toMatchObject({
+      contractVersion: 1,
+      evolution: { status: "ready" },
+    });
+  });
+
+  it("rejects an impossible calendar date before it can reach the chart", () => {
+    const payload = sessionPayload();
+    const evolution = payload.evolution as {
+      points: Array<Record<string, unknown>>;
+    };
+    evolution.points[0].date = "2026-02-30";
+
+    expect(() => mapTherapistSessionMetrics(payload)).toThrow();
   });
 
   it("combines absence classifications for the therapist chart and CSV", () => {
@@ -195,22 +240,27 @@ describe("therapist metric detail contracts", () => {
     expect(mapped.journeyThemes.reason).toBe("free_text_analysis_prohibited");
   });
 
-  it("exports only aggregate MTR-4 data with version and timezone", () => {
+  it("exports only aggregate MTR-4 data in a readable CSV structure", () => {
     const mapped = mapTherapistSessionMetrics(sessionPayload());
     const csv = buildTherapistMetricsCsv({
       data: mapped,
+      generatedAt: new Date("2026-07-28T16:00:00.000Z"),
       tab: "sessions",
     });
 
-    expect(csv).toContain("metric_definition_version");
-    expect(csv).toContain("America/Sao_Paulo");
-    expect(csv).toContain("cancellation_taxonomy_not_versioned");
-    expect(csv).toContain("day=1;hour_start=18");
-    expect(csv).toContain("sessions_completed");
-    expect(csv).toContain("Sessões concluídas");
-    expect(csv).toContain("Sessões concluídas por dia e faixa de horário");
-    expect(csv).not.toContain("Sessões realizadas");
-    expect(csv).not.toMatch(/patient_profile_id|patientProfileId|public_name/i);
+    expect(csv.startsWith("\ufeffRelatório de métricas\r\n")).toBe(true);
+    expect(csv).toContain("Informações do relatório");
+    expect(csv).toContain("Período;28/06/2026 a 27/07/2026");
+    expect(csv).toContain("Fuso horário;América/São Paulo");
+    expect(csv).toContain("Resumo das métricas");
+    expect(csv).toContain("Atividade diária");
+    expect(csv).toContain("Frequência da agenda");
+    expect(csv).toContain("Segunda-feira;18:00;12;Disponível");
+    expect(csv).toContain("Motivos de cancelamento;Sem dados suficientes");
+    expect(csv).toContain("\r\n");
+    expect(csv).not.toMatch(
+      /metric_definition_version|contract_version|America\/Sao_Paulo|cancellation_taxonomy_not_versioned|day=1;hour_start=18|sessions_completed|patient_profile_id|patientProfileId|public_name/i,
+    );
   });
 
   it("refuses an Interest export without the Premium Plus capability", () => {
@@ -231,6 +281,7 @@ describe("therapist metric detail contracts", () => {
     expect(
       screen.getByRole("heading", { name: "Movimento das sessões" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("vs. período anterior")).not.toBeInTheDocument();
     expect(screen.getByText("Comparecimento às sessões")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -238,7 +289,7 @@ describe("therapist metric detail contracts", () => {
       }),
     ).toBeInTheDocument();
     const outcomeDonut = screen.getByRole("img", {
-      name: /Como as sessões terminaram: Compareceram, 12/,
+      name: /Desfechos das sessões: Concluídas, 12 \(75%\); Canceladas, 2 \(12,5%\); Ausências, 1 \(6,3%\); Reagendadas, 1 \(6,3%\)/,
     });
     expect(
       outcomeDonut.querySelector("[data-chart-graphics-layer]"),
@@ -310,8 +361,8 @@ describe("therapist metric detail contracts", () => {
       screen.getByText(/ainda não há temas registrados para mostrar/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Favoritos que levaram a uma sessão"),
-    ).toBeInTheDocument();
+      screen.queryByText("Favoritos que levaram a uma sessão"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "Temas mais recorrentes na jornada",
@@ -446,17 +497,38 @@ describe("therapist metric detail contracts", () => {
     expect(screen.queryByText("Taxa de retorno")).not.toBeInTheDocument();
   });
 
-  it("exports immediate favorite activity and one protected return summary", () => {
+  it("exports immediate favorite activity and protected return data with human labels", () => {
     const mapped = mapTherapistInterestMetrics(readyInterestPayload());
-    const csv = buildTherapistMetricsCsv({ data: mapped, tab: "interest" });
+    const csv = buildTherapistMetricsCsv({
+      data: mapped,
+      generatedAt: new Date("2026-07-28T16:00:00.000Z"),
+      tab: "interest",
+    });
 
-    expect(csv).toContain("profile_favorites");
-    expect(csv).toContain("Novos favoritos");
-    expect(csv).toContain("ready,3,favorites");
-    expect(csv).toContain("return_summary");
-    expect(csv).toContain("Pessoas que retornaram");
+    expect(csv).toContain("Novos favoritos;3;Disponível");
+    expect(csv).toContain("Pessoas que retornaram;Sem dados suficientes");
+    expect(csv).toContain("Atividade por período");
+    expect(csv).toContain("Outros indicadores");
+    expect(csv).toContain("Favoritos que levaram a uma sessão;Sem dados suficientes");
     expect(csv).not.toContain("Pessoas que voltaram");
-    expect(csv).not.toContain("Taxa de retorno");
+    expect(csv).toContain("Taxa de retorno (%)");
+    expect(csv).not.toMatch(/profile_favorites|return_summary|minimum_sample|copy_key/i);
+  });
+
+  it("keeps user-provided therapy names safe when opened in a spreadsheet", () => {
+    const payload = sessionPayload();
+    const distribution = payload.therapyDistribution as {
+      items: Array<{ therapyName: string }>;
+    };
+    distribution.items[0].therapyName = "=1+1;teste";
+
+    const csv = buildTherapistMetricsCsv({
+      data: mapTherapistSessionMetrics(payload),
+      generatedAt: new Date("2026-07-28T16:00:00.000Z"),
+      tab: "sessions",
+    });
+
+    expect(csv).toContain("\"'=1+1;teste\"");
   });
 });
 
@@ -485,7 +557,7 @@ export function sessionPayload(): Record<string, unknown> {
       reason: "cancellation_taxonomy_not_versioned",
       status: "unavailable",
     },
-    contractVersion: 1,
+    contractVersion: 2,
     evolution: {
       points: [
         {
@@ -494,6 +566,7 @@ export function sessionPayload(): Record<string, unknown> {
           sessionsCancelled: 2,
           sessionsCompleted: 12,
           sessionsRescheduled: 1,
+          sessionsScheduled: 15,
         },
       ],
       status: "ready",

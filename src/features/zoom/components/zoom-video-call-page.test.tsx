@@ -4,12 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../zoom-video-session-adapter", () => ({
   ZoomVideoSessionAdapter: ({
     actorRole,
+    ambientAudioSrc,
     displayMode,
   }: {
     actorRole: string;
+    ambientAudioSrc?: string | null;
     displayMode: string;
   }) => (
-    <div aria-label="Sala Zoom">
+    <div aria-label="Sala Zoom" data-ambient-audio-src={ambientAudioSrc}>
       {actorRole}:{displayMode}
     </div>
   ),
@@ -38,6 +40,10 @@ describe("ZoomVideoCallPage", () => {
     ).toBeVisible();
     expect(screen.getByLabelText("Sala Zoom")).toHaveTextContent(
       "patient:dedicated",
+    );
+    expect(screen.getByLabelText("Sala Zoom")).toHaveAttribute(
+      "data-ambient-audio-src",
+      "/zoom/waiting-room-ambient.mp3",
     );
     expect(
       screen.getByRole("link", { name: "Voltar aos detalhes" }),

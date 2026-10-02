@@ -76,7 +76,7 @@ export type TherapistMetricsOverview = {
     points: TherapistMetricActivityPoint[];
     status: "empty" | "ready";
   };
-  contractVersion: 1 | 2;
+  contractVersion: 1 | 2 | 3;
   counters: TherapistMetricsFoundation["counters"];
   discovery: {
     freshThrough: string | null;
@@ -95,7 +95,7 @@ export type TherapistMetricsOverview = {
   meta: Omit<TherapistMetricsFoundation["meta"], "periodDays"> & {
     periodDays: 30 | 60 | 90 | 120;
   };
-  metricDefinitionVersion: 1 | 2;
+  metricDefinitionVersion: 1 | 2 | 3;
   occupancy: {
     reason: "historical_availability_not_versioned";
     status: "unavailable";
@@ -175,6 +175,7 @@ export type TherapistSessionEvolutionPoint = {
   sessionsCancelled: number;
   sessionsCompleted: number;
   sessionsRescheduled: number;
+  sessionsScheduled?: number;
 };
 
 export type TherapistSessionOutcomeKey =
@@ -192,7 +193,7 @@ export type TherapistSessionMetrics = {
     reason: "cancellation_taxonomy_not_versioned";
     status: "unavailable";
   };
-  contractVersion: 1;
+  contractVersion: 1 | 2 | 3;
   evolution: {
     points: TherapistSessionEvolutionPoint[];
     status: "empty" | "ready";
@@ -203,7 +204,7 @@ export type TherapistSessionMetrics = {
     sessions: number;
   }>;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 1 | 2;
+  metricDefinitionVersion: 1 | 2 | 3;
   outcomeDistribution: TherapistMetricProtectedCollection<{
     key: TherapistSessionOutcomeKey;
     label: string;
@@ -237,9 +238,9 @@ export type TherapistSessionMetrics = {
 };
 
 export type TherapistSessionEvolutionComparison = {
-  contractVersion: 1;
+  contractVersion: 1 | 2;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 1;
+  metricDefinitionVersion: 1 | 2;
   points: Array<{
     current: number;
     currentDate: string;
@@ -249,10 +250,6 @@ export type TherapistSessionEvolutionComparison = {
   }>;
   status: "empty" | "ready";
   therapist: TherapistMetricsFoundation["therapist"];
-};
-
-export type TherapistSessionMetricsView = TherapistSessionMetrics & {
-  evolutionComparison: TherapistSessionEvolutionComparison;
 };
 
 export type TherapistInterestSegmentKey =
@@ -413,14 +410,27 @@ export type TherapistMetricsOccupancy =
     };
 
 export type TherapistMetricsDashboard = {
-  contractVersion: 2 | 3;
+  contractVersion: 2 | 3 | 4 | 5;
+  futureAgenda?: TherapistFutureAgenda;
   interest: TherapistInterestMetrics;
   meta: TherapistMetricsCommonMeta;
-  metricDefinitionVersion: 2 | 3;
+  metricDefinitionVersion: 2 | 3 | 4 | 5;
   occupancy: TherapistMetricsOccupancy;
   overview: TherapistMetricsOverview;
   sessions: TherapistSessionMetrics;
   therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistFutureAgenda = {
+  availableMinutes: number;
+  capacityMinutes: number;
+  occupancyRate: number | null;
+  reason: "no_active_services" | "no_availability" | null;
+  reservedMinutes: number;
+  reservedSessionCount: number;
+  status: "available" | "insufficient_data" | "unavailable";
+  windowEnd: string;
+  windowStart: string;
 };
 
 export type TherapistMetricsDashboardView = TherapistMetricsDashboard & {

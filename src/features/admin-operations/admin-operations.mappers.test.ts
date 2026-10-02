@@ -181,9 +181,72 @@ describe("admin operation mappers", () => {
         { label: "Data de cadastro", value: "12/09/2026" },
         {
           label: "Pendência",
-          value: "Ajustes solicitados · perfil ainda não está 100% completo",
+          value: "Ajustes solicitados · perfil público ainda não está completo",
         },
       ]),
+    );
+  });
+
+  it("shows approval pendencies while a verification is in review", () => {
+    const [row] = mapAdminOperationRows({
+      module: "verifications",
+      rows: [
+        {
+          id: "verification-approval-pending",
+          publication_blockers: ["profile_incomplete", "no_active_availability"],
+          publication_eligibility: {
+            blockers: ["profile_incomplete", "no_active_availability"],
+            eligible: false,
+            incompleteItems: [{ label: "Foto de perfil" }],
+          },
+          status: "in_review",
+          therapist_name: "Ana Oliveira",
+          therapist_profile_id: "therapist-approval-pending",
+        },
+      ],
+    });
+
+    expect(row?.statusLabel).toBe("in_review");
+    expect(row?.fields).toContainEqual({
+      label: "Pendência",
+      value:
+        "Antes da aprovação · perfil público ainda não está completo · nenhum horário recorrente disponível",
+    });
+  });
+
+  it("provides safe, actionable approval guidance without marking review as approved", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T10:00:00.000Z",
+      module: "verifications",
+      record: {
+        id: "verification-approval-pending",
+        publication_blockers: ["profile_incomplete", "no_active_availability"],
+        publication_eligibility: {
+          blockers: ["profile_incomplete", "no_active_availability"],
+          eligible: false,
+          incompleteItems: [{ label: "Foto de perfil" }],
+        },
+        status: "in_review",
+        therapist_name: "Ana Oliveira",
+      },
+    });
+
+    expect(detail.canApprove).toBe(false);
+    expect(detail.approvalGuidance).toEqual({
+      blockers: [
+        "perfil público ainda não está completo",
+        "nenhum horário recorrente disponível",
+      ],
+      incompleteProfileItems: ["Foto de perfil"],
+    });
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "Elegibilidade pública", value: "Aguardando aprovação" },
+        ]),
+        title: "Verificação",
+      }),
     );
   });
 
@@ -289,6 +352,56 @@ describe("admin operation mappers", () => {
     expect(JSON.stringify(row)).not.toContain("Comentário privado");
     expect(row.detailHref).toBe("/admin/avaliacoes/review-1");
     expect(row.title).toBe("Avaliação operacional");
+  });
+
+  it("shows the client and observation only in the authorized review detail", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T23:30:00.000Z",
+      module: "reviews",
+      record: {
+        comment: "A condução foi clara e acolhedora.",
+        id: "review-1",
+        patient_name: "Mariana Souza",
+        rating: 5,
+        status: "published",
+      },
+    });
+
+    expect(detail.sections).toContainEqual(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { label: "Cliente", value: "Mariana Souza" },
+          {
+            fullWidth: true,
+            label: "Observação",
+            value: "A condução foi clara e acolhedora.",
+          },
+        ]),
+        title: "Avaliação",
+      }),
+    );
+  });
+
+  it("keeps an absent review observation out of the detail", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-09-29T23:30:00.000Z",
+      module: "reviews",
+      record: {
+        comment: "   ",
+        id: "review-1",
+        rating: 5,
+        status: "published",
+      },
+    });
+
+    const reviewSection = detail.sections.find(
+      (section) => section.title === "Avaliação",
+    );
+    expect(reviewSection?.fields).not.toContainEqual(
+      expect.objectContaining({ label: "Observação" }),
+    );
   });
 
   it("does not expose meeting urls in session rows", () => {

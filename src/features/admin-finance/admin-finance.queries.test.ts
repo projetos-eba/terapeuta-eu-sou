@@ -126,6 +126,38 @@ describe("admin finance queries", () => {
     );
   });
 
+  it("uses the validated custom-range read model only with complete dates", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        generatedAt: "2026-09-29T12:00:00.000Z",
+        metrics: { "total-payments-amount": 11990 },
+        module: "payments",
+        page: { hasNext: false, page: 1, pageSize: 12, total: 0 },
+        rows: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getAdminFinancePage({
+      accessToken: "admin-token",
+      module: "payments",
+      searchParams: {
+        end: "2026-09-29",
+        period: "custom",
+        start: "2026-09-01",
+      },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_get_finance_module_range_v1",
+      expect.objectContaining({
+        body: expect.stringMatching(
+          /"p_module":"payments".*"period":"custom".*"end":"2026-09-29".*"start":"2026-09-01"/,
+        ),
+      }),
+    );
+  });
+
   it("sends the subscription plan and period filters only to the subscription read model", async () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({

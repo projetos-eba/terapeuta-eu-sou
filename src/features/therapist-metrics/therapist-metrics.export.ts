@@ -1,6 +1,8 @@
 import type {
   TherapistInterestMetrics,
   TherapistInterestMetricsReady,
+  TherapistMetricCounter,
+  TherapistMetricSampledValue,
   TherapistMetricsOverview,
   TherapistMetricsTab,
   TherapistSessionMetrics,
@@ -11,487 +13,381 @@ type ExportData =
   | TherapistMetricsOverview
   | TherapistSessionMetrics;
 
-type CsvRow = {
-  detail?: string | number | null;
-  key: string;
-  label: string;
-  section: string;
-  status: string;
-  unit?: string | null;
-  value?: string | number | null;
+type CsvCell = number | string | null | undefined;
+type CsvRows = CsvCell[][];
+
+const timezoneLabels: Record<string, string> = {
+  "America/Sao_Paulo": "América/São Paulo",
 };
+
+const weekdayLabels = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
 
 export function buildTherapistMetricsCsv({
   data,
+  generatedAt = new Date(),
   tab,
 }: {
   data: ExportData;
+  generatedAt?: Date;
   tab: TherapistMetricsTab;
 }) {
   if (tab === "interest" && isInterestMetrics(data) && !isReadyInterest(data)) {
     throw new Error("CAPABILITY_NOT_ALLOWED");
   }
 
-  const rows: CsvRow[] = [
-    metadata("report_tab", "Visão exportada", tab),
-    metadata("period_days", "Período em dias completos", data.meta.periodDays),
-    metadata("period_start", "Início do período", data.meta.periodStart),
-    metadata("period_end", "Fim exclusivo do período", data.meta.periodEnd),
-    metadata("timezone", "Fuso horário", data.meta.timezone),
-    metadata("fresh_through", "Dados atualizados até", data.meta.freshThrough),
-    metadata(
-      "metric_definition_version",
-      "Versão das definições",
-      data.metricDefinitionVersion,
-    ),
-    metadata("contract_version", "Versão do contrato", data.contractVersion),
-  ];
+  const rows = reportHeader(data, tab, generatedAt);
 
-  if (tab === "overview" && "counters" in data) {
-    appendCounter(
-      rows,
-      "overview",
-      "people_served",
-      "Pessoas atendidas",
-      data.counters.peopleServed,
-    );
-    appendCounter(
-      rows,
-      "overview",
-      "sessions_completed",
-      "Sessões concluídas",
-      data.counters.sessionsCompleted,
-    );
-    appendCounter(
-      rows,
-      "overview",
-      "service_minutes",
-      "Tempo de atendimento",
-      data.counters.serviceMinutes,
-    );
-    data.activity.points.forEach((point) => {
-      rows.push({
-        key: point.date,
-        label: "Sessões concluídas no dia",
-        section: "activity",
-        status: data.activity.status,
-        unit: "sessions",
-        value: point.sessionsCompleted,
-      });
-    });
-    rows.push({
-      detail: data.discovery.reason,
-      key: "discovery",
-      label: "Como as pessoas encontram seu perfil",
-      section: "discovery",
-      status: data.discovery.status,
-    });
-    appendSampled(
-      rows,
-      "overview",
-      "profile_favorites",
-      "Novos favoritos",
-      data.profileFavorites,
-    );
-    appendProtectedItems(
-      rows,
-      "therapy_ranking",
-      data.therapyRanking,
-      (item) => ({
-        detail: item.counter.directionCopyKey,
-        key: item.therapyId,
-        label: item.therapyName,
-        unit: item.counter.unit,
-        value: item.counter.value,
-      }),
-    );
-    rows.push({
-      detail: data.occupancy.reason,
-      key: "occupancy",
-      label: "Ocupação da agenda",
-      section: "occupancy",
-      status: data.occupancy.status,
-    });
-  }
-
+  if (tab === "overview" && "counters" in data) appendOverview(rows, data);
   if (tab === "sessions" && "summary" in data && "heatmap" in data) {
-    appendCounter(
-      rows,
-      "sessions",
-      "sessions_completed",
-      "Sessões concluídas",
-      data.summary.sessionsCompleted,
-    );
-    appendSampled(
-      rows,
-      "sessions",
-      "operational_presence",
-      "Comparecimento às sessões",
-      data.summary.operationalPresence,
-    );
-    appendCounter(
-      rows,
-      "sessions",
-      "sessions_cancelled",
-      "Cancelamentos",
-      data.summary.sessionsCancelled,
-    );
-    appendCounter(
-      rows,
-      "sessions",
-      "sessions_rescheduled",
-      "Reagendamentos",
-      data.summary.sessionsRescheduled,
-    );
-    appendCounter(
-      rows,
-      "sessions",
-      "reserved_duration_average",
-      "Duração média das sessões",
-      data.summary.reservedDurationAverage,
-    );
-
-    appendProtectedItems(
-      rows,
-      "outcome_distribution",
-      data.outcomeDistribution,
-      (item) => ({
-        detail: item.value,
-        key: item.key,
-        label: item.label,
-        unit: "percent",
-        value: item.percentage,
-      }),
-    );
-    data.evolution.points.forEach((point) => {
-      rows.push(
-        {
-          key: `${point.date}:completed`,
-          label: "Sessões concluídas",
-          section: "session_evolution",
-          status: data.evolution.status,
-          unit: "sessions",
-          value: point.sessionsCompleted,
-        },
-        {
-          key: `${point.date}:cancelled`,
-          label: "Sessões canceladas",
-          section: "session_evolution",
-          status: data.evolution.status,
-          unit: "sessions",
-          value: point.sessionsCancelled,
-        },
-        {
-          key: `${point.date}:no_show`,
-          label: "Ausências",
-          section: "session_evolution",
-          status: data.evolution.status,
-          unit: "sessions",
-          value: point.noShows,
-        },
-        {
-          key: `${point.date}:rescheduled`,
-          label: "Reagendamentos",
-          section: "session_evolution",
-          status: data.evolution.status,
-          unit: "sessions",
-          value: point.sessionsRescheduled,
-        },
-      );
-    });
-    appendOwnHistoryItems(rows, "heatmap", data.heatmap, (item) => ({
-      detail: `day=${item.dayOfWeek};hour_start=${item.hourBucketStart}`,
-      key: `${item.dayOfWeek}:${item.hourBucketStart}`,
-      label: "Sessões concluídas por dia e faixa de horário",
-      unit: "sessions",
-      value: item.sessions,
-    }));
-    appendProtectedItems(
-      rows,
-      "therapy_distribution",
-      data.therapyDistribution,
-      (item) => ({
-        detail: `share=${item.percentage}%`,
-        key: item.therapyId,
-        label: item.therapyName,
-        unit: "sessions",
-        value: item.sessions,
-      }),
-    );
-    rows.push({
-      detail: data.cancellationReasons.reason,
-      key: "cancellation_reasons",
-      label: "Motivos de cancelamento",
-      section: "cancellation_reasons",
-      status: data.cancellationReasons.status,
-    });
+    appendSessions(rows, data);
   }
-
-  if (tab === "interest" && isReadyInterest(data)) {
-    appendReturnSummary(
-      rows,
-      "interest",
-      data.summary.peopleReturned,
-      data.summary.returnRate,
-    );
-    appendSampled(
-      rows,
-      "interest",
-      "sessions_per_person",
-      "Frequência de sessões por pessoa",
-      data.summary.sessionsPerPerson,
-    );
-    appendFavoriteActivity(
-      rows,
-      "interest",
-      "profile_favorites",
-      "Novos favoritos",
-      data.summary.profileFavorites,
-    );
-    appendProtectedItems(rows, "segments", data.segments, (item) => ({
-      detail: `share=${item.percentage}%`,
-      key: item.key,
-      label: exportSegmentLabel(item.key),
-      unit: "people",
-      value: item.value,
-    }));
-    appendProtectedItems(
-      rows,
-      "base_evolution",
-      data.baseEvolution,
-      (item) => ({
-        detail: `new_people=${item.newPeople}`,
-        key: item.date,
-        label: "Pessoas atendidas",
-        unit: "people",
-        value: item.totalPeople,
-      }),
-    );
-    appendProtectedItems(rows, "cohorts", data.cohorts, (item) => ({
-      detail: JSON.stringify(item.retention),
-      key: item.cohortMonth,
-      label: "Grupo mensal",
-      unit: "people",
-      value: item.cohortSize,
-    }));
-    appendProtectedItems(
-      rows,
-      "therapy_return",
-      data.therapyReturn,
-      (item) => ({
-        detail: `returned=${item.returnedPeople};eligible=${item.people}`,
-        key: item.therapyId,
-        label: item.therapyName,
-        unit: "percent",
-        value: item.returnRate,
-      }),
-    );
-    [
-      [
-        "favorite_conversion",
-        "Favoritos que levaram a uma sessão",
-        data.favoriteConversion,
-      ],
-      ["sentiment", "Sentimento depois da sessão", data.sentiment],
-      [
-        "availability_gap",
-        "Procura sem horário disponível",
-        data.availabilityGap,
-      ],
-      [
-        "journey_themes",
-        "Temas mais recorrentes na jornada",
-        data.journeyThemes,
-      ],
-      ["exit_reasons", "Motivos de saída", data.exitReasons],
-    ].forEach(([key, label, block]) => {
-      const unavailable = block as { reason: string; status: "unavailable" };
-      rows.push({
-        detail: unavailable.reason,
-        key: String(key),
-        label: String(label),
-        section: "unavailable_signals",
-        status: unavailable.status,
-      });
-    });
-  }
+  if (tab === "interest" && isReadyInterest(data)) appendInterest(rows, data);
 
   return serializeCsv(rows);
 }
 
-function appendReturnSummary(
-  rows: CsvRow[],
-  section: string,
-  peopleReturned: TherapistInterestMetricsReady["summary"]["peopleReturned"],
-  returnRate: TherapistInterestMetricsReady["summary"]["returnRate"],
-) {
-  const ready =
-    peopleReturned.status === "ready" && returnRate.status === "ready";
+function reportHeader(
+  data: ExportData,
+  tab: TherapistMetricsTab,
+  generatedAt: Date,
+): CsvRows {
+  const timezone = data.meta.timezone;
 
-  rows.push({
-    detail: `minimum_sample=${returnRate.minimumSample};observed_sample=${returnRate.observedSample};returned_people=${ready ? peopleReturned.value : ""};copy_key=${returnRate.directionCopyKey ?? ""}`,
-    key: "return_summary",
-    label: "Pessoas que retornaram",
-    section,
-    status: ready ? "ready" : "insufficient_sample",
-    unit: "percent",
-    value: ready ? returnRate.value : null,
-  });
+  return [
+    ["Relatório de métricas"],
+    ["Acompanhamento do período selecionado"],
+    [],
+    ["Informações do relatório"],
+    ["Período", formatPeriod(data.meta.periodStart, data.meta.periodEnd, timezone)],
+    ["Data de geração", formatDateTime(generatedAt, timezone)],
+    ["Fuso horário", timezoneLabels[timezone] ?? timezone],
+    ["Dados atualizados até", formatDateTime(data.meta.freshThrough, timezone)],
+    ["Visão", tabLabel(tab)],
+    [],
+  ];
 }
 
-function appendFavoriteActivity(
-  rows: CsvRow[],
-  section: string,
-  key: string,
-  label: string,
-  favorites: TherapistInterestMetricsReady["summary"]["profileFavorites"],
-) {
-  rows.push({
-    detail: `comparison_status=${favorites.comparison.status};minimum_sample=${favorites.comparison.minimumSample};observed_sample=${favorites.comparison.observedSample};copy_key=${favorites.comparison.directionCopyKey ?? ""}`,
-    key,
-    label,
-    section,
-    status: favorites.activity.status,
-    unit: favorites.activity.unit,
-    value: favorites.activity.value,
-  });
-}
+function appendOverview(rows: CsvRows, data: TherapistMetricsOverview) {
+  appendSection(rows, "Resumo das métricas");
+  rows.push(["Métrica", "Valor", "Situação"]);
+  appendCounterRow(rows, "Pessoas atendidas", data.counters.peopleServed);
+  appendCounterRow(rows, "Sessões realizadas", data.counters.sessionsCompleted);
+  appendCounterRow(rows, "Minutos de atendimento", data.counters.serviceMinutes);
+  appendSampledRow(rows, "Novos favoritos", data.profileFavorites);
 
-function appendCounter(
-  rows: CsvRow[],
-  section: string,
-  key: string,
-  label: string,
-  metric: {
-    directionCopyKey: string;
-    previousValue: number;
-    status: string;
-    unit: string;
-    value: number;
-  },
-) {
-  rows.push({
-    detail: `previous=${metric.previousValue};copy_key=${metric.directionCopyKey}`,
-    key,
-    label,
-    section,
-    status: metric.status,
-    unit: metric.unit,
-    value: metric.value,
+  appendSection(rows, "Atividade diária");
+  rows.push([
+    "Data",
+    "Sessões realizadas",
+    "Minutos de atendimento",
+    "Pessoas atendidas",
+    "Status do dia",
+  ]);
+  data.activity.points.forEach((point) => {
+    rows.push([
+      formatLocalDate(point.date),
+      point.sessionsCompleted,
+      "Sem dados suficientes",
+      "Sem dados suficientes",
+      point.sessionsCompleted > 0 ? "Com sessões realizadas" : "Sem sessões",
+    ]);
   });
-}
+  appendEmptyActivityRow(rows, data.activity.points.length);
 
-function appendSampled(
-  rows: CsvRow[],
-  section: string,
-  key: string,
-  label: string,
-  metric: {
-    directionCopyKey: string | null;
-    minimumSample: number;
-    observedSample: number;
-    status: string;
-    unit: string;
-    value: number | null;
-  },
-) {
-  rows.push({
-    detail: `minimum_sample=${metric.minimumSample};observed_sample=${metric.observedSample};copy_key=${metric.directionCopyKey ?? ""}`,
-    key,
-    label,
-    section,
-    status: metric.status,
-    unit: metric.unit,
-    value: metric.value,
-  });
-}
+  appendSection(rows, "Indicadores complementares");
+  rows.push(["Indicador", "Valor", "Status / observação"]);
+  appendDiscoveryRows(rows, data);
+  appendUnavailableRow(rows, "Taxa de ocupação da agenda", data.occupancy.status);
 
-function appendProtectedItems<T>(
-  rows: CsvRow[],
-  section: string,
-  collection: {
-    items: T[];
-    minimumSample: number;
-    observedSample: number;
-    status: string;
-  },
-  mapItem: (item: T) => Omit<CsvRow, "section" | "status">,
-) {
-  if (collection.status !== "ready") {
-    rows.push({
-      detail: `minimum_sample=${collection.minimumSample};observed_sample=${collection.observedSample}`,
-      key: section,
-      label: humanExportLabel(section),
-      section,
-      status: collection.status,
+  appendSection(rows, "Terapias mais realizadas");
+  rows.push(["Posição", "Terapia", "Sessões realizadas", "Situação"]);
+  if (data.therapyRanking.status === "ready") {
+    data.therapyRanking.items.forEach((item, index) => {
+      rows.push([
+        index + 1,
+        item.therapyName,
+        item.counter.value,
+        statusLabel(item.counter.status),
+      ]);
     });
+  } else {
+    rows.push([
+      "",
+      "Sem dados suficientes",
+      "",
+      statusObservation(data.therapyRanking.status),
+    ]);
+  }
+}
+
+function appendDiscoveryRows(rows: CsvRows, data: TherapistMetricsOverview) {
+  if (data.discovery.status === "unavailable") {
+    appendUnavailableRow(rows, "Visualizações do perfil", data.discovery.status);
+    appendUnavailableRow(rows, "Inícios de agendamento", data.discovery.status);
+    appendUnavailableRow(rows, "Pessoas que encontraram seu perfil", data.discovery.status);
+    appendUnavailableRow(rows, "Perfil para agendamento", "insufficient_sample");
+    appendUnavailableRow(rows, "Busca para perfil", "insufficient_sample");
     return;
   }
 
-  collection.items.forEach((item) => {
-    rows.push({
-      ...mapItem(item),
-      section,
-      status: collection.status,
-    });
-  });
+  appendCounterRow(rows, "Visualizações do perfil", data.discovery.stages.profileViews);
+  appendCounterRow(rows, "Inícios de agendamento", data.discovery.stages.bookingFlowStarts);
+  appendCounterRow(
+    rows,
+    "Pessoas que encontraram seu perfil",
+    data.discovery.stages.searchImpressions,
+  );
+  appendSampledRow(rows, "Perfil para agendamento", data.discovery.funnel.profileToBooking);
+  appendSampledRow(rows, "Busca para perfil", data.discovery.funnel.searchToProfile);
 }
 
-function appendOwnHistoryItems<T>(
-  rows: CsvRow[],
-  section: string,
-  collection: {
-    items: T[];
-    observedSample: number;
-    status: string;
-  },
-  mapItem: (item: T) => Omit<CsvRow, "section" | "status">,
-) {
-  if (collection.status !== "ready") {
-    rows.push({
-      detail: `observed_sample=${collection.observedSample}`,
-      key: section,
-      label: humanExportLabel(section),
-      section,
-      status: collection.status,
-    });
+function appendSessions(rows: CsvRows, data: TherapistSessionMetrics) {
+  appendSection(rows, "Resumo das métricas");
+  rows.push(["Métrica", "Valor", "Situação"]);
+  appendCounterRow(rows, "Sessões realizadas", data.summary.sessionsCompleted);
+  appendSampledRow(rows, "Comparecimento às sessões", data.summary.operationalPresence);
+  appendCounterRow(rows, "Cancelamentos", data.summary.sessionsCancelled);
+  appendCounterRow(rows, "Reagendamentos", data.summary.sessionsRescheduled);
+  appendCounterRow(
+    rows,
+    "Duração média das sessões (minutos)",
+    data.summary.reservedDurationAverage,
+  );
+
+  appendSection(rows, "Atividade diária");
+  rows.push([
+    "Data",
+    "Sessões realizadas",
+    "Cancelamentos",
+    "Sessões não realizadas",
+    "Reagendamentos",
+  ]);
+  data.evolution.points.forEach((point) => {
+    rows.push([
+      formatLocalDate(point.date),
+      point.sessionsCompleted,
+      point.sessionsCancelled,
+      point.noShows,
+      point.sessionsRescheduled,
+    ]);
+  });
+  appendEmptyActivityRow(rows, data.evolution.points.length);
+
+  appendSection(rows, "Como as sessões terminaram");
+  rows.push(["Situação", "Sessões", "Percentual (%)", "Situação do indicador"]);
+  appendProtectedRows(rows, data.outcomeDistribution, (item) => [
+    item.label,
+    item.value,
+    item.percentage,
+    "Disponível",
+  ]);
+
+  appendSection(rows, "Frequência da agenda");
+  rows.push(["Dia da semana", "Faixa de horário", "Sessões realizadas", "Situação"]);
+  appendOwnHistoryRows(rows, data.heatmap, (item) => [
+    weekdayLabels[item.dayOfWeek] ?? "Dia não informado",
+    formatHourBucket(item.hourBucketStart),
+    item.sessions,
+    "Disponível",
+  ]);
+
+  appendSection(rows, "Sessões por terapia");
+  rows.push(["Terapia", "Sessões realizadas", "Percentual (%)", "Situação"]);
+  appendProtectedRows(rows, data.therapyDistribution, (item) => [
+    item.therapyName,
+    item.sessions,
+    item.percentage,
+    "Disponível",
+  ]);
+
+  appendSection(rows, "Indicadores complementares");
+  rows.push(["Indicador", "Valor", "Status / observação"]);
+  appendUnavailableRow(rows, "Motivos de cancelamento", data.cancellationReasons.status);
+}
+
+function appendInterest(rows: CsvRows, data: TherapistInterestMetricsReady) {
+  appendSection(rows, "Resumo das métricas");
+  rows.push(["Métrica", "Valor", "Situação"]);
+  appendSampledRow(rows, "Pessoas que retornaram", data.summary.peopleReturned);
+  appendSampledRow(rows, "Taxa de retorno (%)", data.summary.returnRate);
+  appendSampledRow(rows, "Média de sessões por pessoa", data.summary.sessionsPerPerson);
+  rows.push([
+    "Novos favoritos",
+    data.summary.profileFavorites.activity.value,
+    statusLabel(data.summary.profileFavorites.activity.status),
+  ]);
+
+  appendSection(rows, "Atividade por período");
+  rows.push(["Data", "Pessoas atendidas", "Novas pessoas", "Situação"]);
+  appendProtectedRows(rows, data.baseEvolution, (item) => [
+    formatLocalDate(item.date),
+    item.totalPeople,
+    item.newPeople,
+    "Disponível",
+  ]);
+
+  appendSection(rows, "Continuidade do acompanhamento");
+  rows.push(["Indicador", "Pessoas", "Percentual (%)", "Situação"]);
+  appendProtectedRows(rows, data.segments, (item) => [
+    exportSegmentLabel(item.key),
+    item.value,
+    item.percentage,
+    "Disponível",
+  ]);
+
+  appendSection(rows, "Retorno por terapia");
+  rows.push([
+    "Terapia",
+    "Pessoas atendidas",
+    "Pessoas que retornaram",
+    "Taxa de retorno (%)",
+  ]);
+  appendProtectedRows(rows, data.therapyReturn, (item) => [
+    item.therapyName,
+    item.people,
+    item.returnedPeople,
+    item.returnRate,
+  ]);
+
+  appendCohortRows(rows, data);
+
+  appendSection(rows, "Outros indicadores");
+  rows.push(["Indicador", "Valor", "Status / observação"]);
+  appendUnavailableRow(rows, "Favoritos que levaram a uma sessão", data.favoriteConversion.status);
+  appendUnavailableRow(rows, "Percepção após as sessões", data.sentiment.status);
+  appendUnavailableRow(rows, "Procura sem horário disponível", data.availabilityGap.status);
+  appendUnavailableRow(rows, "Temas mais recorrentes", data.journeyThemes.status);
+  appendUnavailableRow(rows, "Motivos de encerramento", data.exitReasons.status);
+}
+
+function appendCohortRows(rows: CsvRows, data: TherapistInterestMetricsReady) {
+  appendSection(rows, "Acompanhamento por período de início");
+
+  if (data.cohorts.status !== "ready") {
+    rows.push(["Mês de início", "Pessoas", "Situação"]);
+    rows.push(["", "Sem dados suficientes", statusObservation(data.cohorts.status)]);
     return;
   }
 
-  collection.items.forEach((item) => {
-    rows.push({
-      ...mapItem(item),
-      section,
-      status: collection.status,
-    });
+  const monthOffsets = Array.from(
+    new Set(
+      data.cohorts.items.flatMap((item) =>
+        item.retention.map((retention) => retention.monthOffset),
+      ),
+    ),
+  ).sort((left, right) => left - right);
+
+  rows.push([
+    "Mês de início",
+    "Pessoas",
+    ...monthOffsets.map((offset) => `Retorno após ${offset} mês${offset === 1 ? "" : "es"} (%)`),
+  ]);
+  data.cohorts.items.forEach((item) => {
+    const retentionByOffset = new Map(
+      item.retention.map((retention) => [retention.monthOffset, retention.percentage]),
+    );
+    rows.push([
+      formatLocalMonth(item.cohortMonth),
+      item.cohortSize,
+      ...monthOffsets.map((offset) => retentionByOffset.get(offset) ?? "Sem dados suficientes"),
+    ]);
   });
 }
 
-function metadata(key: string, label: string, value: string | number): CsvRow {
-  return {
-    key,
-    label,
-    section: "metadata",
-    status: "ready",
-    value,
-  };
+function appendCounterRow(
+  rows: CsvRows,
+  label: string,
+  metric: TherapistMetricCounter<"events" | "minutes" | "people" | "sessions">,
+) {
+  rows.push([label, metric.value, statusLabel(metric.status)]);
 }
 
-function humanExportLabel(section: string) {
-  const labels: Record<string, string> = {
-    base_evolution: "Pessoas atendidas",
-    cancellation_reasons: "Motivos de cancelamento",
-    cohorts: "Grupos mensais",
-    heatmap: "Sessões concluídas por dia e faixa de horário",
-    journey_themes: "Temas mais recorrentes na jornada",
-    outcome_distribution: "Como as sessões terminaram",
-    segments: "Como está a continuidade",
-    therapy_distribution: "Sessões concluídas por terapia",
-    therapy_ranking: "Terapias mais realizadas",
-    therapy_return: "Pessoas que retornaram por terapia",
+function appendSampledRow(
+  rows: CsvRows,
+  label: string,
+  metric: TherapistMetricSampledValue<"favorites" | "people" | "percent" | "ratio">,
+) {
+  rows.push([
+    label,
+    metric.status === "ready" ? metric.value : "Sem dados suficientes",
+    statusLabel(metric.status),
+  ]);
+}
+
+function appendUnavailableRow(
+  rows: CsvRows,
+  label: string,
+  status: "empty" | "forming" | "insufficient_sample" | "unavailable",
+) {
+  rows.push([label, unavailableValue(status), statusObservation(status)]);
+}
+
+function appendProtectedRows<T>(
+  rows: CsvRows,
+  collection: { items: T[]; status: "empty" | "insufficient_sample" | "ready" },
+  mapItem: (item: T) => CsvCell[],
+) {
+  if (collection.status !== "ready") {
+    rows.push(["Sem dados suficientes", "", statusObservation(collection.status)]);
+    return;
+  }
+
+  collection.items.forEach((item) => rows.push(mapItem(item)));
+}
+
+function appendOwnHistoryRows<T>(
+  rows: CsvRows,
+  collection: { items: T[]; status: "empty" | "ready" },
+  mapItem: (item: T) => CsvCell[],
+) {
+  if (collection.status !== "ready") {
+    rows.push(["Sem registros no período", "", "", statusObservation(collection.status)]);
+    return;
+  }
+
+  collection.items.forEach((item) => rows.push(mapItem(item)));
+}
+
+function appendEmptyActivityRow(rows: CsvRows, length: number) {
+  if (length === 0) rows.push(["Sem registros no período", "", "", "", "Sem sessões"]);
+}
+
+function appendSection(rows: CsvRows, title: string) {
+  rows.push([], [title]);
+}
+
+function statusLabel(status: string) {
+  if (status === "ready") return "Disponível";
+  if (status === "empty") return "Sem registros no período";
+  return "Sem dados suficientes";
+}
+
+function unavailableValue(status: string) {
+  return status === "empty" ? "Sem registros no período" : "Sem dados suficientes";
+}
+
+function statusObservation(status: string) {
+  if (status === "empty") return "Não houve registros neste período.";
+  if (status === "forming") return "Este indicador ainda está sendo formado.";
+  return "Ainda não há dados suficientes para apresentar este indicador.";
+}
+
+function tabLabel(tab: TherapistMetricsTab) {
+  const labels: Record<TherapistMetricsTab, string> = {
+    interest: "Interesse",
+    overview: "Visão geral",
+    sessions: "Sessões",
   };
 
-  return labels[section] ?? section;
+  return labels[tab];
 }
 
 function exportSegmentLabel(key: string) {
@@ -503,39 +399,58 @@ function exportSegmentLabel(key: string) {
     recurring: "Pessoas que retornaram",
   };
 
-  return labels[key] ?? key;
+  return labels[key] ?? "Outro grupo";
 }
 
-function serializeCsv(rows: CsvRow[]) {
-  const headers = [
-    "section",
-    "key",
-    "label",
-    "status",
-    "value",
-    "unit",
-    "detail",
-  ];
-  const lines = rows.map((row) =>
-    [
-      row.section,
-      row.key,
-      row.label,
-      row.status,
-      row.value ?? "",
-      row.unit ?? "",
-      row.detail ?? "",
-    ]
-      .map(csvCell)
-      .join(","),
-  );
-  return `\uFEFF${headers.join(",")}\r\n${lines.join("\r\n")}\r\n`;
+function formatPeriod(periodStart: string, periodEnd: string, timezone: string) {
+  const inclusiveEnd = new Date(new Date(periodEnd).getTime() - 1);
+  return `${formatDate(periodStart, timezone)} a ${formatDate(inclusiveEnd, timezone)}`;
 }
 
-function csvCell(value: string | number) {
-  const text = String(value);
-  if (!/[",\r\n]/.test(text)) return text;
-  return `"${text.replaceAll('"', '""')}"`;
+function formatDate(value: Date | string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatDateTime(value: Date | string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatLocalDate(value: string) {
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
+function formatLocalMonth(value: string) {
+  const [year, month] = value.split("-");
+  return year && month ? `${month}/${year}` : value;
+}
+
+function formatHourBucket(hour: number) {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function serializeCsv(rows: CsvRows) {
+  const lines = rows.map((row) => row.map(csvCell).join(";"));
+  return `\uFEFF${lines.join("\r\n")}\r\n`;
+}
+
+function csvCell(value: CsvCell) {
+  const text = value == null ? "" : String(value);
+  const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  if (!/[;"\r\n]/.test(safeText)) return safeText;
+  return `"${safeText.replaceAll('"', '""')}"`;
 }
 
 function isInterestMetrics(data: ExportData): data is TherapistInterestMetrics {

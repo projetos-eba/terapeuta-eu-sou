@@ -16,6 +16,8 @@ Status: concluído.
 - remoção lógica de ocorrência ou série;
 - auditoria, idempotência e versão otimista;
 - interface responsiva com loading, erro e vazio.
+- a visão mensal padrão e a lista percorrem todas as páginas do intervalo;
+  uma página parcial nunca pode omitir dias já contabilizados no resumo.
 
 ## Fontes canônicas
 

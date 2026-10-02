@@ -41,7 +41,7 @@ export function queryTherapistFinancialMetrics(
   accessToken: string,
   body: QueryBody,
 ) {
-  return requestFinanceRpc("get_private_therapist_financial_metrics_v2", {
+  return requestFinanceRpc("get_private_therapist_financial_metrics_v3", {
     accessToken,
     body,
   });
@@ -52,7 +52,7 @@ export function queryTherapistAdvancedFinancialDashboard(
   body: QueryBody,
 ) {
   return requestFinanceRpc(
-    "get_private_therapist_advanced_financial_dashboard_v2",
+    "get_private_therapist_advanced_financial_dashboard_v3",
     {
       accessToken,
       body,

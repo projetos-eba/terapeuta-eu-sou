@@ -106,11 +106,15 @@ export function MetricSparkline({
 }
 
 export function SessionsEvolutionChart({
+  completedLabel = "Sessões concluídas",
   currentPeriodLabel = "Período atual",
   empty = false,
   points,
   previousPeriodLabel = "Período anterior",
+  scheduledLabel = "Sessões agendadas",
+  variant = "area",
 }: {
+  completedLabel?: string;
   currentPeriodLabel?: string;
   empty?: boolean;
   points: Array<{
@@ -118,18 +122,28 @@ export function SessionsEvolutionChart({
     previousDate?: string;
     previous?: number;
     sessionsCompleted: number;
+    sessionsScheduled?: number;
   }>;
   previousPeriodLabel?: string;
+  scheduledLabel?: string;
+  variant?: "area" | "columns";
 }) {
+  const isReference = empty || points.length === 0;
   const visualPoints =
-    empty || points.length === 0
+    isReference
       ? Array.from({ length: 7 }, (_, index) => ({
           date: `referência-${index + 1}`,
           sessionsCompleted: 0,
+          sessionsScheduled: 0,
         }))
       : points;
+  const isColumns = variant === "columns";
   const completedTotal = points.reduce(
     (total, point) => total + point.sessionsCompleted,
+    0,
+  );
+  const scheduledTotal = points.reduce(
+    (total, point) => total + (point.sessionsScheduled ?? 0),
     0,
   );
   const weeklyAverage =
@@ -141,6 +155,9 @@ export function SessionsEvolutionChart({
         : best,
     null,
   );
+  const hasPreviousPeriod = !isColumns && points.some(
+    (point) => typeof point.previous === "number",
+  );
 
   return (
     <figure>
@@ -148,13 +165,28 @@ export function SessionsEvolutionChart({
         aria-hidden="true"
         className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-tesText-secondary"
       >
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
-          {currentPeriodLabel}
-        </span>
-        {points.some((point) => typeof point.previous === "number") ? (
+        {isColumns ? (
+          <>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
+              {scheduledLabel}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-5 rounded-full bg-status-success" />
+              {completedLabel}
+            </span>
+          </>
+        ) : (
           <span className="inline-flex items-center gap-2">
-            <span className="h-0 w-5 border-t-2 border-dashed border-brand-cyan" />
+            <span className="h-2.5 w-5 rounded-full bg-brand-primary" />
+            {currentPeriodLabel}
+          </span>
+        )}
+        {hasPreviousPeriod ? (
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="h-0 w-5 border-t-2 border-dashed border-brand-cyan"
+            />
             {previousPeriodLabel}
           </span>
         ) : null}
@@ -162,129 +194,205 @@ export function SessionsEvolutionChart({
       <div
         aria-label={
           empty
-            ? "Evolução diária das sessões concluídas: ainda sem dados"
-            : "Evolução diária das sessões concluídas no período"
+            ? isColumns
+              ? "Evolução diária das sessões agendadas e concluídas: ainda sem dados"
+              : "Evolução diária das sessões concluídas: ainda sem dados"
+            : isColumns
+              ? "Evolução diária das sessões agendadas e concluídas no período"
+              : "Evolução diária das sessões concluídas no período"
         }
         className="h-[238px] w-full sm:h-[260px]"
         role="img"
         tabIndex={0}
       >
         <ResponsiveContainer height="100%" width="100%">
-          <AreaChart
-            accessibilityLayer
-            data={visualPoints}
-            margin={{ left: -22, right: 8, top: 12 }}
-          >
-            <defs>
-              <linearGradient id="sessionsArea" x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={colors.primary}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="58%"
-                  stopColor={colors.lavender}
-                  stopOpacity={0.16}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={colors.cyan}
-                  stopOpacity={0.02}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              stroke={colors.lavender}
-              strokeDasharray="3 5"
-              vertical={false}
-            />
-            <XAxis
-              axisLine={false}
-              dataKey="date"
-              minTickGap={28}
-              tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
-              tickFormatter={(value) =>
-                String(value).startsWith("referência") ? "" : shortDate(value)
-              }
-              tickLine={false}
-            />
-            <YAxis
-              allowDecimals={false}
-              axisLine={false}
-              tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
-              tickLine={false}
-              width={34}
-            />
-            <Tooltip
-              content={
-                <TherapistChartTooltip
-                  labelFormatter={(value) => fullDate(String(value))}
-                />
-              }
-              cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
-              isAnimationActive={false}
-            />
-            <Area
-              dataKey="sessionsCompleted"
-              dot={{
-                fill: "white",
-                r: 3,
-                stroke: colors.primary,
-                strokeWidth: 2,
-              }}
-              fill="url(#sessionsArea)"
-              isAnimationActive={false}
-              name={currentPeriodLabel}
-              activeDot={{
-                fill: colors.primary,
-                r: 6,
-                stroke: "white",
-                strokeWidth: 2,
-              }}
-              stroke={colors.primary}
-              strokeWidth={3}
-              type="monotone"
-            />
-            {points.some((point) => typeof point.previous === "number") ? (
-              <Line
-                dataKey="previous"
-                dot={false}
+          {variant === "columns" ? (
+            <BarChart
+              accessibilityLayer
+              barCategoryGap="26%"
+              barGap={4}
+              data={visualPoints}
+              margin={{ left: -22, right: 8, top: 12 }}
+            >
+              <CartesianGrid
+                stroke={colors.lavender}
+                strokeDasharray="3 5"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={false}
+                dataKey="date"
+                minTickGap={28}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickFormatter={(value) =>
+                  String(value).startsWith("referência")
+                    ? ""
+                    : shortDate(value)
+                }
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickLine={false}
+                width={34}
+              />
+              <Tooltip
+                content={
+                  isReference ? () => null : (
+                    <TherapistChartTooltip
+                      labelFormatter={(value) => fullDate(String(value))}
+                    />
+                  )
+                }
+                cursor={{ fill: "var(--tes-color-surface-soft)" }}
                 isAnimationActive={false}
-                name={previousPeriodLabel}
+              />
+              <Bar
+                dataKey="sessionsScheduled"
+                fill={colors.primary}
+                isAnimationActive={false}
+                name={scheduledLabel}
+                radius={[7, 7, 0, 0]}
+              />
+              <Bar
+                dataKey="sessionsCompleted"
+                fill={colors.success}
+                isAnimationActive={false}
+                name={completedLabel}
+                radius={[7, 7, 0, 0]}
+              />
+            </BarChart>
+          ) : (
+            <AreaChart
+              accessibilityLayer
+              data={visualPoints}
+              margin={{ left: -22, right: 8, top: 12 }}
+            >
+              <defs>
+                <linearGradient id="sessionsArea" x1="0" x2="0" y1="0" y2="1">
+                  <stop
+                    offset="0%"
+                    stopColor={colors.primary}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="58%"
+                    stopColor={colors.lavender}
+                    stopOpacity={0.16}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={colors.cyan}
+                    stopOpacity={0.02}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke={colors.lavender}
+                strokeDasharray="3 5"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={false}
+                dataKey="date"
+                minTickGap={28}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickFormatter={(value) =>
+                  String(value).startsWith("referência")
+                    ? ""
+                    : shortDate(value)
+                }
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tick={{ fill: "var(--tes-color-text-muted)", fontSize: 11 }}
+                tickLine={false}
+                width={34}
+              />
+              <Tooltip
+                content={
+                  isReference ? () => null : (
+                    <TherapistChartTooltip
+                      labelFormatter={(value) => fullDate(String(value))}
+                    />
+                  )
+                }
+                cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
+                isAnimationActive={false}
+              />
+              <Area
+                dataKey="sessionsCompleted"
+                dot={{
+                  fill: "white",
+                  r: 3,
+                  stroke: colors.primary,
+                  strokeWidth: 2,
+                }}
+                fill="url(#sessionsArea)"
+                isAnimationActive={false}
+                name={currentPeriodLabel}
                 activeDot={{
-                  fill: colors.cyan,
-                  r: 5,
+                  fill: colors.primary,
+                  r: 6,
                   stroke: "white",
                   strokeWidth: 2,
                 }}
-                stroke={colors.cyan}
-                strokeDasharray="6 5"
-                strokeWidth={2}
+                stroke={colors.primary}
+                strokeWidth={3}
                 type="monotone"
               />
-            ) : null}
-          </AreaChart>
+              {hasPreviousPeriod ? (
+                <Line
+                  dataKey="previous"
+                  dot={false}
+                  isAnimationActive={false}
+                  name={previousPeriodLabel}
+                  activeDot={{
+                    fill: colors.cyan,
+                    r: 5,
+                    stroke: "white",
+                    strokeWidth: 2,
+                  }}
+                  stroke={colors.cyan}
+                  strokeDasharray="6 5"
+                  strokeWidth={2}
+                  type="monotone"
+                />
+              ) : null}
+            </AreaChart>
+          )}
         </ResponsiveContainer>
       </div>
       {!empty && points.length > 0 ? (
         <dl className="mt-4 grid grid-cols-1 gap-2 border-t border-brand-lavender/55 pt-4 sm:grid-cols-3">
           <div className="rounded-card bg-brand-lavenderSoft/70 px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Sessões concluídas
+              {isColumns ? scheduledLabel : "Sessões concluídas"}
             </dt>
             <dd className="mt-1 text-lg font-extrabold text-brand-deep">
-              {completedTotal}
+              {isColumns ? scheduledTotal : completedTotal}
             </dd>
           </div>
           <div className="rounded-card bg-brand-cyanSoft px-3 py-2.5">
             <dt className="text-[11px] font-bold text-tesText-muted">
-              Média por semana
+              {isColumns ? completedLabel : "Média por semana"}
             </dt>
-            <dd className="mt-1 text-lg font-extrabold text-status-info">
-              {new Intl.NumberFormat("pt-BR", {
-                maximumFractionDigits: 1,
-              }).format(weeklyAverage)}
+            <dd
+              className={
+                isColumns
+                  ? "mt-1 text-lg font-extrabold text-status-success"
+                  : "mt-1 text-lg font-extrabold text-status-info"
+              }
+            >
+              {isColumns
+                ? completedTotal
+                : new Intl.NumberFormat("pt-BR", {
+                    maximumFractionDigits: 1,
+                  }).format(weeklyAverage)}
             </dd>
           </div>
           <div className="rounded-card bg-status-successBg px-3 py-2.5">
@@ -305,7 +413,9 @@ export function SessionsEvolutionChart({
       <figcaption className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         {empty
           ? "O gráfico será preenchido conforme as sessões forem concluídas no período."
-          : "Cada ponto mostra quantas sessões foram concluídas em um dia completo"}
+          : isColumns
+            ? "O gráfico mostra, em cada dia completo, as sessões agendadas e as concluídas."
+            : "O gráfico mostra quantas sessões foram concluídas em cada dia completo."}
       </figcaption>
     </figure>
   );
@@ -318,8 +428,9 @@ export function PeopleEvolutionChart({
   empty?: boolean;
   points: Array<{ date: string; newPeople: number; totalPeople: number }>;
 }) {
+  const isReference = empty || points.length === 0;
   const visualPoints =
-    empty || points.length === 0
+    isReference
       ? Array.from({ length: 7 }, (_, index) => ({
           date: `referência-${index + 1}`,
           newPeople: 0,
@@ -396,9 +507,11 @@ export function PeopleEvolutionChart({
             />
             <Tooltip
               content={
-                <TherapistChartTooltip
-                  labelFormatter={(value) => fullDate(String(value))}
-                />
+                isReference ? () => null : (
+                  <TherapistChartTooltip
+                    labelFormatter={(value) => fullDate(String(value))}
+                  />
+                )
               }
               cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
               isAnimationActive={false}
@@ -532,6 +645,7 @@ export function DistributionDonut({
   items,
   label,
   palette = "default",
+  showPercentage = false,
   showLegend = true,
   valueSuffix = "",
 }: {
@@ -541,7 +655,8 @@ export function DistributionDonut({
   emptyMessage?: string;
   items: Array<{ label: string; value: number }>;
   label: string;
-  palette?: "continuity" | "default" | "occupancy";
+  palette?: "continuity" | "default" | "occupancy" | "outcomes";
+  showPercentage?: boolean;
   showLegend?: boolean;
   valueSuffix?: string;
 }) {
@@ -550,6 +665,8 @@ export function DistributionDonut({
       ? [colors.primary, colors.lavender]
       : palette === "continuity"
         ? [colors.success, colors.mint]
+        : palette === "outcomes"
+          ? [colors.success, colors.danger, colors.cyan, colors.warning]
         : [
             colors.primary,
             colors.cyan,
@@ -559,11 +676,15 @@ export function DistributionDonut({
           ];
   const hasValues = items.some((item) => item.value > 0);
   const isReference = empty || !hasValues;
+  const total = items.reduce((sum, item) => sum + item.value, 0);
   const visualItems = isReference ? [{ label: "Sem dados", value: 1 }] : items;
   const accessibleLabel = isReference
     ? `${label}: ainda sem dados`
     : `${label}: ${items
-        .map((item) => `${item.label}, ${item.value}${valueSuffix}`)
+        .map(
+          (item) =>
+            `${item.label}, ${item.value}${valueSuffix}${showPercentage ? ` (${formatPercentageOfTotal(item.value, total)}%)` : ""}`,
+        )
         .join("; ")}`;
 
   return (
@@ -649,6 +770,9 @@ export function DistributionDonut({
                 <strong className="shrink-0 text-brand-deep">
                   {String(item.value).replace(".", ",")}
                   {valueSuffix}
+                  {showPercentage && total > 0
+                    ? ` (${formatPercentageOfTotal(item.value, total)}%)`
+                    : null}
                 </strong>
               </li>
             ))
@@ -661,6 +785,14 @@ export function DistributionDonut({
       ) : null}
     </div>
   );
+}
+
+function formatPercentageOfTotal(value: number, total: number) {
+  if (total === 0) return "0";
+
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 1,
+  }).format((value / total) * 100);
 }
 
 export function MetricsHeatmap({
@@ -856,10 +988,28 @@ function shortDate(value: string) {
 }
 
 function fullDate(value: string) {
+  if (!isCalendarDate(value)) return "Detalhes do ponto";
+
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "long",
     timeZone: "UTC",
   }).format(new Date(`${value}T12:00:00Z`));
+}
+
+function isCalendarDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 function formatChartValue(

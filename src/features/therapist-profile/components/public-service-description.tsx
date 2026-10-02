@@ -3,17 +3,22 @@
 import { useState } from "react";
 
 import { TESDialog } from "@/components/tes";
+import { cn } from "@/lib/utils";
 
 export const PUBLIC_SERVICE_DESCRIPTION_PREVIEW_LENGTH = 180;
 
 type PublicServiceDescriptionProps = {
+  containerClassName?: string;
   description: string;
   serviceName: string;
+  textClassName?: string;
 };
 
 export function PublicServiceDescription({
+  containerClassName,
   description,
   serviceName,
+  textClassName,
 }: PublicServiceDescriptionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const hasMore =
@@ -25,8 +30,13 @@ export function PublicServiceDescription({
 
   return (
     <>
-      <div className="mt-3 min-w-0 max-w-full">
-        <p className="min-h-[46px] break-words text-sm leading-[1.5] text-tesText-secondary [overflow-wrap:anywhere]">
+      <div className={cn("mt-3 min-w-0 max-w-full", containerClassName)}>
+        <p
+          className={cn(
+            "min-h-[46px] break-words text-sm leading-[1.5] text-tesText-secondary [overflow-wrap:anywhere]",
+            textClassName,
+          )}
+        >
           {hasMore ? `${preview}…` : description}
         </p>
         {hasMore ? (

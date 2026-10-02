@@ -47,7 +47,17 @@ describe("TherapistMetricsPage", () => {
     expect(
       screen.getAllByText("Terapias mais realizadas").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Agenda e horários")).toBeInTheDocument();
+    expect(screen.getByText("Agenda nos próximos 30 dias")).toBeInTheDocument();
+    expect(screen.getByText("Resumo da agenda futura")).toBeInTheDocument();
+    expect(
+      screen.getByText(/A leitura começa amanhã e considera uma única capacidade/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Frequência de sessões concluídas")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Histórico de 30 dias completos · 28 de jun. – 27 de jul.. Este quadro acompanha o período selecionado, sem incluir hoje.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Veja como as pessoas encontram seu perfil, agendam sessões e se aproximam do seu trabalho. Estas informações ajudam você a entender o que está acontecendo e decidir os próximos passos com mais clareza.",
@@ -220,9 +230,37 @@ describe("TherapistMetricsPage", () => {
         "Essa leitura vai ficando mais clara conforme novas sessões forem concluídas.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText("Horas reservadas").parentElement).toHaveTextContent(
+      "3h",
+    );
+  });
+
+  it("keeps session frequency tied to the selected historical period, not the future agenda", () => {
+    const data = dashboardFixture();
+    data.meta.periodDays = 60;
+    data.meta.periodStart = "2026-08-01T03:00:00.000Z";
+    data.meta.periodEnd = "2026-09-30T03:00:00.000Z";
+    data.sessions.heatmap = {
+      items: [{ dayOfWeek: 2, hourBucketStart: 14, sessions: 2 }],
+      observedSample: 2,
+      status: "ready",
+    };
+    data.futureAgenda = {
+      ...data.futureAgenda!,
+      windowEnd: "2026-10-29",
+      windowStart: "2026-09-30",
+    };
+
+    render(<TherapistMetricsPage data={data} />);
+
     expect(
-      screen.getByText("Horário com menos sessões").parentElement,
-    ).toHaveTextContent("10h – 12h");
+      screen.getByText(
+        "Histórico de 60 dias completos · 01 de ago. – 29 de set.. Este quadro acompanha o período selecionado, sem incluir hoje.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/30 de set\. – 29 de out\.. A leitura começa amanhã/i),
+    ).toBeInTheDocument();
   });
 
   it("uses the dedicated initial state without demo metrics", () => {
@@ -252,6 +290,17 @@ describe("TherapistMetricsPage", () => {
     );
     data.sessions.summary.sessionsCompleted =
       data.overview.counters.sessionsCompleted;
+    data.futureAgenda = {
+      availableMinutes: 0,
+      capacityMinutes: 0,
+      occupancyRate: null,
+      reason: "no_availability",
+      reservedMinutes: 0,
+      reservedSessionCount: 0,
+      status: "insufficient_data",
+      windowEnd: "2026-08-26",
+      windowStart: "2026-07-28",
+    };
 
     render(<TherapistMetricsPage data={data} />);
 
@@ -420,7 +469,18 @@ function dashboardFixture(): TherapistMetricsDashboard {
   };
 
   return {
-    contractVersion: 2,
+    contractVersion: 4,
+    futureAgenda: {
+      availableMinutes: 420,
+      capacityMinutes: 600,
+      occupancyRate: 30,
+      reason: null,
+      reservedMinutes: 180,
+      reservedSessionCount: 3,
+      status: "available",
+      windowEnd: "2026-08-26",
+      windowStart: "2026-07-28",
+    },
     interest: {
       access: { requiredPlan: "premium_plus", status: "capability_locked" },
       contractVersion: 1,
@@ -429,7 +489,7 @@ function dashboardFixture(): TherapistMetricsDashboard {
       therapist,
     },
     meta,
-    metricDefinitionVersion: 2,
+    metricDefinitionVersion: 4,
     occupancy: {
       coverageDays: 4,
       coverageStart: "2026-07-24",
@@ -443,7 +503,7 @@ function dashboardFixture(): TherapistMetricsDashboard {
         reason: "cancellation_taxonomy_not_versioned",
         status: "unavailable",
       },
-      contractVersion: 1,
+      contractVersion: 2,
       evolution: { points: [], status: "empty" },
       heatmap: ownHistory([]),
       meta,

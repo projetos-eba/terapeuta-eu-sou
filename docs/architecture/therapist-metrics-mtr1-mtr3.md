@@ -10,8 +10,12 @@ Status revisado em 2026-09-27:
 
 ## Autoridades
 
-- Sessões, pessoas atendidas e minutos: `bookings.status = completed`, usando
-  `service_duration_minutes_snapshot`.
+- Sessões realizadas, pessoas atendidas e minutos:
+  `is_session_realized_for_reporting_v1(booking_id)`, que exige presença
+  bilateral encerrada e duas avaliações de qualidade positivas no mesmo
+  `session_attempt`; usa `service_duration_minutes_snapshot`. Essa leitura é
+  exclusivamente analítica e não muda `bookings.status`, confirmações,
+  pagamento, ledger ou repasse.
 - Favoritos: `favorite_therapists`, sempre associados ao perfil do terapeuta.
 - Impressão na busca, abertura do perfil e início do agendamento:
   `therapist_metric_events`.
@@ -89,9 +93,11 @@ O RPC privado `get_therapist_metrics_overview_v1(period)`:
 - distingue `ready`, `empty`, `insufficient_sample`, `processing` e
   `unavailable`.
 
-`get_therapist_metrics_overview_v2(period)` é aditivo e usado pela interface
-atual. Ele aceita somente 30 ou 60 dias locais completos. A V1 mantém os
-períodos históricos de compatibilidade para consumidores já existentes.
+`get_therapist_metrics_overview_v2(period)` permanece compatível. A interface
+atual usa `get_therapist_metrics_overview_v3(period)`, que conserva os períodos
+locais completos de 30 ou 60 dias e alinha os contadores, série diária e ranking
+à avaliação bilateral positiva. As V1/V2 continuam disponíveis para consumidores
+compatíveis.
 
 Read models:
 
@@ -149,6 +155,66 @@ O estado `forming` informa cobertura e período exigido. A leitura de 30 dias é
 liberada antes da de 60 dias; alterar a agenda hoje não reescreve métricas de
 dias já encerrados. Quando não existe capacidade ofertada sob cobertura
 completa, o estado é `empty`, nunca um sucesso fictício.
+
+### Agenda futura compartilhada — dashboard v4
+
+`get_therapist_metrics_dashboard_v4(30|60)` preserva os indicadores
+históricos selecionados e adiciona `futureAgenda` como uma leitura operacional
+independente dos **próximos 30 dias locais completos, a partir de amanhã à
+meia-noite no fuso do terapeuta**. O seletor de 30/60 dias não muda essa
+janela futura.
+
+A frequência de sessões concluídas usa exclusivamente `sessions.heatmap` do
+período histórico selecionado (30 ou 60 dias completos, sem o dia atual). Ela
+não usa nem é afetada por `futureAgenda`.
+
+A capacidade futura é calculada uma única vez por terapeuta, unindo os
+intervalos ativos de todas as terapias. Sobreposições não são somadas. Bloqueios
+globais removem a capacidade uma vez; um bloqueio de uma terapia remove somente
+a parte que não continua coberta por outra terapia. A fórmula é:
+
+- capacidade: união da disponibilidade efetiva com as reservas ainda
+  protegidas;
+- horas reservadas: união de `occupied_during` das reservas futuras em
+  `pending_payment`, `confirmed` ou `completed`, incluindo buffers snapshot;
+- horas livres: disponibilidade efetiva menos essas reservas;
+- ocupação: horas reservadas ÷ capacidade.
+
+Cancelamentos, falhas, reagendamentos e holds temporários não participam. A
+inclusão das reservas protegidas na capacidade evita que uma edição posterior
+da agenda esconda um horário já reservado ou produza ocupação acima de 100%.
+O heatmap continua sendo histórico e é apresentado como frequência de sessões
+concluídas.
+
+### Realização bilateral — overview V3 e dashboard V5
+
+`get_therapist_metrics_dashboard_v5(30|60)` preserva a agenda futura da V4 e
+compõe os contratos V3 de visão geral e sessões. Uma sessão passa a integrar
+Métricas quando as duas pessoas registram **Sim** na avaliação de qualidade da
+mesma tentativa, depois de presença bilateral e encerramento confiáveis. Uma
+resposta negativa, ausência, incidente ou avaliação de tentativa anterior não
+entra na contagem. Essa regra não publica nem altera o status operacional da
+sessão e não tem qualquer efeito financeiro.
+
+### Sessões agendadas e concluídas — MTR-4 V2
+
+`get_therapist_session_metrics_v2(30|60)` continua disponível para consumidores
+compatíveis. A aba **Sessões** usa `get_therapist_session_metrics_v3(30|60)`,
+que preserva a série de sessões agendadas da V2 e aplica a regra bilateral de
+realização aos contadores, evolução, frequência, presença e distribuição. A V2
+preserva todos os agregados da V1 e acrescenta
+`evolution.points[].sessionsScheduled`.
+
+Essa série conta, por data local marcada, os bookings que efetivamente chegaram
+à agenda: `confirmed`, `completed`, cancelados pela pessoa, terapeuta,
+plataforma ou pagamento, ausências e `refunded`. Rascunhos e tentativas ainda
+em pagamento não entram. A série é sempre agregada — não devolve IDs, nomes ou
+qualquer dado de paciente.
+
+Na interface, a evolução usa somente o período histórico selecionado, formado
+por dias locais completos e sem o dia atual: roxo representa sessões agendadas;
+verde representa sessões concluídas. Não há comparação com o período anterior
+neste gráfico.
 
 ### Descoberta
 

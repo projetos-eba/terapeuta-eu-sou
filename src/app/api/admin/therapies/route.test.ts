@@ -70,6 +70,7 @@ describe("admin therapies route", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(403);
+    expect(payload.error.code).toBe("admin_required");
     expect(payload.error.message).toBe("Acesso administrativo necessário.");
     expect(
       fetchMock.mock.calls.some(([input]) =>

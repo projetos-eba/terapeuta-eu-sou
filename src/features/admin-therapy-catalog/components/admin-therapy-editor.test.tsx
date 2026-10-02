@@ -133,6 +133,75 @@ describe("AdminTherapyEditor", () => {
     );
   });
 
+  it("keeps the picker aligned with the catalog colors and normalizes legacy selections", () => {
+    render(
+      <AdminTherapyEditor
+        isSaving={false}
+        matchingThemes={[]}
+        onCancel={() => undefined}
+        onSave={async () => undefined}
+        therapy={{
+          aliases: [],
+          archivedAt: null,
+          calendarColorKey: "lavender",
+          deprecatedAt: null,
+          description: null,
+          hasPublishedMatchWeights: false,
+          history: [],
+          id: "therapy-1",
+          imageUrl: null,
+          impact: {
+            activeServiceCount: 0,
+            futureBookingCount: 0,
+            isAvailableForServices: false,
+            isPubliclyVisible: false,
+            isVisibleInMatching: false,
+            publicProfileCount: 0,
+            serviceCount: 0,
+            therapistCount: 0,
+          },
+          isAvailableForServices: false,
+          isFeatured: false,
+          isPubliclyVisible: false,
+          isVisibleInMatching: false,
+          matchingThemeIds: [],
+          name: "Terapia",
+          publicContent: {
+            approachIconKey: null,
+            approachLabel: null,
+            benefits: [],
+            complementaryDescription: null,
+            heroFocalPoint: "center",
+            heroImageUrl: null,
+            highlights: [],
+            introduction: null,
+            safetyNote: null,
+            seoDescription: null,
+            seoTitle: null,
+            subtitle: null,
+            visualThemeKey: "energy",
+          },
+          publishedAt: null,
+          replacementTherapyId: null,
+          shortDescription: "Resumo",
+          slug: "terapia",
+          status: "draft",
+          updatedAt: "2026-10-01T00:00:00.000Z",
+        }}
+      />,
+    );
+
+    const colorPicker = screen.getByRole("combobox", {
+      name: /cor de identificação/i,
+    });
+
+    expect(colorPicker).toHaveValue("purple");
+    expect(colorPicker).toHaveTextContent("Roxo");
+    expect(colorPicker).not.toHaveTextContent("Lavanda");
+    expect(colorPicker).not.toHaveTextContent("Ciano");
+    expect(colorPicker).not.toHaveTextContent("Menta");
+  });
+
   it("explains the catalog fields in plain language and previews their use", () => {
     render(
       <AdminTherapyEditor
@@ -187,6 +256,19 @@ describe("AdminTherapyEditor", () => {
     expect(screen.getByText("Cuidado complementar com presença e escuta.")).toBeInTheDocument();
     expect(screen.getByText("Também encontrada por: Reiki Usui, Terapia Reiki.")).toBeInTheDocument();
     expect(screen.getByText("Uma explicação pública sobre a prática.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Obrigatório para rastreabilidade administrativa. Use pelo menos 12 caracteres.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Entenda o campo Nota responsável" }),
+    );
+    expect(
+      screen.getByText(
+        "Registre um limite importante da prática. Você pode esclarecer que ela não substitui diagnóstico, tratamento ou acompanhamento profissional. Não use afirmações de resultado. Nesta versão, esse texto orienta a curadoria do catálogo e não aparece na página pública.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows the configured limits and blocks an overlong field", async () => {
@@ -202,10 +284,10 @@ describe("AdminTherapyEditor", () => {
       />,
     );
 
-    expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "100");
+    expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('textarea[name="description"]')).toHaveAttribute("maxLength", "200");
-    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "160");
-    expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "200");
+    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "1000");
+    expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "1000");
     expect(document.querySelector('textarea[name="safetyNote"]')).toHaveAttribute("maxLength", "150");
     expect(document.querySelector('input[name="benefitDescription"]')).toHaveAttribute("maxLength", "100");
 
@@ -214,10 +296,10 @@ describe("AdminTherapyEditor", () => {
     fireEvent.change(screen.getByLabelText("Benefício 1"), { target: { value: "Pausa" } });
     fireEvent.change(screen.getByLabelText("Benefício 2"), { target: { value: "Cuidado" } });
     fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!, { target: { value: "Cadastro inicial." } });
-    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, { target: { value: "r".repeat(101) } });
+    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, { target: { value: "r".repeat(151) } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
 
-    expect(await screen.findByText("O resumo deve ter no máximo 100 caracteres.")).toBeInTheDocument();
+    expect(await screen.findByText("O resumo deve ter no máximo 150 caracteres.")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });
 

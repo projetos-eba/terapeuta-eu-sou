@@ -166,6 +166,67 @@ describe("public service availability", () => {
     ).toHaveLength(2);
   });
 
+  it("continues through two full months to find the first slots within the 90-day horizon", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-11T12:00:00.000Z"));
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const body = JSON.parse(String(init?.body)) as {
+          p_day?: string;
+          p_month?: string;
+        };
+
+        if (url.includes("get_service_available_days_v1")) {
+          const month = body.p_month?.slice(0, 7) ?? "2026-09";
+          return new Response(
+            JSON.stringify({
+              days:
+                month === "2026-11"
+                  ? [
+                      { date: "2026-11-10" },
+                      { date: "2026-11-11" },
+                      { date: "2026-11-12" },
+                    ]
+                  : [],
+              horizonEndsAt: "2026-12-10T12:00:00.000Z",
+              month,
+              timezone: "America/Sao_Paulo",
+            }),
+            { status: 200 },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            horizonEndsAt: "2026-12-10T12:00:00.000Z",
+            slots: [slotForDate(body.p_day ?? "2026-11-10")],
+            timezone: "America/Sao_Paulo",
+          }),
+          { status: 200 },
+        );
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getPublicServiceCompactAvailability(
+      "e2e10000-0000-4000-8000-000000000001",
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.days.map((day) => day.date)).toEqual([
+      "2026-11-10",
+      "2026-11-11",
+      "2026-11-12",
+    ]);
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("get_service_available_days_v1"),
+      ),
+    ).toHaveLength(3);
+  });
+
   it("continues after a discovered day loses its last slot", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-11T12:00:00.000Z"));

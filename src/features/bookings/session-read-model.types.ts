@@ -129,6 +129,7 @@ export type TherapistAgendaReadModel = {
       isAvailable: boolean;
       serviceId: string | null;
       startsAt: string;
+      status: "active";
     }>;
     rules: Array<{
       dayOfWeek: number;

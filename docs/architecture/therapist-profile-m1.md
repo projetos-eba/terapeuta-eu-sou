@@ -126,6 +126,12 @@ ou retorna a entrada de revisão para `submitted`, mantém o perfil sem
 visibilidade/recebimento de reservas até a decisão e reverte a publicação se a
 sincronização falhar.
 
+Se uma nova versão for publicada enquanto essa análise estiver em `submitted`
+ou `in_review`, a mesma verificação é preservada: ela não é recriada, não tem
+seus metadados reiniciados e não volta de `in_review` para `submitted`. A nova
+versão permanece disponível apenas para a revisão administrativa; o perfil
+continua sem visibilidade pública ou recebimento de reservas até a decisão.
+
 Depois de `therapist_profiles.status = approved`, uma nova publicação editorial
 não cria, reabre ou altera `therapist_verifications`; preserva status aprovado,
 visibilidade e recebimento de reservas. A alteração continua rastreada em

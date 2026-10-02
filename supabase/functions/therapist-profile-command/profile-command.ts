@@ -253,6 +253,20 @@ export function mapTherapistProfileDatabaseError(error: unknown) {
       "Este perfil não pode ser alterado agora.",
     );
   }
+  if (details.includes("PROFILE_SUSPENDED")) {
+    return new DomainError(
+      "PROFILE_LOCKED",
+      403,
+      "Este perfil não pode ser alterado agora.",
+    );
+  }
+  if (details.includes("invalid therapist verification status transition")) {
+    return new DomainError(
+      "PROFILE_REVIEW_IN_PROGRESS",
+      409,
+      "Seu perfil já está em análise. Atualize a página para acompanhar a situação.",
+    );
+  }
   if (details.includes("CAPABILITY_NOT_ALLOWED")) {
     return new DomainError(
       "CAPABILITY_NOT_ALLOWED",

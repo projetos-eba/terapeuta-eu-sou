@@ -59,13 +59,20 @@ export type AdminTherapyCatalogCommandResult =
 
 const userMessages: Record<string, string> = {
   admin_required: "Você não tem permissão para realizar esta ação.",
+  admin_session_required:
+    "Sua sessão administrativa expirou. Entre novamente para continuar.",
   archive_blocked_by_usage:
     "Esta terapia possui serviços ativos ou sessões futuras. Descontinue-a antes de arquivar.",
   catalog_command_failed:
     "Não foi possível salvar a terapia. Verifique os temas do Match e os campos obrigatórios e tente novamente.",
+  catalog_unavailable:
+    "O catálogo está indisponível agora. Aguarde um instante e tente novamente.",
   incomplete_public_content:
     "Complete o conteúdo público, incluindo imagem e pelo menos um destaque e dois benefícios, antes de publicar.",
   invalid_payload: "Revise os campos obrigatórios da terapia e tente novamente.",
+  invalid_calendar_color: "Escolha uma cor disponível para a agenda.",
+  invalid_slug:
+    "Use no endereço somente letras minúsculas, números e hífens.",
   invalid_theme: "Selecione apenas temas ativos do Match.",
   matching_theme_removal_blocked:
     "Não é possível remover este tema porque ele está em uso por serviços ou refinamentos.",
@@ -77,12 +84,12 @@ const userMessages: Record<string, string> = {
   theme_limit: "Selecione de 1 a 3 temas do Match.",
   theme_required: "Selecione pelo menos um tema do Match.",
   unsafe_copy:
-    "Revise o conteúdo para remover promessas de cura, diagnóstico ou resultado garantido.",
-  short_description_too_long: "O resumo deve ter no máximo 100 caracteres.",
+    "Revise o conteúdo: não use afirmações de cura, diagnóstico ou resultado garantido. Frases de limite, como “não substitui diagnóstico”, são permitidas.",
+  short_description_too_long: "O resumo deve ter no máximo 150 caracteres.",
   description_too_long: "A abordagem deve ter no máximo 200 caracteres.",
-  introduction_too_long: "O campo O que é deve ter no máximo 160 caracteres.",
+  introduction_too_long: "O campo O que é deve ter no máximo 1.000 caracteres.",
   complementary_description_too_long:
-    "A descrição complementar deve ter no máximo 200 caracteres.",
+    "A descrição complementar deve ter no máximo 1.000 caracteres.",
   safety_note_too_long: "A nota responsável deve ter no máximo 150 caracteres.",
   benefit_description_too_long:
     "A descrição opcional do benefício deve ter no máximo 100 caracteres.",

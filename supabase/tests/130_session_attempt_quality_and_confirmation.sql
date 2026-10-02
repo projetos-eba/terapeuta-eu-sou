@@ -101,8 +101,8 @@ select is((select count(*)::integer from public.session_participant_confirmation
   public.current_session_attempt_id_v1('b1300000-0000-4000-8000-000000000011')),0,'positive quality does not record a participant confirmation');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','positive quality is no longer offered again to its author');
 select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
-  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','true',
-  'own private response marks the patient encounter as realized without a public review');
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','false',
+  'one positive private response waits for the counterpart before marking the encounter as realized');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'actorConfirmation','null'::jsonb,'positive quality leaves internal confirmation untouched');
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->'counterpartConfirmation','null'::jsonb,'positive quality does not affect the other participant confirmation');
 select is(
@@ -124,8 +124,8 @@ select is((select count(*)::integer from public.session_participant_confirmation
 select set_config('request.jwt.claim.sub',(select therapist_actor::text from quality_context order by id limit 1),true);
 select is(public.get_session_feedback_v2('b1300000-0000-4000-8000-000000000011')->>'status','submitted','negative quality is no longer offered again to its author');
 select is(public.get_session_attempt_attendance_batch_v1(array['b1300000-0000-4000-8000-000000000011'::uuid])
-  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','true',
-  'own private quality response marks the therapist session as realized');
+  #>> '{b1300000-0000-4000-8000-000000000011,actorRealized}','false',
+  'a negative counterpart quality response never marks the therapist session as realized');
 select ok(not exists(select 1 from public.therapist_pending_confirmation_rows_v1('c1000000-0000-4000-8000-000000000001')
   where booking_id='b1300000-0000-4000-8000-000000000011'),
   'private therapist response removes the dashboard and reviews pending item');

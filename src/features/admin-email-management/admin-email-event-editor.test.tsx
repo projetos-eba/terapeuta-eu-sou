@@ -64,7 +64,7 @@ afterEach(() => {
 });
 
 describe("AdminEmailEventEditor", () => {
-  it("shows the real default template as read-only, including text and HTML", async () => {
+  it("shows the default visual content as read-only", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -82,20 +82,17 @@ describe("AdminEmailEventEditor", () => {
       "Texto de apoio padrão",
     );
     expect(
-      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
-    ).toHaveValue("Texto padrão para {{recipient_name}}");
-    expect(
-      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
-    ).toBeDisabled();
-
-    fireEvent.click(screen.getByRole("button", { name: "HTML" }));
-
-    expect(
-      screen.getByRole("textbox", { name: "Conteúdo HTML do e-mail" }),
+      screen.getByRole("textbox", { name: "Conteúdo visual do e-mail" }),
     ).toHaveValue("<p>HTML padrão para {{recipient_name}}</p>");
     expect(
-      screen.getByRole("textbox", { name: "Conteúdo HTML do e-mail" }),
+      screen.getByRole("textbox", { name: "Conteúdo visual do e-mail" }),
     ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Texto" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "HTML" }),
+    ).not.toBeInTheDocument();
   });
 
   it("copies the default template into editable fields when customization begins", async () => {
@@ -189,8 +186,57 @@ describe("AdminEmailEventEditor", () => {
       "Texto de apoio padrão",
     );
     expect(
-      screen.getByRole("textbox", { name: "Conteúdo em texto do e-mail" }),
-    ).toHaveValue("Texto padrão para {{recipient_name}}");
+      screen.getByRole("textbox", { name: "Conteúdo visual do e-mail" }),
+    ).toHaveValue("<p>HTML padrão para {{recipient_name}}</p>");
+  });
+
+  it("updates the visual preview automatically from the HTML field", async () => {
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const request = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        requests.push(request);
+        const overrides = request.overrides as { html?: string } | undefined;
+        return {
+          json: async () => ({
+            data:
+              request.action === "preview"
+                ? {
+                    preview: {
+                      ...detail.preview,
+                      html: overrides?.html ?? detail.preview.html,
+                    },
+                  }
+                : detail,
+            ok: true,
+          }),
+          ok: true,
+        };
+      }),
+    );
+
+    render(
+      <AdminEmailEventEditor actionKey="therapy_catalog_request_submitted" />,
+    );
+
+    const content = await screen.findByRole("textbox", {
+      name: "Conteúdo visual do e-mail",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Personalizado" }));
+    fireEvent.change(content, {
+      target: { value: "<p>Conteúdo atualizado</p>" },
+    });
+
+    await waitFor(() =>
+      expect(
+        requests.find((request) => request.action === "preview"),
+      ).toMatchObject({
+        overrides: expect.objectContaining({
+          html: "<p>Conteúdo atualizado</p>",
+        }),
+      }),
+    );
   });
 
   it("restores defaults by persisting empty template overrides", async () => {

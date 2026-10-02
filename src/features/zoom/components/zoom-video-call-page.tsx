@@ -8,10 +8,13 @@ import { BookingReference } from "@/features/bookings";
 import { ZoomVideoSessionAdapter } from "../zoom-video-session-adapter";
 import { ZoomAttendanceClosureBoundary } from "./zoom-attendance-closure-boundary";
 
+export const DEFAULT_WAITING_ROOM_AMBIENT_AUDIO_SRC =
+  "/zoom/waiting-room-ambient.mp3";
+
 export function ZoomVideoCallPage({
   access,
   actorRole,
-  ambientAudioSrc,
+  ambientAudioSrc = DEFAULT_WAITING_ROOM_AMBIENT_AUDIO_SRC,
   backHref,
   bookingId,
   participantLabel,

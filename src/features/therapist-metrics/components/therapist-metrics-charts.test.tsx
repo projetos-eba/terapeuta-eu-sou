@@ -82,6 +82,32 @@ describe("therapist metrics charts", () => {
     expect(screen.getByText("em 02/09")).toBeInTheDocument();
   });
 
+  it("renders scheduled and completed sessions as grouped columns", () => {
+    render(
+      <SessionsEvolutionChart
+        completedLabel="Concluídas"
+        points={[
+          {
+            date: "2026-09-01",
+            sessionsCompleted: 2,
+            sessionsScheduled: 3,
+          },
+        ]}
+        scheduledLabel="Agendadas"
+        variant="columns"
+      />,
+    );
+
+    expect(screen.getAllByText("Agendadas")[0]).toBeInTheDocument();
+    const completedLegend = screen.getAllByText("Concluídas")[0];
+    expect(completedLegend.firstElementChild).toHaveClass("bg-status-success");
+    expect(
+      screen.getByRole("img", {
+        name: "Evolução diária das sessões agendadas e concluídas no período",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("includes donut values and suffixes in its accessible description", () => {
     render(
       <DistributionDonut
@@ -100,5 +126,30 @@ describe("therapist metrics charts", () => {
         name: "Ocupação da agenda: Ocupado, 65%; Disponível, 35%",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("shows each outcome total and percentage in the donut legend", () => {
+    render(
+      <DistributionDonut
+        centerLabel="16 sessões"
+        items={[
+          { label: "Concluídas", value: 12 },
+          { label: "Canceladas", value: 2 },
+          { label: "Ausências", value: 1 },
+          { label: "Reagendadas", value: 1 },
+        ]}
+        label="Desfechos das sessões"
+        palette="outcomes"
+        showPercentage
+      />,
+    );
+
+    expect(
+      screen.getByRole("img", {
+        name: /Concluídas, 12 \(75%\); Canceladas, 2 \(12,5%\)/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("12 (75%)")).toBeInTheDocument();
+    expect(screen.getByText("2 (12,5%)")).toBeInTheDocument();
   });
 });

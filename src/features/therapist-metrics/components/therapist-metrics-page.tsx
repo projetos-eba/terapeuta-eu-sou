@@ -65,10 +65,6 @@ export function TherapistMetricsPage({
       value: point.sessionsCompleted,
     })),
   );
-  const occupancySparkline =
-    occupancy.status === "ready"
-      ? aggregateOccupancyToThree(occupancy.series)
-      : [];
   const comparisonPoints = sessionComparison.points.map((point) => ({
     date: point.currentDate,
     previous: point.previous,
@@ -109,27 +105,22 @@ export function TherapistMetricsPage({
           state: "forming" as const,
           value: "-",
         };
+  const futureAgenda = data.futureAgenda;
   const occupancyKpi =
-    occupancy.status === "ready"
+    futureAgenda?.status === "available" && futureAgenda.occupancyRate !== null
       ? {
-          copy: "Minutos ocupados sobre a capacidade ofertada",
-          state:
-            occupancy.current.percentage === null
-              ? ("empty" as const)
-              : ("ready" as const),
-          value:
-            occupancy.current.percentage === null
-              ? "Sem dados"
-              : `${formatNumber(occupancy.current.percentage)}%`,
+          copy: "Horários reservados sobre a capacidade única da agenda nos próximos 30 dias, a partir de amanhã.",
+          state: "ready" as const,
+          value: `${formatNumber(futureAgenda.occupancyRate)}%`,
         }
-      : occupancy.status === "empty"
+      : futureAgenda?.status === "insufficient_data"
         ? {
-            copy: "Não houve capacidade ofertada neste período",
+            copy: "Não há horários disponíveis nos próximos 30 dias, a partir de amanhã.",
             state: "empty" as const,
             value: "Sem dados",
           }
         : {
-            copy: "A leitura aparece quando houver cobertura confiável",
+            copy: "Configure horários e terapias ativas para acompanhar os próximos 30 dias.",
             state: "forming" as const,
             value: "-",
           };
@@ -181,13 +172,13 @@ export function TherapistMetricsPage({
         ),
     occupancy.status === "ready" && occupancy.current.percentage !== null
       ? comparisonSampled(
-          "Ocupação da agenda",
+          "Ocupação histórica da agenda",
           occupancy.current.percentage,
           occupancy.previous.percentage,
           "%",
         )
       : comparisonReference(
-          "Ocupação da agenda",
+          "Ocupação histórica da agenda",
           null,
           "Histórico da agenda em formação",
         ),
@@ -256,7 +247,7 @@ export function TherapistMetricsPage({
             copy={occupancyKpi.copy}
             icon={Clock3}
             label="Ocupação da agenda"
-            sparkline={occupancySparkline}
+            sparkline={[]}
             state={occupancyKpi.state}
             tone="primary"
             value={occupancyKpi.value}
@@ -279,6 +270,12 @@ export function TherapistMetricsPage({
       </section>
 
       <MetricsAgendaSummary data={data} />
+      <MetricsSessionFrequency
+        heatmap={sessions.heatmap}
+        periodDays={data.meta.periodDays}
+        periodEnd={data.meta.periodEnd}
+        periodStart={data.meta.periodStart}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <MetricPanel
@@ -576,34 +573,6 @@ export function aggregateSparklineToThree(
   );
 }
 
-function aggregateOccupancyToThree(
-  points: Array<{
-    date: string;
-    occupiedMinutes: number;
-    offeredMinutes: number;
-  }>,
-) {
-  return aggregateToThree(
-    points.map((point) => ({
-      label: point.date,
-      occupiedMinutes: point.occupiedMinutes,
-      offeredMinutes: point.offeredMinutes,
-      value: 0,
-    })),
-    (group) => {
-      const offered = group.reduce(
-        (total, point) => total + point.offeredMinutes,
-        0,
-      );
-      const occupied = group.reduce(
-        (total, point) => total + point.occupiedMinutes,
-        0,
-      );
-      return offered === 0 ? 0 : (occupied / offered) * 100;
-    },
-  );
-}
-
 function aggregateToThree<T extends { label: string; value: number }>(
   points: T[],
   value: (group: T[]) => number,
@@ -625,23 +594,12 @@ function aggregateToThree<T extends { label: string; value: number }>(
 }
 
 function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
-  const { occupancy, sessions } = data;
-  const heatmapPoints =
-    sessions.heatmap.status === "ready"
-      ? sessions.heatmap.items.map((point) => ({
-          ...point,
-          value: point.sessions,
-        }))
-      : [];
-  const highlights = agendaHighlights(heatmapPoints);
-  const idleAvailability = idleAvailabilityLabel(occupancy);
-  const isInitialSessionReading =
-    sessions.heatmap.status === "ready" && sessions.heatmap.observedSample < 10;
+  const { futureAgenda } = data;
   const occupancyPercentage =
-    occupancy.status === "ready" &&
-    occupancy.current.percentage !== null &&
-    occupancy.current.offeredMinutes > 0
-      ? occupancy.current.percentage
+    futureAgenda?.status === "available" &&
+    futureAgenda.occupancyRate !== null &&
+    futureAgenda.capacityMinutes > 0
+      ? futureAgenda.occupancyRate
       : null;
   const occupancyReady = occupancyPercentage !== null;
 
@@ -654,11 +612,12 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
           </span>
           <div>
             <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
-              Agenda e horários
+              Agenda nos próximos 30 dias
             </h2>
             <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-              Veja como sua disponibilidade está sendo aproveitada e em quais
-              dias e horários suas sessões acontecem com mais frequência.
+              {futureAgenda
+                ? `${formatInclusiveDateRange(futureAgenda.windowStart, futureAgenda.windowEnd)}. A leitura começa amanhã e considera uma única capacidade entre todas as suas terapias.`
+                : "Acompanhe horários reservados e livres para organizar sua agenda futura, a partir de amanhã."}
             </p>
           </div>
         </div>
@@ -671,7 +630,7 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
         </Link>
       </div>
 
-      <div className="grid divide-y divide-brand-lavender/70 lg:grid-cols-[minmax(220px,0.72fr)_minmax(0,1.35fr)_minmax(210px,0.72fr)] lg:divide-x lg:divide-y-0">
+      <div className="grid divide-y divide-brand-lavender/70 lg:grid-cols-[minmax(220px,1fr)_minmax(210px,1fr)] lg:divide-x lg:divide-y-0">
         <div className="min-w-0 py-4 lg:py-0 lg:pr-6">
           <p className="text-sm font-extrabold text-brand-deep">
             Ocupação da agenda
@@ -681,17 +640,17 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
             compact
             empty={!occupancyReady}
             emptyMessage={
-              occupancy.status === "forming"
-                ? `Histórico em formação: ${occupancy.coverageDays} de ${occupancy.requiredCoverageDays} dias cobertos.`
-                : "Publique horários e receba agendamentos para formar esta leitura."
+              futureAgenda?.reason === "no_active_services"
+                ? "Ative uma terapia e publique horários para acompanhar sua agenda futura."
+                : "Não há horários disponíveis nos próximos 30 dias, a partir de amanhã."
             }
             items={
               occupancyPercentage === null
                 ? []
                 : [
-                    { label: "Ocupado", value: occupancyPercentage },
+                    { label: "Reservado", value: occupancyPercentage },
                     {
-                      label: "Disponível",
+                      label: "Livre",
                       value: Math.max(0, 100 - occupancyPercentage),
                     },
                   ]
@@ -702,53 +661,78 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
           />
         </div>
 
-        <div className="min-w-0 py-5 lg:px-6 lg:py-0">
-          <p className="mb-3 text-sm font-extrabold text-brand-deep">
-            Quando suas sessões mais acontecem
-          </p>
-          <MetricsHeatmap
-            emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período."
-            points={heatmapPoints}
-            valueLabel="sessões"
-          />
-          {isInitialSessionReading ? (
-            <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
-              Essa leitura vai ficando mais clara conforme novas sessões forem
-              concluídas.
-            </p>
-          ) : null}
-        </div>
-
         <div className="min-w-0 py-4 lg:py-0 lg:pl-6">
           <p className="text-sm font-extrabold text-brand-deep">
-            Leitura do período
+            Resumo da agenda futura
           </p>
           <dl className="mt-4 grid gap-4">
             <AgendaStat
-              label="Sessões concluídas"
+              label="Horas reservadas"
               tone="cyan"
-              value={formatMetricValue(
-                data.overview.counters.sessionsCompleted.value,
-                "sessions",
-              )}
+              value={formatAgendaMinutes(futureAgenda?.reservedMinutes ?? 0)}
             />
             <AgendaStat
-              label="Dia com mais sessões"
+              label="Horas livres"
               tone="mint"
-              value={highlights.bestDays}
+              value={formatAgendaMinutes(futureAgenda?.availableMinutes ?? 0)}
             />
             <AgendaStat
-              label="Horário com mais sessões"
+              label="Sessões reservadas"
               tone="warning"
-              value={highlights.peakHour}
-            />
-            <AgendaStat
-              label="Horário com menos sessões"
-              tone="primary"
-              value={idleAvailability}
+              value={formatNumber(futureAgenda?.reservedSessionCount ?? 0)}
             />
           </dl>
         </div>
+      </div>
+    </AppPageSection>
+  );
+}
+
+function MetricsSessionFrequency({
+  heatmap,
+  periodDays,
+  periodEnd,
+  periodStart,
+}: {
+  heatmap: TherapistMetricsDashboard["sessions"]["heatmap"];
+  periodDays: 30 | 60;
+  periodEnd: string;
+  periodStart: string;
+}) {
+  const points =
+    heatmap.status === "ready"
+      ? heatmap.items.map((point) => ({ ...point, value: point.sessions }))
+      : [];
+  const isInitialReading =
+    heatmap.status === "ready" && heatmap.observedSample < 10;
+
+  return (
+    <AppPageSection className="min-w-0 border-brand-lavender/80 bg-white p-4 sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-brand-lavenderSoft text-brand-primary">
+          <CalendarCheck2 aria-hidden="true" size={21} />
+        </span>
+        <div>
+          <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
+            Frequência de sessões concluídas
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+            Histórico de {periodDays} dias completos · {formatPeriodRange(periodStart, periodEnd)}. Este quadro acompanha o período selecionado, sem incluir hoje.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5">
+        <MetricsHeatmap
+          emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período selecionado."
+          points={points}
+          valueLabel="sessões"
+        />
+        {isInitialReading ? (
+          <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
+            Essa leitura vai ficando mais clara conforme novas sessões forem
+            concluídas.
+          </p>
+        ) : null}
       </div>
     </AppPageSection>
   );
@@ -1259,103 +1243,6 @@ function emptyComparison(label: string, note: string): MetricsComparisonItem {
   };
 }
 
-function agendaHighlights(
-  points: Array<{ dayOfWeek: number; hourBucketStart: number; value: number }>,
-) {
-  if (points.length === 0) {
-    return {
-      bestDays: "Sem dados",
-      peakHour: "Sem dados",
-    };
-  }
-
-  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const totalsByDay = new Map<number, number>();
-  const totalsByHour = new Map<number, number>();
-  for (const point of points) {
-    totalsByDay.set(
-      point.dayOfWeek,
-      (totalsByDay.get(point.dayOfWeek) ?? 0) + point.value,
-    );
-    totalsByHour.set(
-      point.hourBucketStart,
-      (totalsByHour.get(point.hourBucketStart) ?? 0) + point.value,
-    );
-  }
-  const bestDays = [...totalsByDay.entries()]
-    .sort(
-      ([leftDay, left], [rightDay, right]) =>
-        right - left || leftDay - rightDay,
-    )
-    .slice(0, 2)
-    .map(([day]) => dayNames[day])
-    .join(", ");
-  const hours = [...totalsByHour.entries()].sort(
-    ([leftHour, left], [rightHour, right]) =>
-      right - left || leftHour - rightHour,
-  );
-  const peak = hours[0]?.[0];
-
-  return {
-    bestDays: bestDays || "Sem dados",
-    peakHour: peak === undefined ? "Sem dados" : `${peak}h – ${peak + 2}h`,
-  };
-}
-
-function idleAvailabilityLabel(
-  occupancy: TherapistMetricsDashboard["occupancy"],
-) {
-  if (occupancy.status === "forming") {
-    return "Histórico em formação";
-  }
-
-  if (occupancy.status !== "ready") {
-    return "Sem horários disponíveis";
-  }
-
-  const byHour = new Map<
-    number,
-    {
-      availableMinutes: number;
-      occupiedMinutes: number;
-      offeredMinutes: number;
-    }
-  >();
-
-  for (const point of occupancy.heatmap) {
-    if (point.offeredMinutes <= 0) continue;
-    const hourBucketStart = Math.floor(point.hourBucketStart / 2) * 2;
-    const current = byHour.get(hourBucketStart) ?? {
-      availableMinutes: 0,
-      occupiedMinutes: 0,
-      offeredMinutes: 0,
-    };
-    current.availableMinutes += Math.max(
-      0,
-      point.offeredMinutes - point.occupiedMinutes,
-    );
-    current.occupiedMinutes += point.occupiedMinutes;
-    current.offeredMinutes += point.offeredMinutes;
-    byHour.set(hourBucketStart, current);
-  }
-
-  const idle = [...byHour.entries()]
-    .filter(([, value]) => value.offeredMinutes > 0)
-    .sort(([leftHour, left], [rightHour, right]) => {
-      const leftRate = left.occupiedMinutes / left.offeredMinutes;
-      const rightRate = right.occupiedMinutes / right.offeredMinutes;
-      return (
-        leftRate - rightRate ||
-        right.availableMinutes - left.availableMinutes ||
-        leftHour - rightHour
-      );
-    })[0]?.[0];
-
-  return idle === undefined
-    ? "Sem horários disponíveis"
-    : `${idle}h – ${idle + 2}h`;
-}
-
 function discoveryKpi(
   discoveryStatus: TherapistMetricsOverview["discovery"]["status"],
   metric: TherapistMetricsOverview["discovery"]["stages"]["profileViews"],
@@ -1408,7 +1295,7 @@ function discoveryFootnote(
 }
 
 function dashboardHasActivity(data: TherapistMetricsDashboard) {
-  const { occupancy, overview, sessions } = data;
+  const { futureAgenda, occupancy, overview, sessions } = data;
   const counters = Object.values(overview.counters);
   const hasCounterHistory = counters.some(
     (counter) => counter.value > 0 || counter.previousValue > 0,
@@ -1422,11 +1309,14 @@ function dashboardHasActivity(data: TherapistMetricsDashboard) {
     occupancy.status === "ready" &&
     (occupancy.current.offeredMinutes > 0 ||
       occupancy.previous.offeredMinutes > 0);
+  const hasFutureAgenda =
+    futureAgenda?.status === "available" && futureAgenda.capacityMinutes > 0;
 
   return (
     hasCounterHistory ||
     hasDiscoveryHistory ||
     hasOccupancyHistory ||
+    hasFutureAgenda ||
     sessions.heatmap.status === "ready" ||
     sessions.therapyDistribution.status === "ready" ||
     sessions.outcomeDistribution.status === "ready"
@@ -1453,6 +1343,22 @@ function formatPeriodRange(start: string, endExclusive: string) {
     timeZone: "UTC",
   });
   return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
+}
+
+function formatInclusiveDateRange(start: string, end: string) {
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${formatter.format(new Date(start))} – ${formatter.format(new Date(end))}`;
+}
+
+function formatAgendaMinutes(minutes: number) {
+  if (minutes <= 0) return "0h";
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
 }
 
 function segmentLabel(key: string) {

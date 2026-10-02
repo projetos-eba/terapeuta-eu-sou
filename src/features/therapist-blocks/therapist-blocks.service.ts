@@ -38,11 +38,10 @@ export async function getTherapistBlocks(input: {
   const startedAt = performance.now();
 
   try {
-    const response = await queryTherapistBlocks(
+    const data = await getCompleteTherapistBlocks(
       input.accessToken,
       input.filters,
     );
-    const data = parseTherapistBlocksReadModel(response);
 
     if (data.therapistProfileId !== input.profileId) {
       throw new TherapistBlocksAccessError();
@@ -90,3 +89,48 @@ function getErrorCode(error: unknown): TherapistBlocksErrorCode {
 }
 
 class TherapistBlocksAccessError extends Error {}
+
+async function getCompleteTherapistBlocks(
+  accessToken: string,
+  filters: TherapistBlocksFilters | undefined,
+): Promise<TherapistBlocksReadModel> {
+  const firstPage = parseTherapistBlocksReadModel(
+    await queryTherapistBlocks(accessToken, filters),
+  );
+
+  // The database cursor is not scoped to free-text search. Preserve the
+  // existing server-side search page until that database contract can carry
+  // the search predicate through every cursor page.
+  if (filters?.search?.trim()) return firstPage;
+
+  const blocks = [...firstPage.blocks];
+  const cursors = new Set<string>();
+  let cursor = firstPage.nextCursor;
+
+  while (cursor) {
+    const cursorKey = `${cursor.startsAt}:${cursor.id}`;
+    if (cursors.has(cursorKey)) throw new TherapistBlocksContractError();
+    cursors.add(cursorKey);
+
+    const page = parseTherapistBlocksReadModel(
+      await queryTherapistBlocks(accessToken, {
+        ...filters,
+        cursorId: cursor.id,
+        cursorStartsAt: cursor.startsAt,
+      }),
+    );
+
+    if (
+      page.therapistProfileId !== firstPage.therapistProfileId ||
+      page.scheduleVersion !== firstPage.scheduleVersion ||
+      page.timezone !== firstPage.timezone
+    ) {
+      throw new TherapistBlocksContractError();
+    }
+
+    blocks.push(...page.blocks);
+    cursor = page.nextCursor;
+  }
+
+  return { ...firstPage, blocks, nextCursor: null };
+}

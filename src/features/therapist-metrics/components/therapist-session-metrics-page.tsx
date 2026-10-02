@@ -20,7 +20,6 @@ import type {
   TherapistMetricProtectedCollection,
   TherapistMetricSampledValue,
   TherapistSessionMetrics,
-  TherapistSessionMetricsView,
 } from "../therapist-metrics.types";
 import { formatMetricValue } from "./therapist-metric-card";
 import {
@@ -36,7 +35,7 @@ const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export function TherapistSessionMetricsPage({
   data,
 }: {
-  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+  data: TherapistSessionMetrics;
 }) {
   return (
     <TherapistMetricsLayout meta={data.meta} tab="sessions">
@@ -91,7 +90,7 @@ export function TherapistSessionMetricsPage({
         </AppPageMain>
 
         <AppPageAside>
-          <OutcomeDistribution data={data} />
+          <SessionOutcomeSummary data={data} />
           <PresenceRanking
             collection={data.presenceByDay}
             label={(item) => dayLabels[item.dayOfWeek]}
@@ -129,12 +128,9 @@ function SummaryCounter({
       as="article"
       className="relative grid min-h-[205px] content-between overflow-hidden border-brand-lavender/70 bg-gradient-to-b from-brand-lavenderSoft/60 via-white to-white p-5 shadow-[0_14px_34px_rgba(57,45,90,0.06)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand-primary"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start">
         <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Icon aria-hidden="true" size={21} />
-        </span>
-        <span className="text-xs font-extrabold text-tesText-muted">
-          vs. período anterior
         </span>
       </div>
       <div className="mt-5">
@@ -199,29 +195,8 @@ function SampledSummary({
 function SessionEvolution({
   data,
 }: {
-  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+  data: TherapistSessionMetrics;
 }) {
-  const comparison =
-    "evolutionComparison" in data
-      ? data.evolutionComparison
-      : {
-          meta: data.meta,
-          points: data.evolution.points.map((point, index) => ({
-            current: point.sessionsCompleted,
-            currentDate: point.date,
-            index,
-            previous: 0,
-            previousDate: point.date,
-          })),
-          status: data.evolution.status,
-        };
-  const points = comparison.points.map((point) => ({
-    date: point.currentDate,
-    previous: point.previous,
-    previousDate: point.previousDate,
-    sessionsCompleted: point.current,
-  }));
-
   return (
     <AppPageSection
       className="relative min-w-0 overflow-hidden border-brand-cyan/25 bg-[radial-gradient(circle_at_94%_0%,var(--tes-color-brand-cyan-soft)_0%,transparent_34%),linear-gradient(180deg,#fff_0%,#fff_100%)] shadow-[0_14px_34px_rgba(57,45,90,0.06)]"
@@ -234,19 +209,19 @@ function SessionEvolution({
         Evolução das sessões no período
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Compare as sessões concluídas com o período anterior de mesma duração. A
-        linha tracejada mostra o período anterior.
+        Acompanhe, em cada dia do período selecionado, as sessões que chegaram
+        à agenda e as que foram concluídas.
       </p>
 
       <div className="mt-5">
         <SessionsEvolutionChart
-          currentPeriodLabel={`Atual · ${formatPeriodRange(comparison.meta.periodStart, comparison.meta.periodEnd)}`}
-          empty={comparison.status === "empty"}
-          points={points}
-          previousPeriodLabel={`Anterior · ${formatPeriodRange(comparison.meta.previousPeriodStart, comparison.meta.previousPeriodEnd)}`}
+          completedLabel="Sessões concluídas"
+          empty={data.evolution.status === "empty"}
+          points={data.evolution.points}
+          scheduledLabel="Sessões agendadas"
+          variant="columns"
         />
       </div>
-      <SessionOutcomeSummary data={data} />
     </AppPageSection>
   );
 }
@@ -297,69 +272,66 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
   );
 }
 
-function SessionOutcomeSummary({ data }: { data: TherapistSessionMetrics }) {
+function SessionOutcomeSummary({
+  data,
+}: {
+  data: TherapistSessionMetrics;
+}) {
   const totals = data.evolution.points.reduce(
     (result, point) => ({
+      completed: result.completed + point.sessionsCompleted,
       cancelled: result.cancelled + point.sessionsCancelled,
       noShows: result.noShows + point.noShows,
       rescheduled: result.rescheduled + point.sessionsRescheduled,
     }),
-    { cancelled: 0, noShows: 0, rescheduled: 0 },
+    { cancelled: 0, completed: 0, noShows: 0, rescheduled: 0 },
   );
   const items = [
     {
+      label: "Concluídas",
+      value: totals.completed,
+    },
+    {
       label: "Canceladas",
-      tone: "bg-status-dangerBg text-status-danger",
       value: totals.cancelled,
     },
     {
       label: "Ausências",
-      tone: "bg-brand-cyanSoft text-status-info",
       value: totals.noShows,
     },
     {
       label: "Reagendadas",
-      tone: "bg-status-warningBg text-status-warning",
       value: totals.rescheduled,
     },
   ];
-  return (
-    <dl className="mt-4 grid gap-2 border-t border-brand-lavender/55 pt-4 sm:grid-cols-3">
-      {items.map((item) => (
-        <div
-          className={`rounded-card px-3 py-2.5 ${item.tone}`}
-          key={item.label}
-        >
-          <dt className="text-xs font-bold">{item.label}</dt>
-          <dd className="mt-1 text-lg font-extrabold">{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+  const total = items.reduce((sum, item) => sum + item.value, 0);
 
-function OutcomeDistribution({ data }: { data: TherapistSessionMetrics }) {
   return (
-    <AppPageSection>
-      <h2 className="text-lg font-extrabold text-brand-deep">
+    <AppPageSection
+      className="border-status-success/20 bg-gradient-to-br from-white via-white to-status-successBg/55 shadow-[0_14px_34px_rgba(57,45,90,0.05)]"
+      aria-labelledby="session-outcomes-title"
+    >
+      <h2
+        className="text-lg font-extrabold text-brand-deep"
+        id="session-outcomes-title"
+      >
         Como as sessões terminaram
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Veja como as sessões do período foram finalizadas.
+        Veja a distribuição dos desfechos no período selecionado.
       </p>
-      {data.outcomeDistribution.status === "ready" ? (
+      <div className="mt-5">
         <DistributionDonut
-          centerLabel={`${data.outcomeDistribution.observedSample} sessões`}
+          centerLabel={`${total} ${total === 1 ? "sessão" : "sessões"}`}
           compact
-          items={data.outcomeDistribution.items.map((item) => ({
-            label: item.label,
-            value: item.value,
-          }))}
-          label="Como as sessões terminaram"
+          empty={total === 0}
+          emptyMessage="Ainda não há sessões no período selecionado."
+          items={items}
+          label="Desfechos das sessões"
+          palette="outcomes"
+          showPercentage
         />
-      ) : (
-        <ProtectedBlock collection={data.outcomeDistribution} />
-      )}
+      </div>
     </AppPageSection>
   );
 }
@@ -511,16 +483,4 @@ function formatPercent(value: number) {
   return `${new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 1,
   }).format(value)}%`;
-}
-
-function formatPeriodRange(start: string, endExclusive: string) {
-  const startDate = new Date(start);
-  const endDate = new Date(endExclusive);
-  endDate.setUTCDate(endDate.getUTCDate() - 1);
-  const formatter = new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    timeZone: "UTC",
-  });
-  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }

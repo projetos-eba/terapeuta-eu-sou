@@ -181,7 +181,7 @@ export function FinancialSummaryTab({
           <TherapistLockedCard
             description="Uma leitura avançada pode ajudar no planejamento da sua agenda, sem misturar estimativa com receita garantida."
             requiredPlan={TherapistPlan.PremiumPlus}
-            title="Agenda e potencial"
+            title="Agenda e potencial — Próximos 30 dias"
             variant="section"
           />
         ) : (
@@ -426,14 +426,20 @@ function AgendaPotentialPanel({
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <h2 className="truncate text-xl font-extrabold tracking-[-0.02em] text-brand-deep">
-            Agenda e potencial
+            Agenda e potencial — Próximos 30 dias
           </h2>
           <FinancialInfoTooltip
-            label="Agenda e potencial"
-            text="A ocupação mostra quanto da sua agenda disponível foi preenchida. O potencial é uma estimativa e não representa receita garantida."
+            label="Agenda e potencial nos próximos 30 dias"
+            text="Esse valor é uma estimativa do potencial da sua agenda para os próximos 30 dias, considerando seus horários disponíveis e o valor médio dos atendimentos que você já realizou. Não representa uma receita garantida.​"
           />
         </div>
       </div>
+
+      <p className="-mt-2 text-sm font-semibold text-tesText-secondary">
+        {agenda
+          ? `${formatDate(agenda.windowStart)} a ${formatDate(agenda.windowEnd)}`
+          : "Leitura dos próximos 30 dias, a partir de amanhã"}
+      </p>
 
       <div className="rounded-xl bg-surface-soft px-4 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -455,14 +461,18 @@ function AgendaPotentialPanel({
         </div>
       </div>
 
-      <dl className="grid gap-3 sm:grid-cols-2">
+      <dl className="grid gap-3 sm:grid-cols-3">
         <AgendaDetail
           label="Horas reservadas"
-          value={available ? formatMinutes(agenda?.committedMinutes ?? 0) : "-"}
+          value={available ? formatMinutes(agenda?.reservedMinutes ?? 0) : "-"}
         />
         <AgendaDetail
-          label="Horas livres no período"
+          label="Horas livres nos próximos 30 dias"
           value={available ? formatMinutes(agenda?.availableMinutes ?? 0) : "-"}
+        />
+        <AgendaDetail
+          label="Sessões reservadas"
+          value={available ? formatInteger(agenda?.reservedSessionCount ?? 0) : "-"}
         />
       </dl>
 
@@ -517,10 +527,10 @@ function agendaCapacityMessage(
     if (agenda.reason === "no_active_services") {
       return "Há horários configurados, mas falta uma terapia ativa para estimar o potencial.";
     }
-    return `${formatMinutes(agenda.committedMinutes)} já estão reservadas no período.`;
+    return `${formatMinutes(agenda.reservedMinutes)} já estão reservadas nos próximos 30 dias, a partir de amanhã.`;
   }
-  if (agenda.reason === "no_availability_rules") {
-    return "Sem horários configurados para o restante do mês.";
+  if (agenda.reason === "no_availability") {
+    return "Sem horários disponíveis nos próximos 30 dias, a partir de amanhã.";
   }
   return "Não foi possível calcular a ocupação da agenda neste período.";
 }

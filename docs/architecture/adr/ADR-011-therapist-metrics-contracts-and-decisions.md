@@ -352,7 +352,23 @@ Contrato:
 Avaliações continuam sendo o canal separado que pode receber retorno crítico,
 sob suas regras próprias de moderação, privacidade e elegibilidade.
 
-### 16. Ocupação e lacuna de agenda
+### 16. Evolução histórica de sessões agendadas e concluídas
+
+**Origem:** solicitação de produto de 2026-09-30, preservando as regras de
+privacidade e os períodos históricos completos deste ADR.
+
+A aba **Sessões** passa a usar o contrato aditivo
+`get_therapist_session_metrics_v2(30|60)`. A V1 permanece disponível sem
+alteração. A V2 acrescenta somente `sessionsScheduled` por data local marcada,
+agregado de bookings que chegaram à agenda; não retorna identidade da pessoa
+atendida nem dados livres.
+
+O gráfico não compara períodos. No período selecionado, roxo representa as
+sessões agendadas e verde as concluídas. Rascunhos e tentativas ainda em
+pagamento não são contabilizados como agendamento; cancelamentos e ausências
+de uma reserva que chegou à agenda permanecem na série histórica.
+
+### 17. Ocupação e lacuna de agenda
 
 **Origem:** `LEIAME` + `AUDITORIA`.
 
@@ -399,7 +415,7 @@ As janelas de observação e normalização ficam no registro versionado da mét
 e devem ser calibradas antes da ativação. A semântica não muda: ocupação mede
 uso da oferta; lacuna mede procura própria não atendida pela oferta.
 
-### 17. Regra anti-efeito-manada
+### 18. Regra anti-efeito-manada
 
 **Origem:** `LEIAME`.
 
@@ -423,7 +439,7 @@ E proibir explicitamente:
 - `peer_ranking`;
 - `private_session_text`.
 
-### 18. Favoritos
+### 19. Favoritos
 
 **Origem:** `AUDITORIA`, confirmado pelo usuário.
 
@@ -443,7 +459,7 @@ Favorito é métrica do perfil do terapeuta.
   aba Interesse do Premium Plus; a trava de 10 favoritos permanece para
   comparações, tendências e para “Favoritos que viraram encontro”.
 
-### 19. Aura por plano
+### 20. Aura por plano
 
 **Origem:** `LEIAME` + `AUDITORIA` + `NOVA`.
 
@@ -457,7 +473,7 @@ Favorito é métrica do perfil do terapeuta.
 - Aura não usa tendência do portal, texto privado ou comparação entre
   terapeutas.
 
-### 20. Exportação
+### 21. Exportação
 
 **Origem:** `NOVA`.
 
@@ -471,7 +487,7 @@ Favorito é métrica do perfil do terapeuta.
 Justificativa: CSV valida contrato e rastreabilidade com menor complexidade e
 menor risco de criar um relatório visual divergente.
 
-### 21. Base legal e retenção
+### 22. Base legal e retenção
 
 **Origem:** `LEIAME` + `EXTERNA`.
 
@@ -486,7 +502,7 @@ menor risco de criar um relatório visual divergente.
 - Eventos locais ou de teste devem ser identificados por ambiente e nunca
   misturados com produção.
 
-### 22. Estados discriminados
+### 23. Estados discriminados
 
 **Origem:** `AUDITORIA` + `LEIAME`.
 

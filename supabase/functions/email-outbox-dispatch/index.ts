@@ -11,7 +11,12 @@ import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-pr
 import { getEmailActionRegistryEntry } from "../_shared/email/registry.ts";
 import { sendTransactionalEmail } from "../_shared/email/service.ts";
 import type { EmailActionKey } from "../_shared/email/types.ts";
-import { isHmlProject, safeEqual, toDispatchLimit } from "./security.ts";
+import {
+  isHmlProject,
+  safeEqual,
+  shouldSkipResolvedPayoutIncident,
+  toDispatchLimit,
+} from "./security.ts";
 
 const runtime = getRuntime("email-outbox-dispatch");
 
@@ -352,6 +357,13 @@ async function resolveDelivery(
     if (recipient.role !== "admin")
       throw new Error("payout_admin_recipient_mismatch");
     const incident = await loadPayoutIncident(client, row.related_entity_id);
+    if (
+      shouldSkipResolvedPayoutIncident(
+        incident.incident_type,
+        incident.status,
+      )
+    )
+      throw new Error("payout_incident_resolved_before_alert");
     return {
       templateData: {
         admin_url: `${getSiteUrl(runtime)}/admin/pagamentos`,
@@ -506,6 +518,7 @@ function isSkippableDeliveryError(message: string) {
   return [
     "booking_reminder_invalidated",
     "booking_reminder_job_not_found",
+    "payout_incident_resolved_before_alert",
   ].includes(message);
 }
 
@@ -758,8 +771,10 @@ async function loadStripePayout(client: SupabaseRestClient, id: string) {
 }
 
 async function loadPayoutIncident(client: SupabaseRestClient, id: string) {
-  const [incident] = await client.get<Array<{ incident_type: string }>>(
-    `/rest/v1/payout_operational_incidents?select=incident_type&id=eq.${encodeURIComponent(id)}&limit=1`,
+  const [incident] = await client.get<
+    Array<{ incident_type: string; status: string }>
+  >(
+    `/rest/v1/payout_operational_incidents?select=incident_type,status&id=eq.${encodeURIComponent(id)}&limit=1`,
   );
   if (!incident) throw new Error("payout_incident_not_found");
   return incident;

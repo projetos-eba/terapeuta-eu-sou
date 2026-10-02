@@ -7,11 +7,13 @@ import type {
 
 export type AdminFinanceModuleKey = "payments" | "reports" | "subscriptions";
 
-export type AdminFinancePeriod = "7d" | "30d" | "90d";
+export type AdminFinancePeriod = "7d" | "30d" | "90d" | "custom";
 
 export type AdminFinanceListQuery = AdminListQuery & {
+  end?: string;
   plan?: "free" | "premium" | "premium_plus";
   period?: AdminFinancePeriod;
+  start?: string;
 };
 
 export type AdminFinanceMetric = {

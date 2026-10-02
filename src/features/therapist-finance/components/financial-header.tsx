@@ -1,12 +1,22 @@
 import Link from "next/link";
-import { CalendarDays, CreditCard, Landmark, ReceiptText } from "lucide-react";
+import {
+  CalendarDays,
+  CreditCard,
+  Download,
+  Landmark,
+  ReceiptText,
+} from "lucide-react";
 
 import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
   TherapistFinanceTab,
 } from "../therapist-finance.types";
-import { buildFinanceHref, financeTabs } from "./financial-route";
+import {
+  buildFinanceExportHref,
+  buildFinanceHref,
+  financeTabs,
+} from "./financial-route";
 import { FinancialPeriodFilter } from "./financial-period-filter";
 
 const tabIcons = {
@@ -50,9 +60,18 @@ export function FinancialHeader({
           </p>
         </div>
 
-        {tab === "summary" ? (
-          <FinancialPeriodFilter dateRange={dateRange} />
-        ) : null}
+        <div className="flex flex-wrap items-end gap-3">
+          {tab === "summary" ? (
+            <FinancialPeriodFilter dateRange={dateRange} />
+          ) : null}
+          <Link
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            href={buildFinanceExportHref({ dateRange, filters })}
+          >
+            <Download aria-hidden="true" size={18} />
+            Baixar relatório
+          </Link>
+        </div>
       </div>
 
       <div className="min-w-0 border-b border-brand-lavender">

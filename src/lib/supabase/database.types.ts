@@ -4276,6 +4276,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          available_at: string
           body: string | null
           created_at: string
           event_key: string | null
@@ -4287,6 +4288,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          available_at?: string
           body?: string | null
           created_at?: string
           event_key?: string | null
@@ -4298,6 +4300,7 @@ export type Database = {
           title: string
         }
         Update: {
+          available_at?: string
           body?: string | null
           created_at?: string
           event_key?: string | null
@@ -16251,6 +16254,10 @@ export type Database = {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
+      admin_get_finance_module_range_v1: {
+        Args: { p_module: string; p_query?: Json }
+        Returns: Json
+      }
       admin_get_finance_module_v1: {
         Args: { p_limit?: number; p_module: string; p_offset?: number }
         Returns: Json
@@ -16277,6 +16284,10 @@ export type Database = {
         Returns: Json
       }
       admin_get_operation_detail_v1_before_professional_main_data: {
+        Args: { p_id: string; p_module: string }
+        Returns: Json
+      }
+      admin_get_operation_detail_v1_before_review_observation: {
         Args: { p_id: string; p_module: string }
         Returns: Json
       }
@@ -16498,19 +16509,35 @@ export type Database = {
         Returns: Json
       }
       admin_upsert_matching_interest_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       admin_upsert_matching_theme_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       admin_upsert_therapy_draft_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       admin_upsert_therapy_draft_with_matching_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       admin_validate_therapy_publishable_v1: {
@@ -17345,11 +17372,19 @@ export type Database = {
         Returns: Json
       }
       create_therapist_service_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       create_therapist_service_with_matching_v1: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       create_weekly_payout_batch: {
@@ -17485,7 +17520,11 @@ export type Database = {
         Returns: undefined
       }
       ensure_video_session_for_paid_booking_v1: {
-        Args: { p_booking_id: string; p_environment: string; p_source?: string }
+        Args: {
+          p_booking_id: string
+          p_environment: string
+          p_source?: string
+        }
         Returns: string
       }
       expire_booking_holds_v1: {
@@ -17642,6 +17681,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_private_therapist_advanced_financial_dashboard_v3: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       get_private_therapist_agenda_revenue_potential_v1: {
         Args: {
           p_period_end?: string
@@ -17718,6 +17765,14 @@ export type Database = {
         Returns: Json
       }
       get_private_therapist_financial_metrics_v2: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      get_private_therapist_financial_metrics_v3: {
         Args: {
           p_period_end?: string
           p_period_start?: string
@@ -17871,7 +17926,10 @@ export type Database = {
         Args: { p_actor_user_id: string }
         Returns: Json
       }
-      get_private_therapist_publication_state_v1: { Args: never; Returns: Json }
+      get_private_therapist_publication_state_v1: {
+        Args: never
+        Returns: Json
+      }
       get_private_therapist_receipts_v1: {
         Args: {
           p_page?: number
@@ -18005,8 +18063,14 @@ export type Database = {
         Args: { p_booking_ids: string[] }
         Returns: Json
       }
-      get_session_feedback_v1: { Args: { p_booking_id: string }; Returns: Json }
-      get_session_feedback_v2: { Args: { p_booking_id: string }; Returns: Json }
+      get_session_feedback_v1: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
+      get_session_feedback_v2: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
       get_session_payment_charge_reconciliation_candidates_v1: {
         Args: { p_limit?: number }
         Returns: {
@@ -18023,6 +18087,10 @@ export type Database = {
           stripe_charge_id: string
         }[]
       }
+      get_session_payment_checkout_resume_v1: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
       get_session_payment_retry_slot_eligibility_v1: {
         Args: { p_booking_id: string; p_reference_at: string }
         Returns: Json
@@ -18032,6 +18100,10 @@ export type Database = {
         Returns: Json
       }
       get_therapist_agenda_v1: {
+        Args: { p_range_end?: string; p_range_start?: string }
+        Returns: Json
+      }
+      get_therapist_agenda_v2: {
         Args: { p_range_end?: string; p_range_start?: string }
         Returns: Json
       }
@@ -18127,12 +18199,24 @@ export type Database = {
         Args: { p_period_days?: number }
         Returns: Json
       }
+      get_therapist_metrics_dashboard_v4: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
+      get_therapist_metrics_dashboard_v5: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
       get_therapist_metrics_foundation_v1: { Args: never; Returns: Json }
       get_therapist_metrics_overview_v1: {
         Args: { p_period_days?: number }
         Returns: Json
       }
       get_therapist_metrics_overview_v2: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
+      get_therapist_metrics_overview_v3: {
         Args: { p_period_days?: number }
         Returns: Json
       }
@@ -18212,7 +18296,19 @@ export type Database = {
         Args: { p_period_days?: number }
         Returns: Json
       }
+      get_therapist_session_evolution_comparison_v2: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
       get_therapist_session_metrics_v1: {
+        Args: { p_period_days?: number }
+        Returns: Json
+      }
+      get_therapist_session_metrics_v2: {
+        Args: { p_period_days: number }
+        Returns: Json
+      }
+      get_therapist_session_metrics_v3: {
         Args: { p_period_days?: number }
         Returns: Json
       }
@@ -18232,6 +18328,22 @@ export type Database = {
         Returns: Json
       }
       get_therapist_sessions_v2: {
+        Args: {
+          p_booking_status?: Database["public"]["Enums"]["booking_status"]
+          p_cursor_booking_id?: string
+          p_cursor_starts_at?: string
+          p_financial_status?: Database["public"]["Enums"]["session_financial_status"]
+          p_include_future_terminal?: boolean
+          p_limit?: number
+          p_modality?: string
+          p_patient_profile_id?: string
+          p_period_end?: string
+          p_period_start?: string
+          p_service_id?: string
+        }
+        Returns: Json
+      }
+      get_therapist_sessions_v3: {
         Args: {
           p_booking_status?: Database["public"]["Enums"]["booking_status"]
           p_cursor_booking_id?: string
@@ -18293,6 +18405,14 @@ export type Database = {
         Args: { p_service_id: string }
         Returns: boolean
       }
+      is_public_therapist_profile_content_version_v1: {
+        Args: { p_content_version_id: string }
+        Returns: boolean
+      }
+      is_public_therapist_profile_visible_v1: {
+        Args: { p_therapist_profile_id: string }
+        Returns: boolean
+      }
       is_related_patient_to_current_therapist: {
         Args: { candidate_id: string }
         Returns: boolean
@@ -18308,6 +18428,10 @@ export type Database = {
           p_service_id: string
           p_starts_at: string
         }
+        Returns: boolean
+      }
+      is_session_realized_for_reporting_v1: {
+        Args: { p_booking_id: string }
         Returns: boolean
       }
       is_therapist_publication_eligible_v1: {
@@ -18573,6 +18697,21 @@ export type Database = {
           scheduled_minutes: number
         }[]
       }
+      private_therapist_agenda_capacity_v2: {
+        Args: {
+          p_therapist_profile_id: string
+          p_timezone: string
+          p_window_ends_at: string
+          p_window_starts_at: string
+        }
+        Returns: {
+          available_minutes: number
+          capacity_minutes: number
+          offered_minutes: number
+          reserved_minutes: number
+          reserved_session_count: number
+        }[]
+      }
       private_therapist_charge_status_v3: {
         Args: { p_session_payment_id: string }
         Returns: string
@@ -18615,6 +18754,18 @@ export type Database = {
       private_therapist_finance_refunded_cents_v1: {
         Args: { p_session_payment_id: string }
         Returns: number
+      }
+      private_therapist_future_agenda_summary_v1: {
+        Args: { p_therapist_profile_id: string; p_timezone: string }
+        Returns: Json
+      }
+      private_therapist_future_agenda_summary_v2: {
+        Args: {
+          p_as_of?: string
+          p_therapist_profile_id: string
+          p_timezone: string
+        }
+        Returns: Json
       }
       private_therapist_payout_groups_v10: {
         Args: {
@@ -18668,6 +18819,22 @@ export type Database = {
           p_timezone?: string
         }
         Returns: Json
+      }
+      private_therapist_realized_reporting_rows_v1: {
+        Args: {
+          p_ends_at: string
+          p_starts_at: string
+          p_therapist_profile_id: string
+        }
+        Returns: {
+          booking_id: string
+          booking_status: Database["public"]["Enums"]["booking_status"]
+          is_realized: boolean
+          patient_profile_id: string
+          service_duration_minutes_snapshot: number
+          service_id: string
+          starts_at: string
+        }[]
       }
       private_therapist_receipt_status_v2: {
         Args: { p_now?: string; p_session_payment_id: string }
@@ -19020,7 +19187,11 @@ export type Database = {
         Returns: Json
       }
       record_therapist_metric_ingestion_health_v1: {
-        Args: { p_occurred_at?: string; p_outcome: string; p_quantity?: number }
+        Args: {
+          p_occurred_at?: string
+          p_outcome: string
+          p_quantity?: number
+        }
         Returns: undefined
       }
       record_zoom_waiting_room_arrival_v2: {
@@ -19032,7 +19203,20 @@ export type Database = {
         }
         Returns: Json
       }
-      refresh_automatic_payout_batch_states_v1: { Args: never; Returns: number }
+      recover_failed_session_payment_authorization_v10: {
+        Args: {
+          p_session_payment_id: string
+          p_stripe_checkout_session_id: string
+          p_stripe_event_created_at: string
+          p_stripe_event_id: string
+          p_stripe_payment_intent_id: string
+        }
+        Returns: Json
+      }
+      refresh_automatic_payout_batch_states_v1: {
+        Args: never
+        Returns: number
+      }
       refresh_session_transfer_eligibility: {
         Args: { p_now?: string; p_session_payment_id: string }
         Returns: Database["public"]["Enums"]["session_transfer_status"]
@@ -19755,7 +19939,11 @@ export type Database = {
         Returns: Json
       }
       submit_therapy_catalog_request_v2: {
-        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_payload: Json
+          p_request_id: string
+        }
         Returns: Json
       }
       support_current_requester_role_v1: {
@@ -19780,7 +19968,11 @@ export type Database = {
         Returns: string
       }
       support_validate_ticket_attachments_v1: {
-        Args: { p_attachments: Json; p_message_id: string; p_ticket_id: string }
+        Args: {
+          p_attachments: Json
+          p_message_id: string
+          p_ticket_id: string
+        }
         Returns: undefined
       }
       swap_session_payment_checkout_v10: {

@@ -95,7 +95,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 ## Autoridades MTR-4, MTR-5 E MTR-7
 
 - Migration: `20260728210000_therapist_metrics_mtr4_mtr5.sql`.
-- Sessões: `get_therapist_session_metrics_v1`.
+- Sessões: `get_therapist_session_metrics_v2`; a V1 permanece disponível para
+  consumidores compatíveis. A V2 acrescenta apenas a série diária agregada de
+  sessões agendadas para a aba Sessões, no mesmo período histórico completo.
 - Interesse: `get_therapist_interest_metrics_v1`, exclusivo do Premium Plus.
 - Exportação: `/api/therapist/metrics/export`, CSV privado e agregado.
 - Períodos da rota ativa de exportação: 30 ou 60 dias locais completos.

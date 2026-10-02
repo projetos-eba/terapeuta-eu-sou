@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-09-14.
+Atualizado em 2026-09-28.
 
 ## Visao geral
 
@@ -372,6 +372,16 @@ idempotente quando o slot já foi reivindicado. Se o horário tiver sido ocupado
 por outra reserva, o claim falha fechado: o webhook não confirma a reserva, não
 cria obrigação de Transfer e exige conciliação do pagamento capturado, sem
 reabrir uma sessão sobreposta. O
+mesmo Checkout pode emitir primeiro uma falha e depois um sucesso quando a
+pessoa troca o cartão sem sair da página. Nesse caso, a recuperação é aceita
+somente para o Checkout e PaymentIntent atuais e já vinculados, com evento mais
+novo, reserva futura, horário ainda disponível e ausência de setup, cobrança
+agendada, Transfer, reembolso ou disputa. Para `initial_hold`, o sucesso também
+precisa ter sido criado pela Stripe dentro dos cinco minutos originais; atraso
+de entrega do webhook não invalida esse instante do provedor. A recuperação
+reabre apenas o estado de pagamento e então reutiliza a confirmação V10
+canônica, que grava ledger e uma única obrigação de Transfer. Qualquer
+divergência falha fechada e permanece para conciliação administrativa. O
 job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
@@ -652,15 +662,16 @@ para confirmar pagamento, onboarding ou repasse.
 Read models privados:
 
 - `get_private_therapist_financial_overview_v3`;
-- `get_private_therapist_receipts_v5`;
+- `get_private_therapist_receipts_v6` (consumidor atual; V5 e anteriores
+  permanecem contratos de compatibilidade);
 - `get_private_therapist_payouts_v10` (consumidor atual; V9 e anteriores
   permanecem contratos de compatibilidade);
 - `get_private_therapist_bank_payouts_v1`;
 - `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
-- `get_private_therapist_financial_metrics_v2` para métricas F2 Premium e
+- `get_private_therapist_financial_metrics_v3` para métricas F2 Premium e
   Premium Plus;
-- `get_private_therapist_advanced_financial_dashboard_v2` e contratos
+- `get_private_therapist_advanced_financial_dashboard_v3` e contratos
   segmentados F3 para Premium Plus.
 
 Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não
@@ -677,6 +688,13 @@ sem escrever ledger nem comandar movimentação financeira. A projeção V10
 subtrai o ajuste do grupo posterior, preserva a contagem das sessões positivas
 e elimina o alerta administrativo apenas depois da reconciliação integral.
 Qualquer ambiguidade permanece em atenção pelo contrato anterior.
+
+O registro de eventos e a reconciliação de um mesmo Payout automático são
+serializados no PostgreSQL por conta Connect e identificador do Payout, com
+lock restrito à transação. Isso cobre a entrega quase simultânea de
+`payout.updated`/`payout.paid` e a concorrência com o reconciliador horário sem
+serializar Payouts diferentes, sem manter lock durante chamadas à Stripe e sem
+alterar valores, ledger, Transfer, Refund ou estado bancário.
 
 Documentos de contrato:
 

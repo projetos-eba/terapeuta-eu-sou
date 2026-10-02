@@ -134,6 +134,37 @@ describe("mapTherapistHomeReadiness", () => {
     ).toBe(false);
   });
 
+  it("keeps the public profile as a real pendency when analysis starts before canonical completion", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: connectFixture(),
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 1,
+        profileCompleteness: 67,
+        publicDocumentsComplete: true,
+        publicStatus: "unpublished",
+        verificationStatus: "in_review",
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.InReview,
+      },
+    });
+
+    expect(readiness.checklist.find((item) => item.id === "profile")).toEqual(
+      expect.objectContaining({
+        actionLabel: "Completar perfil",
+        complete: false,
+        description: expect.stringContaining("Foto de perfil"),
+        href: "/terapeuta/perfil/editar",
+        state: "attention",
+      }),
+    );
+    expect(readiness.isOperationallyReady).toBe(false);
+    expect(readiness.completedRequiredCount).toBe(5);
+  });
+
   it("keeps requested profile corrections as a real checklist pendency", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: null,
@@ -341,6 +372,7 @@ function editorFixture(
   overrides: Partial<{
     activeServiceCount: number;
     availabilityRuleCount: number;
+    profileCompleteness: number;
     publicDocumentsComplete: boolean;
     publicStatus: TherapistProfileEditorData["derived"]["publicStatus"];
     verificationStatus: TherapistProfileEditorData["derived"]["verificationStatus"];
@@ -358,12 +390,7 @@ function editorFixture(
       canUseAdvancedSections: true,
       canUseFeaturedMedia: true,
     },
-    completeness: {
-      items: [],
-      percent: 17,
-      score: 1,
-      total: 6,
-    },
+    completeness: completenessFixture(overrides.profileCompleteness ?? 100),
     derived: {
       accountStatus: "draft",
       activeServiceCount: overrides.activeServiceCount ?? 0,
@@ -427,6 +454,29 @@ function editorFixture(
     verificationSummary: overrides.verificationSummary ?? null,
     version: 1,
   };
+}
+
+function completenessFixture(percent: number) {
+  const complete = percent === 100;
+
+  return {
+    items: complete
+      ? [
+          { complete: true, key: "photo", label: "Foto de perfil" },
+          { complete: true, key: "intro", label: "Sua apresentação" },
+          { complete: true, key: "essence", label: "Minha essência" },
+          { complete: true, key: "guide", label: "Como posso te guiar" },
+          { complete: true, key: "service", label: "Terapia ativa" },
+          { complete: true, key: "availability", label: "Agenda disponível" },
+        ]
+      : [
+          { complete: false, key: "photo", label: "Foto de perfil" },
+          { complete: false, key: "intro", label: "Sua apresentação" },
+        ],
+    percent,
+    score: complete ? 6 : 4,
+    total: 6,
+  } satisfies TherapistProfileEditorData["completeness"];
 }
 
 function documentFixture(

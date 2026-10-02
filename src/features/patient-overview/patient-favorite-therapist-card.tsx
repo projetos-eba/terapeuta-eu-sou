@@ -10,13 +10,15 @@ export function PatientFavoriteTherapistCard({
 }: {
   professional: PatientFavoriteProfessional;
 }) {
+  const presentation = professional.summary ?? professional.specialty;
+
   return (
     <article className="overflow-hidden rounded-md border border-[var(--tes-color-border)] bg-white">
-      <div className="relative aspect-[1.65] bg-brand-lavenderSoft">
+      <div className="relative aspect-[1.25] bg-brand-lavenderSoft">
         {professional.avatarUrl ? (
           <Image
             alt=""
-            className="object-cover object-center"
+            className="object-cover object-top"
             fill
             sizes="(max-width: 640px) 50vw, 132px"
             src={professional.avatarUrl}
@@ -32,9 +34,6 @@ export function PatientFavoriteTherapistCard({
         <h3 className="truncate text-xs font-semibold text-[var(--tes-color-primary-dark)]">
           {professional.name}
         </h3>
-        <p className="mt-1 truncate text-[10px] text-[var(--tes-color-text-secondary-app)]">
-          {professional.specialty ?? "Profissional TES"}
-        </p>
         <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-tesText-secondary">
           <Star
             aria-hidden="true"
@@ -56,9 +55,9 @@ export function PatientFavoriteTherapistCard({
             ))}
           </div>
         ) : null}
-        {professional.summary ? (
+        {presentation ? (
           <p className="mt-2 line-clamp-2 text-[10px] leading-4 text-tesText-secondary">
-            {professional.summary}
+            {presentation}
           </p>
         ) : null}
         <Link

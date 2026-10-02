@@ -32,7 +32,11 @@ agenda e métricas usando as mesmas fontes de verdade.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e
    conteúdo inicial; nenhuma tela de terapeuta cria terapia canônica.
 4. Edição salva identidade, editorial e disponibilidade usando chaves
-   semânticas, sem classes Tailwind/CSS no banco.
+   semânticas, sem classes Tailwind/CSS no banco. A cor de identificação é
+   escolhida em uma lista fechada compatível com a agenda (`purple`, `blue`,
+   `green`, `orange`, `pink` e `neutral`); seleções legadas `lavender`, `cyan`
+   e `mint` são normalizadas, respectivamente, para `purple`, `blue` e
+   `green` antes de persistir.
 5. Publicação chama `admin_transition_therapy_v1` e valida slug único,
    conteúdo mínimo, copy responsável, de 1 a 3 temas ativos do Match e
    integridade editorial.
@@ -82,6 +86,20 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
 
 ## Migrations
 
+- `20260930153000_expand_public_therapy_editorial_limits.sql`
+  - eleva para 1.000 caracteres os campos públicos “O que é” e “Descrição
+    complementar”, mantendo os demais limites editoriais;
+  - preserva os registros existentes e mantém formulário, contrato de
+    salvamento e detalhe público alinhados.
+- `20261001153000_refine_admin_therapy_responsible_copy.sql`
+  - mantém o bloqueio de promessas editoriais afirmativas de cura, diagnóstico
+    ou resultado garantido;
+  - permite que a nota responsável registre limites legítimos, como informar
+    que uma prática não substitui diagnóstico, tratamento ou acompanhamento
+    profissional.
+  - a Edge Function descarta exclusivamente a propriedade legada de FAQ em
+    salvamentos antigos; FAQs não são persistidos nem apresentados pelo
+    catálogo atual.
 - `20260728103000_admin_therapy_catalog_phase3.sql`
   - adiciona `deprecated_at`, `archived_at` e `replacement_therapy_id`;
   - cria `therapy_slug_redirects`, `therapy_catalog_requests` e

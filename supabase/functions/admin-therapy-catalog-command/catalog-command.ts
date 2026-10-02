@@ -20,6 +20,21 @@ const requestStatuses = new Set([
   "under_review",
 ]);
 
+const calendarColorKeys = new Set([
+  "blue",
+  "green",
+  "neutral",
+  "orange",
+  "pink",
+  "purple",
+]);
+
+const legacyCalendarColorAliases: Record<string, string> = {
+  cyan: "blue",
+  lavender: "purple",
+  mint: "green",
+};
+
 export type AdminCatalogPermission =
   | "admin.matching.manage"
   | "admin.matching.read"
@@ -175,7 +190,7 @@ export function validateAdminTherapyCatalogCommand(
     if (!isUuid(body.requestId) || !isRecord(body.payload)) invalid();
     return {
       action: "save",
-      payload: body.payload,
+      payload: normalizeTherapyCalendarColor(body.payload),
       requestId: body.requestId,
     };
   }
@@ -267,6 +282,13 @@ export function assertAdminCatalogPermission(
   );
 }
 
+export function omitRetiredTherapyFaqs(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  const { faqs: _faqs, ...compatiblePayload } = payload;
+  return compatiblePayload;
+}
+
 export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
   if (!(error instanceof SupabaseHttpError)) return error;
   const details = error.safeDetails ?? "";
@@ -285,6 +307,13 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "Revise os campos obrigatórios da terapia e tente novamente.",
     );
   }
+  if (details.includes("therapies_calendar_color_key_valid")) {
+    return new DomainError(
+      "invalid_calendar_color",
+      422,
+      "Escolha uma cor disponível para a agenda.",
+    );
+  }
   if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_SLUG")) {
     return new DomainError(
       "invalid_slug",
@@ -296,7 +325,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "short_description_too_long",
       422,
-      "O resumo deve ter no máximo 100 caracteres.",
+      "O resumo deve ter no máximo 150 caracteres.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_DESCRIPTION_TOO_LONG")) {
@@ -310,7 +339,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "introduction_too_long",
       422,
-      "O campo O que é deve ter no máximo 160 caracteres.",
+      "O campo O que é deve ter no máximo 1.000 caracteres.",
     );
   }
   if (
@@ -321,7 +350,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "complementary_description_too_long",
       422,
-      "A descrição complementar deve ter no máximo 200 caracteres.",
+      "A descrição complementar deve ter no máximo 1.000 caracteres.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_SAFETY_NOTE_TOO_LONG")) {
@@ -343,6 +372,13 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "slug_conflict",
       409,
       "Este slug ja esta em uso no catalogo.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_FAQ_REMOVED")) {
+    return new DomainError(
+      "invalid_payload",
+      422,
+      "Revise o formulário e tente salvar novamente.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_INCOMPLETE_PUBLIC_CONTENT")) {
@@ -377,7 +413,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
     return new DomainError(
       "unsafe_copy",
       422,
-      "Revise a copy para remover promessas de cura, diagnostico ou resultado garantido.",
+      "Revise o conteúdo para remover afirmações de cura, diagnóstico ou resultado garantido.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_ARCHIVE_BLOCKED_BY_USAGE")) {
@@ -460,6 +496,27 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
 
 function invalid(): never {
   throw new DomainError("invalid_payload", 422, "Revise os dados enviados.");
+}
+
+function normalizeTherapyCalendarColor(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  const submittedColor =
+    typeof payload.calendarColorKey === "string"
+      ? payload.calendarColorKey
+      : "neutral";
+  const calendarColorKey =
+    legacyCalendarColorAliases[submittedColor] ?? submittedColor;
+
+  if (!calendarColorKeys.has(calendarColorKey)) {
+    throw new DomainError(
+      "invalid_calendar_color",
+      422,
+      "Escolha uma cor disponível para a agenda.",
+    );
+  }
+
+  return { ...payload, calendarColorKey };
 }
 
 function isUuid(value: unknown): value is string {

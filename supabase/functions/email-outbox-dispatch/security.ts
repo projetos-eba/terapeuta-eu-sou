@@ -25,3 +25,13 @@ export function safeEqual(value: string | null, expected: string) {
   }
   return different === 0;
 }
+
+export function shouldSkipResolvedPayoutIncident(
+  incidentType: string,
+  status: string,
+) {
+  return (
+    incidentType === "automatic_payout_reconciliation_required" &&
+    status !== "open"
+  );
+}

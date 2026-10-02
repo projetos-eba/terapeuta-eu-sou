@@ -47,14 +47,14 @@ Private RPCs:
 
 - `get_private_therapist_financial_overview_v3` (current UI consumer; v1/v2
   remain compatibility contracts);
-- `get_private_therapist_receipts_v5` (current UI consumer; v1-v4 remain
+- `get_private_therapist_receipts_v6` (current UI consumer; v1-v5 remain
   compatibility contracts);
 - `get_private_therapist_payouts_v10` (current UI consumer; V9 and earlier versions
   remain compatibility contracts);
 - `get_private_therapist_connect_account_v1`.
-- `get_private_therapist_financial_metrics_v2` for F2 Premium/Premium Plus
+- `get_private_therapist_financial_metrics_v3` for F2 Premium/Premium Plus
   summary metrics.
-- `get_private_therapist_advanced_financial_dashboard_v2` for F3 Premium Plus
+- `get_private_therapist_advanced_financial_dashboard_v3` for F3 Premium Plus
   advanced dashboard.
 - Segmented F3 contracts:
   `get_private_therapist_financial_forecast_v1`,
@@ -108,6 +108,12 @@ All derive the therapist from `auth.uid()`. Do not accept
   Payout and do not create an `Em análise` history group. Never infer the
   adjustment from value or chronology alone; ambiguous evidence stays
   fail-closed and invisible as a bank fact.
+- Recording and reconciling the same automatic Payout must acquire the same
+  transaction-scoped PostgreSQL advisory lock derived from the connected
+  account and Payout identifiers. This serializes concurrent
+  `payout.updated`/`payout.paid` delivery and hourly reconciliation only for
+  that Payout; never hold the lock across Stripe requests or serialize
+  unrelated Payouts.
 - No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
   com a explicação de que está incluída no cálculo do repasse. Não alterar o
   snapshot nem a terminologia técnica dos contratos.

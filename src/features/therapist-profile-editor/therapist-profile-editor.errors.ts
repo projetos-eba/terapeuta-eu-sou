@@ -23,6 +23,8 @@ const fallbackMessages: Record<TherapistProfileErrorCode, string> = {
   PROFILE_NOT_FOUND: "Perfil profissional não encontrado.",
   PROFILE_REQUIREMENTS_INCOMPLETE:
     "Complete seus dados e envie os documentos obrigatórios em Configurações antes de publicar seu perfil.",
+  PROFILE_REVIEW_IN_PROGRESS:
+    "Seu perfil já está em análise. Atualize a página para acompanhar a situação.",
   SLUG_INVALID: "Use de 3 a 40 caracteres para criar seu link.",
   SLUG_RESERVED: "Este endereço é reservado pela plataforma.",
   SLUG_TAKEN: "Este link acabou de ser escolhido. Tente outra opção.",
@@ -63,6 +65,7 @@ function normalizeCode(value: string | undefined): TherapistProfileErrorCode {
     value === "PROFILE_LOCKED" ||
     value === "PROFILE_NOT_FOUND" ||
     value === "PROFILE_REQUIREMENTS_INCOMPLETE" ||
+    value === "PROFILE_REVIEW_IN_PROGRESS" ||
     value === "SLUG_INVALID" ||
     value === "SLUG_RESERVED" ||
     value === "SLUG_TAKEN" ||
