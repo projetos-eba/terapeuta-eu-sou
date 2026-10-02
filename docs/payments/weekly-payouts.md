@@ -332,6 +332,17 @@ esse script pode modificar destinos e segredos.
 - Read model v2 separa Transfer, aguardando Payout automático, cobertura
   parcial, pagamento bancário e atenção/reconciliação.
 
+O incidente `automatic_payout_reconciliation_required` continua sendo criado
+imediatamente e preserva toda a auditoria fail-closed. Como eventos quase
+simultâneos do mesmo Payout podem convergir sem intervenção, somente esse tipo
+usa uma carência de 15 minutos antes de ficar visível no sino administrativo e
+antes de o e-mail se tornar elegível. Se a ocorrência for resolvida dentro da
+carência, ambos os alertas são suprimidos sem chamada ao provedor. Se continuar
+aberta, os dois alertas seguem normalmente; se reabrir depois de uma supressão,
+a mesma entrega idempotente recebe uma nova carência. Os demais tipos de
+incidente permanecem imediatos. Essa política de comunicação não altera estado
+financeiro, reconciliação, alocação, ledger, Transfer, Refund ou Payout.
+
 Payloads não carregam conta bancária, payload Stripe bruto, segredo ou conteúdo
 clínico. Ausência de admin elegível reprova preflight.
 
