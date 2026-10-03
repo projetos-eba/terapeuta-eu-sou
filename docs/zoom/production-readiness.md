@@ -1,5 +1,18 @@
 # Prontidao de Producao Zoom Video SDK
 
+## Topologia de ambientes TES
+
+HML e Producao usam intencionalmente o mesmo projeto Zoom Video SDK. Por esse
+motivo, a igualdade do fingerprint de `ZOOM_WEBHOOK_SECRET_TOKEN` entre os dois
+ambientes e esperada e, isoladamente, nao caracteriza drift de secret.
+
+Os ambientes Supabase e seus endpoints continuam separados. A assinatura deve
+ser validada pelo mesmo Secret Token, mas cada entrega precisa apontar para a
+URL publica do projeto correto. Qualquer rotacao de credencial ou alteracao no
+app Zoom compartilhado deve ser planejada para HML e Producao em conjunto,
+seguida de validacao dos quatro eventos em ambos os endpoints, sem registrar o
+valor do secret em documentacao, logs ou evidencias.
+
 Antes de producao:
 
 - confirmar conta Zoom Build Platform ou Universal Credit;
