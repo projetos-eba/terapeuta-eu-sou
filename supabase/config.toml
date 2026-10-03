@@ -119,6 +119,9 @@ verify_jwt = false
 [functions.admin-therapy-catalog-command]
 verify_jwt = true
 
+[functions.admin-email-management-command]
+verify_jwt = true
+
 [functions.email-outbox-dispatch]
 verify_jwt = false
 
@@ -127,6 +130,9 @@ verify_jwt = false
 
 [functions.therapist-auth-login]
 verify_jwt = false
+
+[functions.patient-account-command]
+verify_jwt = true
 
 [functions.verify-email]
 verify_jwt = false
@@ -212,6 +218,9 @@ verify_jwt = false
 [functions.confirm-session-by-therapist]
 verify_jwt = false
 
+[functions.session-feedback-command]
+verify_jwt = false
+
 [functions.session-journey-themes-command]
 verify_jwt = false
 
@@ -267,6 +276,15 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.therapist-blocks-update]
+verify_jwt = false
+
+[functions.therapist-private-documents]
+verify_jwt = true
+
+[functions.therapist-profile-command]
+verify_jwt = false
+
+[functions.therapist-services-command]
 verify_jwt = false
 
 [functions.therapist-reviews-command]
