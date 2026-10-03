@@ -1,16 +1,35 @@
-# Repasses semanais — Transfer semanal + Payout conectado automático
+# Repasses semanais — legado V9 e histórico operacional
 
-Status: política v8 e schedulers ativados em HML e produção em 2026-08-28,
-após preflight Connect, prova de Transfer idempotente em Stripe Test, readiness
-Stripe Live e verificação remota dos crons, Vault, Edge Functions e webhooks.
+Status: runbook preservado para auditoria e drenagem controlada de obrigações
+V9. O scheduler semanal, os lotes e os workers descritos neste documento **não
+fazem parte do fluxo financeiro V10** e nunca podem selecionar pagamentos V10.
 
-## Decisão para contas brasileiras
+## Escopo atual do fluxo V10
+
+- Cada sessão V10 usa Transfer direto e rastreável por sessão, sem lote semanal.
+- A criação e a recuperação desses Transfers pertencem aos workers V10
+  `process-session-transfers` e `reconcile-stripe-transfers`.
+- O Payout da conta conectada continua sendo criado automaticamente pela Stripe
+  conforme a agenda aplicável à conta; isso não transforma o Transfer V10 em
+  repasse semanal.
+- `weekly-payout-scheduler`, `create-weekly-payout-batch`,
+  `process-payout-batch` e `evaluate-transfer-eligibility` são componentes
+  legados V9. Eles só podem permanecer disponíveis para obrigações V9 ainda em
+  drenagem e devem ficar inativos ou ausentes quando esse passivo for zero.
+- A ausência do scheduler semanal não é uma lacuna do V10 e não bloqueia a
+  entrada em produção do fluxo V10.
+
+O restante deste documento descreve o contrato histórico V9 e sua convivência
+segura com o V10. Onde houver referência a lote, cutoff ou scheduler semanal,
+ela deve ser lida exclusivamente como regra V9.
+
+## Decisão V9 para contas brasileiras
 
 O Stripe Sandbox confirmou em 2026-08-25 que a conta conectada BR analisada não
 aceita `schedule.interval=manual`, `schedule.interval=weekly` nem Payout ad hoc.
-O contrato aprovado em ADR-018 é:
+O contrato legado aprovado em ADR-018 para obrigações V9 é:
 
-1. o TES cria Transfers somente no lote semanal de terça-feira;
+1. para V9, o TES cria Transfers somente no lote semanal de terça-feira;
 2. o saldo entra na conta conectada e segue o cronograma Stripe `daily`;
 3. a Stripe cria o Payout automático, sem metadata TES;
 4. o TES importa o Payout por webhook e lista suas Balance Transactions;
@@ -56,12 +75,13 @@ Sessões com desconto integral são pagamentos lógicos válidos. Comissão e va
 do terapeuta ficam em zero; não entram em lote, Transfer ou Payout e não abrem
 ocorrência.
 
-## Política e scheduler
+## Política e scheduler V9
 
-- Política financeira ativa: `tes-payments-v9-settlement-only`, que preserva a
+- Política financeira legada: `tes-payments-v9-settlement-only`, que preserva a
   comissão de 15% da v8, a confirmação bilateral e o lote de terça às 02:00 da
   v7. Snapshots anteriores seguem a política de origem para auditoria; a
-  elegibilidade operacional não aplica mais a espera fixa.
+  elegibilidade operacional não aplica mais a espera fixa. Essa política não
+  governa reservas V10.
 - Paciente ausente é confirmado no vencimento de 7 dias; terapeuta ausente,
   no vencimento de 30 dias. Sem nenhuma resposta manual, a segunda confirmação
   ocorre no dia 30.
@@ -84,7 +104,7 @@ ocorrência.
 - Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
   bloqueio administrativo impede confirmação automática e inclusão no lote.
 - Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.
-- Início: terça, 02:00 inclusive a 04:00 exclusivo, em
+- Para obrigações V9, início: terça, 02:00 inclusive a 04:00 exclusivo, em
   `America/Sao_Paulo`.
 - Cutoff fixo: terça às 02:00 locais.
 - Todo backlog com liquidação Stripe confirmada até o cutoff é incluído.
@@ -95,12 +115,13 @@ ocorrência.
 - Execução sem itens elegíveis é auditada como no-op e não cria lote vazio.
 - O scheduler encerra quando os Transfers estão resolvidos. O lote financeiro
   permanece `processing` até a cobertura bancária.
-- Ativação operacional versionada:
-  `supabase/schedules/weekly-payout-scheduler.sql`. O job
-  `tes-weekly-payout-scheduler-v2` está ativo em HML e produção a cada 15
-  minutos; fora da janela financeira responde sem adquirir lote.
+- O artefato legado de ativação é
+  `supabase/schedules/weekly-payout-scheduler.sql`. Sua existência no
+  repositório não autoriza ativação. O job `tes-weekly-payout-scheduler-v2` só
+  pode operar enquanto houver obrigações V9 comprovadamente pendentes de
+  drenagem, nunca processa V10 e deve ser desativado ao zerar esse passivo.
 
-## Prontidão Connect
+## Prontidão Connect do legado V9
 
 O próximo lote é uma previsão operacional do Transfer TES, não uma promessa de
 crédito bancário. O TES agrupa valores elegíveis às terças-feiras às 02:00
@@ -348,8 +369,9 @@ clínico. Ausência de admin elegível reprova preflight.
 
 ## Homologação e ativação
 
-1. Aplicar migrations e tipos pelo fluxo versionado de PR; manter o scheduler
-   semanal inativo até concluir a prova externa.
+1. Aplicar migrations e tipos pelo fluxo versionado de PR. Se ainda houver
+   obrigação V9, manter o scheduler semanal inativo até concluir a prova
+   externa; se o passivo V9 for zero, ele deve permanecer inativo ou ausente.
 2. Implantar as Edge Functions afetadas.
 3. Confirmar Accounts v2 e Balance Settings nas contas correntes: capability de
    Transfer ativa, Payout habilitado e agenda diária. Conta restrita sem

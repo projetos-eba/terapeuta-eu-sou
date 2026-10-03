@@ -456,19 +456,15 @@ Stack real identificada:
   fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
   onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
   amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
-  A automação semanal está versionada para terça às 02:00
-  America/Sao_Paulo, com confirmação automática do paciente em 7 dias e do
-  terapeuta em 30 dias. Não existe espera local fixa após a confirmação; a
-  liquidação Stripe é o gate financeiro até o cutoff. ADR-018 define Transfer
-  semanal controlado pelo TES e Payout
-  automático diário criado pela Stripe para contas BR. `destination_payment` e
-  Balance Transactions atribuem cada Transfer a um Payout; lotes e Payouts
-  formam a relação muitos-para-muitos, sem metadata TES no Payout. Transfer liquida a obrigação no ledger;
-  elegibilidade exige Balance Transaction da Charge `available`, atualizada
-  por reconciliação financeira horária e revalidada no
-  cutoff/Transfer. Somente cobertura integral reconciliada em Payout `paid`
-  conclui o banco. A política
-  v5 e o cron permanecem inativos até preflight e prova externa. Runbook em
+  A confirmação automática do paciente ocorre em 7 dias e a do terapeuta em
+  30 dias. No fluxo financeiro V10, cada sessão usa Transfer direto e
+  rastreável por sessão, sem lote ou scheduler semanal. A reconciliação horária
+  continua atribuindo Transfers e ajustes aos Payouts automáticos da conta
+  conectada; somente cobertura integral reconciliada em Payout `paid` conclui
+  o banco. `weekly-payout-scheduler`, `create-weekly-payout-batch`,
+  `process-payout-batch` e `evaluate-transfer-eligibility` pertencem ao legado
+  V9 e só podem existir para drenagem de obrigações V9, nunca para pagamentos
+  V10. O histórico e o runbook de convivência ficam em
   `docs/payments/weekly-payouts.md`.
 - A apresentação visual de Aura e Financeiro foi alinhada aos nós Figma
   `13366:1634` e `14340:6283`, mantendo as anatomias específicas de cada
